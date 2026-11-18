@@ -7,6 +7,8 @@ import type {
   MockPathwayRow,
   OnboardingStage,
 } from "@/types/clinic";
+import { iranLocalDayOffset } from "@/lib/date-iso";
+import { formatFaDateRelative } from "@/lib/persian";
 
 /**
  * Pure client-side corporate contract seed data, demographic package matcher,
@@ -215,30 +217,13 @@ export function resolveMemberPackage(
   };
 }
 
+/** Iran-local civil day as Gregorian YYYY-MM-DD ± offset (not a UTC instant). */
 export function isoDayOffset(daysFromToday: number): string {
-  const d = new Date();
-  d.setHours(12, 0, 0, 0);
-  d.setDate(d.getDate() + daysFromToday);
-  return d.toISOString().slice(0, 10);
+  return iranLocalDayOffset(daysFromToday);
 }
 
 export function formatPersianDateLabel(isoDate: string): string {
-  const today = isoDayOffset(0);
-  const tomorrow = isoDayOffset(1);
-  const dayAfter = isoDayOffset(2);
-  const parsed = new Date(`${isoDate}T12:00:00`);
-  const formatted = Number.isNaN(parsed.getTime())
-    ? isoDate
-    : new Intl.DateTimeFormat("fa-IR", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        timeZone: "Asia/Tehran",
-      }).format(parsed);
-  if (isoDate === today) return `امروز (${formatted})`;
-  if (isoDate === tomorrow) return `فردا (${formatted})`;
-  if (isoDate === dayAfter) return `پس‌فردا (${formatted})`;
-  return formatted;
+  return formatFaDateRelative(isoDate);
 }
 
 const hoursAgo = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();

@@ -74,6 +74,46 @@
 .app-input { display: block; width: 100%; background: white; border: 1px solid #e2e9e4; border-radius: 9px; padding: 10px 12px; font-size: 12px; color: #445c4c; }
 .app-input:focus { border-color: #7eb796; outline: none; box-shadow: 0 0 0 3px #eff7f1; }
 .app-select { padding: 8px 11px; border: 1px solid #e3e9e5; border-radius: 8px; background-color: white; color: #708076; font-size: 11px; }
+
+/* Persian date picker — align with app-input / teal brand; keep popover above overflow parents */
+.persian-date-field { position: relative; display: block; width: 100%; }
+.persian-date-field--disabled { pointer-events: none; opacity: 0.55; }
+.persian-date-field__mirror {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.persian-date-field [data-jalali-datepicker-root],
+.persian-date-field [data-jalali-datepicker-dropdown] {
+  display: block;
+  width: 100%;
+  --jalali-font: "Vazirmatn", system-ui, sans-serif;
+  --jalali-font-size: 12px;
+  --jalali-primary: #377e58;
+  --jalali-primary-fg: #ffffff;
+  --jalali-border: #e2e9e4;
+  --jalali-radius: 9px;
+  --jalali-fg: #445c4c;
+  --jalali-muted-fg: #708076;
+  --jalali-holiday-fg: #b91c1c;
+  --jalali-focus-ring: #7eb796;
+}
+.persian-date-field [data-jalali-datepicker-input] {
+  width: 100%;
+  background: white;
+  border: 1px solid #e2e9e4;
+  border-radius: 9px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #445c4c;
+}
+.persian-date-field [data-jalali-datepicker-input]:focus-visible {
+  border-color: #7eb796;
+  outline: none;
+  box-shadow: 0 0 0 3px #eff7f1;
+}
+.persian-date-field [data-jalali-datepicker-popover] {
+  z-index: 95;
+}
 .module-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 14px; background: white; border: 1px solid #e5ebe7; border-radius: 12px; }
 .section-tabs { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; background: #f8faf9; padding: 3px; border-radius: 8px; }
 .section-tabs button { font-size: 11px; color: #91a098; padding: 8px 12px; border-radius: 7px; }

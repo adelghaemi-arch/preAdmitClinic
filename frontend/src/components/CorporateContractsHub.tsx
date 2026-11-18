@@ -47,6 +47,7 @@ import {
 } from "@/lib/mock-contracts";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
 import { normalizeText, stationLabel } from "@/lib/workspace";
+import { PersianDateField } from "@/components/PersianDateField";
 
 export type ContractHubTab = "people" | "packages" | "schedule" | "funnel";
 
@@ -490,9 +491,9 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
               </div>
             </div>
 
-            <form onSubmit={async (e) => { e.preventDefault(); await run({ action: "UPSERT_DAY_QUOTA", contractId: contract.id, date: qDate, totalCap: Number(qCap) || 20, genderFilter: qGender, fillFormula: qFormula, notes: qNotes }); setQNotes(""); flash("سقف و فرمول روز ذخیره شد."); }} className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-5">
+            <form onSubmit={async (e) => { e.preventDefault(); if (!/^\d{4}-\d{2}-\d{2}$/.test(qDate)) { flash("تاریخ معتبر انتخاب کنید."); return; } await run({ action: "UPSERT_DAY_QUOTA", contractId: contract.id, date: qDate, totalCap: Number(qCap) || 20, genderFilter: qGender, fillFormula: qFormula, notes: qNotes }); setQNotes(""); flash("سقف و فرمول روز ذخیره شد."); }} className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-5">
               <h2 className="text-sm font-bold text-slate-800">تعریف سقف و فرمول یک روز</h2>
-              <div className="grid grid-cols-2 gap-3"><label className="app-label">تاریخ مراجعه<input type="date" dir="ltr" required value={qDate} onChange={(e) => setQDate(e.target.value)} className="app-input mt-1 text-xs" /></label><label className="app-label">سقف نفرات<input type="number" min={1} max={200} required value={qCap} onChange={(e) => setQCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
+              <div className="grid grid-cols-2 gap-3"><label className="app-label">تاریخ مراجعه<PersianDateField className="mt-1" value={qDate} onChange={setQDate} showHolidays placeholder="انتخاب تاریخ مراجعه" aria-label="تاریخ مراجعه" /></label><label className="app-label">سقف نفرات<input type="number" min={1} max={200} required value={qCap} onChange={(e) => setQCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
               <label className="app-label">شرط جنسیت روز<select value={qGender} onChange={(e) => setQGender(e.target.value as "همه" | "مرد" | "زن")} className="app-select mt-1 w-full text-xs"><option value="مرد">فقط آقایان</option><option value="زن">فقط بانوان</option><option value="همه">همه</option></select></label>
               <label className="app-label">فرمول توزیع باقی‌مانده<select value={qFormula} onChange={(e) => setQFormula(e.target.value as ContractDayQuota["fillFormula"])} className="app-select mt-1 w-full text-xs">{Object.entries(FILL_FORMULA_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
               <label className="app-label">یادداشت<input value={qNotes} onChange={(e) => setQNotes(e.target.value)} placeholder="مثلاً: شیفت صبح عملیات" className="app-input mt-1 text-xs" /></label>
@@ -504,7 +505,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div><h3 className="text-sm font-bold text-slate-800">تعیین دستی نوبت اشخاص و ورود به کلینیک</h3><p className="text-xs text-slate-500">هر فردی را روی تاریخ انتخابی فیکس کنید تا از سقف همان روز کسر شود.</p></div>
               <div className="flex flex-wrap items-center gap-2">
-                <label className="flex items-center gap-1.5 text-xs text-slate-600">تاریخ پین<input type="date" dir="ltr" value={pinDateDraft} onChange={(e) => setPinDateDraft(e.target.value)} className="app-select text-xs" /></label>
+                <label className="flex items-center gap-1.5 text-xs text-slate-600">تاریخ پین<PersianDateField className="min-w-40" value={pinDateDraft} onChange={setPinDateDraft} showHolidays placeholder="تاریخ پین" aria-label="تاریخ پین" /></label>
                 <select value={scheduleFilter} onChange={(e) => setScheduleFilter(e.target.value as typeof scheduleFilter)} className="app-select text-xs"><option value="all">همه ({toFaDigits(contract.members.length)})</option><option value="unscheduled">فقط بدون نوبت ({toFaDigits(stats.unscheduled)})</option><option value="scheduled">دارای نوبت</option></select>
                 <input value={scheduleSearch} onChange={(e) => setScheduleSearch(e.target.value)} placeholder="جست‌وجوی نام..." className="app-select text-xs" />
               </div>

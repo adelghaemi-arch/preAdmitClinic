@@ -1,8 +1,41 @@
+import { iranLocalDayOffset, isIsoDay } from "@/lib/date-iso";
+
 const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
 
 export function toFaDigits(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "";
   return String(value).replace(/\d/g, (d) => PERSIAN_DIGITS[Number(d)] ?? d);
+}
+
+/**
+ * Format a Gregorian YYYY-MM-DD civil date as a Persian (Jalali) label.
+ * Input is an Iran-local calendar day string — not a UTC timestamp.
+ */
+export function formatFaDate(isoDate: string | null | undefined): string {
+  if (!isoDate || !isIsoDay(isoDate)) return isoDate?.trim() || "—";
+  // Noon + Asia/Tehran keeps the civil day stable while Intl renders Jalali.
+  const parsed = new Date(`${isoDate}T12:00:00+03:30`);
+  if (Number.isNaN(parsed.getTime())) return isoDate;
+  return new Intl.DateTimeFormat("fa-IR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Tehran",
+  }).format(parsed);
+}
+
+/** Relative Persian label for contract scheduling (امروز / فردا / …). */
+export function formatFaDateRelative(isoDate: string): string {
+  if (!isIsoDay(isoDate)) return isoDate;
+  const today = iranLocalDayOffset(0);
+  const tomorrow = iranLocalDayOffset(1);
+  const dayAfter = iranLocalDayOffset(2);
+  const formatted = formatFaDate(isoDate);
+  if (isoDate === today) return `امروز (${formatted})`;
+  if (isoDate === tomorrow) return `فردا (${formatted})`;
+  if (isoDate === dayAfter) return `پس‌فردا (${formatted})`;
+  return formatted;
 }
 
 export function formatFaTime(isoOrDate: string | Date | null | undefined): string {

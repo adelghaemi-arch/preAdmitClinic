@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@jalali-js/react": "^0.4.3",
     "lucide-react": "^0.511.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",

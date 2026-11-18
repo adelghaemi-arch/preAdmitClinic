@@ -9,7 +9,8 @@ import {
   submittedResponse,
   ynLabel,
 } from "@/lib/form-engine";
-import { toFaDigits } from "@/lib/persian";
+import { formatFaDate, toFaDigits } from "@/lib/persian";
+import { isIsoDay } from "@/lib/date-iso";
 
 interface FormResponseSummaryProps {
   patient: PatientFullDto;
@@ -94,7 +95,11 @@ export function FormResponseSummary({
                     <div key={item.code} className="text-[11px] leading-5 text-slate-700">
                       <span className="font-medium">{item.labelFa}: </span>
                       <span>
-                        {item.inputType === "yn_unk" ? ynLabel(answer.valueCode) : answer.valueRaw}
+                        {item.inputType === "yn_unk"
+                          ? ynLabel(answer.valueCode)
+                          : item.inputType === "date" && isIsoDay(answer.valueRaw)
+                            ? formatFaDate(answer.valueRaw)
+                            : answer.valueRaw}
                         {answer.notes ? ` (${answer.notes})` : ""}
                       </span>
                     </div>

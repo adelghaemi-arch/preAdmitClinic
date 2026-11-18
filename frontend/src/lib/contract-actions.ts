@@ -663,6 +663,9 @@ export function runContractAction(
       member.scheduledLabel = null;
       member.callSentAt = null;
     } else {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return { ok: false, status: 400, error: "تاریخ معتبر انتخاب کنید." };
+      }
       member.appointmentStatus = "pinned";
       member.scheduledDate = date;
       member.scheduledLabel = formatPersianDateLabel(date);

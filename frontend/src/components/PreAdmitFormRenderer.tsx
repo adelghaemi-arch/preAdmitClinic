@@ -24,6 +24,8 @@ import {
   validateForm,
 } from "@/lib/form-engine";
 import { toFaDigits } from "@/lib/persian";
+import { iranLocalDayOffset } from "@/lib/date-iso";
+import { birthDateBounds, PersianDateField } from "@/components/PersianDateField";
 
 interface PreAdmitFormRendererProps {
   patient: PatientFullDto;
@@ -142,9 +144,32 @@ function ItemField({
     );
   }
 
+  if (item.inputType === "date") {
+    // Always use grid: library rules/holidays only work on grid; dropdown also seeds empty as "today".
+    const isBirth = /birthDate|birth_date/i.test(item.code) || /تولد/.test(item.labelFa);
+    const bounds = isBirth ? birthDateBounds(iranLocalDayOffset(0)) : undefined;
+    return (
+      <PersianDateField
+        className="mt-2"
+        value={answer.valueRaw}
+        disabled={disabled || readOnlyPrefill}
+        required={item.required}
+        placeholder={item.helpText || item.labelFa}
+        variant="grid"
+        showHolidays={!isBirth}
+        minDate={bounds?.minDate}
+        maxDate={bounds?.maxDate}
+        aria-label={item.labelFa}
+        onChange={(iso) =>
+          onChange({ ...answer, itemCode: item.code, valueRaw: iso, valueCode: null, skippedByRule: false })
+        }
+      />
+    );
+  }
+
   return (
     <input
-      type={item.inputType === "number" ? "number" : item.inputType === "date" ? "date" : "text"}
+      type={item.inputType === "number" ? "number" : "text"}
       disabled={disabled || readOnlyPrefill}
       value={answer.valueRaw}
       onChange={(e) =>
