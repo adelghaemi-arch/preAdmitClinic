@@ -56,10 +56,12 @@ import {
   shortLabelFor,
   type AppPage,
 } from "@/lib/workspace";
+import { filterNavPagesForGate, resolveGatedPage, shouldGateOwner } from "@/lib/owner-intake-gate";
 import { toFaDigits } from "@/lib/persian";
 import { ClinicDashboard } from "./ClinicDashboard";
 import { CompanionHome } from "./CompanionHome";
 import { CompanionLinks } from "./CompanionLinks";
+import { JourneyIntroPage } from "./JourneyIntroPage";
 import { PatientPrivacySettings } from "./PatientPrivacySettings";
 import { CycleReport } from "./CycleReport";
 import { PatientRegistry } from "./PatientRegistry";
@@ -100,6 +102,7 @@ const PAGE_ICONS: Record<AppPage, LucideIcon> = {
   "diagnostics-tracker": ListChecks,
   "diagnostics-upload": Upload,
   records: FileHeart,
+  "journey-intro": Workflow,
   "companion-intake": ClipboardList,
   "companion-map": Compass,
   "companion-records": FileText,
@@ -154,46 +157,74 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
 
   const navConfig = ROLE_NAV[role];
   const activeRole = ROLES.find((r) => r.id === role) ?? ROLES[0];
-  const current: AppPage = allowedPagesFor(role).includes(page) ? page : navConfig.home;
   const activePatient = snapshot.patients.find((p) => p.id === selectedPatientId) ?? snapshot.patients[0];
   const activeId = activePatient?.id ?? 0;
   const activeLink = snapshot.links.find((l) => l.patientId === activeId && l.userId === user.id);
+  const gateArgs = { role, link: activeLink, patient: activePatient };
+  const ownerGated = shouldGateOwner(gateArgs);
+  const roleAllowsPage = (p: AppPage) => p === "journey-intro" || allowedPagesFor(role).includes(p);
+  const requestedPage: AppPage = roleAllowsPage(page) ? page : navConfig.home;
+  const current: AppPage = resolveGatedPage(requestedPage, gateArgs);
   const isSelf = role === "owner";
   const canManage = (patientId: number) => snapshot.links.find((l) => l.patientId === patientId && l.userId === user.id)?.permission !== "follow";
   const unread = snapshot.patients.flatMap((p) => p.alerts.filter((a) => !a.isRead).map((a) => ({ ...a, patient: p.fullName })));
   const suggestions = search.trim() ? snapshot.patients.filter((p) => matchesPatient(p, search)).slice(0, 5) : [];
   const date = new Intl.DateTimeFormat("fa-IR", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Tehran" }).format(new Date(snapshot.serverTime));
   const companionTab = current === "companion-intake" ? "intake" : current === "companion-map" ? "wayfinding" : "emr";
+  const lockNonIntakeTabs = ownerGated && isSelf;
 
   const navigate = useCallback(
     (next: AppPage, patientId?: number) => {
-      setPage(next);
+      const pid = patientId ?? selectedPatientId;
+      const patient = snapshot.patients.find((p) => p.id === pid) ?? snapshot.patients[0];
+      const link = snapshot.links.find((l) => l.patientId === (patient?.id ?? 0) && l.userId === user.id);
+      const coerced = resolveGatedPage(next, { role, link, patient });
+      // #region agent log
+      fetch("http://127.0.0.1:7620/ingest/ce0a96e2-b4da-459f-954e-882ca556894d", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5dfb38" }, body: JSON.stringify({ sessionId: "5dfb38", runId: "impl1", hypothesisId: "H-nav", location: "ClinicOrchestratorApp.tsx:navigate", message: "navigate coerce", data: { next, coerced, role, intakeCompleted: patient?.intakeCompleted ?? null, journeyIntroSeen: patient?.journeyIntroSeen ?? null, patientId: patient?.id ?? null }, timestamp: Date.now() }) }).catch(() => {});
+      // #endregion
+      setPage(coerced);
       if (patientId) setSelectedPatientId(patientId);
       setMobileMenu(false);
       setSearch("");
       setAccountOpen(false);
       setNotificationsOpen(false);
-      const params = new URLSearchParams({ view: next });
-      const pid = patientId ?? selectedPatientId;
+      const params = new URLSearchParams({ view: coerced });
       if (pid) params.set("patient", String(pid));
       window.history.pushState(null, "", `/?${params}`);
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
-    [selectedPatientId]
+    [selectedPatientId, snapshot.patients, snapshot.links, user.id, role]
   );
 
   const openPatient = (id: number) => navigate(role === "patient" || role === "owner" ? "dashboard" : "records", id);
 
   useEffect(() => {
+    if (page === current) return;
+    setPage(current);
+    const params = new URLSearchParams({ view: current });
+    if (activeId) params.set("patient", String(activeId));
+    window.history.replaceState(null, "", `/?${params}`);
+  }, [current, page, activeId]);
+
+  useEffect(() => {
+    // #region agent log
+    fetch("http://127.0.0.1:7620/ingest/ce0a96e2-b4da-459f-954e-882ca556894d", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5dfb38" }, body: JSON.stringify({ sessionId: "5dfb38", runId: "impl1", hypothesisId: "H-gate", location: "ClinicOrchestratorApp.tsx:gateState", message: "owner gate state", data: { role, ownerGated, current, page, intakeCompleted: activePatient?.intakeCompleted ?? null, journeyIntroSeen: activePatient?.journeyIntroSeen ?? null, patientId: activeId, linkRel: activeLink?.relationship ?? null }, timestamp: Date.now() }) }).catch(() => {});
+    // #endregion
+  }, [role, ownerGated, current, page, activePatient?.intakeCompleted, activePatient?.journeyIntroSeen, activeId, activeLink?.relationship]);
+
+  useEffect(() => {
     const back = () => {
       const q = new URLSearchParams(window.location.search);
-      const target = q.get("view");
-      setPage((target as AppPage) || "dashboard");
-      if (q.get("patient")) setSelectedPatientId(Number(q.get("patient")));
+      const target = (q.get("view") as AppPage) || "dashboard";
+      const pid = q.get("patient") ? Number(q.get("patient")) : selectedPatientId;
+      if (q.get("patient")) setSelectedPatientId(pid);
+      const patient = snapshot.patients.find((p) => p.id === pid) ?? snapshot.patients[0];
+      const link = snapshot.links.find((l) => l.patientId === (patient?.id ?? 0) && l.userId === user.id);
+      setPage(resolveGatedPage(target, { role, link, patient }));
     };
     window.addEventListener("popstate", back);
     return () => window.removeEventListener("popstate", back);
-  }, []);
+  }, [selectedPatientId, snapshot.patients, snapshot.links, user.id, role]);
 
   useEffect(() => {
     if (!toast) return;
@@ -307,6 +338,15 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const paraclinicSection = current === "diagnostics-tracker" ? "tracker" : current === "diagnostics-upload" ? "upload" : "queue";
   const adminSection = current === "pathways" ? "pathways" : current === "rooms" ? "rooms" : current === "team" ? "staff" : "kpi";
 
+  const dismissJourneyIntro = async () => {
+    if (!activePatient) return;
+    // #region agent log
+    fetch("http://127.0.0.1:7620/ingest/ce0a96e2-b4da-459f-954e-882ca556894d", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5dfb38" }, body: JSON.stringify({ sessionId: "5dfb38", runId: "impl1", hypothesisId: "H-dismiss", location: "ClinicOrchestratorApp.tsx:dismissJourneyIntro", message: "dismiss intro CTA", data: { patientId: activePatient.id }, timestamp: Date.now() }) }).catch(() => {});
+    // #endregion
+    await act({ action: "DISMISS_JOURNEY_INTRO", patientId: activePatient.id });
+    navigate("companion-intake");
+  };
+
   const renderHome = () => {
     if (role === "patient" || role === "owner") {
       return <CompanionHome snapshot={snapshot} selectedPatientId={activeId} onSelectPatient={setSelectedPatientId} onNavigate={navigate} onAction={act} busy={busy} isSelf={isSelf} canViewReports={isSelf || Boolean(activeLink?.visibility.reports)} userId={user.id} />;
@@ -323,8 +363,10 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     return <ClinicDashboard snapshot={snapshot} user={user} role={role} onNavigate={navigate} />;
   };
 
-  const groups = navConfig.groups;
-  const mobileItems = navConfig.mobile;
+  const groups = navConfig.groups
+    .map((group) => ({ ...group, pages: filterNavPagesForGate(group.pages, ownerGated) }))
+    .filter((group) => group.pages.length > 0);
+  const mobileItems = filterNavPagesForGate(navConfig.mobile, ownerGated);
   const mobileColumns = mobileItems.length + (mobileItems.length < 5 ? 1 : 0);
 
   return (
@@ -585,6 +627,10 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
 
           {current === "dashboard" && renderHome()}
 
+          {current === "journey-intro" && activePatient && (
+            <JourneyIntroPage snapshot={snapshot} patientId={activePatient.id} onContinue={() => void dismissJourneyIntro()} busy={busy} />
+          )}
+
           {current === "patients" && (
             <PatientRegistry key={`patients-${listQuery}`} snapshot={snapshot} initialQuery={listQuery} onNavigate={navigate} />
           )}
@@ -652,6 +698,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                   hideTabBar
                   initialTab={companionTab}
                   readOnly={!isSelf}
+                  lockNonIntakeTabs={lockNonIntakeTabs}
                 />}
               </div>
             ) : (

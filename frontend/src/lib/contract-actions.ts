@@ -822,6 +822,7 @@ export function runContractAction(
         currentSymptoms: member.draftSymptoms || `پایش سلامت سازمانی — ${contract.organizationName} (${member.department})`,
       },
       autoOpenWayfinding: false,
+      journeyIntroSeen: member.onboardingStage === "completed",
       homeLat: null,
       homeLon: null,
       homeAddress: null,

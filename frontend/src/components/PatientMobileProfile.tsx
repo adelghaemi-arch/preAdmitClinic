@@ -66,6 +66,8 @@ interface PatientMobileProfileProps {
   initialTab?: MobileTab;
   readOnly?: boolean;
   hideTabBar?: boolean;
+  /** When true, keep the patient on intake until pre-admission is completed. */
+  lockNonIntakeTabs?: boolean;
 }
 
 const HEREDITARY_DISEASES = [
@@ -92,6 +94,7 @@ export function PatientMobileProfile({
   initialTab = "journey",
   readOnly = false,
   hideTabBar = false,
+  lockNonIntakeTabs = false,
 }: PatientMobileProfileProps) {
   const patient: PatientFullDto | undefined =
     snapshot.patients.find((p) => p.id === selectedPatientId) ??
@@ -178,10 +181,18 @@ export function PatientMobileProfile({
   }, [activeRoom]);
 
   useEffect(() => {
-    if (!desktop && patient?.autoOpenWayfinding) {
+    if (lockNonIntakeTabs) {
+      setActiveTab("intake");
+      return;
+    }
+    if (!desktop && patient?.autoOpenWayfinding && patient.intakeCompleted) {
       setActiveTab("wayfinding");
     }
-  }, [desktop, patient?.id, patient?.autoOpenWayfinding]);
+  }, [desktop, patient?.id, patient?.autoOpenWayfinding, patient?.intakeCompleted, lockNonIntakeTabs]);
+
+  useEffect(() => {
+    if (lockNonIntakeTabs && activeTab !== "intake") setActiveTab("intake");
+  }, [lockNonIntakeTabs, activeTab]);
 
   if (!patient) {
     return (
@@ -332,6 +343,10 @@ export function PatientMobileProfile({
   const roadmapActive = roadmapStages.find((s) => s.state === "active");
 
   const goRoadmapStage = (stageId: string) => {
+    if (lockNonIntakeTabs) {
+      setActiveTab("intake");
+      return;
+    }
     if (stageId === "pre") setActiveTab("intake");
     else if (stageId === "emr" || stageId === "analysis" || stageId === "monitor") setActiveTab("emr");
     else if (stageId === "visit") setActiveTab("wayfinding");
@@ -401,7 +416,7 @@ export function PatientMobileProfile({
               <button
                 key={stage.id}
                 type="button"
-                disabled={stage.state === "locked"}
+                disabled={stage.state === "locked" || (lockNonIntakeTabs && stage.id !== "pre")}
                 title={stage.title}
                 onClick={() => goRoadmapStage(stage.id)}
                 className={`h-1.5 flex-1 rounded-full transition ${
@@ -410,7 +425,7 @@ export function PatientMobileProfile({
                     : stage.state === "active"
                       ? "bg-white shadow-[0_0_0_2px_rgba(255,255,255,0.35)]"
                       : "bg-white/25"
-                } ${stage.state === "locked" ? "cursor-not-allowed" : "cursor-pointer"}`}
+                } ${stage.state === "locked" || (lockNonIntakeTabs && stage.id !== "pre") ? "cursor-not-allowed" : "cursor-pointer"}`}
               />
             ))}
           </div>
@@ -452,7 +467,7 @@ export function PatientMobileProfile({
                 <button
                   key={stage.id}
                   type="button"
-                  disabled={stage.state === "locked"}
+                  disabled={stage.state === "locked" || (lockNonIntakeTabs && stage.id !== "pre")}
                   onClick={() => goRoadmapStage(stage.id)}
                   className={`group flex min-w-0 flex-1 flex-col items-center gap-1 disabled:cursor-not-allowed`}
                 >
@@ -1635,11 +1650,14 @@ export function PatientMobileProfile({
         >
           <button
             type="button"
-            onClick={() => setActiveTab("journey")}
+            disabled={lockNonIntakeTabs}
+            onClick={() => !lockNonIntakeTabs && setActiveTab("journey")}
             className={`flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition ${
               activeTab === "journey"
                 ? "bg-sky-50 text-sky-700"
-                : "text-slate-500 hover:text-slate-800"
+                : lockNonIntakeTabs
+                  ? "cursor-not-allowed text-slate-300"
+                  : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <HeartPulse className="h-5 w-5" />
@@ -1664,14 +1682,17 @@ export function PatientMobileProfile({
 
           <button
             type="button"
-            onClick={() => setActiveTab("wayfinding")}
+            disabled={lockNonIntakeTabs}
+            onClick={() => !lockNonIntakeTabs && setActiveTab("wayfinding")}
             className={`relative flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition ${
               activeTab === "wayfinding"
                 ? "bg-sky-50 text-sky-700"
-                : "text-slate-500 hover:text-slate-800"
+                : lockNonIntakeTabs
+                  ? "cursor-not-allowed text-slate-300"
+                  : "text-slate-500 hover:text-slate-800"
             }`}
           >
-            {patient.autoOpenWayfinding && (
+            {patient.autoOpenWayfinding && patient.intakeCompleted && (
               <span className="absolute top-1 right-4 h-2 w-2 animate-ping rounded-full bg-emerald-500" />
             )}
             <Compass className="h-5 w-5" />
@@ -1680,11 +1701,14 @@ export function PatientMobileProfile({
 
           <button
             type="button"
-            onClick={() => setActiveTab("emr")}
+            disabled={lockNonIntakeTabs}
+            onClick={() => !lockNonIntakeTabs && setActiveTab("emr")}
             className={`flex flex-col items-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition ${
               activeTab === "emr"
                 ? "bg-sky-50 text-sky-700"
-                : "text-slate-500 hover:text-slate-800"
+                : lockNonIntakeTabs
+                  ? "cursor-not-allowed text-slate-300"
+                  : "text-slate-500 hover:text-slate-800"
             }`}
           >
             <FileText className="h-5 w-5" />

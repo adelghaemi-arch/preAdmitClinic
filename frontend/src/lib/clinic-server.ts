@@ -80,6 +80,7 @@ export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
       recentConditions: p.recentConditions ?? [],
       intakeAnswers: p.intakeAnswers,
       autoOpenWayfinding: p.autoOpenWayfinding,
+      journeyIntroSeen: Boolean(p.journeyIntroSeen),
       homeLat: p.homeLat ?? null,
       homeLon: p.homeLon ?? null,
       homeAddress: p.homeAddress ?? null,

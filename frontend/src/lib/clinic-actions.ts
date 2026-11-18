@@ -32,7 +32,7 @@ import { defaultCompanionVisibility, emptyIntakeAnswers, type CompanionVisibilit
 /** Compares national ids digit-wise so Persian/Arabic digits match the stored ASCII value. */
 const sameNationalId = (a: string, b: string) => normalizeNationalId(a) === normalizeNationalId(b);
 /** Actions a companion account may run; everything else is staff-only. */
-const PATIENT_ROLE_ACTIONS = new Set(["SAVE_PATIENT_INTAKE", "PATIENT_STATION_CHECKIN", "MARK_ALERTS_READ", "LINK_COMPANION", "UNLINK_COMPANION", "UPDATE_COMPANION_VISIBILITY"]);
+const PATIENT_ROLE_ACTIONS = new Set(["SAVE_PATIENT_INTAKE", "PATIENT_STATION_CHECKIN", "MARK_ALERTS_READ", "LINK_COMPANION", "UNLINK_COMPANION", "UPDATE_COMPANION_VISIBILITY", "DISMISS_JOURNEY_INTRO"]);
 /** Actions that change clinical data and require the "manage" permission. */
 const COMPANION_MANAGE_ACTIONS = new Set(["SAVE_PATIENT_INTAKE", "PATIENT_STATION_CHECKIN"]);
 
@@ -55,10 +55,14 @@ async function advancePatientFlowIfNeeded(patientId: number) {
   if (nextPending) {
     mockMutations.updateStation(nextPending.id, { status: "waiting", enteredQueueAt: now.toISOString() });
     const roomInfo = mockStore.roomByCode(nextPending.roomCode);
-    mockMutations.updatePatient(patientId, { autoOpenWayfinding: true,
+    const patientRow = mockStore.patients.find((p) => p.id === patientId);
+    mockMutations.updatePatient(patientId, {
+      autoOpenWayfinding: Boolean(patientRow?.intakeCompleted),
       homeLat: null,
       homeLon: null,
-      homeAddress: null, completedAt: null });
+      homeAddress: null,
+      completedAt: null,
+    });
 
     const locationDesc = roomInfo
       ? `طبقه ${toFaDigits(roomInfo.floor)}، اتاق ${roomInfo.roomNumber} (${roomInfo.name})`
@@ -148,6 +152,9 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         }
         if (action === "SAVE_PATIENT_INTAKE" && link.relationship !== "self") {
           return NextResponse.json({ ok: false, error: "شرح حال بالینی فقط توسط خود بیمار ثبت می‌شود." }, { status: 403 });
+        }
+        if (action === "DISMISS_JOURNEY_INTRO" && link.relationship !== "self") {
+          return NextResponse.json({ ok: false, error: "معرفی مسیر فقط توسط خود بیمار بسته می‌شود." }, { status: 403 });
         }
         if (action === "UPDATE_COMPANION_VISIBILITY" && link.relationship !== "self") {
           return NextResponse.json({ ok: false, error: "فقط خود بیمار می‌تواند دسترسی همراه را تعیین کند." }, { status: 403 });
@@ -354,6 +361,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         recentConditions: previous?.recentConditions ?? [],
         intakeAnswers: { ...emptyIntakeAnswers },
         autoOpenWayfinding: false,
+        journeyIntroSeen: false,
       homeLat: null,
       homeLon: null,
       homeAddress: null,
@@ -401,6 +409,12 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
     }
 
+    if (action === "DISMISS_JOURNEY_INTRO") {
+      const patientId = Number(body.patientId);
+      mockMutations.updatePatient(patientId, { journeyIntroSeen: true });
+      return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
+    }
+
     if (action === "SAVE_PATIENT_INTAKE") {
       const { patientId, medications, surgeries, familyHistory, allergies, recentConditions, intakeAnswers } = body;
       mockMutations.updatePatient(Number(patientId), {
@@ -411,6 +425,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         recentConditions: recentConditions ?? [],
         intakeAnswers: { ...emptyIntakeAnswers, ...(intakeAnswers ?? {}) },
         intakeCompleted: true,
+        journeyIntroSeen: true,
       });
       return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
     }
@@ -462,7 +477,8 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         });
       });
       if (activatedRoomName) {
-        mockMutations.updatePatient(patientId, { autoOpenWayfinding: true });
+        const intakeDone = Boolean(mockStore.patients.find((p) => p.id === patientId)?.intakeCompleted);
+        mockMutations.updatePatient(patientId, { autoOpenWayfinding: intakeDone });
         mockMutations.insertAlert({
           patientId,
           senderRole: "هماهنگ‌کننده هوشمند صف",

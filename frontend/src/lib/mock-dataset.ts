@@ -450,7 +450,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": "آملودیپین از هفته گذشته طبق دستور پزشک قبلی شروع شده است."
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 2,
@@ -530,7 +531,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": "متفورمین از ماه گذشته به درمان اضافه شده است."
       },
-      "autoOpenWayfinding": true
+      "autoOpenWayfinding": true,
+      "journeyIntroSeen": true
     },
     {
       "id": 3,
@@ -598,7 +600,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": ""
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 4,
@@ -644,7 +647,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": ""
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 5,
@@ -705,7 +709,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": ""
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 11,
@@ -758,7 +763,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": "سرترالین از دو ماه پیش شروع شده است."
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 12,
@@ -832,7 +838,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "بله",
         "medicationChanges": ""
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 13,
@@ -899,7 +906,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "بله",
         "medicationChanges": ""
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 14,
@@ -971,7 +979,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "بله",
         "medicationChanges": "دوز انسولین سه ماه پیش تغییر کرده است."
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 15,
@@ -1032,7 +1041,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": ""
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 16,
@@ -1106,7 +1116,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": ""
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 17,
@@ -1167,7 +1178,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": ""
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     },
     {
       "id": 18,
@@ -1206,7 +1218,8 @@ export const MOCK_DATASET: MockDataset = {
         "anticoagulantUse": "خیر",
         "medicationChanges": ""
       },
-      "autoOpenWayfinding": false
+      "autoOpenWayfinding": false,
+      "journeyIntroSeen": false
     }
   ],
   "stations": [

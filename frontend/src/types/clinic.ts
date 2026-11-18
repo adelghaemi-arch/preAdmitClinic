@@ -252,6 +252,8 @@ export interface PatientFullDto {
   recentConditions: RecentConditionItem[];
   intakeAnswers: IntakeAnswers;
   autoOpenWayfinding: boolean;
+  /** True after the patient dismisses the first-login 6-step journey intro for this visit. */
+  journeyIntroSeen: boolean;
   /** Patient's home coordinates used for OSM distance & travel-time estimation. */
   homeLat?: number | null;
   homeLon?: number | null;
@@ -516,6 +518,7 @@ export interface MockPatientRow {
   recentConditions: RecentConditionItem[];
   intakeAnswers: IntakeAnswers;
   autoOpenWayfinding: boolean;
+  journeyIntroSeen: boolean;
   homeLat?: number | null;
   homeLon?: number | null;
   homeAddress?: string | null;

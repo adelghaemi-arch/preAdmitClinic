@@ -14,6 +14,7 @@ export type AppPage =
   | "diagnostics-tracker"
   | "diagnostics-upload"
   | "records"
+  | "journey-intro"
   | "companion-intake"
   | "companion-map"
   | "companion-records"
@@ -43,6 +44,7 @@ export const PAGE_TITLES: Record<AppPage, string> = {
   "diagnostics-tracker": "پیگیری نمونه و انجام تست",
   "diagnostics-upload": "آپلود نتایج و تصاویر",
   records: "پرونده الکترونیک بیمار",
+  "journey-intro": "نقشه راه سلامتی",
   "companion-intake": "شرح حال و سوابق",
   "companion-map": "نقشه و راهنمای مسیر",
   "companion-records": "پرونده امروز و گزارش",
