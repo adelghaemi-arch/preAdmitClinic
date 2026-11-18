@@ -329,7 +329,11 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
       payload.action === "START_FRAUD_CAMERA_SESSION" ||
       payload.action === "CAPTURE_FRAUD_FRAME" ||
       payload.action === "END_FRAUD_CAMERA_SESSION" ||
-      payload.action === "RECORD_USER_GPS";
+      payload.action === "RECORD_USER_GPS" ||
+      payload.action === "ADD_INTAKE_DOCUMENT_GROUP" ||
+      payload.action === "ADD_INTAKE_DOCUMENT_FILES" ||
+      payload.action === "REMOVE_INTAKE_DOCUMENT_GROUP" ||
+      payload.action === "REMOVE_INTAKE_DOCUMENT_FILE";
     // Draft autosave must not flip global busy (would flicker the whole shell).
     const blockUi = payload.action === "SAVE_FORM_RESPONSE" ? payload.mode === "submit" : !quiet;
     if (blockUi) setBusy(true);

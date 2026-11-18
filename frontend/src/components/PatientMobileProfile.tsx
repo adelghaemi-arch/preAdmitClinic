@@ -964,12 +964,12 @@ export function PatientMobileProfile({
               <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
                 <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
                   <FileUp className="h-4 w-4 text-teal-600" />
-                  مدارک همراه پیش‌پذیرش (
+                  مدارک و نتایج ارسالی (
                   {toFaDigits(patient.intakeDocuments?.length ?? 0)})
                 </div>
                 {(patient.intakeDocuments?.length ?? 0) === 0 ? (
                   <p className="mt-2 text-xs text-slate-500">
-                    مدرکی در مرحله پیش‌پذیرش بارگذاری نشده است.
+                    هنوز مدرک یا نتیجه‌ای در پیش‌پذیرش ارسال نشده است.
                   </p>
                 ) : (
                   <div className="mt-3 space-y-3">
@@ -984,14 +984,16 @@ export function PatientMobileProfile({
                             {toFaDigits(group.files.length)} فایل
                           </span>
                         </div>
-                        {group.documentDate && (
-                          <p className="mt-1 text-[11px] text-slate-600">تاریخ: {group.documentDate}</p>
-                        )}
-                        {group.note && (
+                        {group.note && group.note !== group.typeLabelFa && (
                           <p className="mt-1 text-[11px] text-slate-600">{group.note}</p>
                         )}
                         <div className="mt-2.5">
-                          <IntakeFileThumbGrid files={group.files} title={group.typeLabelFa} disabled />
+                          <IntakeFileThumbGrid
+                            files={group.files}
+                            title={group.typeLabelFa}
+                            fallbackDocumentDate={group.documentDate}
+                            disabled
+                          />
                         </div>
                       </div>
                     ))}

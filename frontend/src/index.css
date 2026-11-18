@@ -43,17 +43,6 @@
   ::selection { background: #d9eee2; color: #1d5940; }
 }
 
-@keyframes screening-dossier-in {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.screening-dossier-enter {
-  animation: screening-dossier-in 0.38s ease-out both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .screening-dossier-enter { animation: none; }
-}
-
 .tabular-fa { font-variant-numeric: tabular-nums; }
 ::-webkit-scrollbar { width: 4px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -99,6 +88,7 @@ select.app-field--readonly {
   background-color: var(--field-readonly-bg) !important;
   border-color: var(--field-readonly-border) !important;
   color: var(--field-readonly-fg) !important;
+  font-weight: 600;
   cursor: default;
   box-shadow: none;
 }
@@ -123,6 +113,7 @@ input[type="hidden"].app-field--readonly,
   background-color: var(--field-readonly-bg) !important;
   border-color: var(--field-readonly-border) !important;
   color: var(--field-readonly-fg) !important;
+  font-weight: 600;
   cursor: default;
   box-shadow: none !important;
 }

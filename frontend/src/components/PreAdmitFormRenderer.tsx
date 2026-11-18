@@ -8,7 +8,6 @@ import {
   FileUp,
   Loader2,
   Shield,
-  Syringe,
 } from "lucide-react";
 import type {
   ClinicSnapshot,
@@ -99,169 +98,10 @@ function YnButtons({
   );
 }
 
-function YnSegment({
-  value,
-  disabled,
-  onChange,
-}: {
-  value: FormAnswerValue;
-  disabled?: boolean;
-  onChange: (v: FormAnswerValue) => void;
-}) {
-  const opts: Array<{ v: FormAnswerValue; label: string }> = [
-    { v: "yes", label: "انجام شده" },
-    { v: "no", label: "نشده" },
-    { v: "unknown", label: "نمی‌دانم" },
-  ];
-  return (
-    <div className="inline-flex w-full max-w-sm overflow-hidden rounded-lg border border-sky-200 bg-white/90 p-0.5 shadow-sm">
-      {opts.map((o) => {
-        const active = value === o.v;
-        return (
-          <button
-            key={String(o.v)}
-            type="button"
-            disabled={disabled}
-            onClick={() => onChange(o.v)}
-            className={`flex-1 rounded-md px-1.5 py-1.5 text-[10px] font-medium transition ${
-              active
-                ? o.v === "yes"
-                  ? "bg-teal-700 text-white"
-                  : o.v === "no"
-                    ? "bg-slate-600 text-white"
-                    : "bg-amber-600 text-white"
-                : "text-slate-500 hover:bg-sky-50 hover:text-slate-700"
-            }`}
-          >
-            {o.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function itemRowClass(opts: { requiredEmpty: boolean; invalid: boolean }): string {
   if (opts.invalid) return "form-item-row form-item-row--invalid";
   if (opts.requiredEmpty) return "form-item-row form-item-row--required-empty";
   return "form-item-row";
-}
-
-function ScreeningDossierPanel({
-  section,
-  items,
-  answers,
-  disabled,
-  secProg,
-  invalidCodes,
-  onChange,
-}: {
-  section: FormSectionDefinition;
-  items: FormItemDefinition[];
-  answers: FormAnswer[];
-  disabled?: boolean;
-  secProg: { total: number; done: number };
-  invalidCodes: Set<string>;
-  onChange: (item: FormItemDefinition, next: FormAnswer) => void;
-}) {
-  return (
-    <div className="screening-dossier-enter overflow-hidden rounded-2xl border border-sky-200 bg-gradient-to-b from-sky-50 to-white">
-      <div className="border-b border-sky-100 bg-sky-100/40 px-3 py-2.5">
-        <div className="flex items-start gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-700 text-white">
-            <Shield className="h-3.5 w-3.5" aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-semibold text-slate-900">پرونده غربالگری و واکسیناسیون</h3>
-              <span className="inline-flex items-center gap-1 rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] text-teal-800">
-                <Syringe className="h-3 w-3" aria-hidden />
-                فاز پایانی
-              </span>
-            </div>
-            <p className="mt-0.5 text-[10px] text-slate-500">
-              تکمیل: {toFaDigits(secProg.done)}/{toFaDigits(secProg.total)}
-              {section.guideText ? ` · ${section.guideText}` : ""}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <ol className="screening-dossier-rail relative space-y-0 px-3 py-2">
-        {items.map((item, idx) => {
-          const answer = getAnswer(answers, item.code);
-          const complete = isItemComplete(item, answer, true);
-          const answered = answer.valueCode === "yes" || answer.valueCode === "no" || answer.valueCode === "unknown";
-          const isLast = idx === items.length - 1;
-          const requiredEmpty = Boolean(item.required && !complete);
-          const invalid = invalidCodes.has(item.code);
-          return (
-            <li
-              key={item.id}
-              data-item-code={item.code}
-              className={`relative flex gap-3 pb-3 last:pb-2 ${itemRowClass({ requiredEmpty, invalid })}`}
-            >
-              {!isLast && (
-                <span className="absolute right-[11px] top-6 bottom-0 w-px bg-sky-200" aria-hidden />
-              )}
-              <span
-                className={`relative z-[1] mt-1.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border-2 text-[9px] font-bold transition ${
-                  answered
-                    ? answer.valueCode === "yes"
-                      ? "border-teal-600 bg-teal-600 text-white"
-                      : answer.valueCode === "no"
-                        ? "border-slate-400 bg-slate-100 text-slate-600"
-                        : "border-amber-500 bg-amber-50 text-amber-800"
-                    : "border-sky-300 bg-white text-sky-700"
-                }`}
-              >
-                {answered ? (answer.valueCode === "yes" ? "✓" : "·") : toFaDigits(idx + 1)}
-              </span>
-              <div className="min-w-0 flex-1 pt-0.5">
-                <p className="text-xs font-medium leading-6 text-slate-800">
-                  {item.labelFa}
-                  {item.required && <span className="mr-1 text-rose-400">*</span>}
-                </p>
-                <div className="mt-2">
-                  <YnSegment
-                    value={answer.valueCode}
-                    disabled={disabled}
-                    onChange={(v) =>
-                      onChange(item, {
-                        ...answer,
-                        itemCode: item.code,
-                        valueCode: v,
-                        valueRaw: v ?? "",
-                        notes: v === "yes" ? answer.notes : "",
-                        skippedByRule: false,
-                      })
-                    }
-                  />
-                </div>
-                {answer.valueCode === "yes" && item.notesPolicy !== "never" && (
-                  <label className="mt-2 block text-[11px] text-slate-600">
-                    توضیحات (مدت / تاریخ / شدت)
-                    {item.notesPolicy === "required_if_yes" ? " — الزامی" : ""}
-                    <AppTextarea
-                      disabled={disabled}
-                      rows={2}
-                      value={answer.notes}
-                      onChange={(e) => onChange(item, { ...answer, notes: e.target.value })}
-                      className="mt-1 w-full rounded-xl border border-sky-200 bg-white p-2 text-xs"
-                      placeholder="مثلاً تاریخ تقریبی یا نتیجه"
-                    />
-                  </label>
-                )}
-              </div>
-            </li>
-          );
-        })}
-        {!items.length && (
-          <li className="py-3 text-xs text-slate-500">با توجه به وضعیت تاهل/سن، آیتمی در این بخش نمایش داده نمی‌شود.</li>
-        )}
-      </ol>
-    </div>
-  );
 }
 
 function displayFormTitle(form: FormDefinition): string {
@@ -382,27 +222,36 @@ function ItemField({
   readOnlyPrefill?: boolean;
   onChange: (next: FormAnswer) => void;
 }) {
+  const [focusNotes, setFocusNotes] = useState(false);
+
   if (item.inputType === "yn_unk") {
     return (
       <div>
         <YnButtons
           value={answer.valueCode}
           disabled={disabled}
-          onChange={(v) =>
+          onChange={(v) => {
+            setFocusNotes(v === "yes" && item.notesPolicy !== "never");
             onChange({
               ...answer,
               itemCode: item.code,
               valueCode: v,
               valueRaw: v ?? "",
-              notes: v === "yes" ? answer.notes : "",
               skippedByRule: false,
-            })
-          }
+            });
+          }}
         />
         {answer.valueCode === "yes" && item.notesPolicy !== "never" && (
           <label className="mt-2 block text-[11px] text-slate-600">
-            توضیحات (مدت / تاریخ / شدت){item.notesPolicy === "required_if_yes" ? " — الزامی" : ""}
+            توضیحات (مدت / تاریخ / شدت)
+            {item.notesPolicy === "required_if_yes" ? (
+              <>
+                {" — "}
+                <span className="font-bold text-red-600">الزامی</span>
+              </>
+            ) : null}
             <AppTextarea
+              autoFocus={focusNotes}
               disabled={disabled}
               rows={2}
               value={answer.notes}
@@ -802,18 +651,22 @@ export function PreAdmitFormRenderer({
       action: "ADD_INTAKE_DOCUMENT_GROUP",
       patientId: patient.id,
       ...payload,
+      silent: true,
     });
   };
 
   const addIntakeDocumentFiles = async (
     groupId: string,
-    files: Array<{ fileName: string; mimeType: string; dataUrl: string }>
+    files: Array<{ fileName: string; mimeType: string; dataUrl: string; documentDate?: string | null }>,
+    documentDate?: string | null
   ) => {
     await onAction({
       action: "ADD_INTAKE_DOCUMENT_FILES",
       patientId: patient.id,
       groupId,
       files,
+      documentDate: documentDate ?? null,
+      silent: true,
     });
   };
 
@@ -822,6 +675,7 @@ export function PreAdmitFormRenderer({
       action: "REMOVE_INTAKE_DOCUMENT_GROUP",
       patientId: patient.id,
       groupId,
+      silent: true,
     });
   };
 
@@ -831,6 +685,7 @@ export function PreAdmitFormRenderer({
       patientId: patient.id,
       groupId,
       fileId,
+      silent: true,
     });
   };
 
@@ -963,17 +818,20 @@ export function PreAdmitFormRenderer({
   const screeningItems = screeningSection
     ? itemsOfSection(form, screeningSection.id).filter((i) => isItemVisible(i, ctx) && !i.code.includes("_SIG_"))
     : [];
+  const activeSection = onScreeningPhase ? screeningSection : currentSection;
+  const activeSectionItems = onScreeningPhase ? screeningItems : sectionItems;
+  const activeSecProg = onScreeningPhase ? screeningProg : secProg;
   const atLastMain = !onScreeningPhase && !onDocumentsPhase && sectionIndex >= sections.length - 1;
   const canGoNext = !onDocumentsPhase;
   const canGoPrev = onDocumentsPhase || onScreeningPhase || sectionIndex > 0;
   const canFinalSubmit = validateForm(form, answers, ctx).ok;
   const formTitle = displayFormTitle(form);
   const nextButtonLabel = onScreeningPhase
-    ? "مدارک همراه"
+    ? "مدارک مرتبط"
     : atLastMain && screeningSection
       ? "پرونده غربالگری"
       : atLastMain
-        ? "مدارک همراه"
+        ? "مدارک مرتبط"
         : "بخش بعد";
 
   return (
@@ -1060,10 +918,10 @@ export function PreAdmitFormRenderer({
             onClick={() => void goScreeningPhase()}
             className={`inline-flex shrink-0 items-center gap-1 rounded-full border py-1.5 px-3 text-[10px] ${
               onScreeningPhase && !onDocumentsPhase
-                ? "border-teal-700 bg-teal-700 text-white"
+                ? "border-teal-600 bg-teal-50 text-teal-800"
                 : screeningDone
                   ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : "border-sky-200 bg-sky-50 text-teal-800"
+                  : "border-slate-200 bg-white text-slate-600"
             }`}
           >
             <Shield className="h-3 w-3" aria-hidden />
@@ -1072,8 +930,8 @@ export function PreAdmitFormRenderer({
         )}
         <button
           type="button"
-          title="مدارک همراه"
-          aria-label="آپلود مدارک همراه پیش‌پذیرش"
+          title="ارسال مدارک مرتبط"
+          aria-label="ارسال مدارک مرتبط پیش‌پذیرش"
           aria-current={onDocumentsPhase ? "step" : undefined}
           onClick={() => void goDocumentsPhase()}
           className={`inline-flex shrink-0 items-center gap-1 rounded-full border py-1.5 px-3 text-[10px] ${
@@ -1100,31 +958,20 @@ export function PreAdmitFormRenderer({
           onRemoveGroup={removeIntakeDocumentGroup}
           onRemoveFile={removeIntakeDocumentFile}
         />
-      ) : onScreeningPhase && screeningSection ? (
-        <ScreeningDossierPanel
-          section={screeningSection}
-          items={screeningItems}
-          answers={answers}
-          disabled={readOnly || submitted || busy}
-          secProg={screeningProg}
-          invalidCodes={invalidSet}
-          onChange={updateItem}
-        />
-      ) : (
-        currentSection && (
+      ) : activeSection && (
           <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
             {(() => {
-              const isBaseSection = isBaseInfoSection(currentSection.code);
+              const isBaseSection = isBaseInfoSection(activeSection.code);
               const showHeaderPhoto = Boolean(isBaseSection && resolvedPhoto);
               return (
                 <div className={`mb-2.5 ${showHeaderPhoto ? "flex items-start gap-2.5" : ""}`}>
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-slate-900">{currentSection.title}</h3>
-                    {currentSection.guideText && (
-                      <p className="mt-0.5 text-[11px] leading-5 text-slate-500">{currentSection.guideText}</p>
+                    <h3 className="text-sm font-semibold text-slate-900">{activeSection.title}</h3>
+                    {activeSection.guideText && (
+                      <p className="mt-0.5 text-[11px] leading-5 text-slate-500">{activeSection.guideText}</p>
                     )}
                     <p className="mt-0.5 text-[10px] text-slate-400">
-                      تکمیل این بخش: {toFaDigits(secProg.done)}/{toFaDigits(secProg.total)}
+                      تکمیل این بخش: {toFaDigits(activeSecProg.done)}/{toFaDigits(activeSecProg.total)}
                     </p>
                   </div>
                   {showHeaderPhoto && (
@@ -1142,7 +989,7 @@ export function PreAdmitFormRenderer({
 
             <div className="space-y-1.5">
               {(() => {
-                const isBaseSection = isBaseInfoSection(currentSection.code);
+                const isBaseSection = isBaseInfoSection(activeSection.code);
                 const renderItem = (item: FormItemDefinition, opts?: { tight?: boolean }) => {
                   const answer = getAnswer(answers, item.code);
                   const locked = Boolean(item.readOnlyIfPrefill && prefillValue(item, patient));
@@ -1173,8 +1020,8 @@ export function PreAdmitFormRenderer({
                 };
 
                 if (!isBaseSection) {
-                  return sectionItems.length
-                    ? sectionItems.map((item) => renderItem(item))
+                  return activeSectionItems.length
+                    ? activeSectionItems.map((item) => renderItem(item))
                     : (
                         <p className="text-xs text-slate-500">
                           با توجه به وضعیت تاهل/سن، آیتمی در این بخش نمایش داده نمی‌شود.
@@ -1182,7 +1029,7 @@ export function PreAdmitFormRenderer({
                       );
                 }
 
-                const rows = layoutBaseItems(sectionItems);
+                const rows = layoutBaseItems(activeSectionItems);
                 if (!rows.length) {
                   return (
                     <p className="text-xs text-slate-500">
@@ -1212,12 +1059,11 @@ export function PreAdmitFormRenderer({
             {atLastMain && (
               <p className="mt-3 rounded-xl border border-sky-100 bg-sky-50/80 px-3 py-2 text-[11px] leading-5 text-teal-900">
                 {screeningSection
-                  ? "بعد از این بخش، پرونده غربالگری و سپس مدارک همراه را تکمیل کنید."
-                  : "بعد از این بخش می‌توانید مدارک همراه (آزمایش، نوار قلب، سونو و…) را آپلود کنید."}
+                  ? "بعد از این بخش، پرونده غربالگری و سپس مدارک مرتبط را ارسال کنید."
+                  : "بعد از این بخش می‌توانید مدارک مرتبط (آزمایش، نوار قلب، سونو و…) را ارسال کنید."}
               </p>
             )}
           </div>
-        )
       )}
 
       {(error || message) && (

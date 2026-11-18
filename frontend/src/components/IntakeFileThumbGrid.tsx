@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { Download, FileText, Trash2, X } from "lucide-react";
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { FileText, Trash2, X } from "lucide-react";
 import type { PatientIntakeDocumentFile } from "@/types/clinic";
+import { isIsoDay } from "@/lib/date-iso";
+import { formatFaDate } from "@/lib/persian";
+
+function formatFileDate(value: string): string {
+  return isIsoDay(value) ? formatFaDate(value) : value;
+}
+
+GlobalWorkerOptions.workerSrc = pdfWorker;
 
 function isPdf(file: PatientIntakeDocumentFile): boolean {
   return (
@@ -10,18 +20,90 @@ function isPdf(file: PatientIntakeDocumentFile): boolean {
   );
 }
 
+function dataUrlToUint8Array(dataUrl: string): Uint8Array {
+  const base64 = dataUrl.includes(",") ? dataUrl.slice(dataUrl.indexOf(",") + 1) : dataUrl;
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function renderPdfFirstPageThumb(dataUrl: string, targetWidth = 120): Promise<string> {
+  const data = dataUrlToUint8Array(dataUrl);
+  const loadingTask = getDocument({ data });
+  try {
+    const pdf = await loadingTask.promise;
+    const page = await pdf.getPage(1);
+    const base = page.getViewport({ scale: 1 });
+    const scale = targetWidth / Math.max(base.width, 1);
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.floor(viewport.width));
+    canvas.height = Math.max(1, Math.floor(viewport.height));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas");
+    await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+    await pdf.cleanup();
+    return canvas.toDataURL("image/jpeg", 0.72);
+  } finally {
+    await loadingTask.destroy();
+  }
+}
+
 interface IntakeFileThumbGridProps {
   files: PatientIntakeDocumentFile[];
   title: string;
+  /** Legacy group-level date used only when a file has no documentDate. */
+  fallbackDocumentDate?: string | null;
   disabled?: boolean;
   busy?: boolean;
   onRemoveFile?: (fileId: string) => void;
   removingFileId?: string | null;
 }
 
+function PdfThumb({ file }: { file: PatientIntakeDocumentFile }) {
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setThumbUrl(null);
+    setFailed(false);
+    void renderPdfFirstPageThumb(file.dataUrl)
+      .then((url) => {
+        if (!cancelled) setThumbUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [file.dataUrl, file.id]);
+
+  if (failed) {
+    return (
+      <div className="flex aspect-square items-center justify-center bg-slate-50">
+        <FileText className="h-5 w-5 text-teal-600" aria-hidden />
+      </div>
+    );
+  }
+
+  if (!thumbUrl) {
+    return <div className="aspect-square animate-pulse bg-slate-100" aria-hidden />;
+  }
+
+  return (
+    <div className="aspect-square overflow-hidden bg-slate-100">
+      <img src={thumbUrl} alt="" className="h-full w-full object-cover" />
+    </div>
+  );
+}
+
 export function IntakeFileThumbGrid({
   files,
   title,
+  fallbackDocumentDate,
   disabled,
   busy,
   onRemoveFile,
@@ -48,24 +130,20 @@ export function IntakeFileThumbGrid({
 
   return (
     <>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <ul className="grid grid-cols-4 gap-1.5">
         {files.map((file) => {
           const pdf = isPdf(file);
+          const dateLabel = (file.documentDate || fallbackDocumentDate || "").trim();
           return (
             <li key={file.id} className="relative">
               <button
                 type="button"
                 onClick={() => setPreviewId(file.id)}
-                className="group block w-full overflow-hidden rounded-xl border border-slate-200 bg-white text-right shadow-sm active:scale-[0.98]"
+                className="group block w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-right active:scale-[0.98]"
                 aria-label={`پیش‌نمایش ${file.fileName}`}
               >
                 {pdf ? (
-                  <div className="flex aspect-square flex-col items-center justify-center gap-2 bg-slate-50 px-2">
-                    <FileText className="h-8 w-8 text-teal-600" aria-hidden />
-                    <span className="line-clamp-2 w-full text-center text-[10px] leading-4 text-slate-600">
-                      {file.fileName}
-                    </span>
-                  </div>
+                  <PdfThumb file={file} />
                 ) : (
                   <div className="aspect-square bg-slate-100">
                     <img
@@ -75,6 +153,11 @@ export function IntakeFileThumbGrid({
                     />
                   </div>
                 )}
+                {dateLabel ? (
+                  <p className="truncate px-0.5 py-0.5 text-center text-[9px] leading-3 text-slate-500">
+                    {formatFileDate(dateLabel)}
+                  </p>
+                ) : null}
               </button>
               {onRemoveFile && !disabled && (
                 <button
@@ -84,10 +167,10 @@ export function IntakeFileThumbGrid({
                     e.stopPropagation();
                     onRemoveFile(file.id);
                   }}
-                  className="absolute left-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full border border-rose-200 bg-white/95 text-rose-700 shadow-sm disabled:opacity-40"
+                  className="absolute left-0.5 top-0.5 flex h-6 w-6 items-center justify-center rounded-full border border-rose-200 bg-white/95 text-rose-700 disabled:opacity-40"
                   aria-label={`حذف ${file.fileName}`}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3" />
                 </button>
               )}
             </li>
@@ -97,59 +180,42 @@ export function IntakeFileThumbGrid({
 
       {preview && (
         <div
-          className="fixed inset-0 z-[80] flex flex-col bg-slate-950/90 p-3 backdrop-blur-sm"
+          className="fixed inset-0 z-[80] flex flex-col items-center justify-center bg-slate-950/90 p-2 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label="پیش‌نمایش مدرک"
           onClick={() => setPreviewId(null)}
         >
-          <div className="flex items-center justify-between gap-2 pb-3" onClick={(e) => e.stopPropagation()}>
-            <p className="min-w-0 truncate text-xs text-white/90">{preview.fileName || title}</p>
-            <div className="flex shrink-0 items-center gap-2">
-              <a
-                href={preview.dataUrl}
-                download={preview.fileName || "document"}
-                className="inline-flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-xl bg-white/15 px-3 text-xs text-white"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Download className="h-4 w-4" />
-                دریافت
-              </a>
+          <div
+            className="flex w-full max-w-lg flex-col overflow-hidden rounded-xl bg-slate-900/40"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-2 px-2.5 py-2">
+              <p className="min-w-0 truncate text-[11px] text-white/90">{preview.fileName || title}</p>
               <button
                 type="button"
                 onClick={() => setPreviewId(null)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15 text-white"
                 aria-label="بستن پیش‌نمایش"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
-          </div>
-          <div
-            className="flex min-h-0 flex-1 items-center justify-center overflow-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {isPdf(preview) ? (
-              <div className="w-full max-w-md rounded-2xl border border-white/20 bg-white p-5 text-center">
-                <FileText className="mx-auto h-12 w-12 text-teal-600" />
-                <p className="mt-3 text-sm font-medium text-slate-800">{preview.fileName}</p>
-                <p className="mt-1 text-[11px] text-slate-500">برای مشاهده کامل، فایل را دریافت کنید.</p>
-                <a
-                  href={preview.dataUrl}
-                  download={preview.fileName || "report.pdf"}
-                  className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 text-sm font-medium text-white"
-                >
-                  <Download className="h-4 w-4" />
-                  دریافت PDF
-                </a>
-              </div>
-            ) : (
-              <img
-                src={preview.dataUrl}
-                alt={preview.fileName || title}
-                className="max-h-full max-w-full rounded-lg object-contain"
-              />
-            )}
+            <div className="flex max-h-[70vh] items-center justify-center overflow-auto px-2 pb-2">
+              {isPdf(preview) ? (
+                <iframe
+                  src={preview.dataUrl}
+                  title={preview.fileName || title}
+                  className="h-[70vh] w-full max-w-lg rounded-lg bg-white"
+                />
+              ) : (
+                <img
+                  src={preview.dataUrl}
+                  alt={preview.fileName || title}
+                  className="max-h-[70vh] max-w-full rounded-lg object-contain"
+                />
+              )}
+            </div>
           </div>
         </div>
       )}

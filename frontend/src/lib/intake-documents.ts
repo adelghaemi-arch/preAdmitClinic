@@ -46,7 +46,8 @@ export function isAllowedIntakeMime(mimeType: string): boolean {
 
 export function normalizeIntakeFilePayload(
   raw: unknown,
-  idFactory: () => string
+  idFactory: () => string,
+  fallbackDocumentDate?: string | null
 ): { ok: true; file: PatientIntakeDocumentFile } | { ok: false; error: string } {
   if (!raw || typeof raw !== "object") {
     return { ok: false, error: "فایل مدرک معتبر نیست." };
@@ -74,6 +75,9 @@ export function normalizeIntakeFilePayload(
   if (dataUrl.length > INTAKE_DOCUMENT_MAX_DATA_URL_CHARS) {
     return { ok: false, error: "حجم فایل باید حداکثر ۵ مگابایت باشد." };
   }
+  const dateFromFile = String(row.documentDate ?? "").trim();
+  const dateFallback = String(fallbackDocumentDate ?? "").trim();
+  const documentDate = (dateFromFile || dateFallback || "").slice(0, 80) || null;
   return {
     ok: true,
     file: {
@@ -81,6 +85,7 @@ export function normalizeIntakeFilePayload(
       fileName: fileName.slice(0, 180),
       mimeType: resolvedMime,
       dataUrl,
+      documentDate,
     },
   };
 }

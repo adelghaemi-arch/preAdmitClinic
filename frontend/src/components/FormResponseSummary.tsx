@@ -100,7 +100,9 @@ export function FormResponseSummary({
                           : item.inputType === "date" && isIsoDay(answer.valueRaw)
                             ? formatFaDate(answer.valueRaw)
                             : answer.valueRaw}
-                        {answer.notes ? ` (${answer.notes})` : ""}
+                        {answer.notes && (item.inputType !== "yn_unk" || answer.valueCode === "yes")
+                          ? ` (${answer.notes})`
+                          : ""}
                       </span>
                     </div>
                   ))}

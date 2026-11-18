@@ -636,20 +636,26 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
           { status: 400 }
         );
       }
+      const noteRaw = normalizePersianInput(String(body.note ?? "").trim());
+      const dateRaw = normalizePersianInput(String(body.documentDate ?? "").trim());
+      const sharedDate = dateRaw ? dateRaw.slice(0, 80) : null;
       const files: PatientIntakeDocumentFile[] = [];
       for (const raw of rawFiles) {
-        const parsed = normalizeIntakeFilePayload(raw, randomUUID);
+        const parsed = normalizeIntakeFilePayload(raw, randomUUID, sharedDate);
         if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
         files.push(parsed.file);
       }
-      const noteRaw = normalizePersianInput(String(body.note ?? "").trim());
-      const dateRaw = normalizePersianInput(String(body.documentDate ?? "").trim());
+      const note = documentTypeRaw === "other" && noteRaw ? noteRaw.slice(0, 120) : null;
+      const typeLabelFa =
+        documentTypeRaw === "other"
+          ? note || "سایر مدارک پزشکی"
+          : intakeDocumentLabelFa(documentTypeRaw);
       const group: PatientIntakeDocumentGroup = {
         id: randomUUID(),
         documentType: documentTypeRaw,
-        typeLabelFa: intakeDocumentLabelFa(documentTypeRaw),
-        note: documentTypeRaw === "other" && noteRaw ? noteRaw.slice(0, 120) : null,
-        documentDate: dateRaw ? dateRaw.slice(0, 80) : null,
+        typeLabelFa,
+        note,
+        documentDate: null,
         files,
         uploadedAt: now.toISOString(),
       };
@@ -685,9 +691,11 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
           { status: 400 }
         );
       }
+      const dateRaw = normalizePersianInput(String(body.documentDate ?? "").trim());
+      const sharedDate = dateRaw ? dateRaw.slice(0, 80) : null;
       const added: PatientIntakeDocumentFile[] = [];
       for (const raw of rawFiles) {
-        const parsed = normalizeIntakeFilePayload(raw, randomUUID);
+        const parsed = normalizeIntakeFilePayload(raw, randomUUID, sharedDate);
         if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
         added.push(parsed.file);
       }

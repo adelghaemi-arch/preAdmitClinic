@@ -359,7 +359,8 @@ export function buildAiPayload(form: FormDefinition, response: FormResponse) {
           sectionTitle: section?.title ?? "",
           label: item.labelFa,
           value: answer.skippedByRule ? "skipped" : answer.valueCode ?? answer.valueRaw,
-          notes: answer.notes,
+          notes:
+            item.inputType === "yn_unk" && answer.valueCode !== "yes" ? "" : answer.notes,
           skippedByRule: Boolean(answer.skippedByRule),
           coding: (() => {
             const coding = normalizeCoding(item.coding);

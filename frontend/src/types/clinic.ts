@@ -85,6 +85,8 @@ export interface PatientIntakeDocumentFile {
   fileName: string;
   mimeType: string;
   dataUrl: string;
+  /** Exam/report date for this file — exact or approximate free text; optional. */
+  documentDate?: string | null;
 }
 
 /** One type entry (duplicate types allowed) with optional date and up to 20 files. */
