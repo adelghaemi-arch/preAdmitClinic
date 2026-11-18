@@ -115,7 +115,7 @@ export function requestOtp(phoneRaw: string): OtpRequestResult {
   if (!patient && !supervisorContract) {
     return {
       ok: false,
-      error: "این شماره موبایل در میان بیماران یا ناظران سازمانی ثبت نشده است. یکی از شماره‌های فهرست ورود سریع پایین را انتخاب کنید.",
+      error: "این شماره موبایل در میان سلامتجویان یا ناظران سازمانی ثبت نشده است. یکی از شماره‌های فهرست ورود سریع پایین را انتخاب کنید.",
     };
   }
 
@@ -166,7 +166,7 @@ function ensurePatientUser(patientId: number) {
         id: nextId,
         username: patient.phone,
         fullName: patient.fullName,
-        jobTitle: "بیمار",
+        jobTitle: "سلامتجو",
         primaryRole: "owner",
         medicalCouncilCode: "—",
         canAccessAllRoles: true,
@@ -258,7 +258,7 @@ export function verifyOtp(phoneRaw: string, codeRaw: string): OtpVerifyResult {
   const patient = findPatientByPhone(phone);
   if (patient) {
     const user = ensurePatientUser(patient.id);
-    if (!user) return { ok: false, error: "حساب بیمار ساخته نشد. دوباره تلاش کنید." };
+    if (!user) return { ok: false, error: "حساب سلامتجو ساخته نشد. دوباره تلاش کنید." };
     mockMutations.touchUserLogin(user.id, new Date().toISOString());
     persistClientDb();
     startSession(user.username);

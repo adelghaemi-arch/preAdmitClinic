@@ -189,7 +189,7 @@ export function CorporateSupervisorPanel({
               <h1 className="mt-1 text-lg font-extrabold text-[#1f4739]">{contract.title}</h1>
               <p className="mt-1 flex items-center gap-1.5 text-[11px] text-[#5c7c6e]">
                 <Lock className="h-3 w-3" />
-                رصد زنده پیش‌ثبت‌نام، نوبت‌های معاینه و مراجعه کارکنان «{contract.organizationName}» (نتایج بالینی محرمانه نزد بیمار و پزشک است)
+                رصد زنده پیش‌ثبت‌نام، نوبت‌های معاینه و مراجعه کارکنان «{contract.organizationName}» (نتایج بالینی محرمانه نزد سلامتجو و پزشک است)
               </p>
             </div>
           </div>

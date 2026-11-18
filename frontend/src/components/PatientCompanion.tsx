@@ -35,8 +35,8 @@ export function PatientCompanion({ token, initialSnapshot }: { token: string; in
     try {
       const full = (await readSnapshot(null)).patients.find((item) => item.qrToken.toUpperCase() === token.toUpperCase());
       if (!full) throw new Error("لینک پذیرش معتبر نیست.");
-      const allowed = ["SAVE_PATIENT_INTAKE", "PATIENT_STATION_CHECKIN", "MARK_ALERTS_READ", "COMPLETE_REPORT_STEP", "UPDATE_COMPANION_VISIBILITY", "DISMISS_JOURNEY_INTRO"];
-      if (!allowed.includes(String(payload.action)) || Number(payload.patientId) !== full.id) throw new Error("این عملیات برای همراه بیمار مجاز نیست.");
+      const allowed = ["SAVE_FORM_RESPONSE", "PATIENT_STATION_CHECKIN", "MARK_ALERTS_READ", "COMPLETE_REPORT_STEP", "UPDATE_COMPANION_VISIBILITY", "DISMISS_JOURNEY_INTRO"];
+      if (!allowed.includes(String(payload.action)) || Number(payload.patientId) !== full.id) throw new Error("این عملیات برای همراه سلامتجو مجاز نیست.");
       const data = await dispatchClinicAction(payload, { unscoped: true });
       if (!data.ok) throw new Error(data.error ?? "ذخیره اطلاعات انجام نشد.");
       const next = await getPatientSnapshot(token);
@@ -63,7 +63,7 @@ export function PatientCompanion({ token, initialSnapshot }: { token: string; in
       <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-3">
         <span className="flex items-center gap-2 text-xs font-bold text-[#20745c]">
           <HeartPulse className="h-5 w-5" />
-          همراه بیمار نبض
+          همراه سلامتجو نبض
         </span>
         <span className="text-[9px] text-slate-400">مراقبت پیوسته، کنار شما</span>
       </div>

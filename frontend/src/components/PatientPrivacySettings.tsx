@@ -9,8 +9,9 @@ const FIELDS: { key: keyof CompanionVisibility; label: string; description: stri
   { key: "results", label: "نتایج آزمایش و تصویر", description: "اعداد آزمایش و تصاویر تشخیصی" },
   { key: "diagnoses", label: "تشخیص پزشکان", description: "یادداشت‌های معاینه و نسخه‌ها" },
   { key: "medications", label: "داروهای مصرفی", description: "داروهای فعلی ثبت‌شده" },
-  { key: "allergies", label: "حساسیت‌ها", description: "اطلاعات آلرژی بیمار" },
+  { key: "allergies", label: "حساسیت‌ها", description: "اطلاعات آلرژی سلامتجو" },
   { key: "familyHistory", label: "سوابق خانوادگی", description: "بیماری‌های بستگان درجه یک" },
+  { key: "clinicalIntake", label: "پرسشنامه پیش‌پذیرش", description: "پاسخ‌های غربالگری سرطان و فرم‌های ثبت‌شده" },
   { key: "reports", label: "گزارش پایانی پرونده", description: "خروجی جامع پس از پایان مراجعه" },
 ];
 

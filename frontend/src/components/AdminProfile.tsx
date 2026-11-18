@@ -16,8 +16,9 @@ import {
 import type { ClinicSnapshot, PathwayDto, RoomDto } from "@/types/clinic";
 import { toFaDigits } from "@/lib/persian";
 import { totalVisitMinutes } from "@/lib/workspace";
+import { AdminFormsBuilder } from "./AdminFormsBuilder";
 
-type AdminSection = "kpi" | "pathways" | "rooms" | "staff";
+type AdminSection = "kpi" | "pathways" | "rooms" | "staff" | "forms";
 
 interface AdminProfileProps {
   snapshot: ClinicSnapshot;
@@ -28,7 +29,7 @@ interface AdminProfileProps {
 }
 
 const ALL_PERMISSIONS = [
-  "مشاهده شرح حال و آلرژی",
+  "مشاهده پرسشنامه و آلرژی",
   "مشاهده نتایج پاراکلینیک",
   "مشاهده نظر سایر متخصصین",
   "ثبت تشخیص و نسخه",
@@ -92,7 +93,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
   const [newStaffRoom, setNewStaffRoom] = useState("CARDIO");
   const [newStaffCode, setNewStaffCode] = useState("۱۱۵۴۲۰");
   const [newStaffPerms, setNewStaffPerms] = useState<string[]>([
-    "مشاهده شرح حال و آلرژی",
+    "مشاهده پرسشنامه و آلرژی",
     "مشاهده نتایج پاراکلینیک",
     "ثبت تشخیص و نسخه",
   ]);
@@ -231,7 +232,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
       avgServiceMinutes: Number(roomAvgMins) || 15,
     });
     setSavedNotice(
-      `تنظیمات اتاق، طبقه و متن راهنمای آمادگی «${selectedRoomObj.name}» ذخیره شد و در نقشه موبایل بیماران اعمال گردید.`
+      `تنظیمات اتاق، طبقه و متن راهنمای آمادگی «${selectedRoomObj.name}» ذخیره شد و در نقشه موبایل سلامتجویان اعمال گردید.`
     );
     setTimeout(() => setSavedNotice(""), 4500);
   };
@@ -286,7 +287,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                 داشبورد کلان بهره‌وری و شناسایی گلوگاه‌های زمانی (KPI & Bottlenecks)
               </h1>
               <p className="mt-0.5 text-xs text-slate-500">
-                تحلیل زنده زمان کل حضور بیماران از ورود تا خروج و پایش صف بخش‌های
+                تحلیل زنده زمان کل حضور سلامتجویان از ورود تا خروج و پایش صف بخش‌های
                 تشخیصی و تخصصی
               </p>
 
@@ -294,7 +295,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
               <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>میانگین زمان کل حضور بیمار</span>
+                    <span>میانگین زمان کل حضور سلامتجو</span>
                     <Clock className="h-4 w-4 text-sky-600" />
                   </div>
                   <div className="mt-2 text-2xl font-extrabold text-slate-900 tabular-fa">
@@ -307,11 +308,11 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>تعداد مراجعین فعال امروز</span>
+                    <span>تعداد سلامتجویان فعال امروز</span>
                     <Users className="h-4 w-4 text-teal-600" />
                   </div>
                   <div className="mt-2 text-2xl font-extrabold text-slate-900 tabular-fa">
-                    {toFaDigits(analytics.totalPatients)} بیمار
+                    {toFaDigits(analytics.totalPatients)} سلامتجو
                   </div>
                   <div className="mt-1 text-[11px] text-slate-600">
                     ۱۰۰٪ پذیرش بدون کاغذ با QR کد
@@ -339,14 +340,14 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>نرخ تکمیل دیجیتال شرح حال</span>
+                    <span>نرخ تکمیل پرسشنامه پیش‌پذیرش</span>
                     <TrendingUp className="h-4 w-4 text-emerald-600" />
                   </div>
                   <div className="mt-2 text-2xl font-extrabold text-slate-900 tabular-fa">
                     {toFaDigits(analytics.intakeRate)}٪
                   </div>
                   <div className="mt-1 text-[11px] text-slate-600">
-                    تکمیل‌شده توسط بیمار در سالن انتظار
+                    تکمیل‌شده توسط سلامتجو در سالن انتظار
                   </div>
                 </div>
               </div>
@@ -622,7 +623,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
               </h2>
               <p className="text-xs text-slate-500">
                 تغییرات این بخش بلافاصله در تب «نقشه و راهنمای کلینیک» موبایل
-                تمام بیماران به‌روزرسانی می‌شود.
+                تمام سلامتجویان به‌روزرسانی می‌شود.
               </p>
 
               <div className="grid gap-3 sm:grid-cols-3">
@@ -704,7 +705,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
               <div>
                 <label className="mb-1 block text-xs font-bold text-amber-800">
                   متن نکات آمادگی الزامی قبل از ورود به اتاق (نمایش در موبایل
-                  بیمار)
+                  سلامتجو)
                 </label>
                 <textarea
                   rows={3}
@@ -720,13 +721,17 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                 className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-xs font-extrabold text-white hover:bg-sky-700 disabled:opacity-50"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                ذخیره پیکربندی اتاق و راهنمای بیمار
+                ذخیره پیکربندی اتاق و راهنمای سلامتجو
               </button>
             </form>
           </div>
         )}
 
         {/* ================= 4. STAFF & ROLE MANAGEMENT ================= */}
+        {section === "forms" && (
+          <AdminFormsBuilder snapshot={snapshot} onAction={onAction} busy={busy} />
+        )}
+
         {section === "staff" && (
           <div className="grid gap-5 lg:grid-cols-12">
             {/* Existing Staff Directory */}
@@ -872,7 +877,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
 
               <div>
                 <label className="mb-1.5 block text-xs font-extrabold text-slate-800">
-                  سطح دسترسی به پرونده الکترونیک بیماران:
+                  سطح دسترسی به پرونده الکترونیک سلامتجویان:
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {ALL_PERMISSIONS.map((perm) => {

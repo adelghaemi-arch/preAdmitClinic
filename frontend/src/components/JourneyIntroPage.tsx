@@ -83,7 +83,7 @@ export function JourneyIntroPage({ snapshot, patientId, onContinue, busy }: Prop
           <ArrowLeft className="h-3.5 w-3.5" />
         </button>
         <p className="mt-3 text-center text-[10px] leading-5 text-slate-400">
-          پس از بستن این صفحه، تا تکمیل پیش‌پذیرش فقط فرم شرح حال در دسترس است.
+          پس از بستن این صفحه، تا تکمیل پیش‌پذیرش فقط پرسشنامه در دسترس است.
         </p>
       </div>
     </section>

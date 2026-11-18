@@ -616,7 +616,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
         senderName: "دکتر فرهاد سعیدی (مدیر کلینیک)",
         campaignTitle: "ارسال لینک پیش‌ثبت‌نام چکاپ بانک",
         audienceLabel: "لیست اولیه کارکنان",
-        messageTemplate: "همکار گرامی {نام}، بسته «{پکیج}» برای شما فعال شد. تکمیل شرح حال: {لینک}",
+        messageTemplate: "همکار گرامی {نام}، بسته «{پکیج}» برای شما فعال شد. تکمیل پرسشنامه پیش‌پذیرش: {لینک}",
         recipientCount: 9,
         recipientPreview: ["شهرام نیک‌پی", "لاله معینی", "آرش بهمنی"],
       },

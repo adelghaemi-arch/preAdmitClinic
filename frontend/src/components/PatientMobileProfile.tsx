@@ -2,9 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle,
   Bell,
-  Camera,
   Check,
   CheckCircle2,
   ClipboardList,
@@ -17,13 +15,9 @@ import {
   HeartPulse,
   MapPin,
   Navigation,
-  Pill,
-  Plus,
   QrCode,
   ShieldAlert,
-  Sparkles,
   Stethoscope,
-  Trash2,
   UserCheck,
 } from "lucide-react";
 import type {
@@ -31,16 +25,7 @@ import type {
   PatientFullDto,
   RoomDto,
 } from "@/types/clinic";
-import type {
-  AllergyItem,
-  FamilyHistoryItem,
-  MedicationItem,
-  SurgeryItem,
-  RecentConditionItem,
-  IntakeAnswers,
-} from "@/types/clinic";
 import {
-  createMedicineBoxSvgDataUrl,
   formatFaTime,
   toFaDigits,
 } from "@/lib/persian";
@@ -51,6 +36,7 @@ import {
 } from "@/lib/health-roadmap";
 import { QrCodeVisual } from "./QrCodeVisual";
 import { PrintableEmrReport } from "./PrintableEmrReport";
+import { PreAdmitFormRenderer } from "./PreAdmitFormRenderer";
 
 type MobileTab = "journey" | "intake" | "wayfinding" | "emr";
 
@@ -69,18 +55,6 @@ interface PatientMobileProfileProps {
   /** When true, keep the patient on intake until pre-admission is completed. */
   lockNonIntakeTabs?: boolean;
 }
-
-const HEREDITARY_DISEASES = [
-  "دیابت نوع ۲",
-  "فشار خون بالا",
-  "بیماری عروق کرونر و قلبی",
-  "آسم و بیماری ریوی",
-  "سکته مغزی",
-  "کم‌کاری / پرکاری تیروئید",
-  "بیماری مزمن کلیوی",
-];
-
-const RELATIVES = ["پدر", "مادر", "برادر/خواهر", "فرزند"];
 
 export function PatientMobileProfile({
   snapshot,
@@ -105,39 +79,7 @@ export function PatientMobileProfile({
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [qrInputToken, setQrInputToken] = useState("");
   const [qrError, setQrError] = useState("");
-  const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
-
-  // Intake local editable state synced with selected patient
-  const [meds, setMeds] = useState<MedicationItem[]>([]);
-  const [surgeries, setSurgeries] = useState<SurgeryItem[]>([]);
-  const [familyHistory, setFamilyHistory] = useState<FamilyHistoryItem[]>([]);
-  const [allergies, setAllergies] = useState<AllergyItem[]>([]);
-  const [recentConditions, setRecentConditions] = useState<RecentConditionItem[]>([]);
-  const [intakeAnswers, setIntakeAnswers] = useState<IntakeAnswers>({ currentSymptoms: "", lastMeal: "", smoking: "", breathlessness: "", chestPain: "", dentalBleeding: "", pregnancyStatus: "", medicationChanges: "", supplements: "", anticoagulantUse: "", fastingStatus: "", diabetesStatus: "" });
-  const [conditionTitle, setConditionTitle] = useState("");
-  const [conditionWhen, setConditionWhen] = useState("");
-  const [conditionNotes, setConditionNotes] = useState("");
-
-  // New item inputs
-  const [medName, setMedName] = useState("");
-  const [medDosage, setMedDosage] = useState("");
-  const [medTiming, setMedTiming] = useState("");
-  const [medImage, setMedImage] = useState<string | undefined>(undefined);
-
-  const [surgType, setSurgType] = useState("");
-  const [surgDate, setSurgDate] = useState("");
-  const [surgNotes, setSurgNotes] = useState("");
-
-  const [selectedRelation, setSelectedRelation] = useState("پدر");
-
-  const [allergySub, setAllergySub] = useState("");
-  const [allergyCat, setAllergyCat] = useState<"دارویی" | "غذایی" | "محیطی">(
-    "دارویی"
-  );
-  const [allergyReaction, setAllergyReaction] = useState("");
-  const [allergySeverity, setAllergySeverity] = useState<"شدید" | "متوسط">(
-    "شدید"
-  );
+  const [alertBannerDismissed, setAlertBannerDismissed] = useState(false);
 
   // Wayfinding selected floor
   const [selectedFloor, setSelectedFloor] = useState<number>(2);
@@ -162,15 +104,8 @@ export function PatientMobileProfile({
     ? roomMap.get(activeStation.roomCode)
     : undefined;
 
-  // Sync intake state when patient changes
   useEffect(() => {
-    if (!patient) return;
-    setMeds(patient.medications ?? []);
-    setSurgeries(patient.surgeries ?? []);
-    setFamilyHistory(patient.familyHistory ?? []);
-    setAllergies(patient.allergies ?? []);
-    setRecentConditions(patient.recentConditions ?? []);
-    setIntakeAnswers(patient.intakeAnswers ?? { currentSymptoms: "", lastMeal: "", smoking: "", breathlessness: "", chestPain: "", dentalBleeding: "", pregnancyStatus: "", medicationChanges: "", supplements: "", anticoagulantUse: "", fastingStatus: "", diabetesStatus: "" });
+    setAlertBannerDismissed(false);
   }, [patient?.id]);
 
   // Sync floor & auto-open wayfinding when triggered by specialist completion!
@@ -197,7 +132,7 @@ export function PatientMobileProfile({
   if (!patient) {
     return (
       <div className="p-8 text-center text-sm text-slate-500">
-        هیچ بیماری در کلینیک ثبت نشده است.
+        هیچ سلامتجویی در کلینیک ثبت نشده است.
       </div>
     );
   }
@@ -213,7 +148,6 @@ export function PatientMobileProfile({
   const hasPulmo = patient.stations.some((s) => s.roomCode === "PULMO");
   const hasDental = patient.stations.some((s) => s.roomCode === "DENTAL");
   const hasRadiology = patient.stations.some((s) => s.roomCode === "RADIO");
-  const updateAnswer = (field: keyof IntakeAnswers, value: string) => setIntakeAnswers((prev) => ({ ...prev, [field]: value }));
 
   const handleQrTokenLookup = (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,110 +163,6 @@ export function PatientMobileProfile({
     } else {
       setQrError("کد QR پذیرش یافت نشد. یکی از کارت‌های پذیرش زیر را لمس کنید.");
     }
-  };
-
-  const handleMedBoxFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setMedImage(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSmartBoxScan = () => {
-    const label = medName.trim() || "Atorvastatin 20mg";
-    const dose = medDosage.trim() || "روزی یک عدد";
-    if (!medName.trim()) setMedName("آتورواستاتین (اسکن هوشمند جعبه)");
-    if (!medDosage.trim()) setMedDosage("۲۰ میلی‌گرم");
-    if (!medTiming.trim()) setMedTiming("شب‌ها بعد از شام");
-    setMedImage(createMedicineBoxSvgDataUrl(label, dose, "#0284C7"));
-  };
-
-  const addMedication = () => {
-    if (!medName.trim()) return;
-    setMeds((prev) => [
-      ...prev,
-      {
-        id: `med_${Date.now()}`,
-        name: medName.trim(),
-        dosage: medDosage.trim() || "طبق دستور",
-        timing: medTiming.trim() || "روزانه",
-        boxImage: medImage,
-      },
-    ]);
-    setMedName("");
-    setMedDosage("");
-    setMedTiming("");
-    setMedImage(undefined);
-  };
-
-  const addSurgery = () => {
-    if (!surgType.trim()) return;
-    setSurgeries((prev) => [
-      ...prev,
-      {
-        id: `surg_${Date.now()}`,
-        type: surgType.trim(),
-        approxDate: surgDate.trim() || "سال‌های اخیر",
-        notes: surgNotes.trim() || "بدون عارضه خاص",
-      },
-    ]);
-    setSurgType("");
-    setSurgDate("");
-    setSurgNotes("");
-  };
-
-  const toggleFamilyCondition = (condition: string) => {
-    const exists = familyHistory.find(
-      (f) => f.condition === condition && f.relation === selectedRelation
-    );
-    if (exists) {
-      setFamilyHistory((prev) => prev.filter((f) => f.id !== exists.id));
-    } else {
-      setFamilyHistory((prev) => [
-        ...prev,
-        {
-          id: `fam_${Date.now()}_${Math.random()}`,
-          condition,
-          relation: selectedRelation,
-        },
-      ]);
-    }
-  };
-
-  const addAllergy = () => {
-    if (!allergySub.trim()) return;
-    setAllergies((prev) => [
-      ...prev,
-      {
-        id: `alg_${Date.now()}`,
-        substance: allergySub.trim(),
-        category: allergyCat,
-        reaction: allergyReaction.trim() || "حساسیت و واکنش بالینی",
-        severity: allergySeverity,
-      },
-    ]);
-    setAllergySub("");
-    setAllergyReaction("");
-  };
-
-  const handleSaveIntake = async () => {
-    await onAction({
-      action: "SAVE_PATIENT_INTAKE",
-      patientId: patient.id,
-      medications: meds,
-      surgeries,
-      familyHistory,
-      allergies,
-      recentConditions,
-      intakeAnswers,
-    });
-    setSaveSuccessMsg("اطلاعات شرح حال و هشدار حساسیت‌ها با موفقیت در پرونده امروز ثبت شد.");
-    setTimeout(() => setSaveSuccessMsg(""), 4000);
   };
 
   const roomsOnFloor = snapshot.rooms.filter((r) => r.floor === selectedFloor);
@@ -496,38 +326,54 @@ export function PatientMobileProfile({
         )}
 
         {/* Live Unread Notification / Auto-Wayfinding Alert Banner */}
-        {(unreadAlerts.length > 0 || patient.autoOpenWayfinding) && (
+        {(() => {
+          if (alertBannerDismissed) return null;
+          const preAdmitPending = !patient.intakeCompleted;
+          const visibleAlerts = preAdmitPending
+            ? unreadAlerts.filter(
+                (a) =>
+                  a.alertType !== "move_to_room" &&
+                  !/ایستگاه فعلی شما/.test(a.message) &&
+                  !/تشریف ببرید/.test(a.message)
+              )
+            : unreadAlerts;
+          const bannerMessage = visibleAlerts[0]?.message;
+          const showWayfinding = Boolean(patient.autoOpenWayfinding && activeRoom && !preAdmitPending);
+          if (!bannerMessage && !showWayfinding) return null;
+          return (
           <div className="border-b border-sky-200 bg-sky-50 px-3.5 py-2.5">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-2">
                 <Bell className="mt-0.5 h-4 w-4 shrink-0 animate-bounce text-sky-600" />
                 <div className="text-xs leading-relaxed text-sky-950">
-                  {patient.autoOpenWayfinding && activeRoom ? (
+                  {showWayfinding ? (
                     <span className="font-bold text-emerald-700">
-                      ایستگاه قبلی سبز شد! نقشه هدایت به «{activeRoom.name}»
-                      (طبقه {toFaDigits(activeRoom.floor)}، اتاق{" "}
-                      {activeRoom.roomNumber}) به صورت خودکار باز شد.{" "}
+                      ایستگاه قبلی سبز شد! نقشه هدایت به «{activeRoom!.name}»
+                      (طبقه {toFaDigits(activeRoom!.floor)}، اتاق{" "}
+                      {activeRoom!.roomNumber}) به صورت خودکار باز شد.{" "}
                     </span>
                   ) : null}
-                  {unreadAlerts[0]?.message}
+                  {bannerMessage}
                 </div>
               </div>
               <button
                 type="button"
                 disabled={busy || readOnly}
-                onClick={() =>
-                  onAction({
+                onClick={() => {
+                  setAlertBannerDismissed(true);
+                  void onAction({
                     action: "MARK_ALERTS_READ",
                     patientId: patient.id,
-                  })
-                }
+                  });
+                }}
                 className="shrink-0 rounded-lg bg-sky-600 px-2 py-1 text-[10px] font-bold text-white hover:bg-sky-700"
               >
                 متوجه شدم
               </button>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Persistent Allergy Pill if allergies exist */}
         {patient.allergies.length > 0 && (
@@ -576,6 +422,29 @@ export function PatientMobileProfile({
                     مشاهده پرونده کامل امروز
                   </button>
                 </div>
+              ) : !patient.intakeCompleted ? (
+                <div className="rounded-2xl border-2 border-amber-400 bg-amber-50/80 p-4 shadow-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-extrabold text-amber-900">
+                      <span className="h-2 w-2 animate-ping rounded-full bg-amber-600" />
+                      قدم فعلی: پیش‌پذیرش
+                    </span>
+                  </div>
+                  <h2 className="mt-2.5 text-base font-extrabold text-slate-900">
+                    پرسشنامه پیش‌پذیرش هنوز تکمیل نشده است
+                  </h2>
+                  <p className="mt-1 text-xs leading-6 text-slate-700">
+                    پذیرش کلینیک ثبت شده، اما مسیر ایستگاه‌ها (مثل آزمایشگاه) بعد از ثبت نهایی پرسشنامه فعال می‌شود.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("intake")}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-amber-600 py-3 text-xs font-extrabold text-white"
+                  >
+                    <ClipboardList className="h-4 w-4" />
+                    شروع پرسشنامه پیش‌پذیرش
+                  </button>
+                </div>
               ) : activeStation && activeRoom ? (
                 <div className="rounded-2xl border-2 border-sky-500 bg-white p-4 shadow-xs">
                   <div className="flex items-center justify-between">
@@ -596,20 +465,6 @@ export function PatientMobileProfile({
                   <p className="mt-1 text-xs text-slate-600">
                     مسئول ایستگاه: {activeRoom.specialistName}
                   </p>
-
-                  {/* Pre-Intake Prompt if not completed yet */}
-                  {!patient.intakeCompleted && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("intake")}
-                      className="mt-3 flex w-full items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900"
-                    >
-                      <span>تکمیل فرم شرح حال و حساسیت‌ها در سالن انتظار</span>
-                      <span className="rounded-md bg-amber-600 px-2 py-0.5 text-[10px] text-white">
-                        تکمیل فوری
-                      </span>
-                    </button>
-                  )}
 
                   <div className="mt-3.5 grid grid-cols-2 gap-2">
                     {activeStation.status === "waiting" ? (
@@ -808,428 +663,16 @@ export function PatientMobileProfile({
             </div>
           )}
 
-          {/* ================= TAB 2: PRE-VISIT INTAKE FORM ================= */}
+          {/* ================= TAB 2: DOCS-DRIVEN PRE-ADMIT QUESTIONNAIRE ================= */}
           {activeTab === "intake" && (
             <div className="space-y-4">
-              <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-3.5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-extrabold text-slate-900">
-                    فرم شرح حال و سوابق پیش از ویزیت
-                  </h2>
-                  <span
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                      patient.intakeCompleted
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-amber-100 text-amber-800"
-                    }`}
-                  >
-                    {patient.intakeCompleted ? "ثبت‌شده در پرونده" : "در انتظار تکمیل"}
-                  </span>
-                </div>
-                <p className="mt-1 text-[11px] leading-relaxed text-slate-600">
-                  اطلاعات زیر پیش از اولین ویزیت به صورت یکپارچه در پنل تمام پزشکان
-                  متخصص امروز شما نمایش داده می‌شود.
-                </p>
-              </div>
-
-              {saveSuccessMsg && (
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs font-bold text-emerald-800">
-                  {saveSuccessMsg}
-                </div>
-              )}
-
-              <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 text-xs text-teal-900">
-                <strong>مرحله اول مسیر امروز: بازبینی و تکمیل سوابق</strong>
-                <p className="mt-1 leading-6">اطلاعات مراجعه‌های قبل از قبل پر شده‌اند؛ لطفاً داروها، حساسیت‌ها و تغییرات جدید را پیش از اولین ویزیت مرور کنید. سؤال‌های این فرم با ایستگاه‌های امروز شما هماهنگ است.</p>
-                <div className="mt-2 flex flex-wrap gap-1">{patient.stations.map((st) => <span key={st.id} className="rounded-md bg-white px-2 py-1 text-[10px]">{st.roomName}</span>)}</div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs font-bold text-slate-800">علائم و تغییرات اخیر</div>
-                <textarea value={intakeAnswers.currentSymptoms} onChange={(e) => updateAnswer("currentSymptoms", e.target.value)} disabled={readOnly} rows={2} placeholder="امروز چه مشکلی دارید؟ از چه زمانی شروع شده؟" className="mt-2 w-full rounded-xl border border-slate-200 p-3 text-xs" />
-                <div className="mt-3 text-[11px] font-semibold text-slate-700">بیماری‌ها و اقدامات اخیر (مثل بستری، عفونت، درمان جدید)</div>
-                {recentConditions.map((condition) => <div key={condition.id} className="mt-2 flex items-start justify-between rounded-lg bg-slate-50 p-2.5 text-[11px]"><span><strong>{condition.title}</strong> · {condition.when}<span className="mt-1 block text-slate-500">{condition.notes}</span></span>{!readOnly && <button onClick={() => setRecentConditions((items) => items.filter((i) => i.id !== condition.id))} className="text-red-600">حذف</button>}</div>)}
-                {!readOnly && <div className="mt-2 grid gap-2 sm:grid-cols-3"><input value={conditionTitle} onChange={(e) => setConditionTitle(e.target.value)} placeholder="عنوان بیماری / اقدام" className="rounded-lg border border-slate-200 p-2 text-xs" /><input value={conditionWhen} onChange={(e) => setConditionWhen(e.target.value)} placeholder="زمان تقریبی" className="rounded-lg border border-slate-200 p-2 text-xs" /><button onClick={() => { if (!conditionTitle.trim()) return; setRecentConditions((items) => [...items, { id: crypto.randomUUID(), title: conditionTitle.trim(), when: conditionWhen.trim(), notes: conditionNotes.trim() }]); setConditionTitle(""); setConditionWhen(""); setConditionNotes(""); }} className="rounded-lg bg-teal-600 p-2 text-xs font-bold text-white">افزودن مورد اخیر</button><input value={conditionNotes} onChange={(e) => setConditionNotes(e.target.value)} placeholder="توضیح بیشتر (اختیاری)" className="rounded-lg border border-slate-200 p-2 text-xs sm:col-span-3" /></div>}
-              </div>
-              {(hasCardio || hasPulmo || hasDental || hasRadiology) && <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="text-xs font-bold text-slate-800">پرسش‌های مرتبط با خدمات امروز</div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <label className="text-[11px] text-slate-600 sm:col-span-2">تغییر دارویی اخیر؛ در ۳۰ روز اخیر دارویی را شروع، قطع یا دوز آن را تغییر داده‌اید؟<textarea disabled={readOnly} value={intakeAnswers.medicationChanges} onChange={(e) => updateAnswer("medicationChanges", e.target.value)} rows={2} placeholder="نام دارو و نوع تغییر را بنویسید؛ اگر تغییری نداشته‌اید خالی بگذارید." className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs" /></label>
-                  <label className="text-[11px] text-slate-600">مکمل، داروی گیاهی یا بدون نسخه مصرف می‌کنید؟<input disabled={readOnly} value={intakeAnswers.supplements} onChange={(e) => updateAnswer("supplements", e.target.value)} placeholder="مثلاً امگا ۳، جینسینگ، مسکن" className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs" /></label>
-                  <label className="text-[11px] text-slate-600">داروی رقیق‌کننده خون یا ضدپلاکت مصرف می‌کنید؟<select disabled={readOnly} value={intakeAnswers.anticoagulantUse} onChange={(e) => updateAnswer("anticoagulantUse", e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs"><option value="">انتخاب کنید</option><option value="بله">بله</option><option value="خیر">خیر</option><option value="نمی‌دانم">نمی‌دانم</option></select></label>
-                  <label className="text-[11px] text-slate-600">آخرین وعده غذایی چه زمانی بود؟<input disabled={readOnly} value={intakeAnswers.lastMeal} onChange={(e) => updateAnswer("lastMeal", e.target.value)} placeholder="مثلاً دیشب ساعت ۲۲ یا امروز صبح" className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs" /></label>
-                  <label className="text-[11px] text-slate-600">الان ناشتا هستید؟<select disabled={readOnly} value={intakeAnswers.fastingStatus} onChange={(e) => updateAnswer("fastingStatus", e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs"><option value="">انتخاب کنید</option><option value="بله">بله</option><option value="خیر">خیر</option></select></label>
-                  <label className="text-[11px] text-slate-600">دیابت یا قند خون بالا دارید؟<select disabled={readOnly} value={intakeAnswers.diabetesStatus} onChange={(e) => updateAnswer("diabetesStatus", e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs"><option value="">انتخاب کنید</option><option value="بله">بله</option><option value="خیر">خیر</option><option value="مرزی / نمی‌دانم">مرزی / نمی‌دانم</option></select></label>
-                  {hasCardio && <label className="text-[11px] text-slate-600">درد یا فشار قفسه سینه در روزهای اخیر؟<select disabled={readOnly} value={intakeAnswers.chestPain} onChange={(e) => updateAnswer("chestPain", e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs"><option value="">انتخاب کنید</option><option value="بله">بله</option><option value="خیر">خیر</option></select></label>}
-                  {hasPulmo && <label className="text-[11px] text-slate-600">تنگی نفس، سرفه یا خس‌خس سینه؟<select disabled={readOnly} value={intakeAnswers.breathlessness} onChange={(e) => updateAnswer("breathlessness", e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs"><option value="">انتخاب کنید</option><option value="بله">بله</option><option value="خیر">خیر</option></select></label>}
-                  {hasPulmo && <label className="text-[11px] text-slate-600">مصرف دخانیات؟<select disabled={readOnly} value={intakeAnswers.smoking} onChange={(e) => updateAnswer("smoking", e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs"><option value="">انتخاب کنید</option><option value="بله">بله</option><option value="خیر">خیر</option></select></label>}
-                  {hasDental && <label className="text-[11px] text-slate-600">خونریزی لثه یا درد دندان؟<select disabled={readOnly} value={intakeAnswers.dentalBleeding} onChange={(e) => updateAnswer("dentalBleeding", e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs"><option value="">انتخاب کنید</option><option value="بله">بله</option><option value="خیر">خیر</option></select></label>}
-                  {hasRadiology && patient.gender === "زن" && <label className="text-[11px] text-slate-600">احتمال بارداری وجود دارد؟<select disabled={readOnly} value={intakeAnswers.pregnancyStatus} onChange={(e) => updateAnswer("pregnancyStatus", e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-xs"><option value="">انتخاب کنید</option><option value="بله">بله</option><option value="خیر">خیر</option></select></label>}
-                </div>
-              </div>}
-              {/* 1. Allergies (Red Alert to all doctors) */}
-              <div className="rounded-2xl border-2 border-red-200 bg-white p-3.5">
-                <div className="flex items-center gap-2 text-xs font-extrabold text-red-700">
-                  <AlertTriangle className="h-4 w-4 text-red-600" />
-                  ۱. حساسیت‌ها و آلرژی‌ها (نمایش هشدار قرمز به پزشکان)
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  حساسیت دارویی یا غذایی شما با رنگ قرمز در بالای صفحه تمام متخصصین
-                  امروز درج می‌گردد.
-                </p>
-
-                {allergies.length > 0 && (
-                  <div className="mt-2.5 space-y-1.5">
-                    {allergies.map((al) => (
-                      <div
-                        key={al.id}
-                        className="flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs"
-                      >
-                        <div>
-                          <span className="font-extrabold text-red-800">
-                            {al.substance}
-                          </span>{" "}
-                          <span className="text-[11px] text-red-600">
-                            ({al.category} • {al.severity})
-                          </span>
-                          <div className="text-[11px] text-slate-700">
-                            واکنش: {al.reaction}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setAllergies((prev) =>
-                              prev.filter((x) => x.id !== al.id)
-                            )
-                          }
-                          className="p-1 text-red-500 hover:text-red-700"
-                          aria-label="حذف حساسیت"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-2.5">
-                  <input
-                    type="text"
-                    value={allergySub}
-                    onChange={(e) => setAllergySub(e.target.value)}
-                    placeholder="نام دارو یا ماده غذایی (مثلاً: پنی‌سیلین، آسپرین، بادام‌زمینی)"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs focus:border-red-500 focus:outline-hidden"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={allergyCat}
-                      onChange={(e) =>
-                        setAllergyCat(
-                          e.target.value as "دارویی" | "غذایی" | "محیطی"
-                        )
-                      }
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
-                    >
-                      <option value="دارویی">حساسیت دارویی</option>
-                      <option value="غذایی">حساسیت غذایی</option>
-                      <option value="محیطی">حساسیت محیطی</option>
-                    </select>
-                    <select
-                      value={allergySeverity}
-                      onChange={(e) =>
-                        setAllergySeverity(e.target.value as "شدید" | "متوسط")
-                      }
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
-                    >
-                      <option value="شدید">شدت: شدید (بحرانی)</option>
-                      <option value="متوسط">شدت: متوسط</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={allergyReaction}
-                      onChange={(e) => setAllergyReaction(e.target.value)}
-                      placeholder="نوع واکنش (کهیر، تنگی نفس...)"
-                      className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={addAllergy}
-                      className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-700"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      افزودن
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* 2. Current Medications + Box Photo/Scan */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
-                <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
-                  <Pill className="h-4 w-4 text-sky-600" />
-                  ۲. داروهای مصرفی فعلی (با قابلیت عکس یا اسکن جعبه دارو)
-                </div>
-
-                {meds.length > 0 && (
-                  <div className="mt-2.5 space-y-2">
-                    {meds.map((m) => (
-                      <div
-                        key={m.id}
-                        className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <div className="font-bold text-slate-900">{m.name}</div>
-                            <div className="text-[11px] text-slate-600">
-                              دوز: {m.dosage} • زمان مصرف: {m.timing}
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setMeds((prev) => prev.filter((x) => x.id !== m.id))
-                            }
-                            className="p-1 text-slate-400 hover:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                        {m.boxImage && (
-                          <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={m.boxImage}
-                              alt={m.name}
-                              className="h-24 w-full object-contain"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-2.5">
-                  <input
-                    type="text"
-                    value={medName}
-                    onChange={(e) => setMedName(e.target.value)}
-                    placeholder="نام دارو (مثلاً: متفورمین، لوزارتان)"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={medDosage}
-                      onChange={(e) => setMedDosage(e.target.value)}
-                      placeholder="دوز (مثلاً ۵۰۰ میلی‌گرم)"
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
-                    />
-                    <input
-                      type="text"
-                      value={medTiming}
-                      onChange={(e) => setMedTiming(e.target.value)}
-                      placeholder="زمان مصرف (مثلاً شب‌ها)"
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
-                    />
-                  </div>
-
-                  {/* Medicine Box Photo / Smart Scan */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-[11px] font-bold text-sky-800 hover:bg-sky-100">
-                      <Camera className="h-3.5 w-3.5" />
-                      عکس از جعبه دارو
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleMedBoxFileUpload}
-                        className="hidden"
-                      />
-                    </label>
-
-                    
-
-                    <button
-                      type="button"
-                      onClick={addMedication}
-                      className="mr-auto inline-flex items-center gap-1 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-sky-700"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      ثبت دارو
-                    </button>
-                  </div>
-
-                  {medImage && (
-                    <div className="mt-2 rounded-lg border border-sky-200 bg-white p-1.5">
-                      <div className="mb-1 text-[10px] font-bold text-sky-700">
-                        پیش‌نمایش تصویر جعبه دارو آماده پیوست:
-                      </div>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={medImage}
-                        alt="Medicine Box Preview"
-                        className="h-20 w-full object-contain"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 3. Surgical & Hospitalization History */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
-                <div className="text-xs font-extrabold text-slate-900">
-                  ۳. سوابق جراحی و بستری بیمارستانی
-                </div>
-
-                {surgeries.length > 0 && (
-                  <div className="mt-2 space-y-1.5">
-                    {surgeries.map((s) => (
-                      <div
-                        key={s.id}
-                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
-                      >
-                        <div>
-                          <span className="font-bold text-slate-900">
-                            {s.type}
-                          </span>{" "}
-                          <span className="text-slate-500">({s.approxDate})</span>
-                          <div className="text-[11px] text-slate-600">
-                            {s.notes}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSurgeries((prev) =>
-                              prev.filter((x) => x.id !== s.id)
-                            )
-                          }
-                          className="p-1 text-slate-400 hover:text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-2.5 space-y-2 rounded-xl bg-slate-50 p-2.5">
-                  <div className="grid grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      value={surgType}
-                      onChange={(e) => setSurgType(e.target.value)}
-                      placeholder="نوع عمل یا بستری"
-                      className="col-span-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
-                    />
-                    <input
-                      type="text"
-                      value={surgDate}
-                      onChange={(e) => setSurgDate(e.target.value)}
-                      placeholder="سال/تاریخ"
-                      className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={surgNotes}
-                      onChange={(e) => setSurgNotes(e.target.value)}
-                      placeholder="شرح کوتاه (اختیاری)"
-                      className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={addSurgery}
-                      className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-900"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      افزودن
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* 4. Family Hereditary History Checklist */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
-                <div className="text-xs font-extrabold text-slate-900">
-                  ۴. چک‌لیست بیماری‌های بستگان درجه‌یک
-                </div>
-                <div className="mt-2 flex items-center gap-2 text-xs">
-                  <span className="text-slate-600">نسبت درجه‌یک:</span>
-                  <select
-                    value={selectedRelation}
-                    onChange={(e) => setSelectedRelation(e.target.value)}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold"
-                  >
-                    {RELATIVES.map((rel) => (
-                      <option key={rel} value={rel}>
-                        {rel}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  {HEREDITARY_DISEASES.map((cond) => {
-                    const checked = familyHistory.some(
-                      (f) =>
-                        f.condition === cond && f.relation === selectedRelation
-                    );
-                    return (
-                      <button
-                        key={cond}
-                        type="button"
-                        onClick={() => toggleFamilyCondition(cond)}
-                        className={`rounded-xl border px-2.5 py-1.5 text-[11px] font-semibold transition ${
-                          checked
-                            ? "border-sky-600 bg-sky-600 text-white"
-                            : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        {checked ? "✓ " : "+ "}
-                        {cond}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {familyHistory.length > 0 && (
-                  <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-slate-100 pt-2">
-                    {familyHistory.map((fh) => (
-                      <span
-                        key={fh.id}
-                        className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-medium text-sky-900"
-                      >
-                        {fh.condition} ({fh.relation})
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFamilyHistory((prev) =>
-                              prev.filter((x) => x.id !== fh.id)
-                            )
-                          }
-                          className="text-sky-600 hover:text-red-600"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="button"
-                disabled={busy || readOnly}
-                onClick={handleSaveIntake}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-xs font-extrabold text-white shadow-md transition hover:bg-emerald-700 disabled:opacity-50"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                ذخیره نهایی شرح حال و ارسال آنی به پنل پزشکان امروز
-              </button>
+              <PreAdmitFormRenderer
+                patient={patient}
+                forms={snapshot.forms ?? []}
+                onAction={onAction}
+                busy={busy}
+                readOnly={readOnly}
+              />
             </div>
           )}
 
@@ -1645,7 +1088,7 @@ export function PatientMobileProfile({
 
         {/* ================= BOTTOM NAVIGATION BAR (NO SIDEBAR!) ================= */}
         {!hideTabBar && (<nav
-          aria-label={desktop ? "بخش‌های پرونده بیمار" : "نوار ناوبری پایین همراه بیمار"}
+          aria-label={desktop ? "بخش‌های پرونده سلامتجو" : "نوار ناوبری پایین همراه سلامتجو"}
           className={desktop ? "patient-desktop-tabs order-first grid grid-cols-4 gap-2 border-b border-slate-200 bg-white px-2 py-2" : "fixed right-0 bottom-0 left-0 z-20 mx-auto grid max-w-[650px] grid-cols-4 border-t border-slate-200 bg-white/95 px-1.5 py-2 backdrop-blur-md"}
         >
           <button
@@ -1677,7 +1120,7 @@ export function PatientMobileProfile({
               <span className="absolute top-1 right-4 h-2 w-2 rounded-full bg-amber-500" />
             )}
             <ClipboardList className="h-5 w-5" />
-            <span>شرح حال</span>
+            <span>پرسشنامه</span>
           </button>
 
           <button
@@ -1723,7 +1166,7 @@ export function PatientMobileProfile({
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-extrabold text-slate-900">
-                ورود سریع بیمار با اسکن QR کد پذیرش (بدون رمز عبور)
+                ورود سریع سلامتجو با اسکن QR کد پذیرش (بدون رمز عبور)
               </h3>
               <button
                 type="button"
@@ -1760,7 +1203,7 @@ export function PatientMobileProfile({
 
             <div className="mt-4 border-t border-slate-100 pt-3">
               <div className="mb-2 text-xs font-bold text-slate-600">
-                انتخاب پرونده بیمار:
+                انتخاب پرونده سلامتجو:
               </div>
               <div className="max-h-52 space-y-1.5 overflow-y-auto">
                 {snapshot.patients.map((p) => (

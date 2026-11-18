@@ -117,7 +117,7 @@ function addMembersToContract(
             : "پیامک دعوت تکمیل پروفایل",
       audienceLabel: `${toFaDigits(addedNames.length)} نفر جدید اضافه‌شده`,
       messageTemplate:
-        "همکار گرامی {نام}، اطلاعات شما در قرارداد پایش سلامت {شرکت} ثبت شد. لطفاً پروفایل و شرح حال اولیه خود را از طریق لینک اختصاصی {لینک} تکمیل فرمایید.",
+        "همکار گرامی {نام}، اطلاعات شما در قرارداد پایش سلامت {شرکت} ثبت شد. لطفاً پروفایل و پرسشنامه پیش‌پذیرش خود را از طریق لینک اختصاصی {لینک} تکمیل فرمایید.",
       recipientCount: addedNames.length,
       recipientPreview: addedNames.slice(0, 5),
     });
@@ -807,7 +807,8 @@ export function runContractAction(
       pathwayTitle: `${pathway.title} (${contract.organizationName})`,
       checkInTime: now,
       completedAt: null,
-      intakeCompleted: member.onboardingStage === "completed",
+      // Corporate pre-registration is NOT the visit cancer questionnaire — always start incomplete.
+      intakeCompleted: false,
       medications: member.draftMedications
         ? [{ id: `cm-${member.id}`, name: member.draftMedications, dosage: "طبق شرح حال", timing: "روزانه" }]
         : [],
@@ -821,8 +822,9 @@ export function runContractAction(
         ...emptyIntakeAnswers,
         currentSymptoms: member.draftSymptoms || `پایش سلامت سازمانی — ${contract.organizationName} (${member.department})`,
       },
+      formResponses: [],
       autoOpenWayfinding: false,
-      journeyIntroSeen: member.onboardingStage === "completed",
+      journeyIntroSeen: false,
       homeLat: null,
       homeLon: null,
       homeAddress: null,

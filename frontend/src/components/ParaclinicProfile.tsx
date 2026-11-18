@@ -125,7 +125,7 @@ export function ParaclinicProfile({
     });
     if (newStatus === "sample_taken") {
       setStatusBanner(
-        `وضعیت «${patient.fullName}» به «نمونه‌گیری انجام شد / در حال آماده‌سازی جواب» تغییر یافت و بیمار بدون توقف به ایستگاه متخصص بعدی هدایت شد!`
+        `وضعیت «${patient.fullName}» به «نمونه‌گیری انجام شد / در حال آماده‌سازی جواب» تغییر یافت و سلامتجو بدون توقف به ایستگاه متخصص بعدی هدایت شد!`
       );
     } else {
       setStatusBanner(`وضعیت تست «${patient.fullName}» با موفقیت به‌روزرسانی شد.`);
@@ -168,7 +168,7 @@ export function ParaclinicProfile({
     });
 
     setStatusBanner(
-      `نتیجه «${uploadTitle}» مستقیماً در پرونده لحظه‌ای «${selectedUploadPatient.fullName}» آپلود شد و هم‌اکنون در پنل متخصصین و پرونده بیمار قابل مشاهده است!`
+      `نتیجه «${uploadTitle}» مستقیماً در پرونده لحظه‌ای «${selectedUploadPatient.fullName}» آپلود شد و هم‌اکنون در پنل متخصصین و پرونده سلامتجو قابل مشاهده است!`
     );
     setTimeout(() => setStatusBanner(""), 5500);
   };
@@ -199,7 +199,7 @@ export function ParaclinicProfile({
               صف پذیرش بخش‌های تشخیصی (آزمایشگاه، نوار قلب، تصویربرداری)
             </h1>
             <p className="mt-0.5 text-xs text-slate-500">
-              لیست بیمارانی که در مسیر روزانه‌شان نوبت انجام تست تشخیصی دارند
+              لیست سلامتجویانی که در مسیر روزانه‌شان نوبت انجام تست تشخیصی دارند
             </p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -304,10 +304,10 @@ export function ParaclinicProfile({
         {section === "tracker" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
             <h1 className="text-lg font-extrabold text-slate-900">
-              ردیاب وضعیت انجام تست و هدایت بدون توقف بیمار (Sample & Test Tracker)
+              ردیاب وضعیت انجام تست و هدایت بدون توقف سلامتجو (Sample & Test Tracker)
             </h1>
             <p className="mt-0.5 text-xs text-slate-500">
-              با تغییر وضعیت به «نمونه‌گیری انجام شد / در حال آماده‌سازی جواب»، بیمار
+              با تغییر وضعیت به «نمونه‌گیری انجام شد / در حال آماده‌سازی جواب»، سلامتجو
               در سالن انتظار آزمایشگاه معطل نمی‌ماند و سیستم او را به سمت مطب متخصص
               بعدی هدایت می‌کند.
             </p>
@@ -365,7 +365,7 @@ export function ParaclinicProfile({
                       }
                       className="rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-extrabold text-white hover:bg-amber-700 disabled:opacity-40"
                     >
-                      نمونه‌گیری انجام شد / هدایت بیمار به ایستگاه بعد
+                      نمونه‌گیری انجام شد / هدایت سلامتجو به ایستگاه بعد
                     </button>
 
                     <button
@@ -374,7 +374,7 @@ export function ParaclinicProfile({
                       className="inline-flex items-center gap-1 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 hover:bg-sky-100"
                     >
                       <Smartphone className="h-3.5 w-3.5" />
-                      پرونده بیمار
+                      پرونده سلامتجو
                     </button>
                   </div>
                 </div>
@@ -396,7 +396,7 @@ export function ParaclinicProfile({
                 </h1>
                 <p className="mt-0.5 text-xs text-slate-500">
                   به محض بارگذاری، نتیجه هم در پنل پزشک متخصص و هم در تب «پرونده
-                  امروز» پرونده بیمار قابل مشاهده است.
+                  امروز» پرونده سلامتجو قابل مشاهده است.
                 </p>
               </div>
             </div>
@@ -404,7 +404,7 @@ export function ParaclinicProfile({
             <div className="grid gap-4 md:grid-cols-3">
               <div>
                 <label className="mb-1 block text-xs font-bold text-slate-700">
-                  انتخاب بیمار
+                  انتخاب سلامتجو
                 </label>
                 <select
                   value={selectedUploadPatient.id}
@@ -539,7 +539,7 @@ export function ParaclinicProfile({
                 className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-6 py-3.5 text-xs font-extrabold text-white shadow-sm hover:bg-teal-700 disabled:opacity-50"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                ثبت نهایی و انتشار آنی در پنل متخصصین و پرونده بیمار
+                ثبت نهایی و انتشار آنی در پنل متخصصین و پرونده سلامتجو
               </button>
             </div>
           </form>

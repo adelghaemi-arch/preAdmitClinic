@@ -42,7 +42,7 @@ export const MOCK_DATASET: MockDataset = {
       "id": 2,
       "username": "reception",
       "fullName": "نگار رستگار",
-      "jobTitle": "مسئول پذیرش و هماهنگ‌کننده جریان بیمار",
+      "jobTitle": "مسئول پذیرش و هماهنگ‌کننده جریان سلامتجو",
       "primaryRole": "reception",
       "medicalCouncilCode": "RC-100",
       "canAccessAllRoles": true,
@@ -64,7 +64,7 @@ export const MOCK_DATASET: MockDataset = {
       "id": 4,
       "username": "maryam",
       "fullName": "مریم‌السادات تابش",
-      "jobTitle": "بیمار",
+      "jobTitle": "سلامتجو",
       "primaryRole": "owner",
       "medicalCouncilCode": "—",
       "canAccessAllRoles": true,
@@ -75,7 +75,7 @@ export const MOCK_DATASET: MockDataset = {
       "id": 5,
       "username": "elham",
       "fullName": "الهام شریفی‌نژاد",
-      "jobTitle": "بیمار",
+      "jobTitle": "سلامتجو",
       "primaryRole": "owner",
       "medicalCouncilCode": "—",
       "canAccessAllRoles": true,
@@ -86,7 +86,7 @@ export const MOCK_DATASET: MockDataset = {
       "id": 6,
       "username": "ali-tabesh",
       "fullName": "علی تابش",
-      "jobTitle": "همراه بیمار",
+      "jobTitle": "همراه سلامتجو",
       "primaryRole": "companion",
       "medicalCouncilCode": "—",
       "canAccessAllRoles": true,
@@ -233,7 +233,7 @@ export const MOCK_DATASET: MockDataset = {
     {
       "id": 4,
       "code": "DENTAL_CARDIO",
-      "title": "پکیج دندانپزشکی ایمن بیماران قلبی",
+      "title": "پکیج دندانپزشکی ایمن سلامتجویان قلبی",
       "description": "نوار قلب و ویزیت متخصص قلب پیش از اقدامات دندانپزشکی جهت تنظیم داروهای ضدانعقاد و آنتی‌بیوتیک پروفیلاکسی",
       "stationCodes": [
         "ECG",
@@ -253,7 +253,7 @@ export const MOCK_DATASET: MockDataset = {
       "roomCode": "CARDIO",
       "medicalCouncilCode": "۸۴۹۱۲",
       "permissions": [
-        "مشاهده شرح حال و آلرژی",
+        "مشاهده پرسشنامه و آلرژی",
         "مشاهده نتایج پاراکلینیک",
         "ثبت تشخیص و نسخه",
         "ارجاع به ایستگاه جدید"
@@ -268,7 +268,7 @@ export const MOCK_DATASET: MockDataset = {
       "roomCode": "PULMO",
       "medicalCouncilCode": "۹۱۵۴۰",
       "permissions": [
-        "مشاهده شرح حال و آلرژی",
+        "مشاهده پرسشنامه و آلرژی",
         "مشاهده نتایج پاراکلینیک",
         "مشاهده نظر سایر متخصصین",
         "ثبت تشخیص و نسخه",
@@ -284,7 +284,7 @@ export const MOCK_DATASET: MockDataset = {
       "roomCode": "DENTAL",
       "medicalCouncilCode": "۱۰۴۳۲۰",
       "permissions": [
-        "مشاهده شرح حال و آلرژی",
+        "مشاهده پرسشنامه و آلرژی",
         "مشاهده نظر متخصص قلب",
         "ثبت تشخیص و نسخه",
         "ارجاع به رادیولوژی (OPG)"
@@ -299,7 +299,7 @@ export const MOCK_DATASET: MockDataset = {
       "roomCode": "RADIO",
       "medicalCouncilCode": "۹۸۷۱۱",
       "permissions": [
-        "مشاهده شرح حال و آلرژی",
+        "مشاهده پرسشنامه و آلرژی",
         "آپلود گزارش تصویربرداری",
         "ثبت تشخیص رادیولوژی"
       ],
@@ -337,7 +337,7 @@ export const MOCK_DATASET: MockDataset = {
       "id": 7,
       "fullName": "نگار رستگار",
       "role": "reception",
-      "specialtyOrDept": "مسئول پذیرش و هماهنگ‌کننده جریان بیمار",
+      "specialtyOrDept": "مسئول پذیرش و هماهنگ‌کننده جریان سلامتجو",
       "roomCode": null,
       "medicalCouncilCode": "RC-100",
       "permissions": [
@@ -849,7 +849,7 @@ export const MOCK_DATASET: MockDataset = {
       "age": 41,
       "gender": "زن",
       "phone": "09374561289",
-      "pathwayTitle": "پکیج دندانپزشکی ایمن بیماران قلبی",
+      "pathwayTitle": "پکیج دندانپزشکی ایمن سلامتجویان قلبی",
       "checkInTime": "2026-11-13T07:30:43.913",
       "completedAt": null,
       "intakeCompleted": true,
@@ -2145,7 +2145,7 @@ export const MOCK_DATASET: MockDataset = {
       "doctorName": "دکتر کیانوش راد",
       "specialty": "متخصص قلب و عروق",
       "chiefComplaint": "احساس خستگی هنگام بالا رفتن از پله و پایش چربی خون",
-      "examFindings": "فشار خون بازوی راست: 142/88 mmHg. سمع قلب S1 و S2 منظم، بدون سوفل پاتولوژیک. اکوکاردیوگرافی در مطب انجام شد: EF = 58%، هیپرتروفی خفیف بطن چپ. با توجه به آلرژی شدید بیمار به آسپرین، از تجویز ASA خودداری گردید.",
+      "examFindings": "فشار خون بازوی راست: 142/88 mmHg. سمع قلب S1 و S2 منظم، بدون سوفل پاتولوژیک. اکوکاردیوگرافی در مطب انجام شد: EF = 58%، هیپرتروفی خفیف بطن چپ. با توجه به آلرژی شدید سلامتجو به آسپرین، از تجویز ASA خودداری گردید.",
       "diagnosis": "پرفشاری خون مرحله اول (Stage 1 Hypertension) + دیس‌لیپیدمی؛ عدم شواهد نارسایی قلبی در تنگی نفس کوششی (جهت بررسی ریه به همکار محترم فوق‌تخصص ریه ارجاع شد).",
       "prescriptions": [
         {
@@ -2161,7 +2161,7 @@ export const MOCK_DATASET: MockDataset = {
           "instruction": "شب‌ها یک عدد (جایگزین آتورواستاتین قبلی)"
         }
       ],
-      "referralNote": "همکار گرامی سرکار خانم دکتر فرهمند، از نظر قلبی EF بیمار ۵۸٪ و طبیعی است؛ لطفاً تنگی نفس کوششی و سابقه اسپاسم برونش ناشی از NSAID بررسی گردد.",
+      "referralNote": "همکار گرامی سرکار خانم دکتر فرهمند، از نظر قلبی EF سلامتجو ۵۸٪ و طبیعی است؛ لطفاً تنگی نفس کوششی و سابقه اسپاسم برونش ناشی از NSAID بررسی گردد.",
       "createdAt": "2026-11-12T19:39:17.662"
     },
     {
@@ -2619,7 +2619,7 @@ export const MOCK_DATASET: MockDataset = {
           "normalRange": "12.0 - 16.0"
         }
       ],
-      "interpretation": "TSH بالاتر از محدوده مرجع است و باید با علائم بیمار تطبیق داده شود.",
+      "interpretation": "TSH بالاتر از محدوده مرجع است و باید با علائم سلامتجو تطبیق داده شود.",
       "attachmentUrl": null,
       "fileName": "Result_NBZ-1404-412.pdf",
       "createdAt": "2026-11-13T07:10:43.913"
@@ -2770,7 +2770,7 @@ export const MOCK_DATASET: MockDataset = {
       "patientId": 11,
       "senderRole": "پذیرش مرکزی",
       "alertType": "general",
-      "message": "سارا کریمی عزیز، پذیرش شما ثبت شد. ایستگاه فعلی شما آزمایشگاه تشخیص طبی است.",
+      "message": "سارا کریمی عزیز، پذیرش کلینیک شما ثبت شد. لطفاً ابتدا پرسشنامه پیش‌پذیرش را تکمیل کنید؛ مسیر ایستگاه‌ها بعد از آن فعال می‌شود.",
       "isRead": false,
       "createdAt": "2026-11-13T07:52:43.913"
     },
@@ -2779,7 +2779,7 @@ export const MOCK_DATASET: MockDataset = {
       "patientId": 12,
       "senderRole": "پذیرش مرکزی",
       "alertType": "general",
-      "message": "رضا احمدی عزیز، پذیرش شما ثبت شد. ایستگاه فعلی شما رادیولوژی و تصویربرداری دیجیتال است.",
+      "message": "رضا احمدی عزیز، پذیرش کلینیک شما ثبت شد. لطفاً ابتدا پرسشنامه پیش‌پذیرش را تکمیل کنید؛ مسیر ایستگاه‌ها بعد از آن فعال می‌شود.",
       "isRead": false,
       "createdAt": "2026-11-13T07:52:43.913"
     },
@@ -2788,7 +2788,7 @@ export const MOCK_DATASET: MockDataset = {
       "patientId": 13,
       "senderRole": "پذیرش مرکزی",
       "alertType": "general",
-      "message": "نیلوفر مرادی عزیز، پذیرش شما ثبت شد. ایستگاه فعلی شما نوار قلب (ECG) است.",
+      "message": "نیلوفر مرادی عزیز، پذیرش کلینیک شما ثبت شد. لطفاً ابتدا پرسشنامه پیش‌پذیرش را تکمیل کنید؛ مسیر ایستگاه‌ها بعد از آن فعال می‌شود.",
       "isRead": false,
       "createdAt": "2026-11-13T07:52:43.913"
     },
@@ -2797,7 +2797,7 @@ export const MOCK_DATASET: MockDataset = {
       "patientId": 14,
       "senderRole": "پذیرش مرکزی",
       "alertType": "general",
-      "message": "حسین ناظری عزیز، پذیرش شما ثبت شد. ایستگاه فعلی شما مطب تخصصی قلب و عروق است.",
+      "message": "حسین ناظری عزیز، پذیرش کلینیک شما ثبت شد. لطفاً ابتدا پرسشنامه پیش‌پذیرش را تکمیل کنید؛ مسیر ایستگاه‌ها بعد از آن فعال می‌شود.",
       "isRead": false,
       "createdAt": "2026-11-13T07:52:43.913"
     },
@@ -2806,7 +2806,7 @@ export const MOCK_DATASET: MockDataset = {
       "patientId": 15,
       "senderRole": "پذیرش مرکزی",
       "alertType": "general",
-      "message": "فاطمه رحیمی عزیز، پذیرش شما ثبت شد. ایستگاه فعلی شما نوار قلب (ECG) است.",
+      "message": "فاطمه رحیمی عزیز، پذیرش کلینیک شما ثبت شد. لطفاً ابتدا پرسشنامه پیش‌پذیرش را تکمیل کنید؛ مسیر ایستگاه‌ها بعد از آن فعال می‌شود.",
       "isRead": false,
       "createdAt": "2026-11-13T07:52:43.913"
     },
@@ -2815,7 +2815,7 @@ export const MOCK_DATASET: MockDataset = {
       "patientId": 16,
       "senderRole": "پذیرش مرکزی",
       "alertType": "general",
-      "message": "داریوش اعتمادی عزیز، پذیرش شما ثبت شد. ایستگاه فعلی شما کلینیک دندانپزشکی است.",
+      "message": "داریوش اعتمادی عزیز، پذیرش کلینیک شما ثبت شد. لطفاً ابتدا پرسشنامه پیش‌پذیرش را تکمیل کنید؛ مسیر ایستگاه‌ها بعد از آن فعال می‌شود.",
       "isRead": false,
       "createdAt": "2026-11-13T07:52:43.913"
     },
@@ -2824,7 +2824,7 @@ export const MOCK_DATASET: MockDataset = {
       "patientId": 17,
       "senderRole": "پذیرش مرکزی",
       "alertType": "general",
-      "message": "لیلا حسینی عزیز، پذیرش شما ثبت شد. ایستگاه فعلی شما رادیولوژی و تصویربرداری دیجیتال است.",
+      "message": "لیلا حسینی عزیز، پذیرش کلینیک شما ثبت شد. لطفاً ابتدا پرسشنامه پیش‌پذیرش را تکمیل کنید؛ مسیر ایستگاه‌ها بعد از آن فعال می‌شود.",
       "isRead": false,
       "createdAt": "2026-11-13T07:52:43.913"
     },
@@ -2833,7 +2833,7 @@ export const MOCK_DATASET: MockDataset = {
       "patientId": 18,
       "senderRole": "پذیرش مرکزی",
       "alertType": "general",
-      "message": "آرمان صادقی عزیز، پذیرش شما ثبت شد. ایستگاه فعلی شما آزمایشگاه تشخیص طبی است.",
+      "message": "آرمان صادقی عزیز، پذیرش کلینیک شما ثبت شد. لطفاً ابتدا پرسشنامه پیش‌پذیرش را تکمیل کنید؛ مسیر ایستگاه‌ها بعد از آن فعال می‌شود.",
       "isRead": false,
       "createdAt": "2026-11-13T07:52:43.913"
     }

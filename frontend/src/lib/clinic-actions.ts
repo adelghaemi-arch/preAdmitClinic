@@ -26,15 +26,27 @@ import { mockMutations, mockStore, resetMockStore } from "@/lib/mock-store";
 import { getClinicSnapshot } from "@/lib/clinic-server";
 import { toFaDigits } from "@/lib/persian";
 import { COMPANION_RELATION_CODES, ROLES, normalizeNationalId, normalizeText } from "@/lib/workspace";
-import { defaultCompanionVisibility, emptyIntakeAnswers, type CompanionVisibility } from "@/types/clinic";
+import {
+  defaultCompanionVisibility,
+  emptyIntakeAnswers,
+  type CompanionVisibility,
+  type FormAnswer,
+  type FormDefinition,
+} from "@/types/clinic";
+import {
+  buildContext,
+  formVersionId,
+  syncSkippedAnswers,
+  validateForm,
+} from "@/lib/form-engine";
 
 
 /** Compares national ids digit-wise so Persian/Arabic digits match the stored ASCII value. */
 const sameNationalId = (a: string, b: string) => normalizeNationalId(a) === normalizeNationalId(b);
 /** Actions a companion account may run; everything else is staff-only. */
-const PATIENT_ROLE_ACTIONS = new Set(["SAVE_PATIENT_INTAKE", "PATIENT_STATION_CHECKIN", "MARK_ALERTS_READ", "LINK_COMPANION", "UNLINK_COMPANION", "UPDATE_COMPANION_VISIBILITY", "DISMISS_JOURNEY_INTRO"]);
+const PATIENT_ROLE_ACTIONS = new Set(["SAVE_FORM_RESPONSE", "PATIENT_STATION_CHECKIN", "MARK_ALERTS_READ", "LINK_COMPANION", "UNLINK_COMPANION", "UPDATE_COMPANION_VISIBILITY", "DISMISS_JOURNEY_INTRO"]);
 /** Actions that change clinical data and require the "manage" permission. */
-const COMPANION_MANAGE_ACTIONS = new Set(["SAVE_PATIENT_INTAKE", "PATIENT_STATION_CHECKIN"]);
+const COMPANION_MANAGE_ACTIONS = new Set(["SAVE_FORM_RESPONSE", "PATIENT_STATION_CHECKIN"]);
 
 async function queueText(patientId: number, roomCode: string): Promise<string> {
   const snapshot = await getClinicSnapshot();
@@ -134,7 +146,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
 
     if (effectiveRole === "patient" || effectiveRole === "owner") {
       if (!PATIENT_ROLE_ACTIONS.has(action)) {
-        return NextResponse.json({ ok: false, error: "این عملیات در نقش «همراه بیمار» مجاز نیست. برای پذیرش و جست‌وجوی بیماران، نقش «پذیرش و هماهنگی» را از منوی «نقش فعال» انتخاب کنید." }, { status: 403 });
+        return NextResponse.json({ ok: false, error: "این عملیات در نقش «همراه سلامتجو» مجاز نیست. برای پذیرش و جست‌وجوی سلامتجویان، نقش «پذیرش و هماهنگی» را از منوی «نقش فعال» انتخاب کنید." }, { status: 403 });
       }
       if (action !== "LINK_COMPANION" && action !== "UNLINK_COMPANION" && effectiveViewer) {
         const link = mockStore.linksOfUser(effectiveViewer.userId).find((l) => l.patientId === Number(body.patientId));
@@ -142,22 +154,22 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
           return NextResponse.json({ ok: false, error: "این پرونده به حساب شما متصل نیست." }, { status: 403 });
         }
         if (effectiveRole === "owner" && link.relationship !== "self") {
-          return NextResponse.json({ ok: false, error: "در نقش بیمار فقط پرونده خودتان در دسترس است؛ برای پرونده دیگران نقش همراه بیمار را فعال کنید." }, { status: 403 });
+          return NextResponse.json({ ok: false, error: "در نقش سلامتجو فقط پرونده خودتان در دسترس است؛ برای پرونده دیگران نقش همراه سلامتجو را فعال کنید." }, { status: 403 });
         }
         if (effectiveRole === "patient" && link.relationship === "self") {
-          return NextResponse.json({ ok: false, error: "پرونده خودتان در نقش بیمار نمایش داده می‌شود، نه همراه بیمار." }, { status: 403 });
+          return NextResponse.json({ ok: false, error: "پرونده خودتان در نقش سلامتجو نمایش داده می‌شود، نه همراه سلامتجو." }, { status: 403 });
         }
         if (COMPANION_MANAGE_ACTIONS.has(action) && link.permission !== "manage") {
           return NextResponse.json({ ok: false, error: "دسترسی شما به این پرونده فقط پیگیری است." }, { status: 403 });
         }
-        if (action === "SAVE_PATIENT_INTAKE" && link.relationship !== "self") {
-          return NextResponse.json({ ok: false, error: "شرح حال بالینی فقط توسط خود بیمار ثبت می‌شود." }, { status: 403 });
+        if (action === "SAVE_FORM_RESPONSE" && link.relationship !== "self") {
+          return NextResponse.json({ ok: false, error: "پرسشنامه پیش‌پذیرش فقط توسط خود سلامتجو ثبت می‌شود." }, { status: 403 });
         }
         if (action === "DISMISS_JOURNEY_INTRO" && link.relationship !== "self") {
-          return NextResponse.json({ ok: false, error: "معرفی مسیر فقط توسط خود بیمار بسته می‌شود." }, { status: 403 });
+          return NextResponse.json({ ok: false, error: "معرفی مسیر فقط توسط خود سلامتجو بسته می‌شود." }, { status: 403 });
         }
         if (action === "UPDATE_COMPANION_VISIBILITY" && link.relationship !== "self") {
-          return NextResponse.json({ ok: false, error: "فقط خود بیمار می‌تواند دسترسی همراه را تعیین کند." }, { status: 403 });
+          return NextResponse.json({ ok: false, error: "فقط خود سلامتجو می‌تواند دسترسی همراه را تعیین کند." }, { status: 403 });
         }
       }
     }
@@ -168,22 +180,22 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       const relationship = COMPANION_RELATION_CODES.includes(String(body.relationship)) ? String(body.relationship) : "other";
       const permission = body.permission === "follow" ? "follow" : "manage";
       if (!token || !/^\d{10}$/.test(nationalId)) {
-        return NextResponse.json({ ok: false, error: "کد QR و کد ملی ۱۰ رقمی بیمار را وارد کنید." }, { status: 400 });
+        return NextResponse.json({ ok: false, error: "کد QR و کد ملی ۱۰ رقمی سلامتجو را وارد کنید." }, { status: 400 });
       }
       const patient = mockStore.patientByToken(token);
       if (!patient || !sameNationalId(patient.nationalId, nationalId)) {
-        return NextResponse.json({ ok: false, error: "کد QR یا کد ملی با پرونده بیمار مطابقت ندارد." }, { status: 404 });
+        return NextResponse.json({ ok: false, error: "کد QR یا کد ملی با پرونده سلامتجو مطابقت ندارد." }, { status: 404 });
       }
       if (effectiveRole === "owner" && relationship !== "self") {
-        return NextResponse.json({ ok: false, error: "در نقش بیمار فقط می‌توانید پرونده خودتان را متصل کنید." }, { status: 403 });
+        return NextResponse.json({ ok: false, error: "در نقش سلامتجو فقط می‌توانید پرونده خودتان را متصل کنید." }, { status: 403 });
       }
       if (effectiveRole === "patient" && relationship === "self") {
-        return NextResponse.json({ ok: false, error: "برای اتصال پرونده خودتان، نقش بیمار را فعال کنید." }, { status: 403 });
+        return NextResponse.json({ ok: false, error: "برای اتصال پرونده خودتان، نقش سلامتجو را فعال کنید." }, { status: 403 });
       }
       if (relationship === "self") {
         const account = mockStore.userById(effectiveViewer.userId);
         if (!account || normalizeText(account.fullName).replace(/\s|\u200c/g, "") !== normalizeText(patient.fullName).replace(/\s|\u200c/g, "")) {
-          return NextResponse.json({ ok: false, error: "اتصال به‌عنوان خود بیمار فقط برای حساب هویتی همان بیمار ممکن است." }, { status: 403 });
+          return NextResponse.json({ ok: false, error: "اتصال به‌عنوان خود سلامتجو فقط برای حساب هویتی همان سلامتجو ممکن است." }, { status: 403 });
         }
       }
       const existing = mockStore.linksOfUser(effectiveViewer.userId).find((l) => l.patientId === patient.id);
@@ -222,15 +234,15 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
 
     if (body.patientId !== undefined) {
       const id = Number(body.patientId);
-      if (!Number.isSafeInteger(id) || id < 1) return NextResponse.json({ ok: false, error: "شناسه بیمار نامعتبر است." }, { status: 400 });
+      if (!Number.isSafeInteger(id) || id < 1) return NextResponse.json({ ok: false, error: "شناسه سلامتجو نامعتبر است." }, { status: 400 });
       const patient = mockStore.patientById(id);
-      if (!patient) return NextResponse.json({ ok: false, error: "پرونده بیمار یافت نشد." }, { status: 404 });
+      if (!patient) return NextResponse.json({ ok: false, error: "پرونده سلامتجو یافت نشد." }, { status: 404 });
       if (body.stationId) {
         const station = mockStore.stationById(Number(body.stationId));
         if (!station || station.patientId !== id) return NextResponse.json({ ok: false, error: "این ایستگاه متعلق به پرونده انتخاب‌شده نیست." }, { status: 400 });
         if (["PATIENT_STATION_CHECKIN", "UPDATE_PARACLINIC_STATUS", "COMPLETE_SPECIALIST_STATION", "SAVE_CLINICAL_NOTE_AND_ORDERS"].includes(action) && ["completed", "sample_taken"].includes(station.status)) return NextResponse.json({ ok: false, error: "این مرحله قبلاً انجام شده و امکان شروع مجدد ندارد." }, { status: 409 });
-        if (["PATIENT_STATION_CHECKIN", "UPDATE_PARACLINIC_STATUS", "COMPLETE_SPECIALIST_STATION", "SAVE_CLINICAL_NOTE_AND_ORDERS"].includes(action) && station.status === "pending") return NextResponse.json({ ok: false, error: "ابتدا ایستگاه‌های قبلی بیمار باید انجام شوند؛ برای تغییر ترتیب از مدیریت صف استفاده کنید." }, { status: 409 });
-        if (action === "PATIENT_STATION_CHECKIN" && station.status !== "waiting") return NextResponse.json({ ok: false, error: "حضور بیمار قبلاً ثبت شده است." }, { status: 409 });
+        if (["PATIENT_STATION_CHECKIN", "UPDATE_PARACLINIC_STATUS", "COMPLETE_SPECIALIST_STATION", "SAVE_CLINICAL_NOTE_AND_ORDERS"].includes(action) && station.status === "pending") return NextResponse.json({ ok: false, error: "ابتدا ایستگاه‌های قبلی سلامتجو باید انجام شوند؛ برای تغییر ترتیب از مدیریت صف استفاده کنید." }, { status: 409 });
+        if (action === "PATIENT_STATION_CHECKIN" && station.status !== "waiting") return NextResponse.json({ ok: false, error: "حضور سلامتجو قبلاً ثبت شده است." }, { status: 409 });
       }
     }
 
@@ -336,12 +348,15 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       const phone = normalizeText(String(body.phone ?? "")).replace(/\D/g, "");
       const age = Number(normalizeText(String(body.age ?? "")));
       if (fullName.length < 3 || fullName.length > 100 || !/^\d{10}$/.test(nationalId) || !/^09\d{9}$/.test(phone) || !Number.isFinite(age) || age < 1 || age > 120) return NextResponse.json({ ok: false, error: "نام کامل، کد ملی ۱۰ رقمی، موبایل معتبر و سن صحیح را وارد کنید." }, { status: 400 });
+      if (body.gender !== "زن" && body.gender !== "مرد") {
+        return NextResponse.json({ ok: false, error: "جنسیت سلامتجو را صریحاً مرد یا زن انتخاب کنید؛ برای پرسشنامه پیش‌پذیرش الزامی است." }, { status: 400 });
+      }
       const roomMap = new Map(mockStore.rooms.map((r) => [r.code, r]));
       const codes = Array.isArray(body.stationCodes) ? [...new Set<string>(body.stationCodes)] : [];
       if (!codes.length || codes.some((c) => !roomMap.has(c))) return NextResponse.json({ ok: false, error: "حداقل یک ایستگاه معتبر انتخاب کنید." }, { status: 400 });
 
       const previous = mockStore.patientByNationalId(nationalId).sort((a, b) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime())[0];
-      if (previous && !previous.completedAt) return NextResponse.json({ ok: false, error: "این بیمار هم‌اکنون یک مراجعه فعال دارد؛ ابتدا مراجعه قبلی را تکمیل کنید." }, { status: 409 });
+      if (previous && !previous.completedAt) return NextResponse.json({ ok: false, error: "این سلامتجو هم‌اکنون یک مراجعه فعال دارد؛ ابتدا مراجعه قبلی را تکمیل کنید." }, { status: 409 });
 
       const patient = mockMutations.insertPatient({
         qrToken: `NBZ-${randomUUID()}`,
@@ -349,7 +364,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         nationalId,
         phone,
         age,
-        gender: body.gender === "زن" ? "زن" : "مرد",
+        gender: body.gender,
         pathwayTitle: String(body.pathwayTitle || "مسیر اختصاصی"),
         checkInTime: now.toISOString(),
         completedAt: null,
@@ -360,6 +375,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         allergies: previous?.allergies ?? [],
         recentConditions: previous?.recentConditions ?? [],
         intakeAnswers: { ...emptyIntakeAnswers },
+        formResponses: [],
         autoOpenWayfinding: false,
         journeyIntroSeen: false,
       homeLat: null,
@@ -391,7 +407,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         patientId: patient.id,
         senderRole: "پذیرش مرکزی",
         alertType: "general",
-        message: `${fullName} عزیز، خوش آمدید. لطفاً شرح حال و حساسیت‌ها را تکمیل کرده و به ${firstRoom.name}، طبقه ${toFaDigits(firstRoom.floor)}، اتاق ${firstRoom.roomNumber} مراجعه کنید.`,
+        message: `${fullName} عزیز، پذیرش کلینیک شما ثبت شد. لطفاً ابتدا پرسشنامه پیش‌پذیرش را تکمیل کنید؛ سپس به ${firstRoom.name}، طبقه ${toFaDigits(firstRoom.floor)}، اتاق ${firstRoom.roomNumber} مراجعه کنید.`,
         isRead: false,
         createdAt: now.toISOString(),
       });
@@ -404,8 +420,11 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       const nationalId = normalizeNationalId(String(body.nationalId ?? ""));
       const phone = normalizeText(String(body.phone ?? "")).replace(/\D/g, "");
       const age = Number(body.age);
-      if (fullName.length < 3 || !/^\d{10}$/.test(nationalId) || !/^09\d{9}$/.test(phone) || !Number.isFinite(age) || age < 1 || age > 120) return NextResponse.json({ ok: false, error: "اطلاعات بیمار را کامل و صحیح وارد کنید." }, { status: 400 });
-      mockMutations.updatePatient(Number(body.patientId), { fullName, nationalId, phone, age, gender: body.gender === "زن" ? "زن" : "مرد" });
+      if (fullName.length < 3 || !/^\d{10}$/.test(nationalId) || !/^09\d{9}$/.test(phone) || !Number.isFinite(age) || age < 1 || age > 120) return NextResponse.json({ ok: false, error: "اطلاعات سلامتجو را کامل و صحیح وارد کنید." }, { status: 400 });
+      if (body.gender !== "زن" && body.gender !== "مرد") {
+        return NextResponse.json({ ok: false, error: "جنسیت سلامتجو را صریحاً مرد یا زن انتخاب کنید." }, { status: 400 });
+      }
+      mockMutations.updatePatient(Number(body.patientId), { fullName, nationalId, phone, age, gender: body.gender });
       return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
     }
 
@@ -416,23 +435,128 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
     }
 
     if (action === "SAVE_PATIENT_INTAKE") {
-      const { patientId, medications, surgeries, familyHistory, allergies, recentConditions, intakeAnswers } = body;
-      mockMutations.updatePatient(Number(patientId), {
-        medications: medications ?? [],
-        surgeries: surgeries ?? [],
-        familyHistory: familyHistory ?? [],
-        allergies: allergies ?? [],
-        recentConditions: recentConditions ?? [],
-        intakeAnswers: { ...emptyIntakeAnswers, ...(intakeAnswers ?? {}) },
-        intakeCompleted: true,
-        journeyIntroSeen: true,
+      // Legacy intake save must not mark pre-admit complete — use SAVE_FORM_RESPONSE.
+      return NextResponse.json(
+        { ok: false, error: "ثبت پیش‌پذیرش فقط از طریق پرسشنامه منتشرشده (SAVE_FORM_RESPONSE) مجاز است." },
+        { status: 410 }
+      );
+    }
+
+    if (action === "SAVE_FORM_RESPONSE") {
+      const patientId = Number(body.patientId);
+      const patient = mockStore.patientById(patientId);
+      if (!patient) return NextResponse.json({ ok: false, error: "سلامتجو یافت نشد." }, { status: 404 });
+      const formId = String(body.formId ?? "");
+      const form = mockStore.formById(formId);
+      if (!form || form.status !== "published") {
+        return NextResponse.json({ ok: false, error: "فرم منتشرشده‌ای برای ثبت یافت نشد." }, { status: 400 });
+      }
+      if (form.targetAudience.gender !== "همه" && form.targetAudience.gender !== patient.gender) {
+        return NextResponse.json({ ok: false, error: "این فرم با جنسیت سلامتجو هم‌خوان نیست." }, { status: 409 });
+      }
+      const mode = body.mode === "submit" ? "submit" : "draft";
+      const incomingAnswers = (Array.isArray(body.answers) ? body.answers : []) as FormAnswer[];
+      const ctx = buildContext(patient, incomingAnswers, form);
+      const answers = syncSkippedAnswers(form, incomingAnswers, ctx);
+      const existing = [...(patient.formResponses ?? [])];
+      const versionKey = formVersionId(form);
+      let response = existing.find((r) => r.formId === form.id && r.formVersionId === versionKey && r.status === "draft");
+      const nowIso = now.toISOString();
+      if (!response) {
+        response = {
+          id: `fr_${randomUUID()}`,
+          patientId,
+          formId: form.id,
+          formCode: form.code,
+          formVersion: form.version,
+          formVersionId: versionKey,
+          status: "draft",
+          startedAt: nowIso,
+          updatedAt: nowIso,
+          completedAt: null,
+          answers,
+          context: { gender: patient.gender, age: patient.age, maritalStatus: ctx.maritalStatus },
+        };
+        existing.push(response);
+      } else {
+        response.answers = answers;
+        response.updatedAt = nowIso;
+        response.context = { gender: patient.gender, age: patient.age, maritalStatus: ctx.maritalStatus };
+      }
+
+      if (mode === "submit") {
+        const validation = validateForm(form, answers, ctx);
+        if (!validation.ok) {
+          return NextResponse.json({ ok: false, error: validation.message, missingCodes: validation.missingCodes }, { status: 400 });
+        }
+        response.status = "submitted";
+        response.completedAt = nowIso;
+        response.updatedAt = nowIso;
+        mockMutations.updatePatient(patientId, {
+          formResponses: existing.map((r) => (r.id === response!.id ? response! : r)),
+          intakeCompleted: true,
+          journeyIntroSeen: true,
+        });
+      } else {
+        mockMutations.updatePatient(patientId, {
+          formResponses: existing.map((r) => (r.id === response!.id ? response! : r)),
+        });
+      }
+      return NextResponse.json({ ok: true, responseId: response.id, snapshot: await getClinicSnapshot() });
+    }
+
+    if (action === "UPSERT_FORM") {
+      const form = body.form as FormDefinition | undefined;
+      if (!form?.id || !form.code || !form.title) {
+        return NextResponse.json({ ok: false, error: "تعریف فرم ناقص است." }, { status: 400 });
+      }
+      mockMutations.upsertForm({
+        ...form,
+        sections: Array.isArray(form.sections) ? form.sections : [],
+        items: Array.isArray(form.items) ? form.items : [],
+        targetAudience: form.targetAudience ?? { gender: "همه", ageMin: null, ageMax: null, maritalStatuses: [] },
       });
+      return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
+    }
+
+    if (action === "PUBLISH_FORM") {
+      const formId = String(body.formId ?? "");
+      const bumpVersion = Boolean(body.bumpVersion);
+      const form = mockStore.formById(formId);
+      if (!form) return NextResponse.json({ ok: false, error: "فرم یافت نشد." }, { status: 404 });
+      const next: FormDefinition = {
+        ...structuredClone(form),
+        status: "published",
+        version: bumpVersion ? form.version + 1 : form.version,
+      };
+      mockMutations.upsertForm(next);
+      return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
+    }
+
+    if (action === "REORDER_FORM_ITEMS") {
+      const formId = String(body.formId ?? "");
+      const sectionId = String(body.sectionId ?? "");
+      const orderedItemIds: string[] = Array.isArray(body.orderedItemIds) ? body.orderedItemIds.map(String) : [];
+      const form = mockStore.formById(formId);
+      if (!form) return NextResponse.json({ ok: false, error: "فرم یافت نشد." }, { status: 404 });
+      const sectionItems = form.items.filter((i) => i.sectionId === sectionId);
+      if (!orderedItemIds.length || orderedItemIds.length !== sectionItems.length || orderedItemIds.some((id) => !sectionItems.some((i) => i.id === id))) {
+        return NextResponse.json({ ok: false, error: "ترتیب آیتم‌ها معتبر نیست." }, { status: 400 });
+      }
+      const next = structuredClone(form);
+      orderedItemIds.forEach((id, index) => {
+        const item = next.items.find((i) => i.id === id);
+        if (item) item.sortOrder = index + 1;
+      });
+      mockMutations.upsertForm(next);
       return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
     }
 
     if (action === "PATIENT_STATION_CHECKIN") {
       const [intakePatient] = mockStore.patients.filter((p) => p.id === Number(body.patientId));
-      if (!intakePatient?.intakeCompleted) return NextResponse.json({ ok: false, error: "پیش از اعلام حضور، مرحله اول شرح حال امروز باید تکمیل شود." }, { status: 409 });
+      if (!intakePatient?.intakeCompleted) return NextResponse.json({ ok: false, error: "پیش از اعلام حضور، پرسشنامه پیش‌پذیرش امروز باید ثبت نهایی شود." }, { status: 409 });
+      const hasSubmittedForm = (intakePatient.formResponses ?? []).some((r) => r.status === "submitted");
+      if (!hasSubmittedForm) return NextResponse.json({ ok: false, error: "پرسشنامه پیش‌پذیرش ثبت نهایی نشده است." }, { status: 409 });
       mockMutations.updateStation(Number(body.stationId), { status: "checked_in", checkedInAt: now.toISOString() });
       mockMutations.updatePatient(Number(body.patientId), { autoOpenWayfinding: false });
       return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
@@ -708,7 +832,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       { status: 400 }
     );
   } catch (error) {
-    if (error instanceof Error && error.message === "ACTIVE_VISIT") return NextResponse.json({ ok: false, error: "این بیمار هم‌اکنون یک مراجعه فعال دارد؛ ابتدا مراجعه قبلی را تکمیل کنید." }, { status: 409 });
+    if (error instanceof Error && error.message === "ACTIVE_VISIT") return NextResponse.json({ ok: false, error: "این سلامتجو هم‌اکنون یک مراجعه فعال دارد؛ ابتدا مراجعه قبلی را تکمیل کنید." }, { status: 409 });
     console.error("Clinic action error:", error);
     return NextResponse.json(
       { ok: false, error: "خطا در ثبت تغییرات در پایگاه داده" },

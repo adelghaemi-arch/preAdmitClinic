@@ -79,6 +79,7 @@ export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
       allergies: p.allergies ?? [],
       recentConditions: p.recentConditions ?? [],
       intakeAnswers: p.intakeAnswers,
+      formResponses: p.formResponses ?? [],
       autoOpenWayfinding: p.autoOpenWayfinding,
       journeyIntroSeen: Boolean(p.journeyIntroSeen),
       homeLat: p.homeLat ?? null,
@@ -148,6 +149,7 @@ export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
     clinicLocation: { ...clinicLocation },
     packageRuleLibrary: JSON.parse(JSON.stringify(mockStore.packageRuleLibrary)),
     contracts: JSON.parse(JSON.stringify(mockStore.contracts)),
+    forms: JSON.parse(JSON.stringify(mockStore.forms)),
     serverTime: new Date().toISOString(),
   };
 }

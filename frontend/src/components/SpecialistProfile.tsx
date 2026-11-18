@@ -20,6 +20,7 @@ import {
 import type { ClinicSnapshot, PatientFullDto } from "@/types/clinic";
 import type { PrescriptionItem } from "@/types/clinic";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
+import { FormResponseSummary } from "./FormResponseSummary";
 
 type SpecialistSection = "waiting" | "brief" | "notes" | "complete";
 
@@ -201,8 +202,8 @@ export function SpecialistProfile({
 
     setFeedbackBanner(
       urgentRoomCode
-        ? "معاینه، تشخیص و نسخه ثبت شد و ایستگاه ارجاع جدید به مسیر امروز بیمار اضافه گردید."
-        : "معاینه، تشخیص و نسخه دارویی در پرونده لحظه‌ای بیمار ثبت گردید."
+        ? "معاینه، تشخیص و نسخه ثبت شد و ایستگاه ارجاع جدید به مسیر امروز سلامتجو اضافه گردید."
+        : "معاینه، تشخیص و نسخه دارویی در پرونده لحظه‌ای سلامتجو ثبت گردید."
     );
     setUrgentRoomCode("");
     setTimeout(() => setFeedbackBanner(""), 4500);
@@ -217,7 +218,7 @@ export function SpecialistProfile({
     });
     setCompletedPatientIdForPreview(activeEntry.patient.id);
     setFeedbackBanner(
-      `اتمام ویزیت «${activeEntry.patient.fullName}» تایید شد! ایستگاه در گوشی بیمار سبز شد و نقشه ایستگاه بعدی خودکار باز گردید.`
+      `اتمام ویزیت «${activeEntry.patient.fullName}» تایید شد! ایستگاه در گوشی سلامتجو سبز شد و نقشه ایستگاه بعدی خودکار باز گردید.`
     );
   };
 
@@ -245,7 +246,7 @@ export function SpecialistProfile({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select aria-label="پزشک معالج" value={activeDoctor?.id} onChange={(e) => handleDoctorSwitch(Number(e.target.value))} className="app-select max-w-60">{specialistStaff.map((d) => <option key={d.id} value={d.id}>{d.fullName} · {d.specialtyOrDept}</option>)}</select>
-            <select aria-label="بیمار ویزیت" value={activeEntry?.patient.id ?? ''} onChange={(e) => setSelectedPatientId(Number(e.target.value))} className="app-select max-w-52">{myPatients.map(({patient: p}) => <option key={p.id} value={p.id}>{p.fullName}</option>)}</select>
+            <select aria-label="سلامتجو ویزیت" value={activeEntry?.patient.id ?? ''} onChange={(e) => setSelectedPatientId(Number(e.target.value))} className="app-select max-w-52">{myPatients.map(({patient: p}) => <option key={p.id} value={p.id}>{p.fullName}</option>)}</select>
           </div>
         </div>
 
@@ -261,7 +262,7 @@ export function SpecialistProfile({
                 className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700"
               >
                 <Smartphone className="h-4 w-4" />
-                مشاهده مسیر به‌روزشده بیمار
+                مشاهده مسیر به‌روزشده سلامتجو
               </button>
             )}
           </div>
@@ -274,7 +275,7 @@ export function SpecialistProfile({
               لیست انتظار مطب {activeDoctor?.fullName} ({activeDoctor?.specialtyOrDept})
             </h1>
             <p className="mt-0.5 text-xs text-slate-500">
-              تفکیک لحظه‌ای بیماران ارجاع‌شده امروز بر اساس وضعیت حضور، تکمیل شرح حال
+              تفکیک لحظه‌ای سلامتجویان ارجاع‌شده امروز بر اساس وضعیت حضور، تکمیل پرسشنامه
               و انجام تست‌های پیش‌نیاز
             </p>
 
@@ -347,8 +348,8 @@ export function SpecialistProfile({
                         }`}
                       >
                         {p.intakeCompleted
-                          ? "✓ فرم شرح حال تکمیل شده"
-                          : "⧗ در حال تکمیل فرم شرح حال"}
+                          ? "✓ پرسشنامه پیش‌پذیرش تکمیل شده"
+                          : "⧗ در حال تکمیل پرسشنامه پیش‌پذیرش"}
                       </span>
 
                       {p.allergies.length > 0 && (
@@ -372,7 +373,7 @@ export function SpecialistProfile({
                         }}
                         className="flex-1 rounded-xl bg-sky-600 py-2 text-xs font-bold text-white hover:bg-sky-700"
                       >
-                        باز کردن خلاصه هوشمند بیمار
+                        باز کردن خلاصه هوشمند سلامتجو
                       </button>
                       <button
                         type="button"
@@ -426,7 +427,7 @@ export function SpecialistProfile({
                   onClick={() => setSection("complete")}
                   className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-extrabold text-white hover:bg-emerald-700"
                 >
-                  اتمام ویزیت و هدایت بیمار
+                  اتمام ویزیت و هدایت سلامتجو
                 </button>
               </div>
             </div>
@@ -436,7 +437,7 @@ export function SpecialistProfile({
               <div className="rounded-2xl border-2 border-red-500 bg-red-50 p-4 shadow-xs">
                 <div className="flex items-center gap-2 text-sm font-extrabold text-red-800">
                   <ShieldAlert className="h-5 w-5 text-red-600" />
-                  هشدار قرمز حساسیت حیاتی بیمار (نمایش همزمان به کلیه پزشکان امروز)
+                  هشدار قرمز حساسیت حیاتی سلامتجو (نمایش همزمان به کلیه پزشکان امروز)
                 </div>
                 <div className="mt-2.5 grid gap-2 md:grid-cols-2">
                   {activeEntry.patient.allergies.map((al) => (
@@ -461,26 +462,29 @@ export function SpecialistProfile({
               </div>
             ) : (
               <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-2.5 text-xs font-bold text-emerald-800">
-                ✓ بیمار حساسیت دارویی یا غذایی شناخته‌شده‌ای ثبت نکرده است (NKA).
+                ✓ سلامتجو حساسیت دارویی یا غذایی شناخته‌شده‌ای ثبت نکرده است (NKA).
               </div>
             )}
 
             <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-sm font-extrabold text-teal-900">خلاصه شرح حال مرتبط با تخصص شما</h2><span className="rounded-lg bg-white px-2 py-1 text-[10px] text-teal-700">{doctorRoomCode === "CARDIO" ? "قلب و عروق" : doctorRoomCode === "PULMO" ? "ریه و تنفس" : doctorRoomCode === "DENTAL" ? "دندانپزشکی" : "ویزیت تخصصی"}</span></div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                <div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">علائم امروز</div><p className="mt-1 leading-6 text-slate-600">{activeEntry.patient.intakeAnswers.currentSymptoms || "هنوز ثبت نشده"}</p></div>
-                {doctorRoomCode === "CARDIO" && <><div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">درد قفسه سینه</div><p className="mt-1 text-slate-600">{activeEntry.patient.intakeAnswers.chestPain || "ثبت نشده"}</p></div><div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">سابقه قلبی خانواده</div><p className="mt-1 text-slate-600">{activeEntry.patient.familyHistory.filter((h) => /قلب|فشار|سکته|دیابت/.test(h.condition)).map((h) => `${h.condition} (${h.relation})`).join("، ") || "موردی ثبت نشده"}</p></div></>}
-                {doctorRoomCode === "PULMO" && <><div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">تنگی نفس یا سرفه</div><p className="mt-1 text-slate-600">{activeEntry.patient.intakeAnswers.breathlessness || "ثبت نشده"}</p></div><div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">مصرف دخانیات</div><p className="mt-1 text-slate-600">{activeEntry.patient.intakeAnswers.smoking || "ثبت نشده"}</p></div></>}
-                {doctorRoomCode === "DENTAL" && <div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">درد دندان یا خونریزی لثه</div><p className="mt-1 text-slate-600">{activeEntry.patient.intakeAnswers.dentalBleeding || "ثبت نشده"}</p></div>}
-                {doctorRoomCode === "RADIO" && activeEntry.patient.gender === "زن" && <div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">احتمال بارداری</div><p className="mt-1 text-slate-600">{activeEntry.patient.intakeAnswers.pregnancyStatus || "ثبت نشده"}</p></div>}
-                <div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">بیماری / درمان اخیر</div><p className="mt-1 leading-6 text-slate-600">{activeEntry.patient.recentConditions.map((r) => `${r.title} (${r.when})`).join("، ") || "موردی ثبت نشده"}</p></div>
-                <div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">تغییر دارویی اخیر</div><p className="mt-1 leading-6 text-slate-600">{activeEntry.patient.intakeAnswers.medicationChanges || "تغییری گزارش نشده"}</p></div>
-                <div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">رقیق‌کننده خون / ضدپلاکت</div><p className="mt-1 text-slate-600">{activeEntry.patient.intakeAnswers.anticoagulantUse || "ثبت نشده"}</p></div>
-                <div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">مکمل و داروی بدون نسخه</div><p className="mt-1 leading-6 text-slate-600">{activeEntry.patient.intakeAnswers.supplements || "ثبت نشده"}</p></div>
-                <div className="rounded-xl bg-white p-3 text-xs"><div className="font-bold text-slate-800">داروهای فعلی</div><p className="mt-1 leading-6 text-slate-600">{activeEntry.patient.medications.map((m) => `${m.name} ${m.dosage}`).join("، ") || "موردی ثبت نشده"}</p></div>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-extrabold text-teal-900">پرسشنامه پیش‌پذیرش (پشتیبانی تصمیم)</h2>
+                <span className="rounded-lg bg-white px-2 py-1 text-[10px] text-teal-700">
+                  {doctorRoomCode === "CARDIO"
+                    ? "قلب و عروق"
+                    : doctorRoomCode === "PULMO"
+                      ? "ریه و تنفس"
+                      : doctorRoomCode === "DENTAL"
+                        ? "دندانپزشکی"
+                        : "ویزیت تخصصی"}
+                </span>
               </div>
-              {((doctorRoomCode === "CARDIO" && activeEntry.patient.intakeAnswers.chestPain === "بله") || (doctorRoomCode === "PULMO" && (activeEntry.patient.intakeAnswers.breathlessness === "بله" || activeEntry.patient.intakeAnswers.smoking === "بله")) || (doctorRoomCode === "DENTAL" && activeEntry.patient.intakeAnswers.anticoagulantUse === "بله")) && <div className="mt-3 rounded-xl border border-red-200 bg-white px-3 py-2 text-[11px] font-bold text-red-700">هشدار مرتبط با تخصص شما: {doctorRoomCode === "CARDIO" ? "بیمار درد یا فشار قفسه سینه اخیر گزارش کرده است." : doctorRoomCode === "PULMO" ? "بیمار علامت تنفسی یا مصرف دخانیات گزارش کرده است." : "بیمار داروی رقیق‌کننده خون یا ضدپلاکت مصرف می‌کند."}</div>}
-              {!activeEntry.patient.intakeCompleted && <p className="mt-3 text-[11px] font-semibold text-amber-700">شرح حال امروز هنوز توسط بیمار بازبینی نشده است؛ اطلاعات قبلی با احتیاط تفسیر شوند.</p>}
+              <FormResponseSummary
+                patient={activeEntry.patient}
+                forms={snapshot.forms ?? []}
+                compact
+                showAiPayloadToggle
+              />
             </div>
             {/* 2-Column Unified Brief: Left = Fellow Specialists + Paraclinic | Right = Patient Intake */}
             <div className="grid gap-4 lg:grid-cols-12">
@@ -490,11 +494,11 @@ export function SpecialistProfile({
                 <div className="rounded-2xl border border-sky-200 bg-white p-4 shadow-2xs">
                   <h2 className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
                     <Stethoscope className="h-4 w-4 text-sky-600" />
-                    تشخیص و یادداشت سایر متخصصینی که امروز بیمار را دیده‌اند
+                    تشخیص و یادداشت سایر متخصصینی که امروز سلامتجو را دیده‌اند
                   </h2>
                   {activeEntry.patient.clinicalNotes.length === 0 ? (
                     <p className="mt-2 text-xs text-slate-500">
-                      شما اولین پزشک متخصص ویزیت‌کننده این بیمار در مسیر امروز
+                      شما اولین پزشک متخصص ویزیت‌کننده این سلامتجو در مسیر امروز
                       هستید.
                     </p>
                   ) : (
@@ -622,11 +626,11 @@ export function SpecialistProfile({
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
                   <h2 className="flex items-center gap-2 text-sm font-extrabold text-slate-900">
                     <Pill className="h-4 w-4 text-sky-600" />
-                    داروهای مصرفی فعلی بیمار (ثبت‌شده در سالن انتظار)
+                    داروهای مصرفی فعلی سلامتجو (ثبت‌شده در سالن انتظار)
                   </h2>
                   {activeEntry.patient.medications.length === 0 ? (
                     <p className="mt-2 text-xs text-slate-500">
-                      داروی مستمری توسط بیمار ثبت نشده است.
+                      داروی مستمری توسط سلامتجو ثبت نشده است.
                     </p>
                   ) : (
                     <div className="mt-3 space-y-2.5">
@@ -738,7 +742,7 @@ export function SpecialistProfile({
             {activeEntry.patient.allergies.length > 0 && (
               <div className="flex items-center gap-2 rounded-xl border border-red-300 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-800">
                 <AlertTriangle className="h-4 w-4 text-red-600" />
-                توجه هنگام نسخه‌نویسی: بیمار حساسیت شدید به «
+                توجه هنگام نسخه‌نویسی: سلامتجو حساسیت شدید به «
                 {activeEntry.patient.allergies
                   .map((a) => a.substance)
                   .join("، ")}
@@ -878,7 +882,7 @@ export function SpecialistProfile({
 
               {allergyConflict && (
                 <div className="mt-2 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white">
-                  هشدار تداخل حساسیت دارویی: بیمار به «
+                  هشدار تداخل حساسیت دارویی: سلامتجو به «
                   {allergyConflict.substance}» حساسیت دارد!
                 </div>
               )}
@@ -888,11 +892,11 @@ export function SpecialistProfile({
             <div className="rounded-xl border border-purple-200 bg-purple-50/60 p-4">
               <label className="block text-xs font-extrabold text-purple-950">
                 افزودن ایستگاه جدید (ارجاع فوری پاراکلینیک یا مشاوره تکمیلی) به مسیر
-                امروز بیمار:
+                امروز سلامتجو:
               </label>
               <p className="mt-0.5 text-[11px] text-purple-800">
                 در صورت انتخاب، این ایستگاه بلافاصله پس از اتاق شما در تایم‌لاین
-                موبایل بیمار درج می‌گردد.
+                موبایل سلامتجو درج می‌گردد.
               </p>
               <select
                 value={urgentRoomCode}
@@ -938,14 +942,14 @@ export function SpecialistProfile({
                 <CheckCircle2 className="h-8 w-8" />
               </div>
               <h1 className="mt-3 text-xl font-extrabold text-slate-900">
-                تایید اتمام ویزیت و هدایت خودکار بیمار به ایستگاه بعدی
+                تایید اتمام ویزیت و هدایت خودکار سلامتجو به ایستگاه بعدی
               </h1>
               <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
                 با زدن دکمه زیر، ایستگاه «{activeEntry.myStation.roomName}» برای{" "}
                 <strong>{activeEntry.patient.fullName}</strong> در گوشی موبایل او{" "}
                 <span className="font-bold text-emerald-700">سبز</span> می‌شود و
                 نقشه مسیر حرکت به ایستگاه بعدی به صورت خودکار روی صفحه موبایل
-                بیمار باز می‌گردد.
+                سلامتجو باز می‌گردد.
               </p>
 
               {/* Show Next Station Preview */}
@@ -983,7 +987,7 @@ export function SpecialistProfile({
                   <Navigation className="h-5 w-5" />
                   {activeEntry.myStation.status === "completed"
                     ? "این ایستگاه قبلاً سبز و تکمیل شده است"
-                    : "تایید اتمام ویزیت و باز کردن نقشه ایستگاه بعد در گوشی بیمار"}
+                    : "تایید اتمام ویزیت و باز کردن نقشه ایستگاه بعد در گوشی سلامتجو"}
                 </button>
 
                 <button
@@ -994,7 +998,7 @@ export function SpecialistProfile({
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-sky-300 bg-sky-50 px-5 py-4 text-xs font-extrabold text-sky-800 hover:bg-sky-100 sm:w-auto"
                 >
                   <Smartphone className="h-4 w-4" />
-                  باز کردن پرونده بیمار
+                  باز کردن پرونده سلامتجو
                 </button>
               </div>
             </div>

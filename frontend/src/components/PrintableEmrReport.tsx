@@ -10,18 +10,23 @@ import {
   Stethoscope,
   X,
 } from "lucide-react";
-import type { PatientFullDto } from "@/types/clinic";
+import type { FormDefinition, PatientFullDto } from "@/types/clinic";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
+import { loadSeedForms } from "@/lib/form-engine";
+import { FormResponseSummary } from "./FormResponseSummary";
 
 interface PrintableEmrReportProps {
   patient: PatientFullDto;
   onClose: () => void;
+  forms?: FormDefinition[];
 }
 
 export function PrintableEmrReport({
   patient,
   onClose,
+  forms,
 }: PrintableEmrReportProps) {
+  const formCatalog = forms?.length ? forms : loadSeedForms();
   const getReportDocument = () => {
     const sheet = document.getElementById("printable-emr-sheet");
     if (!sheet) return "";
@@ -36,7 +41,7 @@ export function PrintableEmrReport({
     const html = getReportDocument();
     if (!html) return;
     const frame = document.createElement("iframe");
-    frame.title = "چاپ پرونده بیمار";
+    frame.title = "چاپ پرونده سلامتجو";
     frame.style.cssText = "position:fixed;left:-10000px;top:0;width:800px;height:1100px;border:0";
     frame.onload = async () => {
       const doc = frame.contentDocument;
@@ -141,7 +146,7 @@ export function PrintableEmrReport({
             <div className="mt-5 rounded-xl border-2 border-red-300 bg-red-50 p-4">
               <div className="flex items-center gap-2 text-sm font-extrabold text-red-800">
                 <AlertTriangle className="h-5 w-5 text-red-600" />
-                هشدار حساسیت‌های دارویی و غذایی ثبت‌شده بیمار
+                هشدار حساسیت‌های دارویی و غذایی ثبت‌شده سلامتجو
               </div>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {patient.allergies.map((al) => (
@@ -160,24 +165,15 @@ export function PrintableEmrReport({
             </div>
           )}
 
-          {/* Intake Summary */}
+          {/* Pre-admit questionnaire summary */}
           <div className="mt-5 rounded-xl border border-teal-200 bg-teal-50/50 p-4 text-xs leading-7">
-            <h4 className="font-bold text-teal-900">شرح حال و علائم ثبت‌شده برای همین مراجعه</h4>
-            <div>علائم امروز: {patient.intakeAnswers.currentSymptoms || "ثبت نشده"}</div>
-            <div className="mt-1 flex flex-wrap gap-3 text-slate-700">
-              {patient.intakeAnswers.chestPain && <span>درد قفسه سینه: {patient.intakeAnswers.chestPain}</span>}
-              {patient.intakeAnswers.breathlessness && <span>تنگی نفس: {patient.intakeAnswers.breathlessness}</span>}
-              {patient.intakeAnswers.smoking && <span>دخانیات: {patient.intakeAnswers.smoking}</span>}
-              {patient.intakeAnswers.dentalBleeding && <span>دندان / لثه: {patient.intakeAnswers.dentalBleeding}</span>}
-              {patient.intakeAnswers.pregnancyStatus && <span>احتمال بارداری: {patient.intakeAnswers.pregnancyStatus}</span>}
-            </div>
-            <div className="mt-1 flex flex-wrap gap-3 text-slate-700">{patient.intakeAnswers.medicationChanges && <span>تغییر دارویی اخیر: {patient.intakeAnswers.medicationChanges}</span>}{patient.intakeAnswers.anticoagulantUse && <span>رقیق‌کننده خون: {patient.intakeAnswers.anticoagulantUse}</span>}{patient.intakeAnswers.supplements && <span>مکمل/بدون نسخه: {patient.intakeAnswers.supplements}</span>}{patient.intakeAnswers.diabetesStatus && <span>وضعیت دیابت: {patient.intakeAnswers.diabetesStatus}</span>}{patient.intakeAnswers.fastingStatus && <span>ناشتا: {patient.intakeAnswers.fastingStatus}</span>}{patient.intakeAnswers.lastMeal && <span>آخرین غذا: {patient.intakeAnswers.lastMeal}</span>}</div>
-            {patient.recentConditions.length > 0 && <div className="mt-2">موارد و درمان‌های اخیر: {patient.recentConditions.map((item) => `${item.title} (${item.when}) ${item.notes}`).join("؛ ")}</div>}
+            <h4 className="mb-2 font-bold text-teal-900">پرسشنامه پیش‌پذیرش ثبت‌شده برای همین مراجعه</h4>
+            <FormResponseSummary patient={patient} forms={formCatalog} />
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
               <h4 className="text-xs font-bold text-slate-800">
-                داروهای مصرفی پایه بیمار
+                داروهای مصرفی پایه سلامتجو
               </h4>
               {patient.medications.length === 0 ? (
                 <p className="mt-1.5 text-xs text-slate-500">موردی ثبت نشده</p>
@@ -271,7 +267,7 @@ export function PrintableEmrReport({
                                 شاخص
                               </th>
                               <th className="border border-slate-200 px-3 py-1.5 text-right">
-                                نتیجه بیمار
+                                نتیجه سلامتجو
                               </th>
                               <th className="border border-slate-200 px-3 py-1.5 text-right">
                                 بازه مرجع نرمال

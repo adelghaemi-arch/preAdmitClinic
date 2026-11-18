@@ -28,7 +28,7 @@ export function PatientTable({ patients, rooms, onOpen, onClinical, compact }: P
           <thead>
             <tr className="border-y border-slate-100 bg-[#fbfcfd] text-[10px] font-medium text-slate-400">
               <th className="w-10 py-3 pr-5 font-medium">#</th>
-              <th className="px-3 py-3 font-medium">نام و مشخصات بیمار</th>
+              <th className="px-3 py-3 font-medium">نام و مشخصات سلامتجو</th>
               {!compact && <th className="px-3 py-3 font-medium">بسته درمانی</th>}
               <th className="px-3 py-3 font-medium">ایستگاه فعلی</th>
               <th className="px-3 py-3 font-medium">وضعیت</th>
@@ -79,10 +79,10 @@ export function PatientTable({ patients, rooms, onOpen, onClinical, compact }: P
             })}
           </tbody>
         </table>
-        {displayed.length === 0 && <div className="flex flex-col items-center gap-2 py-14 text-xs text-slate-400"><Inbox className="h-8 w-8 stroke-1 text-slate-300" />بیماری با این مشخصات پیدا نشد.</div>}
+        {displayed.length === 0 && <div className="flex flex-col items-center gap-2 py-14 text-xs text-slate-400"><Inbox className="h-8 w-8 stroke-1 text-slate-300" />سلامتجویی با این مشخصات پیدا نشد.</div>}
       </div>
       <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-        <span className="text-[10px] text-slate-400">نمایش {toFaDigits(displayed.length)} از {toFaDigits(patients.length)} بیمار</span>
+        <span className="text-[10px] text-slate-400">نمایش {toFaDigits(displayed.length)} از {toFaDigits(patients.length)} سلامتجو</span>
         <div className="flex items-center gap-1.5">
           <button aria-label="صفحه قبل" disabled={safePage === 0} onClick={() => setPage(safePage - 1)} className="rounded-md border border-slate-200 p-1 text-slate-400 hover:bg-slate-50 disabled:opacity-35"><ChevronRight className="h-3 w-3" /></button>
           <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-teal-50 px-1 text-[10px] font-semibold text-teal-700">{toFaDigits(safePage + 1)}</span>

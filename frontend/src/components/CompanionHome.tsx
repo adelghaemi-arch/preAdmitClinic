@@ -196,8 +196,8 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
       <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-10 text-center">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-700"><Link2 className="h-6 w-6" /></span>
         <h2 className="mt-4 text-base font-bold text-slate-700">هنوز پرونده‌ای به حساب شما متصل نیست</h2>
-        <p className="mt-2 text-xs leading-7 text-slate-400">اگر خودتان بیمار هستید یا همراه بیمار هستید، با کد QR پذیرش و کد ملی بیمار پرونده را متصل کنید تا نقشه راه سلامتی و مسیر درمان برایتان فعال شود.</p>
-        <button onClick={() => onNavigate("companion-links")} className="primary-button mt-6">اتصال پرونده بیمار<ArrowLeft className="h-3.5 w-3.5" /></button>
+        <p className="mt-2 text-xs leading-7 text-slate-400">اگر خودتان سلامتجو هستید یا همراه سلامتجو هستید، با کد QR پذیرش و کد ملی سلامتجو پرونده را متصل کنید تا نقشه راه سلامتی و مسیر درمان برایتان فعال شود.</p>
+        <button onClick={() => onNavigate("companion-links")} className="primary-button mt-6">اتصال پرونده سلامتجو<ArrowLeft className="h-3.5 w-3.5" /></button>
       </div>
     );
   }
@@ -239,7 +239,7 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
       {notice && <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-xs font-medium text-teal-800">{notice}</div>}
       {!isSelf && link && !link.visibility.journey && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-xs leading-7 text-amber-800">
-          بیمار نمایش مسیر و فراخوان‌ها را برای همراه خاموش کرده است. فقط بخش‌هایی که بیمار اجازه داده باشد نمایش داده می‌شود.
+          سلامتجو نمایش مسیر و فراخوان‌ها را برای همراه خاموش کرده است. فقط بخش‌هایی که سلامتجو اجازه داده باشد نمایش داده می‌شود.
         </div>
       )}
 
@@ -538,12 +538,12 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
                   </span>
                   <div className="min-w-0 flex-1 pb-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`text-sm font-bold ${preAdmissionDone ? "text-emerald-800" : "text-amber-800"}`}>پیش‌پذیرش و شرح حال</span>
+                      <span className={`text-sm font-bold ${preAdmissionDone ? "text-emerald-800" : "text-amber-800"}`}>پیش‌پذیرش و پرسشنامه</span>
                       <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${preAdmissionDone ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                        {preAdmissionDone ? "تکمیل شد" : "نیاز به تکمیل"}
+                        {preAdmissionDone ? "پرسشنامه تکمیل شد" : "نیاز به تکمیل پرسشنامه"}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-[11px] leading-5 text-slate-400">داروها، حساسیت‌ها، سوابق خانوادگی و علائم امروز</p>
+                    <p className="mt-0.5 text-[11px] leading-5 text-slate-400">پرسشنامه غربالگری بر اساس جنسیت — قبل از ویزیت الزامی است</p>
                   </div>
                 </button>
               </div>

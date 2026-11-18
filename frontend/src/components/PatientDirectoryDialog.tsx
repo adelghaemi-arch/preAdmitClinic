@@ -20,7 +20,7 @@ const STATUS_OPTIONS = [
   { value: "any", label: "همه وضعیت‌ها" },
   { value: "active", label: "مراجعه فعال در کلینیک" },
   { value: "completed", label: "مراجعه تکمیل‌شده" },
-  { value: "intake_pending", label: "شرح حال تکمیل‌نشده" },
+  { value: "intake_pending", label: "پرسشنامه تکمیل‌نشده" },
   { value: "allergy", label: "دارای حساسیت ثبت‌شده" },
 ];
 
@@ -85,18 +85,18 @@ export function PatientDirectoryDialog({ open, snapshot: liveSnapshot, onClose, 
 
   return (
     <div className="fixed inset-0 z-[75] flex items-start justify-center overflow-y-auto bg-slate-900/45 p-3 pt-10 backdrop-blur-sm sm:p-6 sm:pt-16" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label="جست‌وجوی پیشرفته بیمار" onClick={(e) => e.stopPropagation()} className="w-full max-w-5xl overflow-hidden rounded-2xl bg-[#f7f9fa] shadow-2xl">
+      <div role="dialog" aria-modal="true" aria-label="جست‌وجوی پیشرفته سلامتجو" onClick={(e) => e.stopPropagation()} className="w-full max-w-5xl overflow-hidden rounded-2xl bg-[#f7f9fa] shadow-2xl">
         <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-white px-5 py-4">
           <div>
-            <h2 className="text-base font-extrabold text-slate-800">جست‌وجوی پیشرفته بیمار</h2>
-            <p className="mt-1 text-[11px] text-slate-500">با نام و نام خانوادگی، بخشی از نام، کد ملی، تلفن، بسته درمانی یا ایستگاه فعلی جست‌وجو کنید و بیمار را از جدول انتخاب کنید.</p>
+            <h2 className="text-base font-extrabold text-slate-800">جست‌وجوی پیشرفته سلامتجو</h2>
+            <p className="mt-1 text-[11px] text-slate-500">با نام و نام خانوادگی، بخشی از نام، کد ملی، تلفن، بسته درمانی یا ایستگاه فعلی جست‌وجو کنید و سلامتجو را از جدول انتخاب کنید.</p>
           </div>
           <button onClick={onClose} aria-label="بستن جست‌وجو" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
         </div>
 
         <div className="space-y-3 border-b border-slate-200 bg-white px-5 py-4">
           <form onSubmit={(e) => { e.preventDefault(); void runSearch(query, statusFilter, roomFilter); }} className="flex flex-wrap items-center gap-2">
-            <input autoFocus aria-label="جست‌وجو در همه فیلدهای بیمار" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="نام و نام خانوادگی، بخشی از نام، کد ملی، تلفن یا بسته درمانی..." className="app-input min-w-56 flex-1" />
+            <input autoFocus aria-label="جست‌وجو در همه فیلدهای سلامتجو" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="نام و نام خانوادگی، بخشی از نام، کد ملی، تلفن یا بسته درمانی..." className="app-input min-w-56 flex-1" />
             <button type="submit" disabled={busy} className="primary-button"><Search className="h-4 w-4" />{busy ? "در حال جست‌وجو..." : "جست‌وجو"}</button>
             <button type="button" onClick={reset} className="secondary-button"><RotateCcw className="h-3.5 w-3.5" />پاک‌کردن فیلترها</button>
           </form>
@@ -123,8 +123,8 @@ export function PatientDirectoryDialog({ open, snapshot: liveSnapshot, onClose, 
           onOpenRecord={onOpenRecord}
         />
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-5 py-3 text-[10px] text-slate-500">
-          <span>{searched ? `${toFaDigits(results.length)} بیمار پیدا شد` : "جست‌وجو در همه پرونده‌های کلینیک"}</span>
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-teal-600" />انتخاب بیمار، سوابق و کد ملی او را در فرم پذیرش بارگذاری می‌کند.</span>
+          <span>{searched ? `${toFaDigits(results.length)} سلامتجو پیدا شد` : "جست‌وجو در همه پرونده‌های کلینیک"}</span>
+          <span className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-teal-600" />انتخاب سلامتجو، سوابق و کد ملی او را در فرم پذیرش بارگذاری می‌کند.</span>
         </div>
       </div>
     </div>
@@ -143,14 +143,14 @@ interface RowProps {
 /** Memoized so a parent re-render (live clinic polling) cannot rebuild rows mid-click. */
 const DirectoryResultsTable = memo(function DirectoryResultsTable({ results, busy, searched, allergiesInScope, onSelect, onOpenRecord }: RowProps) {
   if (results.length === 0) {
-    return <div className="px-6 py-14 text-center text-xs text-slate-400">{busy ? "در حال جست‌وجو..." : searched ? "بیماری با این مشخصات یا فیلترها پیدا نشد. فیلترها را تغییر دهید یا نام کوتاه‌تری امتحان کنید." : "برای شروع، عبارت مورد نظر را وارد و جست‌وجو کنید."}</div>;
+    return <div className="px-6 py-14 text-center text-xs text-slate-400">{busy ? "در حال جست‌وجو..." : searched ? "سلامتجویی با این مشخصات یا فیلترها پیدا نشد. فیلترها را تغییر دهید یا نام کوتاه‌تری امتحان کنید." : "برای شروع، عبارت مورد نظر را وارد و جست‌وجو کنید."}</div>;
   }
   return (
     <div className="overflow-x-auto">
       <table className="patient-table w-full whitespace-nowrap text-right text-xs">
         <thead>
           <tr className="border-y border-slate-100 bg-[#fbfcfd] text-[10px] font-medium text-slate-400">
-            <th className="px-3 py-3 font-medium">نام بیمار</th>
+            <th className="px-3 py-3 font-medium">نام سلامتجو</th>
             <th className="px-3 py-3 font-medium">کد ملی</th>
             <th className="px-3 py-3 font-medium">سن / جنسیت</th>
             <th className="px-3 py-3 font-medium">تلفن</th>
@@ -171,7 +171,7 @@ const DirectoryResultsTable = memo(function DirectoryResultsTable({ results, bus
                 <td className="px-3 py-3">
                   <button type="button" onClick={() => onSelect(result)} className="text-right">
                     <span className="block font-semibold text-slate-700">{result.patient.fullName}</span>
-                    <span className="mt-1 block text-[10px] text-slate-400">{result.patient.intakeCompleted ? "شرح حال ثبت شده" : "شرح حال تکمیل‌نشده"}</span>
+                    <span className="mt-1 block text-[10px] text-slate-400">{result.patient.intakeCompleted ? "پرسشنامه ثبت شده" : "پرسشنامه تکمیل‌نشده"}</span>
                   </button>
                 </td>
                 <td className="px-3 py-3"><span dir="ltr" className="font-mono text-[11px] text-teal-700">{result.nationalId}</span></td>
@@ -191,7 +191,7 @@ const DirectoryResultsTable = memo(function DirectoryResultsTable({ results, bus
                   <div className="flex flex-wrap items-center gap-1">
                     {hasAllergy && <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-1 text-[10px] font-semibold text-red-700"><ShieldAlert className="h-3 w-3" />حساسیت</span>}
                     {result.patient.medications.length > 0 && <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 px-1.5 py-1 text-[10px] font-semibold text-sky-700"><Pill className="h-3 w-3" />{toFaDigits(result.patient.medications.length)} دارو</span>}
-                    {result.patient.intakeCompleted && <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-1 text-[10px] font-semibold text-emerald-700"><ClipboardList className="h-3 w-3" />شرح حال</span>}
+                    {result.patient.intakeCompleted && <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-1 text-[10px] font-semibold text-emerald-700"><ClipboardList className="h-3 w-3" />پرسشنامه</span>}
                     {result.visitCount > 1 && <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-1 text-[10px] font-semibold text-slate-600"><History className="h-3 w-3" />{toFaDigits(result.visitCount)} سابقه</span>}
                   </div>
                 </td>

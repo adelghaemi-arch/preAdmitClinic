@@ -60,7 +60,7 @@ export function ReceptionProfile({
   const [fullName, setFullName] = useState("");
   const [nationalId, setNationalId] = useState("");
   const [age, setAge] = useState("۴۵");
-  const [gender, setGender] = useState("مرد");
+  const [gender, setGender] = useState("");
   const [phone, setPhone] = useState("");
   const [selectedPathwayId, setSelectedPathwayId] = useState<number>(
     snapshot.pathways[0]?.id ?? 1
@@ -103,7 +103,7 @@ export function ReceptionProfile({
   const [alertPatientId, setAlertPatientId] = useState<number>(selectedPatientId);
   const [alertType, setAlertType] = useState("move_to_room");
   const [alertMessage, setAlertMessage] = useState(
-    "مراجعه‌کننده گرامی، نوبت شما در ایستگاه بعدی آماده است. لطفاً طبق نقشه همراه بیمار به اتاق مربوطه مراجعه فرمایید."
+    "مراجعه‌کننده گرامی، نوبت شما در ایستگاه بعدی آماده است. لطفاً طبق نقشه همراه سلامتجو به اتاق مربوطه مراجعه فرمایید."
   );
   const [alertSentBanner, setAlertSentBanner] = useState("");
 
@@ -185,7 +185,7 @@ export function ReceptionProfile({
         setGender(foundPatient.gender);
         setPhone(foundPatient.phone);
       } else {
-        setFullName(""); setAge("۴۵"); setGender("مرد"); setPhone("");
+        setFullName(""); setAge("۴۵"); setGender(""); setPhone("");
       }
       setIssuedQrPatient(null);
     } catch (err) {
@@ -202,10 +202,14 @@ export function ReceptionProfile({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lookupId]);
 
-  const resetAdmission = () => { lookupVersion.current++; setLookup(null); setLookupId(""); setNationalId(""); setFullName(""); setPhone(""); setAge("۴۵"); setGender("مرد"); setLookupError(""); };
+  const resetAdmission = () => { lookupVersion.current++; setLookup(null); setLookupId(""); setNationalId(""); setFullName(""); setPhone(""); setAge("۴۵"); setGender(""); setLookupError(""); };
 
   const handleCheckinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (gender !== "مرد" && gender !== "زن") {
+      setLookupError("جنسیت سلامتجو را صریحاً انتخاب کنید؛ فرم پیش‌پذیرش بر اساس آن انتخاب می‌شود.");
+      return;
+    }
     const pkg = snapshot.pathways.find((p) => p.id === selectedPathwayId);
     const numericAge =
       Number(
@@ -270,7 +274,7 @@ export function ReceptionProfile({
     });
 
     setQueueSavedBanner(
-      `ترتیب ایستگاه‌های «${patient.fullName}» جابه‌جا شد و اعلان هدایت جدید روی پرونده بیمار ارسال گردید.`
+      `ترتیب ایستگاه‌های «${patient.fullName}» جابه‌جا شد و اعلان هدایت جدید روی پرونده سلامتجو ارسال گردید.`
     );
     setTimeout(() => setQueueSavedBanner(""), 4500);
   };
@@ -320,11 +324,11 @@ export function ReceptionProfile({
     await onAction({
       action: "SEND_PATIENT_ALERT",
       patientId: alertPatientId,
-      senderRole: "پذیرش و هماهنگ‌کننده جریان بیمار",
+      senderRole: "پذیرش و هماهنگ‌کننده جریان سلامتجو",
       alertType,
       message: alertMessage.trim(),
     });
-    setAlertSentBanner("اعلان با موفقیت در همراه بیمار منتشر شد.");
+    setAlertSentBanner("اعلان با موفقیت در همراه سلامتجو منتشر شد.");
     setTimeout(() => setAlertSentBanner(""), 4000);
   };
 
@@ -341,10 +345,10 @@ export function ReceptionProfile({
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
               <div>
                 <h1 className="text-lg font-extrabold text-slate-900">
-                  داشبورد جریان لحظه‌ای بیماران در کلینیک (Live Flow Board)
+                  داشبورد جریان لحظه‌ای سلامتجویان در کلینیک (Live Flow Board)
                 </h1>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  مشاهده زنده موقعیت هر بیمار، وضعیت حضور پشت درب و زمان صرف‌شده در
+                  مشاهده زنده موقعیت هر سلامتجو، وضعیت حضور پشت درب و زمان صرف‌شده در
                   هر ایستگاه
                 </p>
               </div>
@@ -373,7 +377,7 @@ export function ReceptionProfile({
                     }`}
                   >
                     <Table2 className="h-3.5 w-3.5" />
-                    جدول زنده بیماران
+                    جدول زنده سلامتجویان
                   </button>
                 </div>
               </div>
@@ -522,7 +526,7 @@ export function ReceptionProfile({
                                       className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-bold text-sky-700 hover:bg-sky-50"
                                     >
                                       <Smartphone className="h-3 w-3" />
-                                      پرونده بیمار
+                                      پرونده سلامتجو
                                     </button>
                                   </div>
                                 </div>
@@ -542,7 +546,7 @@ export function ReceptionProfile({
                   <table className="w-full text-right text-xs">
                     <thead className="border-b border-slate-200 bg-slate-50 text-slate-600">
                       <tr>
-                        <th className="px-4 py-3 font-bold">نام بیمار / QR</th>
+                        <th className="px-4 py-3 font-bold">نام سلامتجو / QR</th>
                         <th className="px-4 py-3 font-bold">پکیج درمانی</th>
                         <th className="px-4 py-3 font-bold">ایستگاه فعلی</th>
                         <th className="px-4 py-3 font-bold">زمان در ایستگاه</th>
@@ -615,7 +619,7 @@ export function ReceptionProfile({
                                   onClick={() => onSwitchToPatientMobile(p.id)}
                                   className="rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 font-bold text-sky-700 hover:bg-sky-100"
                                 >
-                                  همراه بیمار
+                                  همراه سلامتجو
                                 </button>
                                 <button
                                   type="button"
@@ -646,18 +650,18 @@ export function ReceptionProfile({
             <div className="space-y-4 lg:col-span-7">
               {/* STEP 1: national id lookup */}
               <form onSubmit={handleLookup} className="rounded-2xl border border-slate-200 bg-white p-5">
-                <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">۱</span><h1 className="text-base font-extrabold text-slate-900">کد ملی بیمار را وارد کنید</h1></div>
-                <p className="mt-1 text-xs text-slate-500">ابتدا سوابق جست‌وجو می‌شود؛ اگر بیمار قبلاً مراجعه داشته، اطلاعات و سوابق او به‌صورت خودکار بارگذاری می‌شود.</p>
+                <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">۱</span><h1 className="text-base font-extrabold text-slate-900">کد ملی سلامتجو را وارد کنید</h1></div>
+                <p className="mt-1 text-xs text-slate-500">ابتدا سوابق جست‌وجو می‌شود؛ اگر سلامتجو قبلاً مراجعه داشته، اطلاعات و سوابق او به‌صورت خودکار بارگذاری می‌شود.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <div><input dir="ltr" inputMode="numeric" autoFocus aria-label="کد ملی بیمار" value={lookupId} onChange={(e) => { lookupVersion.current++; setLookupId(e.target.value); setLookup(null); setLookupError(""); setNationalId(""); }} placeholder="0012345678" className="app-input max-w-xs font-mono text-left" /><div className="mt-1 text-left text-[10px] text-slate-400" dir="ltr">{toFaDigits(normalizeNationalId(lookupId).length)} / {toFaDigits(10)}</div></div>
+                  <div><input dir="ltr" inputMode="numeric" autoFocus aria-label="کد ملی سلامتجو" value={lookupId} onChange={(e) => { lookupVersion.current++; setLookupId(e.target.value); setLookup(null); setLookupError(""); setNationalId(""); }} placeholder="0012345678" className="app-input max-w-xs font-mono text-left" /><div className="mt-1 text-left text-[10px] text-slate-400" dir="ltr">{toFaDigits(normalizeNationalId(lookupId).length)} / {toFaDigits(10)}</div></div>
                   <button type="submit" disabled={lookupBusy || normalizeNationalId(lookupId).length !== 10} className="primary-button"><Search className="h-4 w-4" />{lookupBusy ? "در حال جست‌وجو..." : "جست‌وجو در سوابق"}</button>
                   {lookup && <button type="button" onClick={resetAdmission} className="secondary-button">کد ملی دیگر</button>}
                 </div>
                 {lookupError && <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-600">{lookupError}</p>}
-                {lookup && !lookup.found && <p className="mt-3 rounded-xl border border-teal-200 bg-teal-50 p-3 text-xs text-teal-800">سابقه‌ای برای این کد ملی یافت نشد. بیمار جدید است؛ اطلاعات را در مرحله بعد تکمیل کنید.</p>}
+                {lookup && !lookup.found && <p className="mt-3 rounded-xl border border-teal-200 bg-teal-50 p-3 text-xs text-teal-800">سابقه‌ای برای این کد ملی یافت نشد. سلامتجو جدید است؛ اطلاعات را در مرحله بعد تکمیل کنید.</p>}
                 <div className="mt-5 border-t border-slate-100 pt-4">
                   <button type="button" onClick={() => setDirectoryOpen(true)} className="secondary-button w-full justify-between !py-3">
-                    <span className="flex items-center gap-2 text-xs font-semibold text-slate-700"><Search className="h-4 w-4 text-teal-600" />جست‌وجوی پیشرفته بیمار (نام خانوادگی، کد ملی، تلفن، بسته و ایستگاه فعلی)</span>
+                    <span className="flex items-center gap-2 text-xs font-semibold text-slate-700"><Search className="h-4 w-4 text-teal-600" />جست‌وجوی پیشرفته سلامتجو (نام خانوادگی، کد ملی، تلفن، بسته و ایستگاه فعلی)</span>
                     <span className="text-[10px] text-teal-700">باز کردن جدول نتایج ←</span>
                   </button>
                   <p className="mt-2 text-[10px] leading-6 text-slate-400">بخشی از نام یا نام خانوادگی کافی است؛ مثلاً «تابش» یا «مریم»، و چند کلمه هم پشتیبانی می‌شود.</p>
@@ -665,7 +669,7 @@ export function ReceptionProfile({
                 {lookup?.found && lookup.patient && (
                   <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-xs font-bold text-amber-900"><History className="h-4 w-4" />بیمار تکراری — سوابق بارگذاری شد</div>
+                      <div className="flex items-center gap-2 text-xs font-bold text-amber-900"><History className="h-4 w-4" />سلامتجو تکراری — سوابق بارگذاری شد</div>
                       <span className="text-[10px] text-amber-800">{toFaDigits(lookup.visits?.length ?? 0)} مراجعه قبلی</span>
                     </div>
                     <div className="mt-2 text-xs text-slate-700"><strong>{lookup.patient.fullName}</strong> · {toFaDigits(lookup.patient.age)} ساله · {lookup.patient.gender} · {toFaDigits(lookup.patient.phone)}</div>
@@ -676,24 +680,24 @@ export function ReceptionProfile({
                     </ul>
                     {lookup.activeVisitId && (
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 bg-white p-3 text-[11px] text-red-700">
-                        <span>این بیمار هم‌اکنون یک مراجعه فعال دارد و نمی‌توان پذیرش جدید ثبت کرد.</span>
+                        <span>این سلامتجو هم‌اکنون یک مراجعه فعال دارد و نمی‌توان پذیرش جدید ثبت کرد.</span>
                         <button type="button" onClick={() => onSwitchToPatientMobile(lookup.activeVisitId!)} className="secondary-button">باز کردن پرونده فعال</button>
                       </div>
                     )}
-                    {!lookup.activeVisitId && <p className="mt-2 text-[10px] text-amber-800">شرح حال، داروها و حساسیت‌های مراجعه قبلی به پرونده جدید منتقل می‌شود.</p>}
+                    {!lookup.activeVisitId && <p className="mt-2 text-[10px] text-amber-800">پس از پذیرش کلینیک، پرسشنامه پیش‌پذیرش باید دوباره برای مراجعه امروز تکمیل شود.</p>}
                   </div>
                 )}
               </form>
 
               {/* STEP 2: details + pathway (enabled after lookup) */}
               <form onSubmit={handleCheckinSubmit} className={`space-y-4 rounded-2xl border border-slate-200 bg-white p-5 ${!lookup || lookup.activeVisitId ? "pointer-events-none opacity-50" : ""}`} aria-disabled={!lookup || Boolean(lookup.activeVisitId)}>
-                <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">۲</span><h2 className="text-base font-extrabold text-slate-900">{lookup?.found ? "تایید اطلاعات و انتخاب بسته امروز" : "ثبت مشخصات بیمار جدید و بسته امروز"}</h2></div>
+                <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">۲</span><h2 className="text-base font-extrabold text-slate-900">{lookup?.found ? "تایید اطلاعات و انتخاب بسته امروز" : "ثبت مشخصات سلامتجو جدید و بسته امروز"}</h2></div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div><label htmlFor="admission-name" className="mb-1 block text-xs font-bold text-slate-700">نام و نام خانوادگی</label><input id="admission-name" name="fullName" type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs" /></div>
                   <div><label htmlFor="admission-national-id" className="mb-1 block text-xs font-bold text-slate-700">کد ملی</label><input id="admission-national-id" name="nationalId" type="text" dir="ltr" readOnly value={nationalId} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 font-mono text-xs text-left" /></div>
                   <div className="grid grid-cols-2 gap-2">
                     <div><label htmlFor="admission-age" className="mb-1 block text-xs font-bold text-slate-700">سن</label><input id="admission-age" name="age" type="text" value={age} onChange={(e) => setAge(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs" /></div>
-                    <div><label htmlFor="admission-gender" className="mb-1 block text-xs font-bold text-slate-700">جنسیت</label><select id="admission-gender" name="gender" value={gender} onChange={(e) => setGender(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs"><option value="مرد">مرد</option><option value="زن">زن</option></select></div>
+                    <div><label htmlFor="admission-gender" className="mb-1 block text-xs font-bold text-slate-700">جنسیت</label><select id="admission-gender" name="gender" value={gender} onChange={(e) => setGender(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs"><option value="">انتخاب کنید</option><option value="مرد">مرد</option><option value="زن">زن</option></select></div>
                   </div>
                   <div><label htmlFor="admission-phone" className="mb-1 block text-xs font-bold text-slate-700">شماره تلفن همراه</label><input id="admission-phone" name="phone" type="text" required inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="۰۹۱۲۳۴۵۶۷۸۹" className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs" /></div>
                 </div>
@@ -717,23 +721,24 @@ export function ReceptionProfile({
                       </button>); })}
                   </div>
                 </div>
-                <button type="submit" disabled={busy || customStations.length === 0 || !lookup || Boolean(lookup.activeVisitId)} className="primary-button w-full justify-center py-3.5 text-sm"><QrCode className="h-5 w-5" />ثبت پذیرش و صدور QR همراه بیمار</button>
+                <button type="submit" disabled={busy || customStations.length === 0 || !lookup || Boolean(lookup.activeVisitId) || (gender !== "مرد" && gender !== "زن")} className="primary-button w-full justify-center py-3.5 text-sm"><QrCode className="h-5 w-5" />ثبت پذیرش کلینیک و صدور QR</button>
               </form>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-5">
-              <h3 className="text-sm font-extrabold text-slate-900">کارت پذیرش و QR همراه بیمار</h3>
-              <p className="mt-1 text-xs text-slate-500">بیمار با اسکن این کد، بدون رمز عبور فقط به مسیر و پرونده خودش دسترسی دارد.</p>
+              <h3 className="text-sm font-extrabold text-slate-900">کارت پذیرش و QR همراه سلامتجو</h3>
+              <p className="mt-1 text-xs text-slate-500">سلامتجو با اسکن این کد، بدون رمز عبور فقط به مسیر و پرونده خودش دسترسی دارد.</p>
               {issuedQrPatient ? (
                 <div className="mt-4 rounded-2xl border-2 border-emerald-400 bg-emerald-50/50 p-5 text-center">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white"><CheckCircle2 className="h-4 w-4" />پذیرش ثبت شد</div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white"><CheckCircle2 className="h-4 w-4" />پذیرش کلینیک ثبت شد</div>
+                  <p className="mt-2 text-[11px] font-semibold leading-5 text-amber-800">پرسشنامه پیش‌پذیرش هنوز باید توسط سلامتجو تکمیل شود.</p>
                   <h4 className="mt-3 text-base font-extrabold text-slate-900">{issuedQrPatient.name}</h4>
                   <p className="mt-0.5 text-xs text-slate-600">{issuedQrPatient.pathway}</p>
                   <div className="mt-4 flex justify-center"><QrCodeVisual token={issuedQrPatient.qrToken} size={160} /></div>
-                  <button type="button" onClick={() => onSwitchToPatientMobile(issuedQrPatient.id)} className="primary-button mt-4 w-full justify-center"><Smartphone className="h-4 w-4" />باز کردن پرونده این بیمار</button>
+                  <button type="button" onClick={() => onSwitchToPatientMobile(issuedQrPatient.id)} className="primary-button mt-4 w-full justify-center"><Smartphone className="h-4 w-4" />باز کردن پرونده این سلامتجو</button>
                 </div>
               ) : (
-                <div className="mt-5 flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center"><QrCode className="mb-4 h-16 w-16 stroke-1 text-slate-200" /><h4 className="text-xs font-semibold text-slate-500">کارت پذیرش بیمار اینجا نمایش داده می‌شود</h4><p className="mt-2 text-[11px] leading-6 text-slate-400">پس از ثبت فرم، QR اختصاصی و لینک ورود بیمار به‌صورت خودکار ایجاد می‌شود.</p></div>
+                <div className="mt-5 flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-6 text-center"><QrCode className="mb-4 h-16 w-16 stroke-1 text-slate-200" /><h4 className="text-xs font-semibold text-slate-500">کارت پذیرش سلامتجو اینجا نمایش داده می‌شود</h4><p className="mt-2 text-[11px] leading-6 text-slate-400">پس از ثبت پذیرش کلینیک، QR اختصاصی و لینک ورود سلامتجو به‌صورت خودکار ایجاد می‌شود. پرسشنامه پیش‌پذیرش مرحله بعد است.</p></div>
               )}
             </div>
           </div>
@@ -749,8 +754,8 @@ export function ReceptionProfile({
                     مدیریت پویا صف‌ها و تغییر هوشمند ترتیب ایستگاه‌ها
                   </h1>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    در صورت شلوغی یک بخش (مثلاً متخصص قلب)، بیمار را به ایستگاه
-                    خلوت‌تر (مثلاً دندانپزشکی) هدایت کنید تا زمان بیمار تلف نشود.
+                    در صورت شلوغی یک بخش (مثلاً متخصص قلب)، سلامتجو را به ایستگاه
+                    خلوت‌تر (مثلاً دندانپزشکی) هدایت کنید تا زمان سلامتجو تلف نشود.
                   </p>
                 </div>
 
@@ -831,7 +836,7 @@ export function ReceptionProfile({
                   <span>
                     پیشنهاد هماهنگ‌کننده هوشمند برای{" "}
                     <strong>{queueTargetPatient.fullName}</strong>: هدایت خودکار به
-                    خلوت‌ترین ایستگاه باقی‌مانده و ارسال اعلان فوری به پرونده بیمار.
+                    خلوت‌ترین ایستگاه باقی‌مانده و ارسال اعلان فوری به پرونده سلامتجو.
                   </span>
                 </div>
                 <button
@@ -941,10 +946,10 @@ export function ReceptionProfile({
             >
               <div>
                 <h1 className="text-lg font-extrabold text-slate-900">
-                  ارسال فراخوان و اعلان به همراه بیمار
+                  ارسال فراخوان و اعلان به همراه سلامتجو
                 </h1>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  اعلان ارسالی بلافاصله در بالای اپلیکیشن پرونده بیمار نمایش داده
+                  اعلان ارسالی بلافاصله در بالای اپلیکیشن پرونده سلامتجو نمایش داده
                   می‌شود.
                 </p>
               </div>
@@ -958,7 +963,7 @@ export function ReceptionProfile({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-slate-700">
-                    انتخاب بیمار مقصد
+                    انتخاب سلامتجو مقصد
                   </label>
                   <select
                     value={alertPatientId}
@@ -1001,10 +1006,10 @@ export function ReceptionProfile({
                 const roomInfo = snapshot.rooms.find((r) => r.code === station?.roomCode);
                 return station ? (
                   <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-[11px] leading-6 text-blue-900">
-                    <strong>وضعیت زنده صف برای این بیمار:</strong> {station.roomName} · {toFaDigits(station.queueAhead)} نفر جلوتر · حدود {toFaDigits(station.estimatedWaitMinutes)} دقیقه تا فراخوان.
+                    <strong>وضعیت زنده صف برای این سلامتجو:</strong> {station.roomName} · {toFaDigits(station.queueAhead)} نفر جلوتر · حدود {toFaDigits(station.estimatedWaitMinutes)} دقیقه تا فراخوان.
                     {roomInfo && <span className="block text-blue-700">بر اساس ترتیب فعلی صف و میانگین زمان خدمت {roomInfo.specialistName} ({toFaDigits(roomInfo.avgServiceMinutes)} دقیقه). این برآورد هنگام ارسال پیام حرکت، به متن اعلان اضافه می‌شود.</span>}
                   </div>
-                ) : <div className="rounded-xl bg-slate-50 p-3 text-[11px] text-slate-500">این بیمار در حال حاضر در صفِ در انتظار فراخوان نیست.</div>;
+                ) : <div className="rounded-xl bg-slate-50 p-3 text-[11px] text-slate-500">این سلامتجو در حال حاضر در صفِ در انتظار فراخوان نیست.</div>;
               })()}
 
               {/* Quick Templates */}
@@ -1048,7 +1053,7 @@ export function ReceptionProfile({
                 className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-xs font-extrabold text-white hover:bg-sky-700 disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
-                ارسال فوری اعلان به همراه بیمار
+                ارسال فوری اعلان به همراه سلامتجو
               </button>
             </form>
 

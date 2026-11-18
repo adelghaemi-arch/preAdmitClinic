@@ -1,9 +1,11 @@
 import { MOCK_DATASET, type MockDataset } from "@/lib/mock-dataset";
 import { buildSeededContracts, buildSeededPackageRuleLibrary } from "@/lib/mock-contracts";
+import { loadSeedForms, stripSignatureParts } from "@/lib/form-engine";
 import {
   defaultCompanionVisibility,
   emptyIntakeAnswers,
   type CorporateContract,
+  type FormDefinition,
   type PackageLibraryRule,
   type MockAlertRow,
   type MockLinkRow,
@@ -35,6 +37,7 @@ export interface MockStore {
   alerts: MockAlertRow[];
   contracts: CorporateContract[];
   packageRuleLibrary: PackageLibraryRule[];
+  forms: FormDefinition[];
 }
 
 type DateField =
@@ -101,6 +104,9 @@ function buildStore(): MockStore {
   dataset.patients = dataset.patients.map((patient) => ({
     ...patient,
     intakeAnswers: { ...emptyIntakeAnswers, ...(patient.intakeAnswers ?? {}) },
+    formResponses: patient.formResponses ?? [],
+    // Docs-driven forms replace legacy intake; demo patients start incomplete unless they already have a submitted response.
+    intakeCompleted: Boolean((patient.formResponses ?? []).some((r) => r.status === "submitted")),
   }));
   if (!dataset.appUsers.some((u) => u.username === "supervisor")) {
     dataset.appUsers.push({
@@ -135,10 +141,11 @@ function buildStore(): MockStore {
   const seededContracts = buildSeededContracts(dataset.pathways);
 
   return {
-    ...(dataset as Omit<MockStore, "contracts" | "packageRuleLibrary" | "clinicLocation">),
+    ...(dataset as Omit<MockStore, "contracts" | "packageRuleLibrary" | "clinicLocation" | "forms">),
     clinicLocation: { lat: 35.7448, lon: 51.3753, address: "تهران، خیابان کارگر شمالی، بین بهشتی و مجیدیه، پلاک ۱۲۰", city: "تهران" },
     contracts: seededContracts,
     packageRuleLibrary: buildSeededPackageRuleLibrary(),
+    forms: loadSeedForms(),
   };
 }
 
@@ -174,6 +181,8 @@ export const mockStore = {
   get alerts() { return store().alerts; },
   get contracts() { return store().contracts; },
   get packageRuleLibrary() { return store().packageRuleLibrary; },
+  get forms() { return store().forms; },
+  formById(id: string) { return store().forms.find((f) => f.id === id) ?? null; },
   libraryRuleById(id: string) { return store().packageRuleLibrary.find((r) => r.id === id) ?? null; },
   contractById(id: number) { return store().contracts.find((c) => c.id === id) ?? null; },
 
@@ -277,6 +286,16 @@ export const mockMutations = {
     const user = mockStore.userById(id);
     if (user) user.lastLoginAt = at;
   },
+  upsertForm(form: FormDefinition): FormDefinition {
+    const list = store().forms;
+    const idx = list.findIndex((f) => f.id === form.id);
+    if (idx < 0) list.push(form);
+    else list[idx] = form;
+    return form;
+  },
+  replaceForms(forms: FormDefinition[]) {
+    store().forms = forms;
+  },
 };
 
 /** Serialisable copy of the whole store (used for the browser-local mirror). */
@@ -307,6 +326,20 @@ export function hydrateMockStore(data: Partial<MockStore>): void {
       ? data.packageRuleLibrary
       : buildSeededPackageRuleLibrary();
   if (!current.clinicLocation) current.clinicLocation = { lat: 35.7448, lon: 51.3753, address: "تهران، خیابان کارگر شمالی، پلاک ۱۲۰", city: "تهران" };
+  current.forms =
+    Array.isArray(data.forms) && data.forms.length > 0
+      ? data.forms.map((f) => stripSignatureParts(f))
+      : loadSeedForms();
+  current.patients = (current.patients ?? []).map((p) => {
+    const formResponses = p.formResponses ?? [];
+    return {
+      ...p,
+      formResponses,
+      intakeAnswers: { ...emptyIntakeAnswers, ...(p.intakeAnswers ?? {}) },
+      // Truth source for completion is a submitted FormResponse, not legacy flags.
+      intakeCompleted: formResponses.some((r) => r.status === "submitted"),
+    };
+  });
   if (!current.appUsers.some((u) => u.username === "supervisor")) {
     current.appUsers.push({
       id: current.appUsers.reduce((m, u) => Math.max(m, u.id), 0) + 1,

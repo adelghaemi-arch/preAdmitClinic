@@ -31,6 +31,7 @@ export function filterPatientForCompanion(patient: PatientFullDto, visibility: C
       smoking: "",
       supplements: "",
     },
+    formResponses: visibility.clinicalIntake === true ? patient.formResponses ?? [] : [],
     paraclinicResults: visibility.results ? patient.paraclinicResults : [],
     clinicalNotes: visibility.diagnoses
       ? patient.clinicalNotes.map((note) => ({
@@ -46,7 +47,7 @@ export function filterPatientForCompanion(patient: PatientFullDto, visibility: C
             alert.alertType === "result_ready"
               ? "پرونده به‌روزرسانی شد."
               : alert.alertType === "general"
-                ? "اطلاع‌رسانی پذیرش ثبت شد."
+                ? "اطلاع‌رسانی پذیرش کلینیک ثبت شد."
                 : alert.message,
         }))
       : [],

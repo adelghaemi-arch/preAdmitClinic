@@ -28,7 +28,7 @@ export function CompanionLinks({ snapshot, userId, onNavigate, onAction, busy }:
       await onAction({ action: "LINK_COMPANION", qrToken, nationalId, relationship, permission });
       setQrToken("");
       setNationalId("");
-      setSuccess("پرونده بیمار با موفقیت به حساب شما متصل شد.");
+      setSuccess("پرونده سلامتجو با موفقیت به حساب شما متصل شد.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "اتصال پرونده انجام نشد.");
     }
@@ -47,7 +47,7 @@ export function CompanionLinks({ snapshot, userId, onNavigate, onAction, busy }:
       <section className="rounded-2xl border border-slate-200/80 bg-white p-5">
         <h2 className="text-sm font-bold text-slate-700">پرونده‌های متصل به حساب من</h2>
         <p className="mt-1 text-[11px] leading-6 text-slate-400">
-          فقط همین پرونده‌ها برای شما نمایش داده می‌شوند. اگر خودتان بیمار هستید، نسبت «خود بیمار» را انتخاب کنید.
+          فقط همین پرونده‌ها برای شما نمایش داده می‌شوند. اگر خودتان سلامتجو هستید، نسبت «خود سلامتجو» را انتخاب کنید.
         </p>
 
         {snapshot.links.filter((l) => l.userId === userId).length === 0 && (
@@ -96,10 +96,10 @@ export function CompanionLinks({ snapshot, userId, onNavigate, onAction, busy }:
         <div>
           <h2 className="flex items-center gap-2 text-sm font-bold text-slate-700">
             <Link2 className="h-4 w-4 text-teal-600" />
-            اتصال پرونده بیمار جدید
+            اتصال پرونده سلامتجو جدید
           </h2>
           <p className="mt-1 text-[11px] leading-6 text-slate-400">
-            کد QR پذیرش و کد ملی بیمار برای تایید هویت لازم است. پس از اتصال، اطلاعات بیمار در حساب شما فعال می‌شود.
+            کد QR پذیرش و کد ملی سلامتجو برای تایید هویت لازم است. پس از اتصال، اطلاعات سلامتجو در حساب شما فعال می‌شود.
           </p>
         </div>
 
@@ -109,12 +109,12 @@ export function CompanionLinks({ snapshot, userId, onNavigate, onAction, busy }:
         </label>
 
         <label className="app-label">
-          کد ملی بیمار
+          کد ملی سلامتجو
           <input required inputMode="numeric" dir="ltr" value={nationalId} onChange={(e) => setNationalId(e.target.value)} placeholder="۰۰۱۸۹۴۳۲۱۰" className="app-input mt-2 font-mono" />
         </label>
 
         <label className="app-label">
-          نسبت شما با بیمار
+          نسبت شما با سلامتجو
           <select value={relationship} onChange={(e) => setRelationship(e.target.value)} className="app-input mt-2">
             {COMPANION_RELATIONS.map((item) => (
               <option key={item.value} value={item.value}>
@@ -130,7 +130,7 @@ export function CompanionLinks({ snapshot, userId, onNavigate, onAction, busy }:
             <input type="radio" name="permission" checked={permission === "manage"} onChange={() => setPermission("manage")} className="mt-0.5" />
             <span>
               <strong className="flex items-center gap-1.5 font-semibold text-slate-700"><ShieldCheck className="h-3.5 w-3.5 text-teal-600" />ثبت اطلاعات و پیگیری</strong>
-              <span className="mt-1 block text-[10px] text-slate-400">ثبت شرح حال، اعلام حضور در ایستگاه و پیگیری کامل مسیر</span>
+              <span className="mt-1 block text-[10px] text-slate-400">تکمیل پرسشنامه پیش‌پذیرش، اعلام حضور در ایستگاه و پیگیری کامل مسیر</span>
             </span>
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 text-xs text-slate-600 has-[:checked]:border-amber-300 has-[:checked]:bg-amber-50/40">

@@ -129,7 +129,7 @@ export function RoomQueueBoard({ snapshot, room, onClose, onOpenPatient, onActio
             <button onClick={() => move(index, 1)} disabled={busy || index === order.length - 1} aria-label="عقب‌تر در صف" className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 disabled:opacity-30"><ArrowDown className="h-3.5 w-3.5" /></button>
           </div>
         )}
-        <button onClick={() => onOpenPatient(entry.patient.id)} aria-label="پرونده بیمار" className="rounded-lg border border-slate-200 p-1.5 text-slate-400 hover:bg-slate-50 hover:text-teal-700"><FileHeart className="h-3.5 w-3.5" /></button>
+        <button onClick={() => onOpenPatient(entry.patient.id)} aria-label="پرونده سلامتجو" className="rounded-lg border border-slate-200 p-1.5 text-slate-400 hover:bg-slate-50 hover:text-teal-700"><FileHeart className="h-3.5 w-3.5" /></button>
       </div>
     );
   };

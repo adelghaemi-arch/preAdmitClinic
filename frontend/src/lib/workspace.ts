@@ -28,27 +28,28 @@ export type AppPage =
   | "reports"
   | "pathways"
   | "rooms"
-  | "team";
+  | "team"
+  | "forms";
 
 export const PAGE_TITLES: Record<AppPage, string> = {
   dashboard: "داشبورد",
-  patients: "بیماران و پرونده‌ها",
-  admission: "پذیرش بیمار جدید",
-  flow: "جریان زنده بیماران",
+  patients: "سلامتجویان و پرونده‌ها",
+  admission: "پذیرش سلامتجو جدید",
+  flow: "جریان زنده سلامتجویان",
   queues: "مدیریت صف‌ها",
   alerts: "اعلان‌ها و فراخوان‌ها",
-  clinical: "شرح حال و خلاصه ویزیت",
+  clinical: "پرسشنامه و خلاصه ویزیت",
   "clinical-notes": "معاینه، تشخیص و نسخه",
-  "clinical-complete": "اتمام ویزیت و هدایت بیمار",
+  "clinical-complete": "اتمام ویزیت و هدایت سلامتجو",
   diagnostics: "خدمات تشخیصی",
   "diagnostics-tracker": "پیگیری نمونه و انجام تست",
   "diagnostics-upload": "آپلود نتایج و تصاویر",
-  records: "پرونده الکترونیک بیمار",
+  records: "پرونده الکترونیک سلامتجو",
   "journey-intro": "نقشه راه سلامتی",
-  "companion-intake": "شرح حال و سوابق",
+  "companion-intake": "پرسشنامه پیش‌پذیرش",
   "companion-map": "نقشه و راهنمای مسیر",
   "companion-records": "پرونده امروز و گزارش",
-  "companion-links": "بیماران من و نسبت من",
+  "companion-links": "سلامتجویان من و نسبت من",
   "patient-privacy": "دسترسی همراه‌های من",
   contracts: "قراردادهای سازمانی و پکیج‌ها",
   "contract-packages": "بسته‌های سلامت و قوانین تخصیص",
@@ -59,13 +60,14 @@ export const PAGE_TITLES: Record<AppPage, string> = {
   pathways: "مسیرهای درمانی",
   rooms: "طبقات و اتاق‌ها",
   team: "کادر درمان و دسترسی‌ها",
+  forms: "فرم‌های پیش‌پذیرش",
 };
 
 /** Role switcher entries. The first role is the default for every session. */
 export const ROLES: { id: WorkspaceRole; label: string; description: string; page: AppPage }[] = [
-  { id: "owner", label: "بیمار", description: "داشبورد شخصی، شرح حال، مسیر درمان و گزارش من", page: "dashboard" },
-  { id: "patient", label: "همراه بیمار", description: "پیگیری پرونده‌های دیگران فقط در محدوده اجازه بیمار", page: "dashboard" },
-  { id: "reception", label: "پذیرش و هماهنگی", description: "پذیرش، صف‌ها و جریان زنده بیماران", page: "dashboard" },
+  { id: "owner", label: "سلامتجو", description: "داشبورد شخصی، پرسشنامه پیش‌پذیرش، مسیر درمان و گزارش من", page: "dashboard" },
+  { id: "patient", label: "همراه سلامتجو", description: "پیگیری پرونده‌های دیگران فقط در محدوده اجازه سلامتجو", page: "dashboard" },
+  { id: "reception", label: "پذیرش و هماهنگی", description: "پذیرش، صف‌ها و جریان زنده سلامتجویان", page: "dashboard" },
   { id: "specialist", label: "پزشک متخصص", description: "لیست انتظار، معاینه، تشخیص و نسخه", page: "dashboard" },
   { id: "paraclinic", label: "کارشناس پاراکلینیک", description: "صف بخش تشخیصی و نتایج آزمایش", page: "dashboard" },
   { id: "admin", label: "ادمین و راهبر کلینیک", description: "قراردادهای سازمانی، قیف ثبت‌نام، نوبت‌دهی سقفی و تنظیمات", page: "contracts" },
@@ -91,13 +93,13 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
     mobile: ["dashboard", "companion-intake", "companion-map", "companion-records", "patient-privacy"],
     labels: {
       dashboard: "امروز من",
-      "companion-intake": "شرح حال امروز",
+      "companion-intake": "پرسشنامه امروز",
       "companion-map": "نقشه و مسیر من",
       "companion-records": "گزارش پایانی من",
       "companion-links": "سوابق و پرونده‌های من",
       "patient-privacy": "دسترسی همراه‌های من",
     },
-    short: { dashboard: "امروز", "companion-intake": "شرح حال", "companion-map": "نقشه", "companion-records": "گزارش", "patient-privacy": "همراه‌ها" },
+    short: { dashboard: "امروز", "companion-intake": "پرسشنامه", "companion-map": "نقشه", "companion-records": "گزارش", "patient-privacy": "همراه‌ها" },
   },
   patient: {
     home: "dashboard",
@@ -108,29 +110,29 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
     mobile: ["dashboard", "companion-intake", "companion-map", "companion-records", "companion-links"],
     labels: {
       dashboard: "پیگیری امروز",
-      "companion-intake": "وضعیت شرح حال بیمار",
-      "companion-map": "مسیر و مکان بیمار",
-      "companion-records": "گزارش مجاز بیمار",
-      "companion-links": "بیماران همراهی‌شده",
+      "companion-intake": "وضعیت پرسشنامه سلامتجو",
+      "companion-map": "مسیر و مکان سلامتجو",
+      "companion-records": "گزارش مجاز سلامتجو",
+      "companion-links": "سلامتجویان همراهی‌شده",
     },
-    short: { dashboard: "پیگیری", "companion-intake": "شرح حال", "companion-map": "مسیر", "companion-records": "گزارش", "companion-links": "بیماران" },
+    short: { dashboard: "پیگیری", "companion-intake": "پرسشنامه", "companion-map": "مسیر", "companion-records": "گزارش", "companion-links": "سلامتجویان" },
   },
   reception: {
     home: "dashboard",
     groups: [
       { title: "نمای کلی", pages: ["dashboard"] },
       { title: "پذیرش و جریان", pages: ["admission", "flow", "queues", "alerts"] },
-      { title: "بیماران", pages: ["patients", "records"] },
+      { title: "سلامتجویان", pages: ["patients", "records"] },
     ],
     mobile: ["dashboard", "admission", "flow", "queues", "alerts"],
     labels: {
       dashboard: "نمای امروز",
-      admission: "پذیرش بیمار جدید",
-      flow: "جریان زنده بیماران",
+      admission: "پذیرش سلامتجو جدید",
+      flow: "جریان زنده سلامتجویان",
       queues: "مدیریت صف‌ها",
       alerts: "اعلان و فراخوان",
-      patients: "فهرست بیماران",
-      records: "پرونده بیمار",
+      patients: "فهرست سلامتجویان",
+      records: "پرونده سلامتجو",
     },
     short: { dashboard: "امروز", admission: "پذیرش", flow: "جریان", queues: "صف‌ها", alerts: "اعلان" },
   },
@@ -138,7 +140,7 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
     home: "dashboard",
     groups: [
       { title: "مطب من", pages: ["dashboard", "clinical", "clinical-notes", "clinical-complete"] },
-      { title: "بیماران", pages: ["records"] },
+      { title: "سلامتجویان", pages: ["records"] },
     ],
     mobile: ["dashboard", "clinical", "clinical-notes", "clinical-complete", "records"],
     labels: {
@@ -146,7 +148,7 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       clinical: "شرح حال و خلاصه",
       "clinical-notes": "معاینه و نسخه",
       "clinical-complete": "اتمام ویزیت",
-      records: "پرونده بیمار",
+      records: "پرونده سلامتجو",
     },
     short: { dashboard: "انتظار", clinical: "شرح حال", "clinical-notes": "نسخه", "clinical-complete": "اتمام", records: "پرونده" },
   },
@@ -154,14 +156,14 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
     home: "dashboard",
     groups: [
       { title: "بخش تشخیصی", pages: ["dashboard", "diagnostics-tracker", "diagnostics-upload"] },
-      { title: "بیماران", pages: ["records"] },
+      { title: "سلامتجویان", pages: ["records"] },
     ],
     mobile: ["dashboard", "diagnostics-tracker", "diagnostics-upload", "records"],
     labels: {
       dashboard: "صف بخش تشخیصی",
       "diagnostics-tracker": "پیگیری نمونه و تست",
       "diagnostics-upload": "آپلود نتیجه",
-      records: "پرونده بیمار",
+      records: "پرونده سلامتجو",
     },
     short: { dashboard: "صف", "diagnostics-tracker": "پیگیری", "diagnostics-upload": "آپلود", records: "پرونده" },
   },
@@ -183,7 +185,7 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       { title: "قراردادهای سازمانی", pages: ["contracts", "contract-packages", "contract-schedule", "contract-funnel"] },
       { title: "نمای کلی و جریان", pages: ["dashboard", "patients", "admission", "flow", "queues", "records"] },
       { title: "درمان و تشخیص", pages: ["clinical", "diagnostics", "alerts"] },
-      { title: "پیکربندی کلینیک", pages: ["reports", "pathways", "rooms", "team"] },
+      { title: "پیکربندی کلینیک", pages: ["reports", "pathways", "rooms", "team", "forms"] },
     ],
     mobile: ["contracts", "contract-packages", "contract-funnel", "dashboard"],
     labels: {
@@ -192,11 +194,11 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       "contract-schedule": "نوبت‌دهی و فرمول سقفی",
       "contract-funnel": "قیف ثبت‌نام و پیامک گروهی",
       dashboard: "داشبورد کلینیک",
-      patients: "بیماران حاضر",
+      patients: "سلامتجویان حاضر",
       flow: "جریان زنده",
       queues: "مدیریت صف‌ها",
       admission: "پذیرش موردی",
-      records: "پرونده بیمار",
+      records: "پرونده سلامتجو",
       clinical: "ویزیت و نسخه",
       diagnostics: "خدمات تشخیصی",
       alerts: "اعلان‌ها",
@@ -204,6 +206,7 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       pathways: "بسته‌ها و مسیرها",
       rooms: "طبقات و اتاق‌ها",
       team: "کادر و دسترسی‌ها",
+      forms: "فرم‌های پیش‌پذیرش",
     },
     short: { contracts: "افراد", "contract-packages": "بسته‌ها", "contract-schedule": "نوبت‌دهی", "contract-funnel": "قیف و پیامک", dashboard: "کلینیک" },
   },
@@ -228,7 +231,7 @@ export function isAppPage(value: string | null | undefined): value is AppPage {
 }
 
 export const COMPANION_RELATIONS = [
-  { value: "self", label: "خود بیمار" },
+  { value: "self", label: "خود سلامتجو" },
   { value: "child", label: "فرزند" },
   { value: "parent", label: "والدین" },
   { value: "spouse", label: "همسر" },
@@ -294,7 +297,7 @@ export function totalVisitMinutes(patient: PatientFullDto, asOf: string): number
 }
 
 export function downloadPatientsCsv(patients: PatientFullDto[]) {
-  const rows = [["نام بیمار", "کد ملی", "تلفن", "بسته درمانی", "ایستگاه فعلی", "وضعیت"], ...patients.map((p) => [p.fullName, p.nationalId, p.phone, p.pathwayTitle, currentStation(p)?.roomName ?? "پایان مراجعه", patientStatus(p).label])];
+  const rows = [["نام سلامتجو", "کد ملی", "تلفن", "بسته درمانی", "ایستگاه فعلی", "وضعیت"], ...patients.map((p) => [p.fullName, p.nationalId, p.phone, p.pathwayTitle, currentStation(p)?.roomName ?? "پایان مراجعه", patientStatus(p).label])];
   const csv = "\uFEFF" + rows.map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const a = document.createElement("a");

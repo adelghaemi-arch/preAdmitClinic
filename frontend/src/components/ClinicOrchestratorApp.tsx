@@ -117,6 +117,7 @@ const PAGE_ICONS: Record<AppPage, LucideIcon> = {
   pathways: GitBranch,
   rooms: Hospital,
   team: ShieldCheck,
+  forms: ClipboardList,
 };
 
 export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, initialRole = "owner", initialPage = "dashboard", initialPatientId }: Props) {
@@ -336,7 +337,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const receptionSection = current === "admission" ? "checkin" : current === "queues" ? "queue" : current === "alerts" ? "alerts" : "flow";
   const specialistSection = current === "clinical-notes" ? "notes" : current === "clinical-complete" ? "complete" : "brief";
   const paraclinicSection = current === "diagnostics-tracker" ? "tracker" : current === "diagnostics-upload" ? "upload" : "queue";
-  const adminSection = current === "pathways" ? "pathways" : current === "rooms" ? "rooms" : current === "team" ? "staff" : "kpi";
+  const adminSection = current === "pathways" ? "pathways" : current === "rooms" ? "rooms" : current === "team" ? "staff" : current === "forms" ? "forms" : "kpi";
 
   const dismissJourneyIntro = async () => {
     if (!activePatient) return;
@@ -489,7 +490,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               <Hospital className="h-3.5 w-3.5" />
               <span>کلینیک تخصصی نبض</span>
               <ChevronLeft className="h-3 w-3 text-slate-300" />
-              <span className="text-slate-600">{role === "patient" && isSelf ? "بیمار" : activeRole.label}</span>
+              <span className="text-slate-600">{role === "patient" && isSelf ? "سلامتجو" : activeRole.label}</span>
             </div>
             <div className="relative hidden sm:block">
               <form
@@ -502,8 +503,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               >
                 <Search className="h-3.5 w-3.5 text-slate-400" />
                 <input
-                  aria-label="جستجوی سراسری بیمار"
-                  placeholder={role === "patient" || role === "owner" ? "جستجو در پرونده‌های من..." : "جستجوی بیمار، کد ملی یا شماره پرونده..."}
+                  aria-label="جستجوی سراسری سلامتجو"
+                  placeholder={role === "patient" || role === "owner" ? "جستجو در پرونده‌های من..." : "جستجوی سلامتجو، کد ملی یا شماره پرونده..."}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-44 bg-transparent text-[10px] text-slate-600 outline-none 2xl:w-60"
@@ -584,7 +585,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                 <div className="absolute top-full left-0 mt-4 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
                   <div className="border-b border-slate-100 px-3 py-2">
                     <span className="block text-xs font-semibold">{user.fullName}</span>
-                    <span className="mt-1 block text-[10px] text-slate-400">{user.username} · {role === "owner" ? "داشبورد بیمار" : role === "patient" ? "داشبورد همراه بیمار" : "حساب کادر کلینیک"}</span>
+                    <span className="mt-1 block text-[10px] text-slate-400">{user.username} · {role === "owner" ? "داشبورد سلامتجو" : role === "patient" ? "داشبورد همراه سلامتجو" : "حساب کادر کلینیک"}</span>
                   </div>
                   {(role === "patient" || role === "owner") && <div className="border-b border-slate-100 px-3 py-2"><div className="mb-1 text-[10px] font-semibold text-slate-500">پرونده فعال</div>{snapshot.patients.map((patient) => { const linked = snapshot.links.find((l) => l.userId === user.id && l.patientId === patient.id); return <button key={patient.id} onClick={() => { navigate("dashboard", patient.id); setAccountOpen(false); }} className={`flex w-full items-center justify-between rounded-lg px-2 py-2 text-right text-[11px] ${activeId === patient.id ? "bg-teal-50 text-teal-700" : "text-slate-600 hover:bg-slate-50"}`}><span>{patient.fullName}<span className="mr-1 text-[9px] opacity-70">· {relationLabel(linked?.relationship)}</span></span>{activeId === patient.id && <Check className="h-3 w-3" />}</button>; })}{isSelf && <button onClick={() => navigate("patient-privacy")} className="mt-1 w-full rounded-lg px-2 py-2 text-right text-[11px] text-teal-700 hover:bg-teal-50">تنظیم نمایش اطلاعات برای همراه‌ها</button>}</div>}
                   <button onClick={() => { setProfileOpen(true); setAccountOpen(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[11px] text-slate-500 hover:bg-slate-50">
@@ -686,7 +687,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                   </div>
 
                 </div>
-                {current === "companion-records" ? <CycleReport patient={activePatient} canDownload={isSelf || Boolean(activeLink.visibility.reports)} /> : !isSelf && current === "companion-intake" ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-xs text-amber-900">شرح حال بالینی فقط در داشبورد خود بیمار تکمیل و نمایش داده می‌شود. شما می‌توانید مسیر را پیگیری کنید.</div> : !isSelf && current === "companion-map" && !activeLink.visibility.journey ? <div className="rounded-xl bg-white p-6 text-xs text-slate-600">بیمار اجازه نمایش نقشه و مسیر را به همراه فعال نکرده است.</div> : <PatientMobileProfile
+                {current === "companion-records" ? <CycleReport patient={activePatient} canDownload={isSelf || Boolean(activeLink.visibility.reports)} /> : !isSelf && current === "companion-intake" ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-xs text-amber-900">پرسشنامه پیش‌پذیرش فقط در داشبورد خود سلامتجو تکمیل و نمایش داده می‌شود. شما می‌توانید مسیر را پیگیری کنید.</div> : !isSelf && current === "companion-map" && !activeLink.visibility.journey ? <div className="rounded-xl bg-white p-6 text-xs text-slate-600">سلامتجو اجازه نمایش نقشه و مسیر را به همراه فعال نکرده است.</div> : <PatientMobileProfile
                   key={`${current}-${activePatient.id}`}
                   snapshot={snapshot}
                   selectedPatientId={activePatient.id}
@@ -703,15 +704,15 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               </div>
             ) : (
               <div className="mx-auto max-w-xl rounded-2xl border border-slate-200/80 bg-white p-10 text-center">
-                <p className="text-xs text-slate-400">برای مشاهده این بخش ابتدا یک پرونده بیمار را به حساب خود متصل کنید.</p>
+                <p className="text-xs text-slate-400">برای مشاهده این بخش ابتدا یک پرونده سلامتجو را به حساب خود متصل کنید.</p>
                 <button onClick={() => navigate("companion-links")} className="primary-button mt-5">
-                  اتصال پرونده بیمار
+                  اتصال پرونده سلامتجو
                 </button>
               </div>
             ))}
 
           {current === "companion-links" && <CompanionLinks snapshot={snapshot} userId={user.id} onNavigate={navigate} onAction={act} busy={busy} />}
-          {current === "patient-privacy" && (isSelf && activePatient ? <PatientPrivacySettings snapshot={snapshot} userId={user.id} patientId={activePatient.id} onAction={act} busy={busy} /> : <div className="rounded-xl bg-white p-6 text-xs text-slate-600">این تنظیمات فقط توسط خود بیمار قابل تغییر است.</div>)}
+          {current === "patient-privacy" && (isSelf && activePatient ? <PatientPrivacySettings snapshot={snapshot} userId={user.id} patientId={activePatient.id} onAction={act} busy={busy} /> : <div className="rounded-xl bg-white p-6 text-xs text-slate-600">این تنظیمات فقط توسط خود سلامتجو قابل تغییر است.</div>)}
 
           {["contracts", "contract-packages", "contract-schedule", "contract-funnel"].includes(current) && (
             <CorporateContractsHub
@@ -743,7 +744,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             />
           )}
 
-          {["reports", "pathways", "rooms", "team"].includes(current) && <AdminProfile key={current} snapshot={snapshot} onAction={act} busy={busy} initialSection={adminSection} />}
+          {["reports", "pathways", "rooms", "team", "forms"].includes(current) && <AdminProfile key={current} snapshot={snapshot} onAction={act} busy={busy} initialSection={adminSection} />}
         </main>
       </div>
 
@@ -807,8 +808,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             ) : (
               <div className="space-y-4">
                 {[
-                  { n: "۱", title: "از همراه بیمار شروع کنید", text: "در نقش پیش‌فرض، پرونده بیماری را که با آن نسبت دارید ببینید، شرح حال را تکمیل کنید یا پیگیری کنید." },
-                  { n: "۲", title: "بیماران خود را متصل کنید", text: "از بخش بیماران من، با کد QR و کد ملی بیمار پرونده را متصل کنید و سطح دسترسی را مشخص کنید." },
+                  { n: "۱", title: "از همراه سلامتجو شروع کنید", text: "در نقش پیش‌فرض، پرونده سلامتجویی را که با آن نسبت دارید ببینید، پرسشنامه پیش‌پذیرش را تکمیل کنید یا پیگیری کنید." },
+                  { n: "۲", title: "سلامتجویان خود را متصل کنید", text: "از بخش سلامتجویان من، با کد QR و کد ملی سلامتجو پرونده را متصل کنید و سطح دسترسی را مشخص کنید." },
                   { n: "۳", title: "نقش کاری را تغییر دهید", text: "برای پذیرش، پزشک، پاراکلینیک یا مدیریت، نقش فعال را از بالای منوی کناری انتخاب کنید." },
                 ].map((s) => (
                   <div key={s.n} className="flex items-start gap-3">

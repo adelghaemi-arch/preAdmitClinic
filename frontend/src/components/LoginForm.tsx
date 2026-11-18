@@ -131,7 +131,7 @@ export function LoginForm() {
             />
           </div>
           <p className="-mt-2 text-[10px] leading-5 text-slate-400">
-            کد تأیید برای بیمارانی که شماره‌شان در فهرست کلینیک ثبت است (و ناظران سازمانی) صادر می‌شود.
+            کد تأیید برای سلامتجویانی که شماره‌شان در فهرست کلینیک ثبت است (و ناظران سازمانی) صادر می‌شود.
           </p>
           {error && (
             <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-600">
@@ -238,7 +238,7 @@ export function LoginForm() {
 
       <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
         <div className="text-[10px] leading-6 text-slate-400">
-          ورود سریع با شماره بیماران نمایشی (کد تأیید بلافاصله نمایش داده می‌شود):
+          ورود سریع با شماره سلامتجویان نمایشی (کد تأیید بلافاصله نمایش داده می‌شود):
         </div>
         <div className="mt-2 grid max-h-44 grid-cols-2 gap-1.5 overflow-y-auto pr-1">
           {demos.map((item) => (

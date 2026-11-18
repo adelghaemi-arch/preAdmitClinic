@@ -3,6 +3,9 @@
 /* Vazirmatn is loaded from Google Fonts in index.html for StackBlitz/CDN portability. */
 
 @theme {
+  --font-sans: "Vazirmatn", "Tahoma", system-ui, sans-serif;
+  --font-serif: "Vazirmatn", "Tahoma", system-ui, sans-serif;
+  --font-mono: "Vazirmatn", "Tahoma", system-ui, sans-serif;
   --color-sky-50: #eef7f2;
   --color-sky-100: #e0f1e7;
   --color-sky-200: #c3e3d1;
@@ -17,12 +20,24 @@
 }
 
 @layer base {
-  html { font-family: "Vazirmatn", "Tahoma", system-ui, sans-serif; direction: rtl; text-align: right; scroll-behavior: smooth; }
-  body { background: #f7f9fa; color: #344844; -webkit-font-smoothing: antialiased; }
+  html {
+    font-family: var(--font-sans);
+    direction: rtl;
+    text-align: right;
+    scroll-behavior: smooth;
+  }
+  body {
+    font-family: inherit;
+    background: #f7f9fa;
+    color: #344844;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, a, input, select, textarea, code, kbd, samp, pre {
+    font-family: inherit;
+  }
   button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
   button:not(:disabled), select, summary { cursor: pointer; }
   button:disabled { cursor: not-allowed; }
-  input, select, textarea { font-family: inherit; }
   button, a { touch-action: manipulation; }
   :focus-visible { outline: 2px solid #5caa82; outline-offset: 3px; }
   ::selection { background: #d9eee2; color: #1d5940; }

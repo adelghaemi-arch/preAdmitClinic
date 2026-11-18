@@ -49,6 +49,7 @@ export interface RecentConditionItem {
   notes: string;
 }
 
+/** @deprecated Legacy flat intake — kept only for older mock rows during migration. */
 export interface IntakeAnswers {
   currentSymptoms: string;
   lastMeal: string;
@@ -64,6 +65,112 @@ export interface IntakeAnswers {
   diabetesStatus: string;
 }
 
+/* ---------- configurable pre-admit forms (docs-driven) ---------- */
+
+export type FormInputType = "yn_unk" | "text" | "number" | "date" | "select" | "signature";
+export type FormNotesPolicy = "never" | "optional" | "required_if_yes";
+export type FormPublishStatus = "draft" | "published" | "archived";
+export type FormResponseStatus = "draft" | "submitted";
+export type FormConceptKind =
+  | "demo"
+  | "symptom"
+  | "history"
+  | "family"
+  | "lifestyle"
+  | "screening"
+  | "behavior";
+
+export type FormAnswerValue = "yes" | "no" | "unknown" | null;
+
+export interface FormVisibilityRule {
+  field: "maritalStatus" | "age" | "gender";
+  op: "eq" | "in" | "gte" | "lte";
+  value: string | number | string[];
+}
+
+export interface FormItemCoding {
+  snomed: string[];
+  loinc: string[];
+  icd10: string[];
+  conceptKind: FormConceptKind;
+  aiTags: string[];
+  redFlagOnYes?: boolean;
+}
+
+export interface FormTargetAudience {
+  gender: "مرد" | "زن" | "همه";
+  ageMin: number | null;
+  ageMax: number | null;
+  maritalStatuses: string[];
+}
+
+export interface FormItemDefinition {
+  id: string;
+  sectionId: string;
+  code: string;
+  labelFa: string;
+  inputType: FormInputType;
+  required: boolean;
+  sortOrder: number;
+  visibilityRules: FormVisibilityRule[];
+  helpText: string;
+  notesPolicy: FormNotesPolicy;
+  prefillFromPatient?: string | null;
+  readOnlyIfPrefill?: boolean;
+  selectOptions?: string[] | null;
+  coding: FormItemCoding;
+}
+
+export interface FormSectionDefinition {
+  id: string;
+  formId: string;
+  code: string;
+  title: string;
+  sortOrder: number;
+  timeWindowHint: string;
+  guideText: string;
+}
+
+export interface FormDefinition {
+  id: string;
+  code: string;
+  title: string;
+  version: number;
+  status: FormPublishStatus;
+  sortOrder: number;
+  warningText: string;
+  targetAudience: FormTargetAudience;
+  sections: FormSectionDefinition[];
+  items: FormItemDefinition[];
+}
+
+export interface FormAnswer {
+  itemCode: string;
+  valueCode: FormAnswerValue;
+  valueRaw: string;
+  notes: string;
+  skippedByRule?: boolean;
+}
+
+export interface FormResponse {
+  id: string;
+  patientId: number;
+  formId: string;
+  formCode: string;
+  formVersion: number;
+  formVersionId: string;
+  status: FormResponseStatus;
+  startedAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  answers: FormAnswer[];
+  context: {
+    gender: string;
+    age: number;
+    maritalStatus: string;
+  };
+}
+
 export interface CompanionVisibility {
   journey: boolean;
   results: boolean;
@@ -72,6 +179,8 @@ export interface CompanionVisibility {
   allergies: boolean;
   familyHistory: boolean;
   reports: boolean;
+  /** When false/undefined, companions cannot see submitted questionnaire answers. */
+  clinicalIntake?: boolean;
 }
 
 export const defaultCompanionVisibility: CompanionVisibility = {
@@ -82,6 +191,7 @@ export const defaultCompanionVisibility: CompanionVisibility = {
   allergies: false,
   familyHistory: false,
   reports: false,
+  clinicalIntake: false,
 };
 
 export const emptyIntakeAnswers: IntakeAnswers = {
@@ -250,7 +360,9 @@ export interface PatientFullDto {
   familyHistory: FamilyHistoryItem[];
   allergies: AllergyItem[];
   recentConditions: RecentConditionItem[];
+  /** @deprecated Prefer formResponses */
   intakeAnswers: IntakeAnswers;
+  formResponses: FormResponse[];
   autoOpenWayfinding: boolean;
   /** True after the patient dismisses the first-login 6-step journey intro for this visit. */
   journeyIntroSeen: boolean;
@@ -282,7 +394,7 @@ export interface CompanionLinkDto {
  * - link_opened: لینک را باز کرده ولی هنوز لاگین نکرده
  * - logged_in: لاگین کرده ولی هنوز فرم پروفایل را شروع/ذخیره نکرده
  * - abandoned: وسط تکمیل پروفایل رها کرده (دارای درصد پیشرفت و آخرین گام)
- * - completed: تکمیل کامل پروفایل و شرح حال اولیه
+ * - completed: تکمیل کامل پروفایل و پرسشنامه پیش‌پذیرش
  */
 export type OnboardingStage =
   | "not_sent"
@@ -446,6 +558,7 @@ export interface ClinicSnapshot {
   staff: StaffMemberDto[];
   patients: PatientFullDto[];
   contracts: CorporateContract[];
+  forms: FormDefinition[];
   serverTime: string;
 }
 
@@ -517,6 +630,7 @@ export interface MockPatientRow {
   allergies: AllergyItem[];
   recentConditions: RecentConditionItem[];
   intakeAnswers: IntakeAnswers;
+  formResponses?: FormResponse[];
   autoOpenWayfinding: boolean;
   journeyIntroSeen: boolean;
   homeLat?: number | null;

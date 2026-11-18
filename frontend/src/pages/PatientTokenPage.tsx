@@ -40,7 +40,7 @@ function PatientTokenView() {
         <HeartPulse className="h-8 w-8 text-slate-300" />
         <h1 className="text-sm font-bold text-slate-700">لینک پذیرش معتبر نیست</h1>
         <p className="max-w-sm text-xs leading-6 text-slate-400">
-          این کد QR در داده نمایشی این مرورگر پیدا نشد. کد بیمار را بررسی کنید یا داده نمایشی را از پنل مدیریت بازگردانی کنید.
+          این کد QR در داده نمایشی این مرورگر پیدا نشد. کد سلامتجو را بررسی کنید یا داده نمایشی را از پنل مدیریت بازگردانی کنید.
         </p>
         <Link to="/" className="primary-button">
           بازگشت به داشبورد
