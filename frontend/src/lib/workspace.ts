@@ -1,4 +1,5 @@
 import type { PatientFullDto, VisitStationDto, WorkspaceRole } from "@/types/clinic";
+import { normalizePersianLetters, toLatinDigits } from "@/lib/persian";
 
 export type AppPage =
   | "dashboard"
@@ -29,7 +30,14 @@ export type AppPage =
   | "pathways"
   | "rooms"
   | "team"
-  | "forms";
+  | "forms"
+  | "platform-dashboard"
+  | "platform-users"
+  | "platform-fraud"
+  | "platform-health"
+  | "platform-settings"
+  | "platform-integrations"
+  | "platform-audit";
 
 export const PAGE_TITLES: Record<AppPage, string> = {
   dashboard: "داشبورد",
@@ -61,7 +69,24 @@ export const PAGE_TITLES: Record<AppPage, string> = {
   rooms: "طبقات و اتاق‌ها",
   team: "کادر درمان و دسترسی‌ها",
   forms: "فرم‌های پیش‌پذیرش",
+  "platform-dashboard": "داشبورد پلتفرم",
+  "platform-users": "مدیریت کاربران",
+  "platform-fraud": "بازبینی ضدتقلب",
+  "platform-health": "نظارت فنی",
+  "platform-settings": "تنظیمات پایه",
+  "platform-integrations": "یکپارچه‌سازی‌ها",
+  "platform-audit": "ممیزی سیستم",
 };
+
+export const PLATFORM_PAGES: AppPage[] = [
+  "platform-dashboard",
+  "platform-users",
+  "platform-fraud",
+  "platform-health",
+  "platform-settings",
+  "platform-integrations",
+  "platform-audit",
+];
 
 /** Role switcher entries. The first role is the default for every session. */
 export const ROLES: { id: WorkspaceRole; label: string; description: string; page: AppPage }[] = [
@@ -71,6 +96,7 @@ export const ROLES: { id: WorkspaceRole; label: string; description: string; pag
   { id: "specialist", label: "پزشک متخصص", description: "لیست انتظار، معاینه، تشخیص و نسخه", page: "dashboard" },
   { id: "paraclinic", label: "کارشناس پاراکلینیک", description: "صف بخش تشخیصی و نتایج آزمایش", page: "dashboard" },
   { id: "admin", label: "ادمین و راهبر کلینیک", description: "قراردادهای سازمانی، قیف ثبت‌نام، نوبت‌دهی سقفی و تنظیمات", page: "contracts" },
+  { id: "platform", label: "ادمین پلتفرم", description: "نظارت سیستمی، کاربران، ضدتقلب، سلامت فنی و تنظیمات پایه", page: "platform-dashboard" },
   { id: "supervisor", label: "ناظر سازمان (طرف قرارداد)", description: "پنل نظارت شرکت بر پیش‌ثبت‌نام، نوبت‌ها و حضور کارکنان", page: "dashboard" },
 ];
 
@@ -210,11 +236,37 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
     },
     short: { contracts: "افراد", "contract-packages": "بسته‌ها", "contract-schedule": "نوبت‌دهی", "contract-funnel": "قیف و پیامک", dashboard: "کلینیک" },
   },
+  platform: {
+    home: "platform-dashboard",
+    groups: [
+      { title: "نمای پلتفرم", pages: ["platform-dashboard"] },
+      { title: "کاربران و نظارت", pages: ["platform-users", "platform-fraud"] },
+      { title: "فنی و پیکربندی", pages: ["platform-health", "platform-settings", "platform-integrations", "platform-audit"] },
+    ],
+    mobile: ["platform-dashboard", "platform-users", "platform-fraud", "platform-settings"],
+    labels: {
+      "platform-dashboard": "داشبورد پلتفرم",
+      "platform-users": "مدیریت کاربران",
+      "platform-fraud": "ضدتقلب",
+      "platform-health": "سلامت فنی",
+      "platform-settings": "تنظیمات پایه",
+      "platform-integrations": "یکپارچه‌سازی",
+      "platform-audit": "ممیزی",
+    },
+    short: {
+      "platform-dashboard": "پلتفرم",
+      "platform-users": "کاربران",
+      "platform-fraud": "ضدتقلب",
+      "platform-settings": "تنظیمات",
+    },
+  },
 };
 
-/** Admin can open every module; other roles are limited to their own navigation. */
+/** Clinic admin can open every clinic module; platform pages stay platform-only. */
 export function allowedPagesFor(role: WorkspaceRole): AppPage[] {
-  if (role === "admin") return Object.keys(PAGE_TITLES) as AppPage[];
+  if (role === "admin") {
+    return (Object.keys(PAGE_TITLES) as AppPage[]).filter((p) => !PLATFORM_PAGES.includes(p));
+  }
   return ROLE_NAV[role].groups.flatMap((group) => group.pages);
 }
 
@@ -272,7 +324,9 @@ export function initials(name: string): string {
 }
 
 export function normalizeText(value: string): string {
-  return value.replace(/ي/g, "ی").replace(/ك/g, "ک").replace(/[۰-۹٠-٩]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩".indexOf(d) % 10)).replace(/[\u200c\u200e\u200f\u2066-\u2069]/g, "").toLowerCase();
+  return toLatinDigits(normalizePersianLetters(value))
+    .replace(/[\u200c\u200e\u200f\u2066-\u2069]/g, "")
+    .toLowerCase();
 }
 
 /** True when every query word appears in the haystack; Persian/Arabic digit and ZWNJ tolerant. */

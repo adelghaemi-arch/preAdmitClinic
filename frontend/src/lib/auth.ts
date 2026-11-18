@@ -1,5 +1,13 @@
+import {
+  assertLocalSessionValid,
+  clearSessionId,
+  createAuthSession,
+  readSessionId,
+  revokeAuthSession,
+} from "@/lib/auth-sessions";
 import { ensureClientDb, persistClientDb } from "@/lib/client-db";
 import { mockMutations, mockStore } from "@/lib/mock-store";
+import { toLatinDigits } from "@/lib/persian";
 import type { AppUserDto } from "@/types/clinic";
 
 /**
@@ -45,8 +53,22 @@ export async function getCurrentUser(): Promise<SessionResult> {
   ensureClientDb();
   const username = readUsername();
   if (username) {
-    const row = mockStore.userByUsername(username);
-    if (row) return { user: toDto(row.id)!, isDemoSession: false };
+    if (!assertLocalSessionValid()) {
+      try {
+        window.localStorage.removeItem(SESSION_KEY);
+        window.localStorage.removeItem("nabz_tab_role");
+        window.localStorage.removeItem(OTP_KEY);
+      } catch {}
+    } else {
+      const row = mockStore.userByUsername(username);
+      if (row) {
+        if (!readSessionId()) {
+          createAuthSession({ userId: row.id, username: row.username, appSurface: "clinic_web" });
+        }
+        persistClientDb();
+        return { user: toDto(row.id)!, isDemoSession: false };
+      }
+    }
   }
   const fallback = mockStore.userByUsername("maryam") ?? mockStore.users[0];
   return { user: toDto(fallback.id)!, isDemoSession: true };
@@ -55,9 +77,7 @@ export async function getCurrentUser(): Promise<SessionResult> {
 /* ------------------------------- OTP login ------------------------------- */
 
 export function normalizePhone(value: string): string {
-  let digits = value
-    .replace(/[۰-۹٠-٩]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩".indexOf(d) % 10))
-    .replace(/\D/g, "");
+  let digits = toLatinDigits(value).replace(/\D/g, "");
   if (digits.startsWith("0098")) digits = `0${digits.slice(4)}`;
   else if (digits.startsWith("98") && digits.length === 12) digits = `0${digits.slice(2)}`;
   return digits;
@@ -223,12 +243,13 @@ function ensureSupervisorUser(phone: string) {
   return user;
 }
 
-function startSession(username: string) {
+function startSession(username: string, userId: number) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(SESSION_KEY, username);
     window.localStorage.removeItem(OTP_KEY);
   } catch {}
+  createAuthSession({ userId, username, appSurface: "clinic_web" });
 }
 
 /** Step 2 of OTP login: verifies the code and opens the session. */
@@ -260,16 +281,16 @@ export function verifyOtp(phoneRaw: string, codeRaw: string): OtpVerifyResult {
     const user = ensurePatientUser(patient.id);
     if (!user) return { ok: false, error: "حساب سلامتجو ساخته نشد. دوباره تلاش کنید." };
     mockMutations.touchUserLogin(user.id, new Date().toISOString());
+    startSession(user.username, user.id);
     persistClientDb();
-    startSession(user.username);
     return { ok: true, user: toDto(user.id)!, patientId: patient.id, role: "owner" };
   }
 
   const supervisorUser = ensureSupervisorUser(phone);
   if (supervisorUser) {
     mockMutations.touchUserLogin(supervisorUser.id, new Date().toISOString());
+    startSession(supervisorUser.username, supervisorUser.id);
     persistClientDb();
-    startSession(supervisorUser.username);
     return { ok: true, user: toDto(supervisorUser.id)!, role: "supervisor" };
   }
 
@@ -301,6 +322,14 @@ export function listOtpDemoLogins(): Array<{ name: string; phone: string; hint: 
 
 export function signOut(): void {
   if (typeof window === "undefined") return;
+  ensureClientDb();
+  const sessionId = readSessionId();
+  if (sessionId) {
+    revokeAuthSession(sessionId, { actor: "کاربر", clearLocalIfCurrent: true });
+    persistClientDb();
+  } else {
+    clearSessionId();
+  }
   try {
     window.localStorage.removeItem(SESSION_KEY);
     window.localStorage.removeItem("nabz_tab_role");

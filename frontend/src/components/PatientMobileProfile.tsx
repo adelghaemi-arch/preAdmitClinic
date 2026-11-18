@@ -1,5 +1,7 @@
 ﻿import { ResultAttachment } from "./ResultAttachment";
+import { IntakeFileThumbGrid } from "./IntakeFileThumbGrid";
 
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Bell,
@@ -11,6 +13,7 @@ import {
   Download,
   FileCheck2,
   FileText,
+  FileUp,
   FlaskConical,
   HeartPulse,
   MapPin,
@@ -44,8 +47,9 @@ interface PatientMobileProfileProps {
   snapshot: ClinicSnapshot;
   selectedPatientId: number;
   onSelectPatient: (id: number) => void;
-  onAction: (payload: Record<string, unknown>) => Promise<void>;
+  onAction: (payload: Record<string, unknown>) => Promise<unknown>;
   busy: boolean;
+  userId?: number | null;
   compactEmbed?: boolean;
   desktop?: boolean;
   hidePatientSwitch?: boolean;
@@ -62,6 +66,7 @@ export function PatientMobileProfile({
   onSelectPatient,
   onAction,
   busy,
+  userId = null,
   compactEmbed = false,
   desktop = false,
   hidePatientSwitch = false,
@@ -171,6 +176,7 @@ export function PatientMobileProfile({
   const roadmapStages = buildHealthRoadmap(patient, membership?.member ?? null);
   const roadmap = roadmapProgress(roadmapStages);
   const roadmapActive = roadmapStages.find((s) => s.state === "active");
+  const hideGlobalRoadmap = lockNonIntakeTabs;
 
   const goRoadmapStage = (stageId: string) => {
     if (lockNonIntakeTabs) {
@@ -227,55 +233,59 @@ export function PatientMobileProfile({
             </button>
           </div>
 
-          {/* Shared 6-stage health roadmap strip */}
-          <div className="mt-3 flex items-center justify-between text-[11px] text-emerald-50/90">
-            <span>
-              نقشه راه سلامتی:{" "}
-              {roadmapActive
-                ? roadmapActive.id === "pre"
-                  ? "شما در ابتدای مسیر هستید"
-                  : `مرحله «${roadmapActive.title}»`
-                : "مسیر کامل شد"}
-            </span>
-            <span className="font-bold text-white">
-              {toFaDigits(roadmap.done)}/{toFaDigits(roadmap.total)} · {toFaDigits(roadmap.pct)}٪
-            </span>
-          </div>
-          <div className="mt-2 flex items-center gap-1">
-            {roadmapStages.map((stage) => (
-              <button
-                key={stage.id}
-                type="button"
-                disabled={stage.state === "locked" || (lockNonIntakeTabs && stage.id !== "pre")}
-                title={stage.title}
-                onClick={() => goRoadmapStage(stage.id)}
-                className={`h-1.5 flex-1 rounded-full transition ${
-                  stage.state === "done"
-                    ? "bg-emerald-300"
-                    : stage.state === "active"
-                      ? "bg-white shadow-[0_0_0_2px_rgba(255,255,255,0.35)]"
-                      : "bg-white/25"
-                } ${stage.state === "locked" || (lockNonIntakeTabs && stage.id !== "pre") ? "cursor-not-allowed" : "cursor-pointer"}`}
-              />
-            ))}
-          </div>
-          {roadmapActive?.id === "pre" && !readOnly && (
-            <button
-              type="button"
-              onClick={() => setActiveTab("intake")}
-              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[11px] font-extrabold text-[#1d4f3c]"
-            >
-              <ClipboardList className="h-3.5 w-3.5" />
-              ورود به پیش‌پذیرش
-            </button>
+          {/* Shared 6-stage health roadmap strip — hidden while intake is locked */}
+          {!hideGlobalRoadmap && (
+            <>
+              <div className="mt-3 flex items-center justify-between text-[11px] text-emerald-50/90">
+                <span>
+                  نقشه راه سلامتی:{" "}
+                  {roadmapActive
+                    ? roadmapActive.id === "pre"
+                      ? "شما در ابتدای مسیر هستید"
+                      : `مرحله «${roadmapActive.title}»`
+                    : "مسیر کامل شد"}
+                </span>
+                <span className="font-bold text-white">
+                  {toFaDigits(roadmap.done)}/{toFaDigits(roadmap.total)} · {toFaDigits(roadmap.pct)}٪
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-1">
+                {roadmapStages.map((stage) => (
+                  <button
+                    key={stage.id}
+                    type="button"
+                    disabled={stage.state === "locked" || (lockNonIntakeTabs && stage.id !== "pre")}
+                    title={stage.title}
+                    onClick={() => goRoadmapStage(stage.id)}
+                    className={`h-1.5 flex-1 rounded-full transition ${
+                      stage.state === "done"
+                        ? "bg-emerald-300"
+                        : stage.state === "active"
+                          ? "bg-white shadow-[0_0_0_2px_rgba(255,255,255,0.35)]"
+                          : "bg-white/25"
+                    } ${stage.state === "locked" || (lockNonIntakeTabs && stage.id !== "pre") ? "cursor-not-allowed" : "cursor-pointer"}`}
+                  />
+                ))}
+              </div>
+              {roadmapActive?.id === "pre" && !readOnly && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("intake")}
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-[11px] font-extrabold text-[#1d4f3c]"
+                >
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  ورود به پیش‌پذیرش
+                </button>
+              )}
+              <div className="mt-2 text-[10px] text-emerald-50/70">
+                مسیر امروز: {toFaDigits(completedCount)} از {toFaDigits(patient.stations.length)} ایستگاه
+              </div>
+            </>
           )}
-          <div className="mt-2 text-[10px] text-emerald-50/70">
-            مسیر امروز: {toFaDigits(completedCount)} از {toFaDigits(patient.stations.length)} ایستگاه
-          </div>
         </header>
 
-        {/* Desktop / embedded compact roadmap bar */}
-        {desktop && (
+        {/* Desktop / embedded compact roadmap bar — hidden while intake is locked */}
+        {desktop && !hideGlobalRoadmap && (
           <div className="mb-3 rounded-2xl border border-[#cfe2d7] bg-[linear-gradient(120deg,#edf7f2,#ffffff)] px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -672,6 +682,8 @@ export function PatientMobileProfile({
                 onAction={onAction}
                 busy={busy}
                 readOnly={readOnly}
+                userId={userId}
+                fraudIntervalSeconds={snapshot.platform?.settings?.fraudAutoCaptureSeconds ?? 3}
               />
             </div>
           )}
@@ -948,6 +960,45 @@ export function PatientMobileProfile({
                 </button>
               </div>
 
+              {/* Pre-admit accompanying documents */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
+                <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
+                  <FileUp className="h-4 w-4 text-teal-600" />
+                  مدارک همراه پیش‌پذیرش (
+                  {toFaDigits(patient.intakeDocuments?.length ?? 0)})
+                </div>
+                {(patient.intakeDocuments?.length ?? 0) === 0 ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    مدرکی در مرحله پیش‌پذیرش بارگذاری نشده است.
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    {patient.intakeDocuments!.map((group) => (
+                      <div
+                        key={group.id}
+                        className="rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-slate-900">{group.typeLabelFa}</span>
+                          <span className="text-[10px] text-slate-400">
+                            {toFaDigits(group.files.length)} فایل
+                          </span>
+                        </div>
+                        {group.documentDate && (
+                          <p className="mt-1 text-[11px] text-slate-600">تاریخ: {group.documentDate}</p>
+                        )}
+                        {group.note && (
+                          <p className="mt-1 text-[11px] text-slate-600">{group.note}</p>
+                        )}
+                        <div className="mt-2.5">
+                          <IntakeFileThumbGrid files={group.files} title={group.typeLabelFa} disabled />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Paraclinic Results Section */}
               <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
                 <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
@@ -1182,7 +1233,7 @@ export function PatientMobileProfile({
             </div>
 
             <form onSubmit={handleQrTokenLookup} className="mt-3 flex gap-2">
-              <input
+              <AppInput
                 type="text"
                 dir="ltr"
                 value={qrInputToken}

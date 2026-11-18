@@ -1,4 +1,5 @@
 ﻿import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import { CheckCircle2, ClipboardList, Clock3, Filter, History, MapPin, Pill, RotateCcw, Search, ShieldAlert, X } from "lucide-react";
 import type { ClinicSnapshot } from "@/types/clinic";
 import { normalizeNationalId, patientStatus } from "@/lib/workspace";
@@ -96,7 +97,7 @@ export function PatientDirectoryDialog({ open, snapshot: liveSnapshot, onClose, 
 
         <div className="space-y-3 border-b border-slate-200 bg-white px-5 py-4">
           <form onSubmit={(e) => { e.preventDefault(); void runSearch(query, statusFilter, roomFilter); }} className="flex flex-wrap items-center gap-2">
-            <input autoFocus aria-label="جست‌وجو در همه فیلدهای سلامتجو" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="نام و نام خانوادگی، بخشی از نام، کد ملی، تلفن یا بسته درمانی..." className="app-input min-w-56 flex-1" />
+            <AppInput autoFocus aria-label="جست‌وجو در همه فیلدهای سلامتجو" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="نام و نام خانوادگی، بخشی از نام، کد ملی، تلفن یا بسته درمانی..." className="app-input min-w-56 flex-1" />
             <button type="submit" disabled={busy} className="primary-button"><Search className="h-4 w-4" />{busy ? "در حال جست‌وجو..." : "جست‌وجو"}</button>
             <button type="button" onClick={reset} className="secondary-button"><RotateCcw className="h-3.5 w-3.5" />پاک‌کردن فیلترها</button>
           </form>

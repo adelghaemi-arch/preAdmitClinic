@@ -1,14 +1,77 @@
 import catalogSeed from "@/lib/form-catalog.seed.json";
+import { iranLocalDayOffset } from "@/lib/date-iso";
 import type {
   FormAnswer,
   FormAnswerValue,
   FormDefinition,
+  FormItemCoding,
   FormItemDefinition,
   FormResponse,
   FormSectionDefinition,
   FormVisibilityRule,
   PatientFullDto,
 } from "@/types/clinic";
+
+const UMLS_CUI_RE = /^C\d{7}$/;
+
+export interface FormCodingIssue {
+  itemCode: string;
+  labelFa: string;
+  problems: string[];
+}
+
+function normalizeConceptKind(kind: FormItemCoding["conceptKind"] | string | undefined): FormItemCoding["conceptKind"] {
+  // Legacy alias: "demo" meant demographics (not product demo).
+  if (kind === "demo" || kind === "demographics") return "demographics";
+  if (
+    kind === "symptom" ||
+    kind === "history" ||
+    kind === "family" ||
+    kind === "lifestyle" ||
+    kind === "screening" ||
+    kind === "behavior"
+  ) {
+    return kind;
+  }
+  return "symptom";
+}
+
+function normalizeCoding(coding: FormItemCoding | undefined): FormItemCoding {
+  return {
+    snomed: coding?.snomed ?? [],
+    loinc: coding?.loinc ?? [],
+    icd10: coding?.icd10 ?? [],
+    umls: coding?.umls ?? [],
+    conceptKind: normalizeConceptKind(coding?.conceptKind),
+    aiTags: coding?.aiTags ?? [],
+    redFlagOnYes: coding?.redFlagOnYes,
+  };
+}
+
+export function itemCodingIssues(item: FormItemDefinition): string[] {
+  const coding = normalizeCoding(item.coding);
+  const problems: string[] = [];
+  if (!coding.umls.length) problems.push("UMLS CUI الزامی است");
+  for (const cui of coding.umls) {
+    if (!UMLS_CUI_RE.test(cui)) problems.push(`UMLS نامعتبر: ${cui}`);
+  }
+  if (!(coding.snomed.length || coding.loinc.length || coding.icd10.length)) {
+    problems.push("حداقل یکی از SNOMED / LOINC / ICD-10 الزامی است");
+  }
+  return problems;
+}
+
+/** Admin/publish gate: every item must have UMLS + at least one terminology code. */
+export function validateFormDefinitionCoding(form: FormDefinition): FormCodingIssue[] {
+  return form.items
+    .map((item) => {
+      const problems = itemCodingIssues(item);
+      return problems.length
+        ? { itemCode: item.code, labelFa: item.labelFa, problems }
+        : null;
+    })
+    .filter((row): row is FormCodingIssue => Boolean(row));
+}
 
 export interface AudienceContext {
   gender: string;
@@ -20,7 +83,17 @@ export function stripSignatureParts(form: FormDefinition): FormDefinition {
   const next = structuredClone(form);
   next.sections = next.sections.filter((s) => !s.code.includes("SIG") && s.title !== "تأیید و امضا");
   const keep = new Set(next.sections.map((s) => s.id));
-  next.items = next.items.filter((i) => keep.has(i.sectionId) && !i.code.includes("_SIG_"));
+  next.items = next.items
+    .filter((i) => keep.has(i.sectionId) && !i.code.includes("_SIG_"))
+    .map((item) => {
+      const coding = normalizeCoding(item.coding);
+      const isCity =
+        coding.aiTags.includes("city") || /_city$/i.test(item.code) || /شهر/.test(item.labelFa);
+      if (isCity && item.inputType === "text") {
+        return { ...item, inputType: "province_city" as const, coding };
+      }
+      return { ...item, coding };
+    });
   return next;
 }
 
@@ -100,9 +173,29 @@ export function upsertAnswer(answers: FormAnswer[], next: FormAnswer): FormAnswe
 }
 
 export function deriveMaritalStatus(answers: FormAnswer[], form: FormDefinition): string {
-  const maritalItem = form.items.find((i) => i.code.endsWith("_DEMO_maritalStatus") || i.code.includes("maritalStatus"));
+  const maritalItem = form.items.find(
+    (i) =>
+      i.code.endsWith("_BASE_maritalStatus") ||
+      i.code.endsWith("_DEMO_maritalStatus") ||
+      i.code.includes("maritalStatus")
+  );
   if (!maritalItem) return "";
-  return getAnswer(answers, maritalItem.code).valueRaw.trim();
+  const direct = getAnswer(answers, maritalItem.code).valueRaw.trim();
+  if (direct) return direct;
+  // Legacy answers keyed with _DEMO_ while catalog now uses _BASE_
+  const legacyCode = maritalItem.code.replace("_BASE_", "_DEMO_");
+  if (legacyCode !== maritalItem.code) {
+    return getAnswer(answers, legacyCode).valueRaw.trim();
+  }
+  return "";
+}
+
+/** Rewrite legacy demographic item codes DEMO → BASE on persisted answers. */
+export function migrateDemoItemCodesInAnswers(answers: FormAnswer[]): FormAnswer[] {
+  return answers.map((a) => {
+    if (!a?.itemCode?.includes("_DEMO_")) return a;
+    return { ...a, itemCode: a.itemCode.replace(/_DEMO_/g, "_BASE_") };
+  });
 }
 
 export function buildContext(
@@ -117,10 +210,15 @@ export function buildContext(
   };
 }
 
+export function isFormDateItem(item: FormItemDefinition): boolean {
+  return item.code.includes("formDate") || Boolean(item.coding?.aiTags?.includes("formDate"));
+}
+
 export function prefillValue(
   item: FormItemDefinition,
   patient: Pick<PatientFullDto, "fullName" | "nationalId" | "phone" | "age" | "gender">
 ): string {
+  if (isFormDateItem(item)) return iranLocalDayOffset(0);
   const key = item.prefillFromPatient;
   if (!key) return "";
   if (key === "fullName") return patient.fullName ?? "";
@@ -263,14 +361,18 @@ export function buildAiPayload(form: FormDefinition, response: FormResponse) {
           value: answer.skippedByRule ? "skipped" : answer.valueCode ?? answer.valueRaw,
           notes: answer.notes,
           skippedByRule: Boolean(answer.skippedByRule),
-          coding: {
-            snomed: item.coding.snomed,
-            loinc: item.coding.loinc,
-            icd10: item.coding.icd10,
-            conceptKind: item.coding.conceptKind,
-            aiTags: item.coding.aiTags,
-            redFlagOnYes: Boolean(item.coding.redFlagOnYes),
-          },
+          coding: (() => {
+            const coding = normalizeCoding(item.coding);
+            return {
+              snomed: coding.snomed,
+              loinc: coding.loinc,
+              icd10: coding.icd10,
+              umls: coding.umls,
+              conceptKind: coding.conceptKind,
+              aiTags: coding.aiTags,
+              redFlagOnYes: Boolean(coding.redFlagOnYes),
+            };
+          })(),
         };
       })
       .filter((row) => row.value !== "skipped"),

@@ -1,4 +1,5 @@
 ﻿import { useState, type FormEvent } from "react";
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import { ArrowLeft, Link2, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import type { ClinicSnapshot } from "@/types/clinic";
 import { COMPANION_RELATIONS, currentStation, permissionLabel, relationLabel, stationLabel, type AppPage } from "@/lib/workspace";
@@ -105,12 +106,12 @@ export function CompanionLinks({ snapshot, userId, onNavigate, onAction, busy }:
 
         <label className="app-label">
           کد QR پذیرش
-          <input required dir="ltr" value={qrToken} onChange={(e) => setQrToken(e.target.value)} placeholder="NBZ-1404-404" className="app-input mt-2 font-mono" />
+          <AppInput required dir="ltr" value={qrToken} onChange={(e) => setQrToken(e.target.value)} placeholder="NBZ-1404-404" className="app-input mt-2 font-mono" />
         </label>
 
         <label className="app-label">
           کد ملی سلامتجو
-          <input required inputMode="numeric" dir="ltr" value={nationalId} onChange={(e) => setNationalId(e.target.value)} placeholder="۰۰۱۸۹۴۳۲۱۰" className="app-input mt-2 font-mono" />
+          <AppInput required inputMode="numeric" dir="ltr" value={nationalId} onChange={(e) => setNationalId(e.target.value)} placeholder="۰۰۱۸۹۴۳۲۱۰" className="app-input mt-2 font-mono" />
         </label>
 
         <label className="app-label">

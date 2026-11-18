@@ -8,7 +8,7 @@ import type {
   OnboardingStage,
 } from "@/types/clinic";
 import { iranLocalDayOffset } from "@/lib/date-iso";
-import { formatFaDateRelative } from "@/lib/persian";
+import { formatFaDateRelative, normalizePersianLetters, toLatinDigits } from "@/lib/persian";
 
 /**
  * Pure client-side corporate contract seed data, demographic package matcher,
@@ -718,7 +718,7 @@ function triggerDownload(blob: Blob, filename: string) {
 }
 
 function toAsciiDigits(text: string): string {
-  return text.replace(/[۰-۹٠-٩]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩".indexOf(d) % 10));
+  return toLatinDigits(text);
 }
 
 function splitCsvLine(line: string, delimiter: string): string[] {
@@ -772,7 +772,7 @@ export function parseExcelOrCsvText(rawText: string): {
   let skipped = 0;
 
   rawRows.forEach((cols, index) => {
-    const fullName = (cols[0] ?? "").trim();
+    const fullName = normalizePersianLetters((cols[0] ?? "").trim());
     const nid = toAsciiDigits(cols[1] ?? "").replace(/\D/g, "");
     const phone = toAsciiDigits(cols[2] ?? "").replace(/\D/g, "");
     // Skip header row automatically
@@ -785,13 +785,13 @@ export function parseExcelOrCsvText(rawText: string): {
     const normalizedPhone = phone.startsWith("0") ? phone.slice(0, 11) : `0${phone}`.slice(0, 11);
     const parsedAge = Number(toAsciiDigits(cols[3] ?? "").replace(/\D/g, ""));
     const age = Number.isFinite(parsedAge) && parsedAge >= 18 && parsedAge <= 95 ? parsedAge : 38;
-    const rawGender = (cols[4] ?? "").trim();
+    const rawGender = normalizePersianLetters((cols[4] ?? "").trim());
     const gender: "مرد" | "زن" =
       rawGender.includes("زن") || rawGender.includes("خانم") || rawGender.toLowerCase() === "f"
         ? "زن"
         : "مرد";
-    const department = (cols[5] ?? "").trim() || "عمومی سازمان";
-    const rawCat = (cols[6] ?? "").trim();
+    const department = normalizePersianLetters((cols[5] ?? "").trim() || "عمومی سازمان");
+    const rawCat = normalizePersianLetters((cols[6] ?? "").trim());
     const jobCategory =
       JOB_CATEGORIES.find((c) => c !== "همه" && (c === rawCat || c.includes(rawCat))) ||
       (rawCat.length > 1 ? rawCat : "اداری و مالی");

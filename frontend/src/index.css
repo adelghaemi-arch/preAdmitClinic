@@ -43,6 +43,17 @@
   ::selection { background: #d9eee2; color: #1d5940; }
 }
 
+@keyframes screening-dossier-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.screening-dossier-enter {
+  animation: screening-dossier-in 0.38s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .screening-dossier-enter { animation: none; }
+}
+
 .tabular-fa { font-variant-numeric: tabular-nums; }
 ::-webkit-scrollbar { width: 4px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -75,44 +86,279 @@
 .app-input:focus { border-color: #7eb796; outline: none; box-shadow: 0 0 0 3px #eff7f1; }
 .app-select { padding: 8px 11px; border: 1px solid #e3e9e5; border-radius: 8px; background-color: white; color: #708076; font-size: 11px; }
 
-/* Persian date picker — align with app-input / teal brand; keep popover above overflow parents */
-.persian-date-field { position: relative; display: block; width: 100%; }
-.persian-date-field--disabled { pointer-events: none; opacity: 0.55; }
+/* Locked / prefilled fields (not temporary disabled) */
+:root {
+  --field-readonly-bg: #e8e0c8;
+  --field-readonly-border: #c4b896;
+  --field-readonly-fg: #4a4538;
+}
+input.app-input:read-only,
+textarea.app-input:read-only,
+.app-field--readonly,
+select.app-field--readonly {
+  background-color: var(--field-readonly-bg) !important;
+  border-color: var(--field-readonly-border) !important;
+  color: var(--field-readonly-fg) !important;
+  cursor: default;
+  box-shadow: none;
+}
+input.app-input:read-only:focus,
+textarea.app-input:read-only:focus,
+.app-field--readonly:focus {
+  border-color: var(--field-readonly-border) !important;
+  box-shadow: none;
+}
+input[type="hidden"].app-field--readonly,
+.persian-date-field__mirror.app-field--readonly,
+.persian-date-field__mirror:read-only {
+  background: transparent !important;
+  border: none !important;
+  color: inherit !important;
+  box-shadow: none !important;
+}
+.persian-date-field--readonly {
+  pointer-events: none;
+}
+.persian-date-field--readonly [data-jalali-datepicker-input] {
+  background-color: var(--field-readonly-bg) !important;
+  border-color: var(--field-readonly-border) !important;
+  color: var(--field-readonly-fg) !important;
+  cursor: default;
+  box-shadow: none !important;
+}
+.persian-date-field--readonly .persian-date-field__icon {
+  color: #8a7d5c;
+  opacity: 0.85;
+}
+
+/* Required / invalid form rows — reserved box so fill-state never shifts layout */
+.form-item-row {
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: background-color .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.form-item-row--required-empty {
+  border-color: #efe6d6;
+  background: #fffcf7;
+}
+.form-item-row--invalid {
+  border-color: #f0c4c4;
+  background: #fff6f6;
+  box-shadow: 0 0 0 2px #f9d4d466;
+}
+
+/* Persian date picker — clinical chrome (icon shell + quiet calendar) */
+.persian-date-field {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.persian-date-field--disabled:not(.persian-date-field--readonly) { pointer-events: none; opacity: 0.55; }
+.persian-date-field__icon {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: #7a9084;
+  pointer-events: none;
+}
+.persian-date-field--filled .persian-date-field__icon { color: #377e58; }
 .persian-date-field__mirror {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 .persian-date-field [data-jalali-datepicker-root],
-.persian-date-field [data-jalali-datepicker-dropdown] {
+.persian-date-field [data-jalali-datepicker-dropdown],
+.persian-date-field [data-jalali-datepicker-popover] {
+  --jalali-font: "Vazirmatn", "Tahoma", system-ui, sans-serif;
+  --jalali-font-size: 12px;
+  --jalali-line-height: 1.55;
+  --jalali-bg: #ffffff;
+  --jalali-fg: #3d5748;
+  --jalali-muted-fg: #7a9084;
+  --jalali-border: #e2e9e4;
+  --jalali-radius: 10px;
+  --jalali-day-radius: 999px;
+  --jalali-primary: #287957;
+  --jalali-primary-fg: #ffffff;
+  --jalali-shadow: 0 12px 32px #102d2514, 0 2px 6px #102d250a;
+  --jalali-gap: 2px;
+  --jalali-header-gap: 0.3em;
+  --jalali-control-size: 1.85em;
+  --jalali-input-padding: 10px 12px 10px 38px;
+  --jalali-popover-padding: 10px;
+  --jalali-cell-padding: 0.45em 0.25em;
+  --jalali-day-min-size: 2.05em;
+  --jalali-weekday-size: 0.68em;
+  --jalali-event-bg: #edf7f1;
+  --jalali-event-fg: #1e644c;
+  --jalali-holiday-fg: #a85a5a;
+  --jalali-hover-bg: #f3f8f5;
+  --jalali-range-bg: #e0f1e7;
+  --jalali-focus-ring: #7eb796;
+  font-family: var(--jalali-font) !important;
+  font-size: var(--jalali-font-size);
+  line-height: var(--jalali-line-height);
+  color: var(--jalali-fg);
+}
+.persian-date-field [data-jalali-datepicker-root] {
   display: block;
   width: 100%;
-  --jalali-font: "Vazirmatn", system-ui, sans-serif;
-  --jalali-font-size: 12px;
-  --jalali-primary: #377e58;
-  --jalali-primary-fg: #ffffff;
-  --jalali-border: #e2e9e4;
-  --jalali-radius: 9px;
-  --jalali-fg: #445c4c;
-  --jalali-muted-fg: #708076;
-  --jalali-holiday-fg: #b91c1c;
-  --jalali-focus-ring: #7eb796;
+  max-width: 100%;
+}
+.persian-date-field [data-jalali-datepicker-input],
+.persian-date-field [data-jalali-calendar-nav],
+.persian-date-field [data-jalali-calendar-title],
+.persian-date-field [data-jalali-calendar-title-month],
+.persian-date-field [data-jalali-calendar-title-year],
+.persian-date-field [data-jalali-calendar-day],
+.persian-date-field [data-jalali-calendar-month],
+.persian-date-field [data-jalali-calendar-year],
+.persian-date-field [data-jalali-calendar-weekday],
+.persian-date-field [data-jalali-calendar-tip] {
+  font-family: "Vazirmatn", "Tahoma", system-ui, sans-serif !important;
 }
 .persian-date-field [data-jalali-datepicker-input] {
   width: 100%;
-  background: white;
+  min-width: 0;
+  max-width: 100%;
+  background: #fff;
   border: 1px solid #e2e9e4;
   border-radius: 9px;
-  padding: 10px 12px;
+  padding: 10px 12px 10px 38px;
   font-size: 12px;
-  color: #445c4c;
+  font-weight: 500;
+  color: #3d5748;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.persian-date-field [data-jalali-datepicker-input]::placeholder {
+  color: #91a098;
+  font-weight: 400;
+}
+.persian-date-field [data-jalali-datepicker-input]:hover {
+  border-color: #c5d9cc;
+  background: #fbfdfc;
 }
 .persian-date-field [data-jalali-datepicker-input]:focus-visible {
   border-color: #7eb796;
   outline: none;
+  background: #fff;
   box-shadow: 0 0 0 3px #eff7f1;
 }
 .persian-date-field [data-jalali-datepicker-popover] {
   z-index: 95;
+  width: min(292px, calc(100vw - 2rem));
+  max-width: min(292px, calc(100vw - 2rem));
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid #e5ebe7;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 14px 36px #102d2516, 0 2px 8px #102d250a;
+}
+.persian-date-field [data-jalali-calendar-header] {
+  margin-bottom: 8px;
+  padding: 2px 2px 8px;
+  border-bottom: 1px solid #eef3f0;
+}
+.persian-date-field [data-jalali-calendar-title] {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #2d4a3a;
+  letter-spacing: 0;
+}
+.persian-date-field button[data-jalali-calendar-title-month],
+.persian-date-field button[data-jalali-calendar-title-year] {
+  padding: 3px 6px;
+  border-radius: 7px;
+}
+.persian-date-field button[data-jalali-calendar-title-month]:hover,
+.persian-date-field button[data-jalali-calendar-title-year]:hover,
+.persian-date-field [data-jalali-calendar-nav]:hover {
+  background: #eff7f1;
+}
+.persian-date-field [data-jalali-calendar-nav] {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #5c7a6a;
+}
+.persian-date-field [data-jalali-calendar-weekday] {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8aa094;
+  padding-block: 6px 4px;
+}
+.persian-date-field [data-jalali-calendar-day] {
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  border-radius: 999px;
+  transition: background-color .12s ease, color .12s ease, box-shadow .12s ease;
+}
+.persian-date-field [data-jalali-calendar-day]:hover {
+  background: #eef7f2;
+}
+.persian-date-field [data-jalali-calendar-day][data-outside-month] {
+  color: #b7c4bc;
+  font-weight: 400;
+}
+.persian-date-field [data-jalali-calendar-day][data-today] {
+  font-weight: 650;
+  box-shadow: inset 0 0 0 1.5px #5caa82;
+  background: transparent;
+}
+.persian-date-field [data-jalali-calendar-day][data-selected] {
+  background: #287957;
+  color: #fff;
+  font-weight: 650;
+  box-shadow: 0 2px 6px #1a624528;
+}
+.persian-date-field [data-jalali-calendar-day][data-selected]:hover {
+  background: #1e6548;
+}
+.persian-date-field [data-jalali-calendar-day][data-holiday] {
+  color: #a85a5a;
+  font-weight: 550;
+}
+.persian-date-field [data-jalali-calendar-day][data-holiday][data-selected] {
+  color: #fff;
+}
+.persian-date-field [data-jalali-calendar-day][data-disabled],
+.persian-date-field [data-jalali-calendar-day][aria-disabled="true"] {
+  opacity: 0.34;
+  text-decoration: none;
+  pointer-events: none;
+  cursor: not-allowed;
+  color: #b7c4bc;
+}
+.persian-date-field [data-jalali-calendar-tip] {
+  border: 1px solid #f0e4e4;
+  background: #fffafa;
+  color: #7a4a4a;
+  font-size: 10px;
+  font-weight: 500;
+  border-radius: 8px;
+  box-shadow: none;
+  padding: 6px 8px;
+}
+.persian-date-field [data-jalali-calendar-month][data-selected],
+.persian-date-field [data-jalali-calendar-year][data-selected] {
+  background: #287957;
+  color: #fff;
+  border-radius: 8px;
+}
+.persian-date-field [data-jalali-calendar-month][data-today],
+.persian-date-field [data-jalali-calendar-year][data-today] {
+  box-shadow: inset 0 0 0 1.5px #5caa82;
 }
 .module-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 14px; background: white; border: 1px solid #e5ebe7; border-radius: 12px; }
 .section-tabs { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; background: #f8faf9; padding: 3px; border-radius: 8px; }

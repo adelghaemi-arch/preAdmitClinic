@@ -1,12 +1,19 @@
 import { MOCK_DATASET, type MockDataset } from "@/lib/mock-dataset";
 import { buildSeededContracts, buildSeededPackageRuleLibrary } from "@/lib/mock-contracts";
-import { loadSeedForms, stripSignatureParts } from "@/lib/form-engine";
+import {
+  loadSeedForms,
+  migrateDemoItemCodesInAnswers,
+  stripSignatureParts,
+} from "@/lib/form-engine";
+import { rebuildPackagesFromFlat } from "@/lib/evidence-packages";
+import { buildSeedPlatformState, DEFAULT_OSM_LOCAL } from "@/lib/mock-platform";
 import {
   defaultCompanionVisibility,
   emptyIntakeAnswers,
   type CorporateContract,
   type FormDefinition,
   type PackageLibraryRule,
+  type PlatformState,
   type MockAlertRow,
   type MockLinkRow,
   type MockNoteRow,
@@ -38,6 +45,7 @@ export interface MockStore {
   contracts: CorporateContract[];
   packageRuleLibrary: PackageLibraryRule[];
   forms: FormDefinition[];
+  platform: PlatformState;
 }
 
 type DateField =
@@ -139,13 +147,21 @@ function buildStore(): MockStore {
     });
   }
   const seededContracts = buildSeededContracts(dataset.pathways);
+  const platform = buildSeedPlatformState();
+  // Mirror seeded portraits onto patient rows so the EMR and photo gate stay consistent.
+  for (const photo of platform.photos) {
+    if (photo.kind !== "portrait" && photo.kind !== "fraud_confirm") continue;
+    const patient = dataset.patients.find((p) => p.id === photo.patientId);
+    if (patient && !patient.photoDataUrl) patient.photoDataUrl = photo.dataUrl;
+  }
 
   return {
-    ...(dataset as Omit<MockStore, "contracts" | "packageRuleLibrary" | "clinicLocation" | "forms">),
+    ...(dataset as Omit<MockStore, "contracts" | "packageRuleLibrary" | "clinicLocation" | "forms" | "platform">),
     clinicLocation: { lat: 35.7448, lon: 51.3753, address: "تهران، خیابان کارگر شمالی، بین بهشتی و مجیدیه، پلاک ۱۲۰", city: "تهران" },
     contracts: seededContracts,
     packageRuleLibrary: buildSeededPackageRuleLibrary(),
     forms: loadSeedForms(),
+    platform,
   };
 }
 
@@ -182,6 +198,7 @@ export const mockStore = {
   get contracts() { return store().contracts; },
   get packageRuleLibrary() { return store().packageRuleLibrary; },
   get forms() { return store().forms; },
+  get platform() { return store().platform; },
   formById(id: string) { return store().forms.find((f) => f.id === id) ?? null; },
   libraryRuleById(id: string) { return store().packageRuleLibrary.find((r) => r.id === id) ?? null; },
   contractById(id: number) { return store().contracts.find((c) => c.id === id) ?? null; },
@@ -326,12 +343,22 @@ export function hydrateMockStore(data: Partial<MockStore>): void {
       ? data.packageRuleLibrary
       : buildSeededPackageRuleLibrary();
   if (!current.clinicLocation) current.clinicLocation = { lat: 35.7448, lon: 51.3753, address: "تهران، خیابان کارگر شمالی، پلاک ۱۲۰", city: "تهران" };
-  current.forms =
-    Array.isArray(data.forms) && data.forms.length > 0
-      ? data.forms.map((f) => stripSignatureParts(f))
-      : loadSeedForms();
+  // Catalog forms always refresh from the bundled seed (titles/structure); keep any extra admin forms.
+  {
+    const seedForms = loadSeedForms();
+    const seedIds = new Set(seedForms.map((f) => f.id));
+    const extras = Array.isArray(data.forms)
+      ? data.forms
+          .filter((f) => f?.id && !seedIds.has(f.id))
+          .map((f) => migrateFormDemoIdentifiers(stripSignatureParts(f)))
+      : [];
+    current.forms = [...seedForms, ...extras];
+  }
   current.patients = (current.patients ?? []).map((p) => {
-    const formResponses = p.formResponses ?? [];
+    const formResponses = (p.formResponses ?? []).map((response) => ({
+      ...response,
+      answers: migrateDemoItemCodesInAnswers(response.answers ?? []),
+    }));
     return {
       ...p,
       formResponses,
@@ -353,6 +380,63 @@ export function hydrateMockStore(data: Partial<MockStore>): void {
       lastLoginAt: new Date().toISOString(),
     });
   }
+  if (data.platform && Array.isArray(data.platform.clinics) && data.platform.clinics.length > 0) {
+    const platform = data.platform as PlatformState;
+    if (!Array.isArray(platform.packages) || platform.packages.length === 0) {
+      rebuildPackagesFromFlat(platform);
+    }
+    platform.users = (platform.users ?? []).map((u) => ({
+      ...u,
+      email: u.email ?? "",
+      notes: u.notes ?? "",
+      createdAt: u.createdAt ?? new Date().toISOString(),
+      lastLoginAt: u.lastLoginAt ?? null,
+      profilePhotoDataUrl: u.profilePhotoDataUrl ?? null,
+      primaryRole: u.primaryRole ?? "patient",
+      roleLabel: u.roleLabel || "سلامتجو",
+      gpsHistory: u.gpsHistory ?? [],
+      isActive: u.isActive !== false,
+    }));
+    platform.authSessions = Array.isArray(platform.authSessions) ? platform.authSessions : [];
+    platform.multiSessionAlerts = Array.isArray(platform.multiSessionAlerts)
+      ? platform.multiSessionAlerts
+      : [];
+    platform.settings = {
+      ...platform.settings,
+      featureFlags: {
+        ...platform.settings.featureFlags,
+        multiClinicRegistry: false,
+        multiSessionWatch: platform.settings.featureFlags?.multiSessionWatch ?? true,
+      },
+      osmLocal: {
+        ...DEFAULT_OSM_LOCAL,
+        ...(platform.settings.osmLocal ?? {}),
+      },
+    };
+    // Keep only the current tenant clinic in the admin surface (single-tenant).
+    if (Array.isArray(platform.clinics) && platform.clinics.length > 1) {
+      const currentTenant = platform.clinics.find((c) => c.isCurrentTenant) ?? platform.clinics[0];
+      platform.clinics = currentTenant ? [{ ...currentTenant, isCurrentTenant: true }] : platform.clinics.slice(0, 1);
+    }
+    current.platform = platform;
+  } else {
+    current.platform = buildSeedPlatformState();
+  }
+}
+
+/** Rename legacy demographics DEMO tokens to BASE on admin-extra forms. */
+function migrateFormDemoIdentifiers(form: FormDefinition): FormDefinition {
+  const next = structuredClone(form);
+  next.sections = next.sections.map((s) => ({
+    ...s,
+    code: s.code.replace(/_SEC_DEMO\b/g, "_SEC_BASE"),
+  }));
+  next.items = next.items.map((item) => ({
+    ...item,
+    id: item.id.replace(/_DEMO_/g, "_BASE_"),
+    code: item.code.replace(/_DEMO_/g, "_BASE_"),
+  }));
+  return next;
 }
 
 /** Restores the bundled demo dataset (used by the "reset demo data" action). */

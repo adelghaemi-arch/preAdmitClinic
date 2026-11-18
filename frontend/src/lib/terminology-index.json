@@ -1,0 +1,2019 @@
+{
+  "concepts": [
+    {
+      "cui": "C0000737",
+      "nameEn": "Abdominal pain",
+      "nameFa": "درد شکمی",
+      "snomed": [
+        "21522001",
+        "79890006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R10.9",
+        "R63.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0001486",
+      "nameEn": "Human papillomavirus infection",
+      "nameFa": "عفونت HPV",
+      "snomed": [
+        "240532009"
+      ],
+      "loinc": [],
+      "icd10": [
+        "B97.7"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0001948",
+      "nameEn": "Alcohol use",
+      "nameFa": "مصرف الکل",
+      "snomed": [
+        "219006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "F10.10"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0002871",
+      "nameEn": "Anemia",
+      "nameFa": "کم‌خونی",
+      "snomed": [
+        "271737000",
+        "87572000"
+      ],
+      "loinc": [],
+      "icd10": [
+        "D50.9"
+      ],
+      "kinds": [
+        "history",
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0003123",
+      "nameEn": "Anorexia",
+      "nameFa": "بی‌اشتهایی",
+      "snomed": [
+        "21522001",
+        "79890006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R10.9",
+        "R63.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0005558",
+      "nameEn": "Biopsy",
+      "nameFa": "بیوپسی",
+      "snomed": [
+        "86273004"
+      ],
+      "loinc": [
+        "33717-0"
+      ],
+      "icd10": [],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0005890",
+      "nameEn": "Body height",
+      "nameFa": "قد",
+      "snomed": [
+        "50373000"
+      ],
+      "loinc": [
+        "8302-2"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C0005910",
+      "nameEn": "Body weight",
+      "nameFa": "وزن",
+      "snomed": [
+        "27113001"
+      ],
+      "loinc": [
+        "29463-7"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C0006145",
+      "nameEn": "Breast inflammation / erythema",
+      "nameFa": "قرمزی یا التهاب پستان",
+      "snomed": [
+        "290113009"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N61"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0006147",
+      "nameEn": "Breastfeeding",
+      "nameFa": "شیردهی",
+      "snomed": [
+        "169741004"
+      ],
+      "loinc": [],
+      "icd10": [],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0006826",
+      "nameEn": "Malignant neoplasm / cancer history",
+      "nameFa": "سابقه سرطان",
+      "snomed": [
+        "363346000"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z85.9"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0008031",
+      "nameEn": "Chest pain",
+      "nameFa": "درد قفسه سینه",
+      "snomed": [
+        "29857009"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R07.9"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0009214",
+      "nameEn": "Change in bowel habit",
+      "nameFa": "تغییر عادت اجابت مزاج",
+      "snomed": [
+        "266529003"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R19.4"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0009324",
+      "nameEn": "Ulcerative colitis",
+      "nameFa": "کولیت اولسراتیو",
+      "snomed": [
+        "24526004",
+        "34000006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "K50",
+        "K51"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0009378",
+      "nameEn": "Colonoscopy",
+      "nameFa": "کولونوسکوپی",
+      "snomed": [
+        "167777007",
+        "73761001"
+      ],
+      "loinc": [
+        "2335-8",
+        "28026-4"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0009806",
+      "nameEn": "Constipation",
+      "nameFa": "یبوست",
+      "snomed": [
+        "14760008",
+        "62315008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "K59.00",
+        "K59.1"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0009905",
+      "nameEn": "Contraceptives / hormone therapy",
+      "nameFa": "هورمون‌درمانی / ضدبارداری",
+      "snomed": [
+        "182838006",
+        "266717002"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z79.3"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0010200",
+      "nameEn": "Cough",
+      "nameFa": "سرفه",
+      "snomed": [
+        "267036007",
+        "49727002",
+        "66857006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R04.2",
+        "R05.3",
+        "R05.9",
+        "R06.02"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0010346",
+      "nameEn": "Crohn disease",
+      "nameFa": "بیماری کرون",
+      "snomed": [
+        "24526004",
+        "34000006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "K50",
+        "K51"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0011008",
+      "nameEn": "Date of birth",
+      "nameFa": "تاریخ تولد",
+      "snomed": [
+        "184099003"
+      ],
+      "loinc": [
+        "21112-8"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C0011168",
+      "nameEn": "Dysphagia",
+      "nameFa": "دشواری بلع",
+      "snomed": [
+        "266433003",
+        "288227007",
+        "422587007"
+      ],
+      "loinc": [],
+      "icd10": [
+        "K21.9",
+        "R11.2",
+        "R13.10"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0011860",
+      "nameEn": "Type 2 diabetes mellitus",
+      "nameFa": "دیابت نوع ۲",
+      "snomed": [
+        "38341003",
+        "44054006",
+        "55822004"
+      ],
+      "loinc": [],
+      "icd10": [
+        "E11",
+        "E78.5",
+        "I10"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0011991",
+      "nameEn": "Diarrhea",
+      "nameFa": "اسهال",
+      "snomed": [
+        "14760008",
+        "62315008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "K59.00",
+        "K59.1"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0013378",
+      "nameEn": "Dysuria",
+      "nameFa": "سوزش ادرار",
+      "snomed": [
+        "49650001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R30.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0013394",
+      "nameEn": "Dyspareunia",
+      "nameFa": "درد هنگام رابطه",
+      "snomed": [
+        "266599000"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N94.1"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0013404",
+      "nameEn": "Dyspnea",
+      "nameFa": "تنگی نفس",
+      "snomed": [
+        "267036007",
+        "49727002",
+        "66857006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R04.2",
+        "R05.9",
+        "R06.02"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0013916",
+      "nameEn": "City of residence",
+      "nameFa": "شهر محل سکونت",
+      "snomed": [
+        "224294005"
+      ],
+      "loinc": [
+        "52831-5"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C0015672",
+      "nameEn": "Fatigue",
+      "nameFa": "خستگی",
+      "snomed": [
+        "84229001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R53.83"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0015967",
+      "nameEn": "Fever",
+      "nameFa": "تب",
+      "snomed": [
+        "386661006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R50.9"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0016204",
+      "nameEn": "Flatulence / bloating",
+      "nameFa": "نفخ",
+      "snomed": [
+        "162059005",
+        "73879007"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R14.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0016399",
+      "nameEn": "Fecal occult blood test",
+      "nameFa": "آزمایش خون مخفی مدفوع",
+      "snomed": [
+        "167777007",
+        "73761001"
+      ],
+      "loinc": [
+        "2335-8",
+        "28026-4"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0018834",
+      "nameEn": "Gastroesophageal reflux",
+      "nameFa": "ریفلاکس معده",
+      "snomed": [
+        "266433003",
+        "288227007"
+      ],
+      "loinc": [],
+      "icd10": [
+        "K21.9",
+        "R13.10"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0018932",
+      "nameEn": "Hematochezia",
+      "nameFa": "خون روشن در مدفوع",
+      "snomed": [
+        "2901004",
+        "405729008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "K92.1"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0018965",
+      "nameEn": "Hematuria",
+      "nameFa": "خون در ادرار",
+      "snomed": [
+        "34436003"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R31.9"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0018978",
+      "nameEn": "Hematospermia",
+      "nameFa": "خون در منی",
+      "snomed": [
+        "405729008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R36.1"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0019079",
+      "nameEn": "Hemoptysis",
+      "nameFa": "خلط خونی",
+      "snomed": [
+        "267036007",
+        "49727002",
+        "66857006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R04.2",
+        "R05.9",
+        "R06.02"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0019163",
+      "nameEn": "Hepatitis B",
+      "nameFa": "هپاتیت B",
+      "snomed": [
+        "50711007",
+        "66071002"
+      ],
+      "loinc": [],
+      "icd10": [
+        "B18.1",
+        "B18.2"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0019196",
+      "nameEn": "Hepatitis C",
+      "nameFa": "هپاتیت C",
+      "snomed": [
+        "50711007",
+        "66071002"
+      ],
+      "loinc": [],
+      "icd10": [
+        "B18.1",
+        "B18.2"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0019559",
+      "nameEn": "Pelvic pain",
+      "nameFa": "درد لگنی",
+      "snomed": [
+        "162116003",
+        "279039007",
+        "30473006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "M54.5",
+        "R10.2",
+        "R35.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0019693",
+      "nameEn": "HIV infection",
+      "nameFa": "HIV",
+      "snomed": [
+        "86406008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "B20"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0019825",
+      "nameEn": "Hoarseness",
+      "nameFa": "گرفتگی صدا",
+      "snomed": [
+        "1641000119105"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R49.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0020473",
+      "nameEn": "Hyperlipidemia",
+      "nameFa": "چربی خون",
+      "snomed": [
+        "38341003",
+        "44054006",
+        "55822004"
+      ],
+      "loinc": [],
+      "icd10": [
+        "E11",
+        "E78.5",
+        "I10"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0020538",
+      "nameEn": "Hypertension",
+      "nameFa": "فشار خون",
+      "snomed": [
+        "38341003",
+        "44054006",
+        "55822004"
+      ],
+      "loinc": [],
+      "icd10": [
+        "E11",
+        "E78.5",
+        "I10"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0021051",
+      "nameEn": "Immunodeficiency",
+      "nameFa": "نقص ایمنی",
+      "snomed": [
+        "370388006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "D84.9"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0021359",
+      "nameEn": "Infertility",
+      "nameFa": "ناباروری",
+      "snomed": [
+        "8619003"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N97.9"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0022821",
+      "nameEn": "Low back pain",
+      "nameFa": "کمردرد",
+      "snomed": [
+        "279039007",
+        "30473006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "M54.5",
+        "R10.2"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0024485",
+      "nameEn": "Magnetic resonance imaging",
+      "nameFa": "MRI",
+      "snomed": [
+        "241615005",
+        "47079000"
+      ],
+      "loinc": [
+        "24604-1",
+        "30719-6"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0024671",
+      "nameEn": "Mammography",
+      "nameFa": "ماموگرافی",
+      "snomed": [
+        "71651007"
+      ],
+      "loinc": [
+        "24606-6"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0024841",
+      "nameEn": "Marital status",
+      "nameFa": "وضعیت تاهل",
+      "snomed": [
+        "125680007"
+      ],
+      "loinc": [
+        "11370-4"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C0024902",
+      "nameEn": "Mastalgia",
+      "nameFa": "درد پستان",
+      "snomed": [
+        "53430007"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N64.4"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0025202",
+      "nameEn": "Melanoma / changing mole",
+      "nameFa": "خال مشکوک / ملانوم",
+      "snomed": [
+        "26946001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "D48.5"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0025222",
+      "nameEn": "Melena",
+      "nameFa": "مدفوع قیری",
+      "snomed": [
+        "2901004",
+        "405729008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "K92.1"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0025322",
+      "nameEn": "Menorrhagia",
+      "nameFa": "قاعدگی شدید",
+      "snomed": [
+        "386692008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N92.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0025323",
+      "nameEn": "Intermenstrual bleeding",
+      "nameFa": "خونریزی بین‌قاعدگی",
+      "snomed": [
+        "266599000"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N92.1"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0025325",
+      "nameEn": "Menopause",
+      "nameFa": "یائسگی",
+      "snomed": [
+        "161712005"
+      ],
+      "loinc": [
+        "42829-5"
+      ],
+      "icd10": [],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0025329",
+      "nameEn": "Menarche",
+      "nameFa": "اولین قاعدگی",
+      "snomed": [
+        "398057008"
+      ],
+      "loinc": [
+        "42759-4"
+      ],
+      "icd10": [],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0025566",
+      "nameEn": "Breast lump",
+      "nameFa": "توده پستان",
+      "snomed": [
+        "271825005"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N63"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0027365",
+      "nameEn": "Patient name",
+      "nameFa": "نام بیمار",
+      "snomed": [
+        "371484003"
+      ],
+      "loinc": [
+        "45392-8"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C0027497",
+      "nameEn": "Nausea and vomiting",
+      "nameFa": "تهوع و استفراغ",
+      "snomed": [
+        "288227007",
+        "422587007"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R11.2",
+        "R13.10"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0027696",
+      "nameEn": "Organ transplant",
+      "nameFa": "پیوند عضو",
+      "snomed": [
+        "313039003"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z94.9"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0028081",
+      "nameEn": "Night sweats",
+      "nameFa": "تعریق شبانه",
+      "snomed": [
+        "42984000"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R61"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0028754",
+      "nameEn": "Obesity",
+      "nameFa": "چاقی",
+      "snomed": [
+        "238136002",
+        "414915002",
+        "414916001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "E66.9"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0030193",
+      "nameEn": "Pain",
+      "nameFa": "درد",
+      "snomed": [
+        "22253000"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R52"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0030354",
+      "nameEn": "Papanicolaou smear",
+      "nameFa": "پاپ اسمیر",
+      "snomed": [
+        "171149006",
+        "439958008"
+      ],
+      "loinc": [
+        "10524-7",
+        "77378-9"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0031225",
+      "nameEn": "Pesticide exposure",
+      "nameFa": "مواجهه با آفت‌کش",
+      "snomed": [
+        "418189009"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z57.4"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0032460",
+      "nameEn": "Polycystic ovary syndrome",
+      "nameFa": "PCOS",
+      "snomed": [
+        "237055002"
+      ],
+      "loinc": [],
+      "icd10": [
+        "E28.2"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0032584",
+      "nameEn": "Precancerous condition / polyp",
+      "nameFa": "ضایعه پیش‌سرطانی",
+      "snomed": [
+        "128301008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "K63.5"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0032977",
+      "nameEn": "Nulliparity",
+      "nameFa": "عدم بارداری کامل",
+      "snomed": [
+        "102872001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z64.0"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0034559",
+      "nameEn": "Radiation exposure",
+      "nameFa": "مواجهه با اشعه",
+      "snomed": [
+        "370952001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z57.1"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0037285",
+      "nameEn": "Skin lesion",
+      "nameFa": "ضایعه پوستی",
+      "snomed": [
+        "95324001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "L98.9"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0037369",
+      "nameEn": "Current tobacco smoker",
+      "nameFa": "سیگار فعلی",
+      "snomed": [
+        "77176002",
+        "8517006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "F17.210",
+        "Z87.891"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0037370",
+      "nameEn": "Passive smoking",
+      "nameFa": "دود دست‌دوم",
+      "snomed": [
+        "228523000"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z77.22"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0038436",
+      "nameEn": "Occupational carcinogen exposure",
+      "nameFa": "مواجهه شغلی سرطان‌زا",
+      "snomed": [
+        "370977006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z57.5"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0038814",
+      "nameEn": "Sunburn",
+      "nameFa": "آفتاب‌سوختگی",
+      "snomed": [
+        "399963005",
+        "403180003"
+      ],
+      "loinc": [],
+      "icd10": [
+        "L55.9"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0039591",
+      "nameEn": "Testicular pain",
+      "nameFa": "درد بیضه",
+      "snomed": [
+        "102616008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N50.81"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0040405",
+      "nameEn": "Computed tomography",
+      "nameFa": "سی‌تی اسکن",
+      "snomed": [
+        "16310003"
+      ],
+      "loinc": [
+        "79190-6"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0041618",
+      "nameEn": "Ultrasonography",
+      "nameFa": "سونوگرافی",
+      "snomed": [
+        "241615005",
+        "47079000"
+      ],
+      "loinc": [
+        "24604-1",
+        "30719-6"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0042023",
+      "nameEn": "Urinary frequency",
+      "nameFa": "تکرر ادرار",
+      "snomed": [
+        "162116003",
+        "30473006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R10.2",
+        "R35.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0042251",
+      "nameEn": "Vaginal discharge",
+      "nameFa": "ترشح واژینال",
+      "snomed": [
+        "271939006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N89.8"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0043096",
+      "nameEn": "Weight loss",
+      "nameFa": "کاهش وزن",
+      "snomed": [
+        "89362005"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R63.4"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0080274",
+      "nameEn": "Nocturia",
+      "nameFa": "شب‌ادراری",
+      "snomed": [
+        "51178009"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R35.1"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0080276",
+      "nameEn": "Urinary hesitancy",
+      "nameFa": "تأخیر شروع ادرار",
+      "snomed": [
+        "267064002"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R39.1"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0085508",
+      "nameEn": "Helicobacter pylori",
+      "nameFa": "هلیکوباکتر پیلوری",
+      "snomed": [
+        "307058004"
+      ],
+      "loinc": [],
+      "icd10": [
+        "B96.81"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0135212",
+      "nameEn": "Postmenopausal bleeding",
+      "nameFa": "خونریزی بعد از یائسگی",
+      "snomed": [
+        "21840007"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N95.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0149740",
+      "nameEn": "Nipple discharge",
+      "nameFa": "ترشح نوک پستان",
+      "snomed": [
+        "290068009"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N64.52"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0162316",
+      "nameEn": "Iron deficiency",
+      "nameFa": "فقر آهن",
+      "snomed": [
+        "271737000",
+        "87572000"
+      ],
+      "loinc": [],
+      "icd10": [
+        "D50.9"
+      ],
+      "kinds": [
+        "history",
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0201544",
+      "nameEn": "Prostate-specific antigen",
+      "nameFa": "PSA",
+      "snomed": [
+        "63476007"
+      ],
+      "loinc": [
+        "2857-1"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0201570",
+      "nameEn": "Digital rectal examination",
+      "nameFa": "معاینه انگشتی پروستات",
+      "snomed": [
+        "410457007"
+      ],
+      "loinc": [
+        "32465-7"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0232849",
+      "nameEn": "Incomplete bladder emptying",
+      "nameFa": "تخلیه ناقص مثانه",
+      "snomed": [
+        "162103003"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R39.14"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0232940",
+      "nameEn": "Testicular mass",
+      "nameFa": "توده بیضه",
+      "snomed": [
+        "300888008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N50.9"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0235873",
+      "nameEn": "Family history of prostate cancer",
+      "nameFa": "سابقه خانوادگی سرطان پروستات",
+      "snomed": [
+        "275938006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z80.42"
+      ],
+      "kinds": [
+        "family"
+      ]
+    },
+    {
+      "cui": "C0239135",
+      "nameEn": "Early satiety",
+      "nameFa": "سیری زودرس",
+      "snomed": [
+        "162059005",
+        "73879007"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R14.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0239379",
+      "nameEn": "Breast deformity / size change",
+      "nameFa": "تغییر شکل پستان",
+      "snomed": [
+        "290113009"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N64.89"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0239381",
+      "nameEn": "Peau d'orange / skin dimpling",
+      "nameFa": "پوست پرتقالی پستان",
+      "snomed": [
+        "290066008"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N64.59"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0239382",
+      "nameEn": "Nipple retraction / change",
+      "nameFa": "تغییر نوک پستان",
+      "snomed": [
+        "290113009"
+      ],
+      "loinc": [],
+      "icd10": [
+        "N64.59"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0241888",
+      "nameEn": "Family history of cancer",
+      "nameFa": "سابقه خانوادگی سرطان",
+      "snomed": [
+        "275937001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z80.9"
+      ],
+      "kinds": [
+        "family"
+      ]
+    },
+    {
+      "cui": "C0260418",
+      "nameEn": "Family history of colorectal cancer",
+      "nameFa": "سابقه خانوادگی سرطان روده",
+      "snomed": [
+        "275937001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z80.0",
+        "Z80.49"
+      ],
+      "kinds": [
+        "family"
+      ]
+    },
+    {
+      "cui": "C0260419",
+      "nameEn": "Family history of gastric/esophageal cancer",
+      "nameFa": "سابقه خانوادگی سرطان معده/مری",
+      "snomed": [
+        "275940002"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z80.0"
+      ],
+      "kinds": [
+        "family"
+      ]
+    },
+    {
+      "cui": "C0260420",
+      "nameEn": "Family history of lung cancer",
+      "nameFa": "سابقه خانوادگی سرطان ریه",
+      "snomed": [
+        "275939003"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z80.1"
+      ],
+      "kinds": [
+        "family"
+      ]
+    },
+    {
+      "cui": "C0260421",
+      "nameEn": "Family history of ovarian cancer",
+      "nameFa": "سابقه خانوادگی سرطان تخمدان",
+      "snomed": [
+        "275941003"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z80.41"
+      ],
+      "kinds": [
+        "family"
+      ]
+    },
+    {
+      "cui": "C0282411",
+      "nameEn": "Hormone replacement therapy",
+      "nameFa": "هورمون‌درمانی یائسگی",
+      "snomed": [
+        "182838006",
+        "266717002"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z79.3"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0349218",
+      "nameEn": "Central obesity",
+      "nameFa": "چاقی شکمی",
+      "snomed": [
+        "238136002",
+        "414916001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "E66.9"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0420112",
+      "nameEn": "Abnormal screening finding",
+      "nameFa": "نتیجه غیرطبیعی غربالگری",
+      "snomed": [
+        "439401001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R87.61",
+        "Z12.9"
+      ],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0420113",
+      "nameEn": "Colorectal screening awareness",
+      "nameFa": "آگاهی غربالگری روده",
+      "snomed": [
+        "171207006"
+      ],
+      "loinc": [],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0420114",
+      "nameEn": "Prostate screening awareness",
+      "nameFa": "آگاهی غربالگری پروستات",
+      "snomed": [
+        "171207006"
+      ],
+      "loinc": [],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0420115",
+      "nameEn": "Breast self-exam awareness",
+      "nameFa": "آگاهی خودآزمایی پستان",
+      "snomed": [
+        "171207006"
+      ],
+      "loinc": [],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0421447",
+      "nameEn": "Telephone number",
+      "nameFa": "شماره تماس",
+      "snomed": [
+        "428341000124108"
+      ],
+      "loinc": [
+        "42077-8"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C0424472",
+      "nameEn": "Care-seeking behavior",
+      "nameFa": "رفتار مراجعه به پزشک",
+      "snomed": [
+        "225328001"
+      ],
+      "loinc": [],
+      "icd10": [],
+      "kinds": [
+        "behavior",
+        "screening"
+      ]
+    },
+    {
+      "cui": "C0424473",
+      "nameEn": "Care avoidance",
+      "nameFa": "انصراف از پیگیری",
+      "snomed": [
+        "266757002"
+      ],
+      "loinc": [],
+      "icd10": [],
+      "kinds": [
+        "behavior"
+      ]
+    },
+    {
+      "cui": "C0424947",
+      "nameEn": "Tobacco pack-years",
+      "nameFa": "پاکت-سال سیگار",
+      "snomed": [
+        "160603005"
+      ],
+      "loinc": [
+        "64234-8"
+      ],
+      "icd10": [],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0425305",
+      "nameEn": "Physical inactivity",
+      "nameFa": "کم‌تحرکی",
+      "snomed": [
+        "228448000"
+      ],
+      "loinc": [
+        "68516-4"
+      ],
+      "icd10": [],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0425411",
+      "nameEn": "Low fruit and vegetable intake",
+      "nameFa": "کمبود میوه و سبزی",
+      "snomed": [
+        "226167000"
+      ],
+      "loinc": [
+        "75285-2"
+      ],
+      "icd10": [],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C0425959",
+      "nameEn": "Late first pregnancy",
+      "nameFa": "بارداری اول دیرهنگام",
+      "snomed": [
+        "102873006"
+      ],
+      "loinc": [],
+      "icd10": [],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C0426395",
+      "nameEn": "Weak urinary stream",
+      "nameFa": "جریان ضعیف ادرار",
+      "snomed": [
+        "250450001"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R39.14"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0429966",
+      "nameEn": "Family history of breast cancer",
+      "nameFa": "سابقه خانوادگی سرطان پستان",
+      "snomed": [
+        "429740004"
+      ],
+      "loinc": [],
+      "icd10": [
+        "Z80.3",
+        "Z80.41"
+      ],
+      "kinds": [
+        "family"
+      ]
+    },
+    {
+      "cui": "C0455829",
+      "nameEn": "Waist circumference",
+      "nameFa": "دور کمر",
+      "snomed": [
+        "276361009"
+      ],
+      "loinc": [
+        "8280-0"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C0577559",
+      "nameEn": "Mass / lump finding",
+      "nameFa": "توده یا برآمدگی",
+      "snomed": [
+        "274667000"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R22.9"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0578736",
+      "nameEn": "Axillary lymphadenopathy",
+      "nameFa": "توده زیر بغل",
+      "snomed": [
+        "127189005"
+      ],
+      "loinc": [],
+      "icd10": [
+        "R59.0"
+      ],
+      "kinds": [
+        "symptom"
+      ]
+    },
+    {
+      "cui": "C0684233",
+      "nameEn": "Processed / red meat intake",
+      "nameFa": "مصرف گوشت قرمز/فرآوری‌شده",
+      "snomed": [
+        "226145004"
+      ],
+      "loinc": [],
+      "icd10": [],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C1301886",
+      "nameEn": "Date form completed",
+      "nameFa": "تاریخ تکمیل فرم",
+      "snomed": [
+        "399651003"
+      ],
+      "loinc": [
+        "29846-2"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C1301944",
+      "nameEn": "Patient identifier",
+      "nameFa": "شناسه بیمار / کدملی",
+      "snomed": [
+        "398724002"
+      ],
+      "loinc": [
+        "45397-7"
+      ],
+      "icd10": [],
+      "kinds": [
+        "demographics"
+      ]
+    },
+    {
+      "cui": "C1333991",
+      "nameEn": "Lynch syndrome",
+      "nameFa": "سندرم لینچ",
+      "snomed": [
+        "412734009",
+        "445243001"
+      ],
+      "loinc": [
+        "50995-0"
+      ],
+      "icd10": [],
+      "kinds": [
+        "family"
+      ]
+    },
+    {
+      "cui": "C1515110",
+      "nameEn": "HPV test",
+      "nameFa": "تست HPV",
+      "snomed": [
+        "171149006",
+        "439958008"
+      ],
+      "loinc": [
+        "10524-7",
+        "77378-9"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C1515111",
+      "nameEn": "HPV vaccine",
+      "nameFa": "واکسن HPV",
+      "snomed": [
+        "33879002"
+      ],
+      "loinc": [
+        "30940-0"
+      ],
+      "icd10": [],
+      "kinds": [
+        "screening"
+      ]
+    },
+    {
+      "cui": "C1515112",
+      "nameEn": "BRCA gene mutation",
+      "nameFa": "جهش BRCA",
+      "snomed": [
+        "412734009",
+        "445243001"
+      ],
+      "loinc": [
+        "50995-0"
+      ],
+      "icd10": [],
+      "kinds": [
+        "family"
+      ]
+    },
+    {
+      "cui": "C1522449",
+      "nameEn": "Radiotherapy",
+      "nameFa": "پرتودرمانی",
+      "snomed": [
+        "108290001"
+      ],
+      "loinc": [
+        "21946-9"
+      ],
+      "icd10": [
+        "Z92.3"
+      ],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C3241966",
+      "nameEn": "Former smoker",
+      "nameFa": "سابقه سیگار",
+      "snomed": [
+        "77176002",
+        "8517006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "F17.210",
+        "Z87.891"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    },
+    {
+      "cui": "C3665472",
+      "nameEn": "Chemotherapy / immunosuppression",
+      "nameFa": "شیمی‌درمانی / سرکوب ایمنی",
+      "snomed": [
+        "367336001"
+      ],
+      "loinc": [
+        "55752-0"
+      ],
+      "icd10": [],
+      "kinds": [
+        "history"
+      ]
+    },
+    {
+      "cui": "C4554196",
+      "nameEn": "Waterpipe tobacco",
+      "nameFa": "قلیان",
+      "snomed": [
+        "722499006"
+      ],
+      "loinc": [],
+      "icd10": [
+        "F17.290"
+      ],
+      "kinds": [
+        "lifestyle"
+      ]
+    }
+  ],
+  "schemaVersion": 1
+}

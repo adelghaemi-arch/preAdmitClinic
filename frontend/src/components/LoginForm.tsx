@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { AppInput } from "@/components/AppInput";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -12,7 +13,7 @@ import {
 import { listOtpDemoLogins, normalizePhone, requestOtp, verifyOtp } from "@/lib/auth";
 import { writeStoredRole } from "@/lib/viewer";
 import { ensureClientDb } from "@/lib/client-db";
-import { toFaDigits } from "@/lib/persian";
+import { toFaDigits, toLatinDigits } from "@/lib/persian";
 
 type Step = "phone" | "code";
 
@@ -116,7 +117,7 @@ export function LoginForm() {
           </label>
           <div className="relative !mt-2">
             <Phone className="absolute top-3 right-3 h-4 w-4 text-slate-400" />
-            <input
+            <AppInput
               id="otp-phone"
               name="phone"
               type="tel"
@@ -164,7 +165,7 @@ export function LoginForm() {
           <label htmlFor="otp-code" className="app-label">
             کد پنج‌رقمی ارسال‌شده به {toFaDigits(normalizePhone(phone))}
           </label>
-          <input
+          <AppInput
             ref={codeInputRef}
             id="otp-code"
             name="otp"
@@ -176,7 +177,7 @@ export function LoginForm() {
             maxLength={5}
             value={code}
             onChange={(e) => {
-              const next = e.target.value.replace(/[^\d۰-۹٠-٩]/g, "").slice(0, 5);
+              const next = toLatinDigits(e.target.value).replace(/\D/g, "").slice(0, 5);
               setCode(next);
               if (normalizePhone(next).length === 5) {
                 setLoading(true);

@@ -18,7 +18,7 @@
         {
           "id": "CA_M_SEC_1",
           "formId": "form_cancer_male_v02",
-          "code": "CA_M_SEC_DEMO",
+          "code": "CA_M_SEC_BASE",
           "title": "اطلاعات پایه",
           "sortOrder": 1,
           "timeWindowHint": "",
@@ -117,9 +117,9 @@
       ],
       "items": [
         {
-          "id": "CA_M_DEMO_1",
+          "id": "CA_M_BASE_1",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_fullName",
+          "code": "CA_M_BASE_fullName",
           "labelFa": "نام و نام خانوادگی",
           "inputType": "text",
           "required": true,
@@ -131,10 +131,17 @@
           "readOnlyIfPrefill": true,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "371484003"
+            ],
+            "loinc": [
+              "45392-8"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0027365"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "fullName"
@@ -143,9 +150,9 @@
           }
         },
         {
-          "id": "CA_M_DEMO_2",
+          "id": "CA_M_BASE_2",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_nationalId",
+          "code": "CA_M_BASE_nationalId",
           "labelFa": "کدملی",
           "inputType": "text",
           "required": true,
@@ -157,10 +164,17 @@
           "readOnlyIfPrefill": true,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "398724002"
+            ],
+            "loinc": [
+              "45397-7"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C1301944"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "nationalId"
@@ -169,9 +183,9 @@
           }
         },
         {
-          "id": "CA_M_DEMO_3",
+          "id": "CA_M_BASE_3",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_birthDate",
+          "code": "CA_M_BASE_birthDate",
           "labelFa": "تاریخ تولد",
           "inputType": "date",
           "required": true,
@@ -183,10 +197,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "184099003"
+            ],
+            "loinc": [
+              "21112-8"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0011008"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "birthDate"
@@ -195,9 +216,9 @@
           }
         },
         {
-          "id": "CA_M_DEMO_4",
+          "id": "CA_M_BASE_4",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_formDate",
+          "code": "CA_M_BASE_formDate",
           "labelFa": "تاریخ تکمیل پرسشنامه",
           "inputType": "date",
           "required": true,
@@ -209,10 +230,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "399651003"
+            ],
+            "loinc": [
+              "29846-2"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C1301886"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "formDate"
@@ -221,9 +249,9 @@
           }
         },
         {
-          "id": "CA_M_DEMO_5",
+          "id": "CA_M_BASE_5",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_heightCm",
+          "code": "CA_M_BASE_heightCm",
           "labelFa": "قد (سانتی‌متر)",
           "inputType": "number",
           "required": true,
@@ -235,10 +263,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "50373000"
+            ],
+            "loinc": [
+              "8302-2"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0005890"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "heightCm"
@@ -247,9 +282,9 @@
           }
         },
         {
-          "id": "CA_M_DEMO_6",
+          "id": "CA_M_BASE_6",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_weightKg",
+          "code": "CA_M_BASE_weightKg",
           "labelFa": "وزن (کیلوگرم)",
           "inputType": "number",
           "required": true,
@@ -261,10 +296,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "27113001"
+            ],
+            "loinc": [
+              "29463-7"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0005910"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "weightKg"
@@ -273,9 +315,9 @@
           }
         },
         {
-          "id": "CA_M_DEMO_7",
+          "id": "CA_M_BASE_7",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_waistCm",
+          "code": "CA_M_BASE_waistCm",
           "labelFa": "دور کمر (سانتی‌متر)",
           "inputType": "number",
           "required": true,
@@ -287,10 +329,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "276361009"
+            ],
+            "loinc": [
+              "8280-0"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0455829"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "waistCm"
@@ -299,9 +348,9 @@
           }
         },
         {
-          "id": "CA_M_DEMO_8",
+          "id": "CA_M_BASE_8",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_phone",
+          "code": "CA_M_BASE_phone",
           "labelFa": "شماره تماس",
           "inputType": "text",
           "required": true,
@@ -313,10 +362,17 @@
           "readOnlyIfPrefill": true,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "428341000124108"
+            ],
+            "loinc": [
+              "42077-8"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0421447"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "phone"
@@ -325,11 +381,11 @@
           }
         },
         {
-          "id": "CA_M_DEMO_9",
+          "id": "CA_M_BASE_9",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_city",
+          "code": "CA_M_BASE_city",
           "labelFa": "شهر محل سکونت",
-          "inputType": "text",
+          "inputType": "province_city",
           "required": true,
           "sortOrder": 9,
           "visibilityRules": [],
@@ -339,10 +395,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "224294005"
+            ],
+            "loinc": [
+              "52831-5"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0013916"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "city"
@@ -351,9 +414,9 @@
           }
         },
         {
-          "id": "CA_M_DEMO_10",
+          "id": "CA_M_BASE_10",
           "sectionId": "CA_M_SEC_1",
-          "code": "CA_M_DEMO_maritalStatus",
+          "code": "CA_M_BASE_maritalStatus",
           "labelFa": "وضعیت تاهل",
           "inputType": "select",
           "required": true,
@@ -370,10 +433,17 @@
             "سایر"
           ],
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "125680007"
+            ],
+            "loinc": [
+              "11370-4"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0024841"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "maritalStatus"
@@ -396,9 +466,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "363346000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z85.9"
+            ],
+            "umls": [
+              "C0006826"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male"
@@ -421,9 +498,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "128301008"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "K63.5"
+            ],
+            "umls": [
+              "C0032584"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male"
@@ -446,9 +530,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "108290001"
+            ],
+            "loinc": [
+              "21946-9"
+            ],
             "icd10": [],
+            "umls": [
+              "C1522449"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male"
@@ -471,9 +562,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "367336001"
+            ],
+            "loinc": [
+              "55752-0"
+            ],
             "icd10": [],
+            "umls": [
+              "C3665472"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male"
@@ -496,9 +594,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "313039003"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z94.9"
+            ],
+            "umls": [
+              "C0027696"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male"
@@ -521,9 +626,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "44054006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "E11"
+            ],
+            "umls": [
+              "C0011860"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male"
@@ -546,9 +658,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "24526004",
+              "34000006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "K51",
+              "K50"
+            ],
+            "umls": [
+              "C0009324",
+              "C0010346"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male",
@@ -572,9 +694,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "307058004"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "B96.81"
+            ],
+            "umls": [
+              "C0085508"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male"
@@ -597,9 +726,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "66071002",
+              "50711007"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "B18.1",
+              "B18.2"
+            ],
+            "umls": [
+              "C0019163",
+              "C0019196"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male"
@@ -622,9 +761,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "86406008"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "B20"
+            ],
+            "umls": [
+              "C0019693"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male"
@@ -647,9 +793,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275937001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "male"
@@ -672,9 +825,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275938006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.42"
+            ],
+            "umls": [
+              "C0235873"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "male",
@@ -699,9 +859,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275937001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.0"
+            ],
+            "umls": [
+              "C0260418"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "male",
@@ -726,9 +893,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "429740004"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.3",
+              "Z80.41"
+            ],
+            "umls": [
+              "C0429966"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "male",
@@ -754,9 +929,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275940002"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.0"
+            ],
+            "umls": [
+              "C0260419"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "male",
@@ -780,9 +962,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275939003"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.1"
+            ],
+            "umls": [
+              "C0260420"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "male",
@@ -807,9 +996,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275937001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "male"
@@ -832,9 +1028,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275937001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "male",
@@ -858,9 +1061,18 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "412734009",
+              "445243001"
+            ],
+            "loinc": [
+              "50995-0"
+            ],
             "icd10": [],
+            "umls": [
+              "C1515112",
+              "C1333991"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "male",
@@ -885,9 +1097,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "77176002"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "F17.210"
+            ],
+            "umls": [
+              "C0037369"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male",
@@ -911,9 +1130,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "8517006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z87.891"
+            ],
+            "umls": [
+              "C3241966"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male",
@@ -937,9 +1163,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "160603005"
+            ],
+            "loinc": [
+              "64234-8"
+            ],
             "icd10": [],
+            "umls": [
+              "C0424947"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male",
@@ -963,9 +1196,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "228523000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z77.22"
+            ],
+            "umls": [
+              "C0037370"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male",
@@ -989,9 +1229,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "722499006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "F17.290"
+            ],
+            "umls": [
+              "C4554196"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male",
@@ -1015,9 +1262,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "219006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "F10.10"
+            ],
+            "umls": [
+              "C0001948"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male",
@@ -1041,9 +1295,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "228448000"
+            ],
+            "loinc": [
+              "68516-4"
+            ],
             "icd10": [],
+            "umls": [
+              "C0425305"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male"
@@ -1066,9 +1327,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "414915002",
+              "414916001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "E66.9"
+            ],
+            "umls": [
+              "C0028754"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male"
@@ -1091,9 +1360,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "226167000"
+            ],
+            "loinc": [
+              "75285-2"
+            ],
             "icd10": [],
+            "umls": [
+              "C0425411"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male"
@@ -1116,9 +1392,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "226145004"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0684233"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male"
@@ -1141,9 +1422,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "370977006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z57.5"
+            ],
+            "umls": [
+              "C0038436"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male"
@@ -1166,9 +1454,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "418189009"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z57.4"
+            ],
+            "umls": [
+              "C0031225"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male"
@@ -1191,9 +1486,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "370952001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z57.1"
+            ],
+            "umls": [
+              "C0034559"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male"
@@ -1216,9 +1518,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "89362005"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R63.4"
+            ],
+            "umls": [
+              "C0043096"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1242,9 +1551,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "79890006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R63.0"
+            ],
+            "umls": [
+              "C0003123"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1267,9 +1583,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "84229001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R53.83"
+            ],
+            "umls": [
+              "C0015672"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1292,9 +1615,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "42984000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R61"
+            ],
+            "umls": [
+              "C0028081"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1318,9 +1648,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "386661006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R50.9"
+            ],
+            "umls": [
+              "C0015967"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1343,9 +1680,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "22253000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R52"
+            ],
+            "umls": [
+              "C0030193"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1368,9 +1712,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "274667000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R22.9"
+            ],
+            "umls": [
+              "C0577559"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1396,9 +1747,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "95324001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "L98.9"
+            ],
+            "umls": [
+              "C0037285"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1421,9 +1779,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "162116003"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R35.0"
+            ],
+            "umls": [
+              "C0042023"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1447,9 +1812,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "51178009"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R35.1"
+            ],
+            "umls": [
+              "C0080274"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1473,9 +1845,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "49650001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R30.0"
+            ],
+            "umls": [
+              "C0013378"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1499,9 +1878,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "267064002"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R39.1"
+            ],
+            "umls": [
+              "C0080276"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1525,9 +1911,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "250450001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R39.14"
+            ],
+            "umls": [
+              "C0426395"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1551,9 +1944,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "162103003"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R39.14"
+            ],
+            "umls": [
+              "C0232849"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1576,9 +1976,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "34436003"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R31.9"
+            ],
+            "umls": [
+              "C0018965"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1603,9 +2010,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "405729008"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R36.1"
+            ],
+            "umls": [
+              "C0018978"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1629,9 +2043,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "30473006",
+              "279039007"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R10.2",
+              "M54.5"
+            ],
+            "umls": [
+              "C0019559",
+              "C0022821"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1654,9 +2078,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "266529003"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R19.4"
+            ],
+            "umls": [
+              "C0009214"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1679,9 +2110,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "14760008",
+              "62315008"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "K59.00",
+              "K59.1"
+            ],
+            "umls": [
+              "C0009806",
+              "C0011991"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1704,9 +2145,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "405729008"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "K92.1"
+            ],
+            "umls": [
+              "C0018932"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1731,9 +2179,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "2901004"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "K92.1"
+            ],
+            "umls": [
+              "C0025222"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1758,9 +2213,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "21522001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R10.9"
+            ],
+            "umls": [
+              "C0000737"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1783,9 +2245,18 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "73879007",
+              "162059005"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R14.0"
+            ],
+            "umls": [
+              "C0016204",
+              "C0239135"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1808,9 +2279,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "422587007",
+              "288227007"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R11.2",
+              "R13.10"
+            ],
+            "umls": [
+              "C0027497",
+              "C0011168"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1833,9 +2314,18 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "271737000",
+              "87572000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "D50.9"
+            ],
+            "umls": [
+              "C0002871",
+              "C0162316"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "male",
@@ -1859,9 +2349,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "49727002"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R05.9"
+            ],
+            "umls": [
+              "C0010200"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1885,9 +2382,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "49727002"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R05.3"
+            ],
+            "umls": [
+              "C0010200"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1911,9 +2415,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "267036007"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R06.02"
+            ],
+            "umls": [
+              "C0013404"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1936,9 +2447,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "29857009"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R07.9"
+            ],
+            "umls": [
+              "C0008031"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -1961,9 +2479,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "66857006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R04.2"
+            ],
+            "umls": [
+              "C0019079"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -1987,9 +2512,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "1641000119105"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R49.0"
+            ],
+            "umls": [
+              "C0019825"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male"
@@ -2012,9 +2544,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "300888008"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N50.9"
+            ],
+            "umls": [
+              "C0232940"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -2039,9 +2578,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "102616008"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N50.81"
+            ],
+            "umls": [
+              "C0039591"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -2065,9 +2611,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "26946001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "D48.5"
+            ],
+            "umls": [
+              "C0025202"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "male",
@@ -2091,9 +2644,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "403180003",
+              "399963005"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "L55.9"
+            ],
+            "umls": [
+              "C0038814"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "male"
@@ -2116,9 +2677,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "63476007"
+            ],
+            "loinc": [
+              "2857-1"
+            ],
             "icd10": [],
+            "umls": [
+              "C0201544"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "male",
@@ -2144,9 +2712,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "410457007"
+            ],
+            "loinc": [
+              "32465-7"
+            ],
             "icd10": [],
+            "umls": [
+              "C0201570"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "male",
@@ -2170,9 +2745,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "73761001"
+            ],
+            "loinc": [
+              "28026-4"
+            ],
             "icd10": [],
+            "umls": [
+              "C0009378"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "male"
@@ -2195,9 +2777,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "167777007"
+            ],
+            "loinc": [
+              "2335-8"
+            ],
             "icd10": [],
+            "umls": [
+              "C0016399"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "male",
@@ -2222,9 +2811,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "16310003"
+            ],
+            "loinc": [
+              "79190-6"
+            ],
             "icd10": [],
+            "umls": [
+              "C0040405"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "male",
@@ -2249,9 +2845,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "439401001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z12.9"
+            ],
+            "umls": [
+              "C0420112"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "male",
@@ -2275,9 +2878,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "171207006"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0420113"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "male",
@@ -2302,9 +2910,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "171207006"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0420114"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "male",
@@ -2329,9 +2942,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "225328001"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0424472"
+            ],
             "conceptKind": "behavior",
             "aiTags": [
               "male"
@@ -2354,9 +2972,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "266757002"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0424473"
+            ],
             "conceptKind": "behavior",
             "aiTags": [
               "male"
@@ -2384,7 +3007,7 @@
         {
           "id": "CA_F_SEC_1",
           "formId": "form_cancer_female_v02",
-          "code": "CA_F_SEC_DEMO",
+          "code": "CA_F_SEC_BASE",
           "title": "اطلاعات پایه",
           "sortOrder": 1,
           "timeWindowHint": "",
@@ -2465,9 +3088,9 @@
       ],
       "items": [
         {
-          "id": "CA_F_DEMO_1",
+          "id": "CA_F_BASE_1",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_fullName",
+          "code": "CA_F_BASE_fullName",
           "labelFa": "نام و نام خانوادگی",
           "inputType": "text",
           "required": true,
@@ -2479,10 +3102,17 @@
           "readOnlyIfPrefill": true,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "371484003"
+            ],
+            "loinc": [
+              "45392-8"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0027365"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "fullName"
@@ -2491,9 +3121,9 @@
           }
         },
         {
-          "id": "CA_F_DEMO_2",
+          "id": "CA_F_BASE_2",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_nationalId",
+          "code": "CA_F_BASE_nationalId",
           "labelFa": "کدملی",
           "inputType": "text",
           "required": true,
@@ -2505,10 +3135,17 @@
           "readOnlyIfPrefill": true,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "398724002"
+            ],
+            "loinc": [
+              "45397-7"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C1301944"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "nationalId"
@@ -2517,9 +3154,9 @@
           }
         },
         {
-          "id": "CA_F_DEMO_3",
+          "id": "CA_F_BASE_3",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_birthDate",
+          "code": "CA_F_BASE_birthDate",
           "labelFa": "تاریخ تولد",
           "inputType": "date",
           "required": true,
@@ -2531,10 +3168,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "184099003"
+            ],
+            "loinc": [
+              "21112-8"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0011008"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "birthDate"
@@ -2543,9 +3187,9 @@
           }
         },
         {
-          "id": "CA_F_DEMO_4",
+          "id": "CA_F_BASE_4",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_formDate",
+          "code": "CA_F_BASE_formDate",
           "labelFa": "تاریخ تکمیل پرسشنامه",
           "inputType": "date",
           "required": true,
@@ -2557,10 +3201,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "399651003"
+            ],
+            "loinc": [
+              "29846-2"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C1301886"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "formDate"
@@ -2569,9 +3220,9 @@
           }
         },
         {
-          "id": "CA_F_DEMO_5",
+          "id": "CA_F_BASE_5",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_heightCm",
+          "code": "CA_F_BASE_heightCm",
           "labelFa": "قد (سانتی‌متر)",
           "inputType": "number",
           "required": true,
@@ -2583,10 +3234,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "50373000"
+            ],
+            "loinc": [
+              "8302-2"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0005890"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "heightCm"
@@ -2595,9 +3253,9 @@
           }
         },
         {
-          "id": "CA_F_DEMO_6",
+          "id": "CA_F_BASE_6",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_weightKg",
+          "code": "CA_F_BASE_weightKg",
           "labelFa": "وزن (کیلوگرم)",
           "inputType": "number",
           "required": true,
@@ -2609,10 +3267,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "27113001"
+            ],
+            "loinc": [
+              "29463-7"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0005910"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "weightKg"
@@ -2621,9 +3286,9 @@
           }
         },
         {
-          "id": "CA_F_DEMO_7",
+          "id": "CA_F_BASE_7",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_waistCm",
+          "code": "CA_F_BASE_waistCm",
           "labelFa": "دور کمر (سانتی‌متر)",
           "inputType": "number",
           "required": true,
@@ -2635,10 +3300,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "276361009"
+            ],
+            "loinc": [
+              "8280-0"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0455829"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "waistCm"
@@ -2647,9 +3319,9 @@
           }
         },
         {
-          "id": "CA_F_DEMO_8",
+          "id": "CA_F_BASE_8",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_phone",
+          "code": "CA_F_BASE_phone",
           "labelFa": "شماره تماس",
           "inputType": "text",
           "required": true,
@@ -2661,10 +3333,17 @@
           "readOnlyIfPrefill": true,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "428341000124108"
+            ],
+            "loinc": [
+              "42077-8"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0421447"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "phone"
@@ -2673,11 +3352,11 @@
           }
         },
         {
-          "id": "CA_F_DEMO_9",
+          "id": "CA_F_BASE_9",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_city",
+          "code": "CA_F_BASE_city",
           "labelFa": "شهر محل سکونت",
-          "inputType": "text",
+          "inputType": "province_city",
           "required": true,
           "sortOrder": 9,
           "visibilityRules": [],
@@ -2687,10 +3366,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "224294005"
+            ],
+            "loinc": [
+              "52831-5"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0013916"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "city"
@@ -2699,9 +3385,9 @@
           }
         },
         {
-          "id": "CA_F_DEMO_10",
+          "id": "CA_F_BASE_10",
           "sectionId": "CA_F_SEC_1",
-          "code": "CA_F_DEMO_maritalStatus",
+          "code": "CA_F_BASE_maritalStatus",
           "labelFa": "وضعیت تاهل",
           "inputType": "select",
           "required": true,
@@ -2718,10 +3404,17 @@
             "سایر"
           ],
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "125680007"
+            ],
+            "loinc": [
+              "11370-4"
+            ],
             "icd10": [],
-            "conceptKind": "demo",
+            "umls": [
+              "C0024841"
+            ],
+            "conceptKind": "demographics",
             "aiTags": [
               "demographics",
               "maritalStatus"
@@ -2744,9 +3437,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275937001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "female"
@@ -2769,9 +3469,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "429740004"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.3"
+            ],
+            "umls": [
+              "C0429966"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "female",
@@ -2796,9 +3503,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275941003"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.41"
+            ],
+            "umls": [
+              "C0260421"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "female",
@@ -2823,9 +3537,17 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275937001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.0",
+              "Z80.49"
+            ],
+            "umls": [
+              "C0260418"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "female",
@@ -2851,9 +3573,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275937001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "female"
@@ -2876,9 +3605,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "275937001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "female"
@@ -2901,9 +3637,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "429740004"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z80.3"
+            ],
+            "umls": [
+              "C0429966"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "female",
@@ -2928,9 +3671,18 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "412734009",
+              "445243001"
+            ],
+            "loinc": [
+              "50995-0"
+            ],
             "icd10": [],
+            "umls": [
+              "C1515112",
+              "C1333991"
+            ],
             "conceptKind": "family",
             "aiTags": [
               "female",
@@ -2959,9 +3711,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "363346000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z85.9"
+            ],
+            "umls": [
+              "C0006826"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -2984,9 +3743,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "86273004"
+            ],
+            "loinc": [
+              "33717-0"
+            ],
             "icd10": [],
+            "umls": [
+              "C0005558"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female",
@@ -3013,9 +3779,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "108290001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z92.3"
+            ],
+            "umls": [
+              "C1522449"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3038,9 +3811,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "24526004",
+              "34000006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "K51",
+              "K50"
+            ],
+            "umls": [
+              "C0009324",
+              "C0010346"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female",
@@ -3064,9 +3847,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "66071002",
+              "50711007"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "B18.1",
+              "B18.2"
+            ],
+            "umls": [
+              "C0019163",
+              "C0019196"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3089,9 +3882,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "370388006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "D84.9"
+            ],
+            "umls": [
+              "C0021051"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3114,9 +3914,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "240532009"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "B97.7"
+            ],
+            "umls": [
+              "C0001486"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female",
@@ -3142,9 +3949,22 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "44054006",
+              "38341003",
+              "55822004"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "E11",
+              "I10",
+              "E78.5"
+            ],
+            "umls": [
+              "C0011860",
+              "C0020538",
+              "C0020473"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female",
@@ -3168,9 +3988,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "398057008"
+            ],
+            "loinc": [
+              "42759-4"
+            ],
             "icd10": [],
+            "umls": [
+              "C0025329"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3199,9 +4026,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "161712005"
+            ],
+            "loinc": [
+              "42829-5"
+            ],
             "icd10": [],
+            "umls": [
+              "C0025325"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3233,9 +4067,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "102872001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z64.0"
+            ],
+            "umls": [
+              "C0032977"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3267,9 +4108,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "102873006"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0425959"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3301,9 +4147,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "8619003"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N97.9"
+            ],
+            "umls": [
+              "C0021359"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3335,9 +4188,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "169741004"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0006147"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3360,9 +4218,18 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "182838006",
+              "266717002"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z79.3"
+            ],
+            "umls": [
+              "C0009905",
+              "C0282411"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female"
@@ -3385,9 +4252,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "237055002"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "E28.2"
+            ],
+            "umls": [
+              "C0032460"
+            ],
             "conceptKind": "history",
             "aiTags": [
               "female",
@@ -3411,9 +4285,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "271825005"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N63"
+            ],
+            "umls": [
+              "C0025566"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3438,9 +4319,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "127189005"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R59.0"
+            ],
+            "umls": [
+              "C0578736"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3464,9 +4352,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "290113009"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N64.89"
+            ],
+            "umls": [
+              "C0239379"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3490,9 +4385,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "290066008"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N64.59"
+            ],
+            "umls": [
+              "C0239381"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3516,9 +4418,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "290113009"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N61"
+            ],
+            "umls": [
+              "C0006145"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3542,9 +4451,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "290068009"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N64.52"
+            ],
+            "umls": [
+              "C0149740"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3569,9 +4485,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "290113009"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N64.59"
+            ],
+            "umls": [
+              "C0239382"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3595,9 +4518,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "53430007"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N64.4"
+            ],
+            "umls": [
+              "C0024902"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3630,9 +4560,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "266599000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N92.1"
+            ],
+            "umls": [
+              "C0025323"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3656,9 +4593,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "21840007"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N95.0"
+            ],
+            "umls": [
+              "C0135212"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3682,9 +4626,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "386692008"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N92.0"
+            ],
+            "umls": [
+              "C0025322"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female"
@@ -3707,9 +4658,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "30473006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R10.2"
+            ],
+            "umls": [
+              "C0019559"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female"
@@ -3732,9 +4690,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "271939006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N89.8"
+            ],
+            "umls": [
+              "C0042251"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3767,9 +4732,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "266599000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "N94.1"
+            ],
+            "umls": [
+              "C0013394"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female"
@@ -3792,9 +4764,18 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "73879007",
+              "162059005"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R14.0"
+            ],
+            "umls": [
+              "C0016204",
+              "C0239135"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female"
@@ -3817,9 +4798,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "162116003",
+              "30473006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R35.0",
+              "R10.2"
+            ],
+            "umls": [
+              "C0042023",
+              "C0019559"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3843,9 +4834,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "89362005"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R63.4"
+            ],
+            "umls": [
+              "C0043096"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3869,9 +4867,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "84229001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R53.83"
+            ],
+            "umls": [
+              "C0015672"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female"
@@ -3894,9 +4899,18 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "271737000",
+              "87572000"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "D50.9"
+            ],
+            "umls": [
+              "C0002871",
+              "C0162316"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3920,9 +4934,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "266529003"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R19.4"
+            ],
+            "umls": [
+              "C0009214"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3946,9 +4967,18 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "405729008",
+              "2901004"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "K92.1"
+            ],
+            "umls": [
+              "C0018932",
+              "C0025222"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -3973,9 +5003,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "21522001",
+              "79890006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R10.9",
+              "R63.0"
+            ],
+            "umls": [
+              "C0000737",
+              "C0003123"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female"
@@ -3998,9 +5038,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "266433003",
+              "288227007"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "K21.9",
+              "R13.10"
+            ],
+            "umls": [
+              "C0018834",
+              "C0011168"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female"
@@ -4023,9 +5073,22 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "49727002",
+              "267036007",
+              "66857006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R05.9",
+              "R06.02",
+              "R04.2"
+            ],
+            "umls": [
+              "C0010200",
+              "C0013404",
+              "C0019079"
+            ],
             "conceptKind": "symptom",
             "aiTags": [
               "female",
@@ -4050,9 +5113,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "77176002",
+              "8517006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "F17.210",
+              "Z87.891"
+            ],
+            "umls": [
+              "C0037369",
+              "C3241966"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "female",
@@ -4076,9 +5149,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "722499006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "F17.290"
+            ],
+            "umls": [
+              "C4554196"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "female",
@@ -4102,9 +5182,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "219006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "F10.10"
+            ],
+            "umls": [
+              "C0001948"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "female",
@@ -4128,9 +5215,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "228448000"
+            ],
+            "loinc": [
+              "68516-4"
+            ],
             "icd10": [],
+            "umls": [
+              "C0425305"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "female"
@@ -4153,9 +5247,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "226145004"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0684233"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "female"
@@ -4178,9 +5277,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "226167000"
+            ],
+            "loinc": [
+              "75285-2"
+            ],
             "icd10": [],
+            "umls": [
+              "C0425411"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "female"
@@ -4203,9 +5309,18 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "414916001",
+              "238136002"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "E66.9"
+            ],
+            "umls": [
+              "C0028754",
+              "C0349218"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "female",
@@ -4229,9 +5344,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "370977006"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "Z57.5"
+            ],
+            "umls": [
+              "C0038436"
+            ],
             "conceptKind": "lifestyle",
             "aiTags": [
               "female"
@@ -4263,9 +5385,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "171149006",
+              "439958008"
+            ],
+            "loinc": [
+              "10524-7",
+              "77378-9"
+            ],
             "icd10": [],
+            "umls": [
+              "C0030354",
+              "C1515110"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "female",
@@ -4299,9 +5431,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "439401001"
+            ],
             "loinc": [],
-            "icd10": [],
+            "icd10": [
+              "R87.61"
+            ],
+            "umls": [
+              "C0420112"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "female",
@@ -4326,9 +5465,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "33879002"
+            ],
+            "loinc": [
+              "30940-0"
+            ],
             "icd10": [],
+            "umls": [
+              "C1515111"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "female",
@@ -4352,9 +5498,16 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "71651007"
+            ],
+            "loinc": [
+              "24606-6"
+            ],
             "icd10": [],
+            "umls": [
+              "C0024671"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "female",
@@ -4378,9 +5531,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "47079000",
+              "241615005"
+            ],
+            "loinc": [
+              "24604-1",
+              "30719-6"
+            ],
             "icd10": [],
+            "umls": [
+              "C0041618",
+              "C0024485"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "female",
@@ -4404,9 +5567,19 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
-            "loinc": [],
+            "snomed": [
+              "73761001",
+              "167777007"
+            ],
+            "loinc": [
+              "28026-4",
+              "2335-8"
+            ],
             "icd10": [],
+            "umls": [
+              "C0009378",
+              "C0016399"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "female",
@@ -4431,9 +5604,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "171207006"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0420115"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "female",
@@ -4457,9 +5635,14 @@
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
-            "snomed": [],
+            "snomed": [
+              "225328001"
+            ],
             "loinc": [],
             "icd10": [],
+            "umls": [
+              "C0424472"
+            ],
             "conceptKind": "screening",
             "aiTags": [
               "female"
@@ -4470,5 +5653,5 @@
       ]
     }
   ],
-  "schemaVersion": 1
+  "schemaVersion": 2
 }

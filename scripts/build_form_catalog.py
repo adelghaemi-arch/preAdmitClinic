@@ -9,6 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 OUT = ROOT / "frontend" / "src" / "lib" / "form-catalog.seed.json"
+CODING_MAP = ROOT / "scripts" / "form-item-coding-map.json"
+UMLS_CUI = re.compile(r"^C\d{7}$")
 
 DIGIT_MAP = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
 SEC_PAT = re.compile(r"^بخش\s*([۰-۹0-9]+)\)?\s*(.+)$")
@@ -131,7 +133,7 @@ def ai_tags(label: str, gender: str) -> list[str]:
     return tags
 
 
-def demo_items(prefix: str, form_id: str, section_id: str):
+def demographic_items(prefix: str, form_id: str, section_id: str):
     specs = [
         ("fullName", "نام و نام خانوادگی", "text", True, True),
         ("nationalId", "کدملی", "text", True, True),
@@ -141,15 +143,15 @@ def demo_items(prefix: str, form_id: str, section_id: str):
         ("weightKg", "وزن (کیلوگرم)", "number", False, False),
         ("waistCm", "دور کمر (سانتی‌متر)", "number", False, False),
         ("phone", "شماره تماس", "text", True, True),
-        ("city", "شهر محل سکونت", "text", False, False),
+        ("city", "شهر محل سکونت", "province_city", False, False),
         ("maritalStatus", "وضعیت تاهل", "select", False, False),
     ]
     items = []
     for i, (code, label, itype, prefill, readonly) in enumerate(specs, start=1):
         item = {
-            "id": f"{prefix}_DEMO_{i}",
+            "id": f"{prefix}_BASE_{i}",
             "sectionId": section_id,
-            "code": f"{prefix}_DEMO_{code}",
+            "code": f"{prefix}_BASE_{code}",
             "labelFa": label,
             "inputType": itype,
             "required": True,
@@ -164,13 +166,44 @@ def demo_items(prefix: str, form_id: str, section_id: str):
                 "snomed": [],
                 "loinc": [],
                 "icd10": [],
-                "conceptKind": "demo",
+                "umls": [],
+                "conceptKind": "demographics",
                 "aiTags": ["demographics", code],
                 "redFlagOnYes": False,
             },
         }
         items.append(item)
     return items
+
+
+def load_coding_map() -> dict:
+    if not CODING_MAP.exists():
+        raise SystemExit(f"coding map missing: {CODING_MAP}")
+    return json.loads(CODING_MAP.read_text(encoding="utf-8"))
+
+
+def apply_coding_map(form: dict, coding_map: dict) -> None:
+    for item in form["items"]:
+        code = item["code"]
+        mapped = coding_map.get(code)
+        if not mapped:
+            raise SystemExit(f"no coding map entry for {code}")
+        item["coding"]["snomed"] = list(mapped.get("snomed") or [])
+        item["coding"]["loinc"] = list(mapped.get("loinc") or [])
+        item["coding"]["icd10"] = list(mapped.get("icd10") or [])
+        item["coding"]["umls"] = list(mapped.get("umls") or [])
+        validate_item_coding(code, item["coding"])
+
+
+def validate_item_coding(code: str, coding: dict) -> None:
+    umls = coding.get("umls") or []
+    if not umls:
+        raise SystemExit(f"{code}: umls required")
+    for cui in umls:
+        if not UMLS_CUI.match(str(cui)):
+            raise SystemExit(f"{code}: invalid umls CUI {cui}")
+    if not (coding.get("snomed") or coding.get("loinc") or coding.get("icd10")):
+        raise SystemExit(f"{code}: at least one of snomed/loinc/icd10 required")
 
 
 def build_form(form_id: str, code: str, title: str, gender: str, prefix: str, text: str, warning: str):
@@ -181,24 +214,24 @@ def build_form(form_id: str, code: str, title: str, gender: str, prefix: str, te
         for q in questions:
             q["sectionOrder"] = q["sectionOrder"] + (0 if q["sectionOrder"] else 0)
 
-    # Rebuild section ids consistently: demo is section 1; question sections keep titles
+    # Rebuild section ids consistently: demographics is section 1; question sections keep titles
     # If parser already has اطلاعات پایه as first, keep; questions may wrongly attach to it — fix by section title.
     sections = []
     items = []
-    # Always create demo section first
-    demo_sec_id = f"{prefix}_SEC_1"
+    # Always create demographics (base info) section first
+    base_sec_id = f"{prefix}_SEC_1"
     sections.append(
         {
-            "id": demo_sec_id,
+            "id": base_sec_id,
             "formId": form_id,
-            "code": f"{prefix}_SEC_DEMO",
+            "code": f"{prefix}_SEC_BASE",
             "title": "اطلاعات پایه",
             "sortOrder": 1,
             "timeWindowHint": "",
             "guideText": "این بخش برای تفسیر درست خطر و انتخاب روش غربالگری لازم است.",
         }
     )
-    items.extend(demo_items(prefix, form_id, demo_sec_id))
+    items.extend(demographic_items(prefix, form_id, base_sec_id))
 
     # Map remaining sections (skip first if it's demographics)
     q_sections = [s for s in sections_raw if "اطلاعات پایه" not in s["title"]]
@@ -211,7 +244,7 @@ def build_form(form_id: str, code: str, title: str, gender: str, prefix: str, te
     for order in used_orders:
         title = title_by_order.get(order, f"بخش {order}")
         if "اطلاعات پایه" in title:
-            # questions should not live in demo; bump them into next content section if any
+            # questions should not live in demographics; bump them into next content section if any
             continue
         sec_id = f"{prefix}_SEC_{sort}"
         order_to_sec_id[order] = sec_id
@@ -229,7 +262,7 @@ def build_form(form_id: str, code: str, title: str, gender: str, prefix: str, te
         sort += 1
 
     # If some questions landed on demographics section order, attach them to first clinical section
-    fallback_sec = next((s["id"] for s in sections if s["id"] != demo_sec_id), None)
+    fallback_sec = next((s["id"] for s in sections if s["id"] != base_sec_id), None)
 
     for q in sorted(questions, key=lambda x: x["num"]):
         sec_id = order_to_sec_id.get(q["sectionOrder"]) or fallback_sec
@@ -257,6 +290,7 @@ def build_form(form_id: str, code: str, title: str, gender: str, prefix: str, te
                     "snomed": [],
                     "loinc": [],
                     "icd10": [],
+                    "umls": [],
                     "conceptKind": concept_kind(q["label"], sec_title),
                     "aiTags": tags,
                     "redFlagOnYes": "red_flag" in tags,
@@ -316,6 +350,10 @@ def main():
         WARNING,
     )
 
+    coding_map = load_coding_map()
+    apply_coding_map(male, coding_map)
+    apply_coding_map(female, coding_map)
+
     male_q = [i for i in male["items"] if i["inputType"] == "yn_unk"]
     female_q = [i for i in female["items"] if i["inputType"] == "yn_unk"]
     print("male yn", len(male_q), "sections", len(male["sections"]))
@@ -325,7 +363,7 @@ def main():
     print("male missing", sorted(set(range(1, 78)) - m_nums))
     print("female missing", sorted(set(range(1, 65)) - f_nums))
 
-    catalog = {"forms": [male, female], "schemaVersion": 1}
+    catalog = {"forms": [male, female], "schemaVersion": 2}
     OUT.write_text(json.dumps(catalog, ensure_ascii=False, indent=2), encoding="utf-8")
     print("wrote", OUT, "bytes", OUT.stat().st_size)
 

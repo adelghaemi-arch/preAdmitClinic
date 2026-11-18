@@ -1,4 +1,5 @@
 ﻿import React, { useMemo, useRef, useState } from "react";
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   BookOpen,
   Building2,
@@ -277,8 +278,8 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
             <div><span className="status-badge status-teal">دریافت خودکار</span><h2 className="mt-1.5 text-sm font-bold text-slate-800">API خارجی سازمان</h2><p className="mt-1 text-xs text-slate-500">کلید اختصاصی قرارداد به سامانه منابع انسانی سازمان متصل است و لیست پرسنل را دریافت می‌کند.</p></div>
             {apiEditOpen ? (
               <form onSubmit={async (e) => { e.preventDefault(); await run({ action: "UPDATE_CONTRACT_API", contractId: contract.id, apiKey: editApiKey, apiEndpoint: editEndpoint }); setApiEditOpen(false); flash("کلید API قرارداد به‌روزرسانی شد."); }} className="space-y-3 rounded-xl border border-teal-200 bg-teal-50/40 p-3.5">
-                <label className="app-label">آدرس سرویس<input dir="ltr" value={editEndpoint} onChange={(e) => setEditEndpoint(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label>
-                <label className="app-label">کلید قرارداد<input dir="ltr" required value={editApiKey} onChange={(e) => setEditApiKey(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label>
+                <label className="app-label">آدرس سرویس<AppInput dir="ltr" value={editEndpoint} onChange={(e) => setEditEndpoint(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label>
+                <label className="app-label">کلید قرارداد<AppInput dir="ltr" required value={editApiKey} onChange={(e) => setEditApiKey(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label>
                 <div className="flex gap-2"><button type="submit" disabled={busy} className="primary-button">ذخیره</button><button type="button" onClick={() => setApiEditOpen(false)} className="secondary-button">انصراف</button></div>
               </form>
             ) : (
@@ -298,11 +299,11 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
               <form onSubmit={async (e) => { e.preventDefault(); await run({ action: "IMPORT_CONTRACT_MEMBERS", contractId: contract.id, source: "manual", sendInviteSms: sendSmsOnImport, members: [{ personnelCode: `MN-${Date.now().toString().slice(-4)}`, fullName: mName, nationalId: mNid, phone: mPhone, age: Number(mAge) || 35, gender: mGender, department: mDept, jobCategory: mCat }] }); setMName(""); setMNid(""); setMPhone(""); setManualOpen(false); flash("فرد جدید با بسته متناسب سن و جنسیت ثبت شد."); }} className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
                 <div className="text-xs font-semibold text-slate-700">ثبت دستی یک نفر</div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <input required placeholder="نام و نام خانوادگی" value={mName} onChange={(e) => setMName(e.target.value)} className="app-input text-xs" />
-                  <input required dir="ltr" placeholder="کد ملی ۱۰ رقمی" value={mNid} onChange={(e) => setMNid(e.target.value)} className="app-input text-left font-mono text-xs" />
-                  <input required dir="ltr" placeholder="موبایل (0912...)" value={mPhone} onChange={(e) => setMPhone(e.target.value)} className="app-input text-left font-mono text-xs" />
-                  <div className="grid grid-cols-2 gap-2"><input type="number" min={18} max={90} value={mAge} onChange={(e) => setMAge(e.target.value)} placeholder="سن" className="app-input text-xs" /><select value={mGender} onChange={(e) => setMGender(e.target.value as "مرد" | "زن")} className="app-select text-xs"><option value="مرد">مرد</option><option value="زن">زن</option></select></div>
-                  <input placeholder="واحد سازمانی" value={mDept} onChange={(e) => setMDept(e.target.value)} className="app-input text-xs" />
+                  <AppInput required placeholder="نام و نام خانوادگی" value={mName} onChange={(e) => setMName(e.target.value)} className="app-input text-xs" />
+                  <AppInput required dir="ltr" placeholder="کد ملی ۱۰ رقمی" value={mNid} onChange={(e) => setMNid(e.target.value)} className="app-input text-left font-mono text-xs" />
+                  <AppInput required dir="ltr" placeholder="موبایل (0912...)" value={mPhone} onChange={(e) => setMPhone(e.target.value)} className="app-input text-left font-mono text-xs" />
+                  <div className="grid grid-cols-2 gap-2"><AppInput type="number" min={18} max={90} value={mAge} onChange={(e) => setMAge(e.target.value)} placeholder="سن" className="app-input text-xs" /><select value={mGender} onChange={(e) => setMGender(e.target.value as "مرد" | "زن")} className="app-select text-xs"><option value="مرد">مرد</option><option value="زن">زن</option></select></div>
+                  <AppInput placeholder="واحد سازمانی" value={mDept} onChange={(e) => setMDept(e.target.value)} className="app-input text-xs" />
                   <select value={mCat} onChange={(e) => setMCat(e.target.value)} className="app-select text-xs">{JOB_CATEGORIES.filter((c) => c !== "همه").map((c) => <option key={c} value={c}>{c}</option>)}</select>
                 </div>
                 <button type="submit" disabled={busy} className="primary-button w-full justify-center">افزودن به قرارداد</button>
@@ -318,7 +319,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
               <button type="button" onClick={() => fileInputRef.current?.click()} className="primary-button mr-auto"><Upload className="h-4 w-4" />بارگذاری فایل اکسل</button>
               <input ref={fileInputRef} type="file" accept=".xls,.csv,.tsv,.txt" onChange={async (e) => { const file = e.target.files?.[0]; if (!file) return; setExcelPreview(parseExcelOrCsvText(await file.text())); e.target.value = ""; }} className="hidden" />
             </div>
-            <textarea rows={3} value={pasteText} onChange={(e) => setPasteText(e.target.value)} placeholder={"نام، کد ملی، موبایل، سن، جنسیت، واحد، رده شغلی\nسامان نوری, 0074512369, 09123459876, 48, مرد, تعمیرات, عملیات و فنی"} className="app-input text-[11px] leading-6" />
+            <AppTextarea rows={3} value={pasteText} onChange={(e) => setPasteText(e.target.value)} placeholder={"نام، کد ملی، موبایل، سن، جنسیت، واحد، رده شغلی\nسامان نوری, 0074512369, 09123459876, 48, مرد, تعمیرات, عملیات و فنی"} className="app-input text-[11px] leading-6" />
             {pasteText.trim() && <button type="button" onClick={() => setExcelPreview(parseExcelOrCsvText(pasteText))} className="secondary-button">بررسی ردیف‌ها</button>}
             {excelPreview && (
               <div className="rounded-xl border border-teal-200 bg-teal-50/50 p-3.5 text-xs">
@@ -346,9 +347,9 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
             </div>
             {supEditOpen && (
               <form onSubmit={async (e) => { e.preventDefault(); await run({ action: "UPDATE_CONTRACT_SUPERVISOR", contractId: contract.id, fullName: supName, title: supTitle, phone: supPhone, canSendReminders: supCanSms, isActive: true }); setSupEditOpen(false); flash(`ناظر «${supName}» ثبت شد و ورود با شماره ${toFaDigits(supPhone)} فعال گردید.`); }} className="mt-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50/40 p-4 sm:grid-cols-4">
-                <label className="app-label">نام ناظر<input required value={supName} onChange={(e) => setSupName(e.target.value)} placeholder="نام و نام خانوادگی" className="app-input mt-1 text-xs" /></label>
-                <label className="app-label">سمت<input value={supTitle} onChange={(e) => setSupTitle(e.target.value)} placeholder="مدیر منابع انسانی" className="app-input mt-1 text-xs" /></label>
-                <label className="app-label">موبایل (نام کاربری ورود)<input required dir="ltr" value={supPhone} onChange={(e) => setSupPhone(e.target.value)} placeholder="0912..." className="app-input mt-1 font-mono text-left text-xs" /></label>
+                <label className="app-label">نام ناظر<AppInput required value={supName} onChange={(e) => setSupName(e.target.value)} placeholder="نام و نام خانوادگی" className="app-input mt-1 text-xs" /></label>
+                <label className="app-label">سمت<AppInput value={supTitle} onChange={(e) => setSupTitle(e.target.value)} placeholder="مدیر منابع انسانی" className="app-input mt-1 text-xs" /></label>
+                <label className="app-label">موبایل (نام کاربری ورود)<AppInput required dir="ltr" value={supPhone} onChange={(e) => setSupPhone(e.target.value)} placeholder="0912..." className="app-input mt-1 font-mono text-left text-xs" /></label>
                 <div className="flex flex-col justify-end gap-2"><label className="flex items-center gap-1.5 text-[11px] text-slate-600"><input type="checkbox" checked={supCanSms} onChange={(e) => setSupCanSms(e.target.checked)} className="accent-teal-700" />مجوز یادآوری پیامکی</label><button type="submit" disabled={busy} className="primary-button justify-center">ثبت ناظر</button></div>
               </form>
             )}
@@ -397,7 +398,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
 
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-5">
             <div><h2 className="text-sm font-bold text-slate-800">کتابخانه مرکزی قوانین سیستم</h2><p className="mt-0.5 text-xs text-slate-500">این قوانین در سراسر سیستم ذخیره می‌شوند و در هر قراردادی قابل استفاده مجدد هستند.</p></div>
-            <label className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-2 text-xs"><Search className="h-3.5 w-3.5 text-slate-400" /><input value={libQuery} onChange={(e) => setLibQuery(e.target.value)} placeholder="جست‌وجوی قانون..." className="w-full bg-transparent outline-none" /></label>
+            <label className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-2 text-xs"><Search className="h-3.5 w-3.5 text-slate-400" /><AppInput value={libQuery} onChange={(e) => setLibQuery(e.target.value)} placeholder="جست‌وجوی قانون..." className="w-full bg-transparent outline-none" /></label>
             <div className="space-y-2">
               {visibleLibrary.map((lib) => {
                 const attached = attachedLibraryIds.has(lib.id);
@@ -430,12 +431,12 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
               setRuleTitle(""); setRuleDesc("");
             }} className="space-y-3 rounded-xl border border-teal-200 bg-teal-50/40 p-3.5">
               <div className="text-xs font-semibold text-teal-900">{editingLibRule ? `ویرایش قانون: ${editingLibRule.title}` : "ساخت قانون جدید"}</div>
-              <input required value={ruleTitle} onChange={(e) => setRuleTitle(e.target.value)} placeholder="عنوان قانون (مثلاً: آقایان عملیات زیر ۴۵)" className="app-input text-xs" />
-              <textarea rows={2} value={ruleDesc} onChange={(e) => setRuleDesc(e.target.value)} placeholder="توضیح کوتاه برای استفاده مجدد..." className="app-input text-xs" />
+              <AppInput required value={ruleTitle} onChange={(e) => setRuleTitle(e.target.value)} placeholder="عنوان قانون (مثلاً: آقایان عملیات زیر ۴۵)" className="app-input text-xs" />
+              <AppTextarea rows={2} value={ruleDesc} onChange={(e) => setRuleDesc(e.target.value)} placeholder="توضیح کوتاه برای استفاده مجدد..." className="app-input text-xs" />
               <div className="grid grid-cols-3 gap-2">
                 <select value={ruleGender} onChange={(e) => setRuleGender(e.target.value as "همه" | "مرد" | "زن")} className="app-select text-xs"><option value="همه">همه</option><option value="مرد">مرد</option><option value="زن">زن</option></select>
-                <input type="number" value={ruleMinAge} onChange={(e) => setRuleMinAge(e.target.value)} placeholder="حداقل سن" className="app-input text-xs" />
-                <input type="number" value={ruleMaxAge} onChange={(e) => setRuleMaxAge(e.target.value)} placeholder="حداکثر سن" className="app-input text-xs" />
+                <AppInput type="number" value={ruleMinAge} onChange={(e) => setRuleMinAge(e.target.value)} placeholder="حداقل سن" className="app-input text-xs" />
+                <AppInput type="number" value={ruleMaxAge} onChange={(e) => setRuleMaxAge(e.target.value)} placeholder="حداکثر سن" className="app-input text-xs" />
               </div>
               <select value={ruleJobCat} onChange={(e) => setRuleJobCat(e.target.value)} className="app-select w-full text-xs">{JOB_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</select>
               <select value={rulePathway} onChange={(e) => setRulePathway(e.target.value)} className="app-select w-full text-xs">{pathways.map((p) => <option key={p.code} value={p.code}>{p.title} ({toFaDigits(p.stationCodes.length)} ایستگاه)</option>)}</select>
@@ -493,10 +494,10 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
 
             <form onSubmit={async (e) => { e.preventDefault(); if (!/^\d{4}-\d{2}-\d{2}$/.test(qDate)) { flash("تاریخ معتبر انتخاب کنید."); return; } await run({ action: "UPSERT_DAY_QUOTA", contractId: contract.id, date: qDate, totalCap: Number(qCap) || 20, genderFilter: qGender, fillFormula: qFormula, notes: qNotes }); setQNotes(""); flash("سقف و فرمول روز ذخیره شد."); }} className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-5">
               <h2 className="text-sm font-bold text-slate-800">تعریف سقف و فرمول یک روز</h2>
-              <div className="grid grid-cols-2 gap-3"><label className="app-label">تاریخ مراجعه<PersianDateField className="mt-1" value={qDate} onChange={setQDate} showHolidays placeholder="انتخاب تاریخ مراجعه" aria-label="تاریخ مراجعه" /></label><label className="app-label">سقف نفرات<input type="number" min={1} max={200} required value={qCap} onChange={(e) => setQCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
+              <div className="grid grid-cols-2 gap-3"><label className="app-label">تاریخ مراجعه<PersianDateField className="mt-1" value={qDate} onChange={setQDate} showHolidays placeholder="انتخاب تاریخ مراجعه" aria-label="تاریخ مراجعه" /></label><label className="app-label">سقف نفرات<AppInput type="number" min={1} max={200} required value={qCap} onChange={(e) => setQCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
               <label className="app-label">شرط جنسیت روز<select value={qGender} onChange={(e) => setQGender(e.target.value as "همه" | "مرد" | "زن")} className="app-select mt-1 w-full text-xs"><option value="مرد">فقط آقایان</option><option value="زن">فقط بانوان</option><option value="همه">همه</option></select></label>
               <label className="app-label">فرمول توزیع باقی‌مانده<select value={qFormula} onChange={(e) => setQFormula(e.target.value as ContractDayQuota["fillFormula"])} className="app-select mt-1 w-full text-xs">{Object.entries(FILL_FORMULA_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
-              <label className="app-label">یادداشت<input value={qNotes} onChange={(e) => setQNotes(e.target.value)} placeholder="مثلاً: شیفت صبح عملیات" className="app-input mt-1 text-xs" /></label>
+              <label className="app-label">یادداشت<AppInput value={qNotes} onChange={(e) => setQNotes(e.target.value)} placeholder="مثلاً: شیفت صبح عملیات" className="app-input mt-1 text-xs" /></label>
               <button type="submit" disabled={busy} className="primary-button w-full justify-center">ذخیره سقف و فرمول</button>
             </form>
           </div>
@@ -507,7 +508,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
               <div className="flex flex-wrap items-center gap-2">
                 <label className="flex items-center gap-1.5 text-xs text-slate-600">تاریخ پین<PersianDateField className="min-w-40" value={pinDateDraft} onChange={setPinDateDraft} showHolidays placeholder="تاریخ پین" aria-label="تاریخ پین" /></label>
                 <select value={scheduleFilter} onChange={(e) => setScheduleFilter(e.target.value as typeof scheduleFilter)} className="app-select text-xs"><option value="all">همه ({toFaDigits(contract.members.length)})</option><option value="unscheduled">فقط بدون نوبت ({toFaDigits(stats.unscheduled)})</option><option value="scheduled">دارای نوبت</option></select>
-                <input value={scheduleSearch} onChange={(e) => setScheduleSearch(e.target.value)} placeholder="جست‌وجوی نام..." className="app-select text-xs" />
+                <AppInput value={scheduleSearch} onChange={(e) => setScheduleSearch(e.target.value)} placeholder="جست‌وجوی نام..." className="app-select text-xs" />
               </div>
             </div>
             <div className="mt-4 overflow-x-auto">
@@ -562,7 +563,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                 <div className="flex flex-wrap items-center gap-2">
                   <select value={funnelFilter} onChange={(e) => setFunnelFilter(e.target.value as FunnelFilter)} className="app-select text-xs"><option value="all">همه مراحل</option><option value="not_sent">پیامک‌نشده ({toFaDigits(stats.notSent)})</option><option value="sms_sent">بازنکرده لینک ({toFaDigits(stats.smsSentOnly)})</option><option value="opened_any">بازکنندگان لینک ({toFaDigits(stats.openedAny)})</option><option value="logged_any">لاگین‌کردگان ({toFaDigits(stats.loggedAny)})</option><option value="abandoned">رهاکردگان وسط کار ({toFaDigits(stats.abandoned)})</option><option value="completed">تکمیل‌شده ({toFaDigits(stats.completed)})</option></select>
                   <select value={apptFilter} onChange={(e) => setApptFilter(e.target.value as ApptFilter)} className="app-select text-xs"><option value="all">همه نوبت‌ها</option><option value="unscheduled">فراخوان‌نشده</option><option value="today">نوبت امروز</option><option value="pinned">دستی (پین)</option><option value="auto_scheduled">فراخوان خودکار</option><option value="visited">مراجعه‌کرده</option></select>
-                  <label className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs"><Search className="h-3.5 w-3.5 text-slate-400" /><input value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="نام، کد ملی..." className="w-28 bg-transparent outline-none" /></label>
+                  <label className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs"><Search className="h-3.5 w-3.5 text-slate-400" /><AppInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="نام، کد ملی..." className="w-28 bg-transparent outline-none" /></label>
                 </div>
               </div>
               <div className="mt-4 max-h-[520px] overflow-auto">
@@ -592,8 +593,8 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                   <button type="button" onClick={() => { setFunnelFilter("sms_sent"); setApptFilter("all"); setCheckedIds([]); setSmsCampaign("یادآوری بازنکردگان"); setSmsText("{نام} عزیز، هنوز لینک چکاپ {شرکت} را باز نکرده‌اید: {لینک}"); }} className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-semibold text-sky-800">بازنکردگان ({toFaDigits(stats.smsSentOnly)})</button>
                   <button type="button" onClick={() => { setFunnelFilter("all"); setApptFilter("today"); setCheckedIds([]); setSmsCampaign("یادآوری نوبت امروز"); setSmsText("{نام} گرامی، یادآوری نوبت معاینه امروز شما در کلینیک نبض."); }} className="rounded-lg border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-semibold text-teal-800">نوبت امروز ({toFaDigits(stats.scheduledToday)})</button>
                 </div>
-                <label className="app-label">عنوان ارسال<input required value={smsCampaign} onChange={(e) => setSmsCampaign(e.target.value)} className="app-input mt-1 text-xs" /></label>
-                <label className="app-label">متن پیامک<textarea rows={3} required value={smsText} onChange={(e) => setSmsText(e.target.value)} className="app-input mt-1 text-xs leading-6" /></label>
+                <label className="app-label">عنوان ارسال<AppInput required value={smsCampaign} onChange={(e) => setSmsCampaign(e.target.value)} className="app-input mt-1 text-xs" /></label>
+                <label className="app-label">متن پیامک<AppTextarea rows={3} required value={smsText} onChange={(e) => setSmsText(e.target.value)} className="app-input mt-1 text-xs leading-6" /></label>
                 <button type="submit" disabled={busy || (checkedIds.length === 0 && filteredFunnelMembers.length === 0)} className="primary-button w-full justify-center"><Send className="h-3.5 w-3.5" />ارسال پیامک گروهی</button>
               </form>
 
@@ -614,10 +615,10 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
           <div role="dialog" aria-modal="true" aria-label="تعریف قرارداد سازمانی جدید" onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">تعریف قرارداد سازمانی جدید</h2><button type="button" onClick={() => setCreateOpen(false)} aria-label="بستن"><X className="h-4 w-4 text-slate-400" /></button></div>
             <form onSubmit={async (e) => { e.preventDefault(); const r = (await run({ action: "CREATE_CONTRACT", title: newTitle, organizationName: newOrg, apiEndpoint: newEndpoint, apiKey: newApiKey, defaultPathwayCode: newDefaultPkg, initialDailyCap: Number(newDailyCap) || 20, supervisorName: newSupName, supervisorTitle: newSupTitle, supervisorPhone: newSupPhone, fetchFromApiNow: fetchNowOnCreate })) as { createdContractId?: number }; if (r?.createdContractId) setSelectedContractId(Number(r.createdContractId)); setCreateOpen(false); setNewTitle(""); setNewOrg(""); setNewSupName(""); setNewSupPhone(""); flash(fetchNowOnCreate ? "قرارداد ساخته شد، افراد از API دریافت شدند و پیامک‌ها ارسال گردید." : "قرارداد جدید ثبت شد."); }} className="space-y-3.5">
-              <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">نام سازمان<input required value={newOrg} onChange={(e) => setNewOrg(e.target.value)} placeholder="مثلاً: شرکت فولاد مبارکه" className="app-input mt-1 text-xs" /></label><label className="app-label">عنوان قرارداد<input required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="پایش سلامت سالانه" className="app-input mt-1 text-xs" /></label></div>
-              <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">آدرس API خارجی<input dir="ltr" value={newEndpoint} onChange={(e) => setNewEndpoint(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label><label className="app-label">کلید API قرارداد<input dir="ltr" required value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label></div>
-              <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">بسته پایه پیش‌فرض<select value={newDefaultPkg} onChange={(e) => setNewDefaultPkg(e.target.value)} className="app-select mt-1 w-full text-xs">{pathways.map((p) => <option key={p.code} value={p.code}>{p.title}</option>)}</select></label><label className="app-label">سقف پذیرش روزانه<input type="number" min={1} value={newDailyCap} onChange={(e) => setNewDailyCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
-              <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5"><div className="text-xs font-semibold text-amber-900">ناظر خارجی شرکت</div><div className="grid gap-2 sm:grid-cols-3"><input value={newSupName} onChange={(e) => setNewSupName(e.target.value)} placeholder="نام ناظر" className="app-input text-xs" /><input value={newSupTitle} onChange={(e) => setNewSupTitle(e.target.value)} placeholder="سمت" className="app-input text-xs" /><input dir="ltr" value={newSupPhone} onChange={(e) => setNewSupPhone(e.target.value)} placeholder="موبایل: 0912..." className="app-input font-mono text-left text-xs" /></div></div>
+              <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">نام سازمان<AppInput required value={newOrg} onChange={(e) => setNewOrg(e.target.value)} placeholder="مثلاً: شرکت فولاد مبارکه" className="app-input mt-1 text-xs" /></label><label className="app-label">عنوان قرارداد<AppInput required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="پایش سلامت سالانه" className="app-input mt-1 text-xs" /></label></div>
+              <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">آدرس API خارجی<AppInput dir="ltr" value={newEndpoint} onChange={(e) => setNewEndpoint(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label><label className="app-label">کلید API قرارداد<AppInput dir="ltr" required value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label></div>
+              <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">بسته پایه پیش‌فرض<select value={newDefaultPkg} onChange={(e) => setNewDefaultPkg(e.target.value)} className="app-select mt-1 w-full text-xs">{pathways.map((p) => <option key={p.code} value={p.code}>{p.title}</option>)}</select></label><label className="app-label">سقف پذیرش روزانه<AppInput type="number" min={1} value={newDailyCap} onChange={(e) => setNewDailyCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
+              <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5"><div className="text-xs font-semibold text-amber-900">ناظر خارجی شرکت</div><div className="grid gap-2 sm:grid-cols-3"><AppInput value={newSupName} onChange={(e) => setNewSupName(e.target.value)} placeholder="نام ناظر" className="app-input text-xs" /><AppInput value={newSupTitle} onChange={(e) => setNewSupTitle(e.target.value)} placeholder="سمت" className="app-input text-xs" /><AppInput dir="ltr" value={newSupPhone} onChange={(e) => setNewSupPhone(e.target.value)} placeholder="موبایل: 0912..." className="app-input font-mono text-left text-xs" /></div></div>
               <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={fetchNowOnCreate} onChange={(e) => setFetchNowOnCreate(e.target.checked)} className="accent-teal-700" />دریافت فوری لیست افراد از API و ارسال پیامک تکمیل پروفایل</label>
               <button type="submit" disabled={busy} className="primary-button w-full justify-center py-3">ایجاد قرارداد</button>
             </form>

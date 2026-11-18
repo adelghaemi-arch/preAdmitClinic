@@ -1,10 +1,31 @@
 import { iranLocalDayOffset, isIsoDay } from "@/lib/date-iso";
 
 const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+const DIGIT_MAP = "۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩";
 
 export function toFaDigits(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "";
   return String(value).replace(/\d/g, (d) => PERSIAN_DIGITS[Number(d)] ?? d);
+}
+
+/** Persian (۰-۹) and Arabic-Indic (٠-٩) digits → ASCII 0-9. */
+export function toLatinDigits(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  return String(value).replace(/[۰-۹٠-٩]/g, (d) => String(DIGIT_MAP.indexOf(d) % 10));
+}
+
+/** Arabic Yeh/Kaf → Persian Yeh/Kaf (no case folding). */
+export function normalizePersianLetters(value: string | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  return String(value).replace(/ي/g, "ی").replace(/ك/g, "ک");
+}
+
+/**
+ * Typed/pasted field normalization for storage and logic:
+ * Arabic letters → Persian, all digit scripts → Latin ASCII.
+ */
+export function normalizePersianInput(value: string | number | null | undefined): string {
+  return toLatinDigits(normalizePersianLetters(value));
 }
 
 /**

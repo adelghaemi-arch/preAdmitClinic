@@ -1,4 +1,5 @@
 ﻿import React, { useMemo, useState } from "react";
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   AlertOctagon,
   BarChart3,
@@ -14,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import type { ClinicSnapshot, PathwayDto, RoomDto } from "@/types/clinic";
-import { toFaDigits } from "@/lib/persian";
+import { toFaDigits, toLatinDigits } from "@/lib/persian";
 import { totalVisitMinutes } from "@/lib/workspace";
 import { AdminFormsBuilder } from "./AdminFormsBuilder";
 
@@ -191,10 +192,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
     e.preventDefault();
     if (!pkgTitle.trim() || pkgStations.length === 0) return;
 
-    const mins =
-      Number(
-        pkgMinutes.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-      ) || 90;
+    const mins = Number(toLatinDigits(pkgMinutes)) || 90;
 
     await onAction({
       action: "UPSERT_PATHWAY",
@@ -501,7 +499,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   عنوان بسته درمانی
                 </label>
-                <input
+                <AppInput
                   type="text"
                   required
                   value={pkgTitle}
@@ -515,7 +513,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   شرح خدمات پکیج
                 </label>
-                <textarea
+                <AppTextarea
                   rows={2}
                   value={pkgDesc}
                   onChange={(e) => setPkgDesc(e.target.value)}
@@ -528,7 +526,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   تخمین زمان کل مسیر (دقیقه)
                 </label>
-                <input
+                <AppInput
                   type="text"
                   value={pkgMinutes}
                   onChange={(e) => setPkgMinutes(e.target.value)}
@@ -645,7 +643,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   <label className="mb-1 block text-xs font-bold text-slate-700">
                     شماره اتاق
                   </label>
-                  <input
+                  <AppInput
                     type="text"
                     value={roomNum}
                     onChange={(e) => setRoomNum(e.target.value)}
@@ -656,7 +654,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   <label className="mb-1 block text-xs font-bold text-slate-700">
                     زمان استاندارد خدمت (دقیقه)
                   </label>
-                  <input
+                  <AppInput
                     type="number"
                     value={roomAvgMins}
                     onChange={(e) => setRoomAvgMins(e.target.value)}
@@ -670,7 +668,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   <label className="mb-1 block text-xs font-bold text-slate-700">
                     نام پزشک متخصص / اپراتور مستقر
                   </label>
-                  <input
+                  <AppInput
                     type="text"
                     value={roomSpecName}
                     onChange={(e) => setRoomSpecName(e.target.value)}
@@ -681,7 +679,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   <label className="mb-1 block text-xs font-bold text-slate-700">
                     عنوان تخصصی
                   </label>
-                  <input
+                  <AppInput
                     type="text"
                     value={roomSpecTitle}
                     onChange={(e) => setRoomSpecTitle(e.target.value)}
@@ -694,7 +692,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   راهنمای متنی مسیر حرکت تا اتاق
                 </label>
-                <textarea
+                <AppTextarea
                   rows={2}
                   value={roomSteps}
                   onChange={(e) => setRoomSteps(e.target.value)}
@@ -707,7 +705,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   متن نکات آمادگی الزامی قبل از ورود به اتاق (نمایش در موبایل
                   سلامتجو)
                 </label>
-                <textarea
+                <AppTextarea
                   rows={3}
                   value={roomPrep}
                   onChange={(e) => setRoomPrep(e.target.value)}
@@ -805,7 +803,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   نام و نام خانوادگی
                 </label>
-                <input
+                <AppInput
                   type="text"
                   required
                   value={newStaffName}
@@ -855,7 +853,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   <label className="mb-1 block text-xs font-bold text-slate-700">
                     تخصص یا واحد
                   </label>
-                  <input
+                  <AppInput
                     type="text"
                     value={newStaffDept}
                     onChange={(e) => setNewStaffDept(e.target.value)}
@@ -866,7 +864,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   <label className="mb-1 block text-xs font-bold text-slate-700">
                     کد نظام پزشکی / پرسنلی
                   </label>
-                  <input
+                  <AppInput
                     type="text"
                     value={newStaffCode}
                     onChange={(e) => setNewStaffCode(e.target.value)}

@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState } from "react";
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import { Activity, ArrowLeft, ArrowUpLeft, Check, CheckCheck, Clock3, FlaskConical, HeartPulse, Layers3, Plus, Search, ShieldCheck, Sparkles, Stethoscope, Sun, Users, Zap } from "lucide-react";
 import type { AppUserDto, ClinicSnapshot, WorkspaceRole } from "@/types/clinic";
 import type { AppPage } from "@/lib/workspace";
@@ -94,7 +95,7 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
             <div className="flex items-center gap-1 rounded-lg bg-slate-50 p-1">
               {[['all','همه'],['active','فعال'],['waiting','در انتظار'],['done','تکمیل‌شده']].map(([id, label]) => <button key={id} onClick={() => setFilter(id)} className={`rounded-md px-2.5 py-1.5 text-[10px] transition ${filter === id ? "bg-white font-semibold text-teal-700 shadow-sm shadow-slate-200/70" : "text-slate-400 hover:text-slate-700"}`}>{label}</button>)}
             </div>
-            <label className="flex items-center gap-1.5 rounded-lg border border-slate-200/80 px-2.5 py-1.5 text-slate-400"><Search className="h-3.5 w-3.5" /><input aria-label="جستجو در سلامتجویان امروز" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="جستجوی سلامتجو..." className="w-24 bg-transparent text-[10px] outline-none" /></label>
+            <label className="flex items-center gap-1.5 rounded-lg border border-slate-200/80 px-2.5 py-1.5 text-slate-400"><Search className="h-3.5 w-3.5" /><AppInput aria-label="جستجو در سلامتجویان امروز" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="جستجوی سلامتجو..." className="w-24 bg-transparent text-[10px] outline-none" /></label>
           </div>
           <PatientTable patients={filteredPatients} rooms={snapshot.rooms} compact onOpen={(id) => onNavigate("records", id)} />
         </section>

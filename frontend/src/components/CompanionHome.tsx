@@ -1,4 +1,6 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { AppInput, AppTextarea } from "@/components/AppInput";
+import { LocationPickerPopup } from "@/components/LocationPickerPopup";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -13,6 +15,7 @@ import {
   Footprints,
   Link2,
   Lock,
+  Map,
   MapPin,
   Navigation,
   Route,
@@ -24,10 +27,13 @@ import { currentStation, stationLabel, type AppPage } from "@/lib/workspace";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
 import {
   calculateRoute,
+  configureOsmFromSettings,
   estimateTravelModes,
   geocodeAddress,
   openHospitalNavigators,
   openOsmMap,
+  osmTileUrlsForRoute,
+  reverseGeocode,
   type RouteInfo,
 } from "@/lib/osm-routing";
 import {
@@ -71,22 +77,7 @@ function MiniRouteMap({ room, floorRooms }: { room: RoomDto; floorRooms: RoomDto
 }
 
 function OsmRouteStrip({ route }: { route: RouteInfo }) {
-  const zoom = 11;
-  const lonToX = (lon: number) => Math.floor(((lon + 180) / 360) * 2 ** zoom);
-  const latToY = (lat: number) => {
-    const rad = (lat * Math.PI) / 180;
-    return Math.floor(((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * 2 ** zoom);
-  };
-  const x0 = lonToX(route.from.lon);
-  const x1 = lonToX(route.to.lon);
-  const y0 = latToY(route.from.lat);
-  const y1 = latToY(route.to.lat);
-  const tiles: Array<{ url: string }> = [];
-  for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) {
-    for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) {
-      tiles.push({ url: `https://tile.openstreetmap.org/${zoom}/${x}/${y}.png` });
-    }
-  }
+  const tiles = osmTileUrlsForRoute(route.from, route.to, 11);
   return (
     <div className="grid grid-cols-2 gap-0.5 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
       {tiles.slice(0, 4).map((t, i) => (
@@ -115,6 +106,11 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
   const [addressDraft, setAddressDraft] = useState("");
   const [geoError, setGeoError] = useState("");
   const [locating, setLocating] = useState(false);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+
+  useEffect(() => {
+    configureOsmFromSettings(snapshot.platform?.settings);
+  }, [snapshot.platform?.settings]);
 
   useEffect(() => {
     if (!patient || !clinic) return;
@@ -134,6 +130,22 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
     [route]
   );
 
+  const saveHomeLocation = async (from: { lat: number; lon: number }, address: string) => {
+    if (!clinic || !patient) return;
+    setAddressDraft(address);
+    setRouteLoading(true);
+    const computed = await calculateRoute(from, { lat: clinic.lat, lon: clinic.lon });
+    setRoute(computed);
+    setRouteLoading(false);
+    await onAction({
+      action: "UPDATE_PATIENT_HOME",
+      patientId: patient.id,
+      homeLat: from.lat,
+      homeLon: from.lon,
+      homeAddress: address,
+    });
+  };
+
   const useMyLocation = () => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setGeoError("مرورگر شما موقعیت مکانی را پشتیبانی نمی‌کند.");
@@ -144,24 +156,14 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const from = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        setRouteLoading(true);
-        const computed = await calculateRoute(from, { lat: clinic.lat, lon: clinic.lon });
-        setRoute(computed);
-        setRouteLoading(false);
+        const resolved = await reverseGeocode(from);
+        const address = resolved?.displayName?.trim() || "موقعیت فعلی من";
         setLocating(false);
-        if (patient) {
-          await onAction({
-            action: "UPDATE_PATIENT_HOME",
-            patientId: patient.id,
-            homeLat: from.lat,
-            homeLon: from.lon,
-            homeAddress: "موقعیت فعلی من",
-          });
-        }
+        await saveHomeLocation(from, address);
       },
       () => {
         setLocating(false);
-        setGeoError("دسترسی به موقعیت مکانی داده نشد. آدرس خود را دستی وارد کنید.");
+        setGeoError("دسترسی به موقعیت مکانی داده نشد. آدرس خود را دستی وارد کنید یا روی نقشه انتخاب کنید.");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -177,18 +179,9 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
       setRouteLoading(false);
       return;
     }
-    const computed = await calculateRoute(point, { lat: clinic.lat, lon: clinic.lon });
-    setRoute(computed);
+    const address = point.displayName?.trim() || addressDraft.trim();
     setRouteLoading(false);
-    if (patient) {
-      await onAction({
-        action: "UPDATE_PATIENT_HOME",
-        patientId: patient.id,
-        homeLat: point.lat,
-        homeLon: point.lon,
-        homeAddress: addressDraft.trim(),
-      });
-    }
+    await saveHomeLocation({ lat: point.lat, lon: point.lon }, address);
   };
 
   if (!patient || snapshot.links.length === 0) {
@@ -373,7 +366,7 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
               <label className="app-label text-[11px]">
                 آدرس محل زندگی شما (فاصله با OpenStreetMap محاسبه می‌شود)
                 <div className="mt-1.5 flex flex-wrap gap-2">
-                  <input
+                  <AppInput
                     value={addressDraft}
                     onChange={(e) => setAddressDraft(e.target.value)}
                     placeholder="مثلاً: تهران، سعادت‌آباد، بلوار دریا"
@@ -382,6 +375,15 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
                   <button type="button" disabled={routeLoading || locating} onClick={() => void searchAddress()} className="primary-button">
                     {routeLoading ? <RefreshInline /> : <Compass className="h-4 w-4" />}
                     محاسبه فاصله
+                  </button>
+                  <button
+                    type="button"
+                    disabled={routeLoading || locating}
+                    onClick={() => setShowLocationPicker(true)}
+                    className="secondary-button"
+                  >
+                    <Map className="h-3.5 w-3.5" />
+                    انتخاب روی نقشه
                   </button>
                   <button type="button" disabled={locating} onClick={useMyLocation} className="secondary-button">
                     <MapPin className="h-3.5 w-3.5" />
@@ -684,6 +686,22 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
       </div>
 
       {showReport && <PrintableEmrReport patient={patient} onClose={() => setShowReport(false)} />}
+
+      {showLocationPicker && (
+        <LocationPickerPopup
+          initial={{
+            lat: typeof patient.homeLat === "number" ? patient.homeLat : undefined,
+            lon: typeof patient.homeLon === "number" ? patient.homeLon : undefined,
+            address: addressDraft || patient.homeAddress || undefined,
+          }}
+          fallbackCenter={clinic ? { lat: clinic.lat, lon: clinic.lon } : null}
+          onClose={() => setShowLocationPicker(false)}
+          onConfirm={(result) => {
+            setShowLocationPicker(false);
+            void saveHomeLocation({ lat: result.lat, lon: result.lon }, result.address);
+          }}
+        />
+      )}
     </div>
   );
 }

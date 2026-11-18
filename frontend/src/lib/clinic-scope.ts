@@ -1,8 +1,47 @@
-import { defaultCompanionVisibility, type ClinicSnapshot, type CompanionVisibility, type PatientFullDto } from "@/types/clinic";
+import { DEFAULT_PLATFORM_SETTINGS } from "@/lib/mock-platform";
+import {
+  defaultCompanionVisibility,
+  type ClinicSnapshot,
+  type CompanionVisibility,
+  type PatientFullDto,
+  type PlatformState,
+} from "@/types/clinic";
 
 export interface SnapshotViewer {
   userId: number;
   role: string;
+}
+
+function redactPlatform(snapshot: ClinicSnapshot, viewerUserId?: number): PlatformState {
+  const settings = snapshot.platform?.settings ?? { ...DEFAULT_PLATFORM_SETTINGS };
+  const ownSessions =
+    viewerUserId != null
+      ? (snapshot.platform?.authSessions ?? []).filter((s) => s.userId === viewerUserId)
+      : [];
+  return {
+    clinics: [],
+    users: [],
+    photos: [],
+    packages: [],
+    fraudSessions: [],
+    authSessions: ownSessions,
+    multiSessionAlerts: [],
+    health: [],
+    integrations: [],
+    settings: {
+      ...settings,
+      featureFlags: {
+        ...settings.featureFlags,
+        multiClinicRegistry: false,
+        multiSessionWatch: settings.featureFlags?.multiSessionWatch ?? true,
+      },
+      osmLocal: {
+        ...DEFAULT_PLATFORM_SETTINGS.osmLocal,
+        ...(settings.osmLocal ?? {}),
+      },
+    },
+    audit: [],
+  };
 }
 
 /** Removes the fields a companion is not allowed to see. The patient keeps everything. */
@@ -58,6 +97,31 @@ export function filterPatientForCompanion(patient: PatientFullDto, visibility: C
 export function scopeSnapshot(snapshot: ClinicSnapshot, viewer?: SnapshotViewer | null): ClinicSnapshot {
   if (!viewer) return snapshot;
   const ownLinks = snapshot.links.filter((link) => link.userId === viewer.userId);
+  if (viewer.role === "platform") {
+    return {
+      ...snapshot,
+      // Platform admin focuses on control-plane data; clinical PHI stays out of this pane.
+      patients: snapshot.patients.map((p) => ({
+        ...p,
+        medications: [],
+        surgeries: [],
+        familyHistory: [],
+        allergies: [],
+        recentConditions: [],
+        clinicalNotes: [],
+        paraclinicResults: [],
+        alerts: [],
+        formResponses: [],
+        stations: [],
+      })),
+      links: [],
+      staff: [],
+      pathways: [],
+      packageRuleLibrary: [],
+      contracts: [],
+      forms: [],
+    };
+  }
   if (viewer.role === "supervisor") {
     // External corporate supervisor sees contract progress, funnel & appointments — never private clinical notes/allergies.
     return {
@@ -66,6 +130,7 @@ export function scopeSnapshot(snapshot: ClinicSnapshot, viewer?: SnapshotViewer 
       links: [],
       staff: [],
       patients: [],
+      platform: redactPlatform(snapshot, viewer.userId),
       clinicLocation: snapshot.clinicLocation,
       contracts: snapshot.contracts.map((contract) => ({
         ...contract,
@@ -79,7 +144,9 @@ export function scopeSnapshot(snapshot: ClinicSnapshot, viewer?: SnapshotViewer 
       })),
     };
   }
-  if (viewer.role !== "patient" && viewer.role !== "owner") return { ...snapshot, links: ownLinks };
+  if (viewer.role !== "patient" && viewer.role !== "owner") {
+    return { ...snapshot, links: ownLinks, platform: redactPlatform(snapshot, viewer.userId) };
+  }
 
   const roleLinks = ownLinks.filter((link) =>
     viewer.role === "owner" ? link.relationship === "self" : link.relationship !== "self"
@@ -133,6 +200,7 @@ export function scopeSnapshot(snapshot: ClinicSnapshot, viewer?: SnapshotViewer 
     pathways: [],
     contracts: membershipContracts,
     packageRuleLibrary: [],
+    platform: redactPlatform(snapshot, viewer.userId),
     clinicLocation: snapshot.clinicLocation,
     patients: visiblePatients.map((patient) => {
       const link = linksByPatient.get(patient.id)!;

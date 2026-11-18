@@ -7,7 +7,7 @@ import {
   type ExternalApiPerson,
 } from "@/lib/mock-contracts";
 import { mockMutations, mockStore } from "@/lib/mock-store";
-import { toFaDigits } from "@/lib/persian";
+import { normalizePersianInput, normalizePersianLetters, toFaDigits, toLatinDigits } from "@/lib/persian";
 import { randomUUID } from "@/lib/uuid";
 import {
   emptyIntakeAnswers,
@@ -34,9 +34,7 @@ function nextMemberId(): number {
 }
 
 function cleanDigits(value: unknown): string {
-  return String(value ?? "")
-    .replace(/[۰-۹٠-٩]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩".indexOf(d) % 10))
-    .replace(/\D/g, "");
+  return toLatinDigits(value).replace(/\D/g, "");
 }
 
 function addMembersToContract(
@@ -70,13 +68,13 @@ function addMembersToContract(
       contractId: contract.id,
       inviteToken: `CNT-${contract.id}-${1000 + id}`,
       personnelCode: person.personnelCode || `P-${1000 + id}`,
-      fullName: person.fullName.trim(),
+      fullName: normalizePersianLetters(person.fullName.trim()),
       nationalId: nid,
       phone: cleanDigits(person.phone) || person.phone,
       age: Number(person.age) || 35,
       gender: person.gender === "زن" ? "زن" : "مرد",
-      department: person.department || "عمومی",
-      jobCategory: person.jobCategory || "اداری و مالی",
+      department: normalizePersianLetters(person.department || "عمومی"),
+      jobCategory: normalizePersianLetters(person.jobCategory || "اداری و مالی"),
       source,
       assignedPathwayCode: pkg.pathwayCode,
       assignedPathwayTitle: pkg.pathwayTitle,
@@ -244,7 +242,6 @@ export const CONTRACT_ACTION_NAMES = new Set([
   "SEND_CONTRACT_BULK_SMS",
   "UPDATE_MEMBER_ONBOARDING",
   "ADMIT_CONTRACT_MEMBER_TO_CLINIC",
-  "UPDATE_PATIENT_HOME",
 ]);
 
 export function runContractAction(
@@ -437,8 +434,8 @@ export function runContractAction(
   }
 
   if (action === "CREATE_CONTRACT") {
-    const title = String(body.title ?? "").trim();
-    const organizationName = String(body.organizationName ?? "").trim();
+    const title = normalizePersianLetters(String(body.title ?? "").trim());
+    const organizationName = normalizePersianLetters(String(body.organizationName ?? "").trim());
     const apiKey = String(body.apiKey ?? "").trim();
     const apiEndpoint =
       String(body.apiEndpoint ?? "").trim() || "https://hr-api.partner-org.ir/v1/employees";
@@ -446,9 +443,9 @@ export function runContractAction(
       String(body.defaultPathwayCode ?? "").trim() ||
       mockStore.pathways[0]?.code ||
       "FULL_CHECKUP";
-    const supName = String(body.supervisorName ?? "").trim();
+    const supName = normalizePersianLetters(String(body.supervisorName ?? "").trim());
     const supPhone = cleanDigits(body.supervisorPhone);
-    const supTitle = String(body.supervisorTitle ?? "").trim() || "نماینده و ناظر سلامت سازمان";
+    const supTitle = normalizePersianLetters(String(body.supervisorTitle ?? "").trim() || "نماینده و ناظر سلامت سازمان");
 
     if (title.length < 3 || organizationName.length < 2) {
       return { ok: false, status: 400, error: "عنوان قرارداد و نام سازمان را وارد کنید." };
@@ -560,9 +557,9 @@ export function runContractAction(
   }
 
   if (action === "UPDATE_CONTRACT_SUPERVISOR") {
-    const fullName = String(body.fullName ?? "").trim();
+    const fullName = normalizePersianLetters(String(body.fullName ?? "").trim());
     const phone = cleanDigits(body.phone);
-    const title = String(body.title ?? "").trim() || "ناظر سلامت سازمان";
+    const title = normalizePersianLetters(String(body.title ?? "").trim() || "ناظر سلامت سازمان");
     if (fullName.length < 3 || !/^09\d{9}$/.test(phone)) {
       return { ok: false, status: 400, error: "نام کامل و شماره موبایل معتبر ۱۱ رقمی ناظر خارجی را وارد کنید." };
     }
@@ -698,7 +695,7 @@ export function runContractAction(
       existing.minAge = Number.isFinite(minAge) ? minAge : null;
       existing.maxAge = Number.isFinite(maxAge) ? maxAge : null;
       existing.fillFormula = fillFormula;
-      existing.notes = String(body.notes ?? "");
+      existing.notes = normalizePersianInput(String(body.notes ?? ""));
     } else {
       contract.dayQuotas.push({
         id: `q-${randomUUID().slice(0, 8)}`,
@@ -709,7 +706,7 @@ export function runContractAction(
         minAge: Number.isFinite(minAge) ? minAge : null,
         maxAge: Number.isFinite(maxAge) ? maxAge : null,
         fillFormula,
-        notes: String(body.notes ?? ""),
+        notes: normalizePersianInput(String(body.notes ?? "")),
       });
       contract.dayQuotas.sort((a, b) => a.date.localeCompare(b.date));
     }
@@ -758,9 +755,9 @@ export function runContractAction(
       return { ok: false, status: 403, error: "ارسال پیامک یادآوری برای ناظر این قرارداد فعال نیست." };
     }
     const targetIds: number[] = Array.isArray(body.memberIds) ? body.memberIds.map(Number) : [];
-    const messageTemplate = String(body.messageTemplate ?? "").trim();
-    const campaignTitle = String(body.campaignTitle ?? "پیامک گروهی قرارداد").trim();
-    const audienceLabel = String(body.audienceLabel ?? "گروه انتخابی").trim();
+    const messageTemplate = normalizePersianInput(String(body.messageTemplate ?? "").trim());
+    const campaignTitle = normalizePersianLetters(String(body.campaignTitle ?? "پیامک گروهی قرارداد").trim());
+    const audienceLabel = normalizePersianLetters(String(body.audienceLabel ?? "گروه انتخابی").trim());
     if (!messageTemplate) return { ok: false, status: 400, error: "متن پیامک را وارد کنید." };
 
     const targets = contract.members.filter((m) => targetIds.includes(m.id));
@@ -868,23 +865,6 @@ export function runContractAction(
     member.linkedPatientId = created.id;
 
     return { ok: true, status: 200, meta: { createdPatientId: created.id, qrToken: created.qrToken } };
-  }
-
-  if (action === "UPDATE_PATIENT_HOME") {
-    const lat = body.homeLat === null || body.homeLat === "" ? null : Number(body.homeLat);
-    const lon = body.homeLon === null || body.homeLon === "" ? null : Number(body.homeLon);
-    if (lat !== null && (!Number.isFinite(lat) || lat < -90 || lat > 90)) {
-      return { ok: false, status: 400, error: "عرض جغرافیایی معتبر نیست." };
-    }
-    if (lon !== null && (!Number.isFinite(lon) || lon < -180 || lon > 180)) {
-      return { ok: false, status: 400, error: "طول جغرافیایی معتبر نیست." };
-    }
-    mockStore.updatePatientHome(Number(body.patientId), {
-      homeLat: lat,
-      homeLon: lon,
-      homeAddress: String(body.homeAddress ?? "") || null,
-    });
-    return { ok: true, status: 200 };
   }
 
   return { ok: false, status: 400, error: "عملیات قرارداد نامعتبر است." };

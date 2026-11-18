@@ -12,7 +12,7 @@ import type { ClinicSnapshot } from "@/types/clinic";
  * can be opened in StackBlitz / CodeSandbox with no server or database at all.
  */
 
-const DB_KEY = "nabz_clinic_db_v3";
+const DB_KEY = "nabz_clinic_db_v7";
 let hydrated = false;
 
 export function ensureClientDb(): void {
@@ -76,6 +76,9 @@ export interface EngineResult {
   visits?: unknown[];
   activeVisitId?: number | null;
   user?: unknown;
+  wasCurrent?: boolean;
+  revokedCount?: number;
+  sessionId?: string;
 }
 
 export interface DispatchOptions {

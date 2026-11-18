@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   ArrowDown,
   ArrowUp,
@@ -20,7 +21,7 @@ import {
   ListOrdered,
 } from "lucide-react";
 import type { ClinicSnapshot, PatientFullDto } from "@/types/clinic";
-import { formatFaTime, toFaDigits } from "@/lib/persian";
+import { formatFaTime, toFaDigits, toLatinDigits } from "@/lib/persian";
 import { QrCodeVisual } from "./QrCodeVisual";
 import { RoomQueueBoard, sortRoomQueue, type RoomQueueEntry } from "./RoomQueueBoard";
 import { PatientDirectoryDialog, type DirectoryResult } from "./PatientDirectoryDialog";
@@ -211,10 +212,7 @@ export function ReceptionProfile({
       return;
     }
     const pkg = snapshot.pathways.find((p) => p.id === selectedPathwayId);
-    const numericAge =
-      Number(
-        age.replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-      ) || 42;
+    const numericAge = Number(toLatinDigits(age)) || 42;
 
     const cleanName = fullName.trim();
     const result = await onAction({
@@ -653,7 +651,7 @@ export function ReceptionProfile({
                 <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">۱</span><h1 className="text-base font-extrabold text-slate-900">کد ملی سلامتجو را وارد کنید</h1></div>
                 <p className="mt-1 text-xs text-slate-500">ابتدا سوابق جست‌وجو می‌شود؛ اگر سلامتجو قبلاً مراجعه داشته، اطلاعات و سوابق او به‌صورت خودکار بارگذاری می‌شود.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <div><input dir="ltr" inputMode="numeric" autoFocus aria-label="کد ملی سلامتجو" value={lookupId} onChange={(e) => { lookupVersion.current++; setLookupId(e.target.value); setLookup(null); setLookupError(""); setNationalId(""); }} placeholder="0012345678" className="app-input max-w-xs font-mono text-left" /><div className="mt-1 text-left text-[10px] text-slate-400" dir="ltr">{toFaDigits(normalizeNationalId(lookupId).length)} / {toFaDigits(10)}</div></div>
+                  <div><AppInput dir="ltr" inputMode="numeric" autoFocus aria-label="کد ملی سلامتجو" value={lookupId} onChange={(e) => { lookupVersion.current++; setLookupId(e.target.value); setLookup(null); setLookupError(""); setNationalId(""); }} placeholder="0012345678" className="app-input max-w-xs font-mono text-left" /><div className="mt-1 text-left text-[10px] text-slate-400" dir="ltr">{toFaDigits(normalizeNationalId(lookupId).length)} / {toFaDigits(10)}</div></div>
                   <button type="submit" disabled={lookupBusy || normalizeNationalId(lookupId).length !== 10} className="primary-button"><Search className="h-4 w-4" />{lookupBusy ? "در حال جست‌وجو..." : "جست‌وجو در سوابق"}</button>
                   {lookup && <button type="button" onClick={resetAdmission} className="secondary-button">کد ملی دیگر</button>}
                 </div>
@@ -693,13 +691,13 @@ export function ReceptionProfile({
               <form onSubmit={handleCheckinSubmit} className={`space-y-4 rounded-2xl border border-slate-200 bg-white p-5 ${!lookup || lookup.activeVisitId ? "pointer-events-none opacity-50" : ""}`} aria-disabled={!lookup || Boolean(lookup.activeVisitId)}>
                 <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">۲</span><h2 className="text-base font-extrabold text-slate-900">{lookup?.found ? "تایید اطلاعات و انتخاب بسته امروز" : "ثبت مشخصات سلامتجو جدید و بسته امروز"}</h2></div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div><label htmlFor="admission-name" className="mb-1 block text-xs font-bold text-slate-700">نام و نام خانوادگی</label><input id="admission-name" name="fullName" type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs" /></div>
-                  <div><label htmlFor="admission-national-id" className="mb-1 block text-xs font-bold text-slate-700">کد ملی</label><input id="admission-national-id" name="nationalId" type="text" dir="ltr" readOnly value={nationalId} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 font-mono text-xs text-left" /></div>
+                  <div><label htmlFor="admission-name" className="mb-1 block text-xs font-bold text-slate-700">نام و نام خانوادگی</label><AppInput id="admission-name" name="fullName" type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs" /></div>
+                  <div><label htmlFor="admission-national-id" className="mb-1 block text-xs font-bold text-slate-700">کد ملی</label><AppInput id="admission-national-id" name="nationalId" type="text" dir="ltr" readOnly value={nationalId} className="app-input w-full rounded-xl border border-slate-200 px-3.5 py-2.5 font-mono text-xs text-left" /></div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div><label htmlFor="admission-age" className="mb-1 block text-xs font-bold text-slate-700">سن</label><input id="admission-age" name="age" type="text" value={age} onChange={(e) => setAge(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs" /></div>
+                    <div><label htmlFor="admission-age" className="mb-1 block text-xs font-bold text-slate-700">سن</label><AppInput id="admission-age" name="age" type="text" value={age} onChange={(e) => setAge(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs" /></div>
                     <div><label htmlFor="admission-gender" className="mb-1 block text-xs font-bold text-slate-700">جنسیت</label><select id="admission-gender" name="gender" value={gender} onChange={(e) => setGender(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs"><option value="">انتخاب کنید</option><option value="مرد">مرد</option><option value="زن">زن</option></select></div>
                   </div>
-                  <div><label htmlFor="admission-phone" className="mb-1 block text-xs font-bold text-slate-700">شماره تلفن همراه</label><input id="admission-phone" name="phone" type="text" required inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="۰۹۱۲۳۴۵۶۷۸۹" className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs" /></div>
+                  <div><label htmlFor="admission-phone" className="mb-1 block text-xs font-bold text-slate-700">شماره تلفن همراه</label><AppInput id="admission-phone" name="phone" type="text" required inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="۰۹۱۲۳۴۵۶۷۸۹" className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs" /></div>
                 </div>
                 <div className="pt-1">
                   <label className="mb-2 block text-xs font-extrabold text-slate-800">بسته خدمات درمانی امروز:</label>
@@ -1039,7 +1037,7 @@ export function ReceptionProfile({
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   متن اعلان و فراخوان
                 </label>
-                <textarea
+                <AppTextarea
                   rows={3}
                   value={alertMessage}
                   onChange={(e) => setAlertMessage(e.target.value)}

@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DatePicker } from "@jalali-js/react";
-import type { CalendarDateFields, SelectionRules } from "jalali-js";
+import { createCalendar, type CalendarDateFields, type SelectionRules } from "jalali-js";
+import { CalendarDays } from "lucide-react";
 import {
+  formatIsoDay,
   gregorianIsoToJalaliDate,
   isIsoDay,
   parseIsoDay,
   storageValueToIsoDay,
   iranLocalDayOffset,
+  jalaliFieldsToGregorianIso,
 } from "@/lib/date-iso";
 
 export interface PersianDateFieldProps {
@@ -20,6 +23,8 @@ export interface PersianDateFieldProps {
   /** Prefer grid: library `rules` / holidays only apply to the grid variant. */
   variant?: "grid" | "dropdown";
   disabled?: boolean;
+  /** Locked prefilled value — khaki chrome, not muted disabled opacity. */
+  readOnly?: boolean;
   required?: boolean;
   placeholder?: string;
   className?: string;
@@ -45,6 +50,7 @@ export function PersianDateField({
   blockHolidays = false,
   variant = "grid",
   disabled = false,
+  readOnly = false,
   required = false,
   placeholder = "انتخاب تاریخ",
   className = "",
@@ -52,6 +58,7 @@ export function PersianDateField({
   name,
   "aria-label": ariaLabel,
 }: PersianDateFieldProps) {
+  const locked = disabled || readOnly;
   const safeValue = isIsoDay(value) ? value : "";
   const fromUser = useRef(false);
   const seenValue = useRef<string | null>(null);
@@ -87,19 +94,30 @@ export function PersianDateField({
     const next: SelectionRules = {};
     const min = isoToJalaliFields(minDate);
     const max = isoToJalaliFields(maxDate);
-    if (min) next.minDate = min;
-    if (max) next.maxDate = max;
+    if (min) next.minDate = { year: min.year, month: min.month, day: min.day };
+    if (max) next.maxDate = { year: max.year, month: max.month, day: max.day };
     if (disableFridays) next.disabledWeekdays = [5];
     return min || max || disableFridays ? next : undefined;
   }, [minDate, maxDate, disableFridays, variant]);
 
+  const withinBounds = (iso: string): boolean => {
+    if (!isIsoDay(iso)) return false;
+    if (minDate && isIsoDay(minDate) && iso < minDate) return false;
+    if (maxDate && isIsoDay(maxDate) && iso > maxDate) return false;
+    return true;
+  };
+
   return (
     <div
-      className={`persian-date-field ${disabled ? "persian-date-field--disabled" : ""} ${className}`.trim()}
-      aria-disabled={disabled || undefined}
+      className={`persian-date-field ${readOnly ? "persian-date-field--readonly" : ""} ${disabled && !readOnly ? "persian-date-field--disabled" : ""} ${safeValue ? "persian-date-field--filled" : ""} ${className}`.trim()}
+      aria-disabled={locked || undefined}
+      aria-readonly={readOnly || undefined}
       aria-required={required || undefined}
       aria-label={ariaLabel}
     >
+      <span className="persian-date-field__icon" aria-hidden>
+        <CalendarDays className="h-4 w-4" strokeWidth={1.75} />
+      </span>
       <DatePicker
         key={`pdf-${seedKey}`}
         system="jalali"
@@ -113,11 +131,12 @@ export function PersianDateField({
         holidayRegion="IR"
         rules={rules}
         placeholder={placeholder}
-        displayFormat={{ style: "long", weekday: false }}
+        displayFormat={{ style: "short", weekday: false }}
         className="persian-date-field__picker w-full"
         onChange={(next) => {
-          if (disabled) return;
+          if (locked) return;
           const iso = storageValueToIsoDay(next);
+          if (!iso || !withinBounds(iso)) return;
           fromUser.current = true;
           onChange(iso);
         }}
@@ -137,11 +156,16 @@ export function PersianDateField({
   );
 }
 
-/** Convenience bounds for birth-date fields (Iran-local Gregorian day strings). */
+/** Convenience bounds for birth-date fields (Iran-local Gregorian day strings). Never after today. */
 export function birthDateBounds(maxIso = iranLocalDayOffset(0)): { minDate: string; maxDate: string } {
-  const max = parseIsoDay(maxIso) ?? parseIsoDay(iranLocalDayOffset(0))!;
+  const iranToday = iranLocalDayOffset(0);
+  const jalaliToday = createCalendar({ system: "jalali" }).today();
+  const libTodayIso = jalaliFieldsToGregorianIso(jalaliToday);
+  // Use the earlier of Iran-civil today and the library calendar today so future days stay blocked.
+  const cappedMax = [maxIso, iranToday, libTodayIso].filter(isIsoDay).sort()[0] ?? iranToday;
+  const max = parseIsoDay(cappedMax) ?? parseIsoDay(iranToday)!;
   return {
-    minDate: `${Math.max(1900, max.year - 120)}-01-01`,
-    maxDate: maxIso,
+    minDate: formatIsoDay({ year: Math.max(1900, max.year - 120), month: 1, day: 1 }),
+    maxDate: cappedMax,
   };
 }

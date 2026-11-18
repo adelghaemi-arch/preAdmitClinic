@@ -1,4 +1,5 @@
 ﻿import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { AppInput } from "@/components/AppInput";
 import { useNavigate } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -32,6 +33,7 @@ import {
   Menu,
   RefreshCw,
   Search,
+  ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
   Stethoscope,
@@ -41,7 +43,13 @@ import {
   Users,
   Workflow,
   X,
+  MapPinned,
+  Plug,
+  ScrollText,
+  Server,
+  Settings2,
 } from "lucide-react";
+import { PlatformAdminPanel, type PlatformSection } from "./PlatformAdminPanel";
 import type { AppUserDto, ClinicSnapshot, WorkspaceRole } from "@/types/clinic";
 import {
   allowedPagesFor,
@@ -57,7 +65,7 @@ import {
   type AppPage,
 } from "@/lib/workspace";
 import { filterNavPagesForGate, resolveGatedPage, shouldGateOwner } from "@/lib/owner-intake-gate";
-import { toFaDigits } from "@/lib/persian";
+import { normalizePersianLetters, toFaDigits } from "@/lib/persian";
 import { ClinicDashboard } from "./ClinicDashboard";
 import { CompanionHome } from "./CompanionHome";
 import { CompanionLinks } from "./CompanionLinks";
@@ -76,8 +84,11 @@ import { CorporateSupervisorPanel } from "./CorporateSupervisorPanel";
 import { setRequestRole } from "@/lib/role-context";
 import { dispatchClinicAction, readSnapshot, resetClientDb } from "@/lib/client-db";
 import { mockStore } from "@/lib/mock-store";
+import { ActiveSessionsPanel } from "@/components/ActiveSessionsPanel";
+import { readSessionId } from "@/lib/auth-sessions";
 import { signOut } from "@/lib/auth";
 import { allowedRolesFor, writeStoredRole } from "@/lib/viewer";
+import { configureOsmFromSettings } from "@/lib/osm-routing";
 
 interface Props {
   initialSnapshot: ClinicSnapshot;
@@ -118,6 +129,13 @@ const PAGE_ICONS: Record<AppPage, LucideIcon> = {
   rooms: Hospital,
   team: ShieldCheck,
   forms: ClipboardList,
+  "platform-dashboard": LayoutDashboard,
+  "platform-users": MapPinned,
+  "platform-fraud": ShieldAlert,
+  "platform-health": Server,
+  "platform-settings": Settings2,
+  "platform-integrations": Plug,
+  "platform-audit": ScrollText,
 };
 
 export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, initialRole = "owner", initialPage = "dashboard", initialPatientId }: Props) {
@@ -139,7 +157,9 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const [search, setSearch] = useState("");
   const [listQuery, setListQuery] = useState("");
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
+  const [recordTip, setRecordTip] = useState<string | null>(null);
   const hydrated = useRef(false);
+  const lastRecordTipKey = useRef<string | null>(null);
 
   // The page already bootstrapped the browser database; refresh once on mount so a
   // deep link (?view=...) or a previously saved session is reflected immediately.
@@ -155,6 +175,11 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
 
   // Keep this tab's role on every clinic request (see lib/role-context).
   useEffect(() => { setRequestRole(role); }, [role]);
+
+  // Point OSM helpers at local stack when platform admin has activated it.
+  useEffect(() => {
+    configureOsmFromSettings(snapshot.platform?.settings);
+  }, [snapshot.platform?.settings]);
 
   const navConfig = ROLE_NAV[role];
   const activeRole = ROLES.find((r) => r.id === role) ?? ROLES[0];
@@ -234,6 +259,23 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   }, [toast]);
 
   useEffect(() => {
+    if (!recordTip) return;
+    const timer = setTimeout(() => setRecordTip(null), 4500);
+    return () => clearTimeout(timer);
+  }, [recordTip]);
+
+  useEffect(() => {
+    const onCompanion = ["companion-intake", "companion-map", "companion-records"].includes(current);
+    if (!onCompanion || !activePatient || !activeLink) return;
+    const key = String(activePatient.id);
+    if (lastRecordTipKey.current === key) return;
+    lastRecordTipKey.current = key;
+    setRecordTip(
+      `پرونده فعال: ${activePatient.fullName} · ${relationLabel(activeLink.relationship)} · ${permissionLabel(activeLink.permission)}`
+    );
+  }, [current, activePatient, activeLink]);
+
+  useEffect(() => {
     const close = (e: MouseEvent) => {
       if (!(e.target as HTMLElement).closest(".popover-container")) {
         setRoleOpen(false);
@@ -280,19 +322,36 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   }, [refresh]);
 
   const execute = useCallback(async (payload: Record<string, unknown>) => {
-    setBusy(true);
+    const quiet =
+      payload.silent === true ||
+      payload.action === "SAVE_FORM_RESPONSE" ||
+      payload.action === "UPDATE_PATIENT_PHOTO" ||
+      payload.action === "START_FRAUD_CAMERA_SESSION" ||
+      payload.action === "CAPTURE_FRAUD_FRAME" ||
+      payload.action === "END_FRAUD_CAMERA_SESSION" ||
+      payload.action === "RECORD_USER_GPS";
+    // Draft autosave must not flip global busy (would flicker the whole shell).
+    const blockUi = payload.action === "SAVE_FORM_RESPONSE" ? payload.mode === "submit" : !quiet;
+    if (blockUi) setBusy(true);
     try {
       if (payload.action === "RESET_MOCK_DATA") resetClientDb();
       const data = await dispatchClinicAction(payload, { viewer: { userId: user.id, role }, role });
       if (!data.ok) throw new Error(data.error ?? "ذخیره اطلاعات انجام نشد.");
-      if (data.snapshot) setSnapshot(data.snapshot);
-      setToast({ text: "تغییرات در این مرورگر ذخیره شد." });
-      return data as { createdPatientId?: number; qrToken?: string; snapshot: ClinicSnapshot };
+      // Fraud auto-frames must not remount the camera UI every 3s.
+      const skipSnapshotUi =
+        payload.action === "CAPTURE_FRAUD_FRAME" ||
+        payload.action === "START_FRAUD_CAMERA_SESSION" ||
+        payload.action === "END_FRAUD_CAMERA_SESSION" ||
+        payload.action === "RECORD_USER_GPS";
+      if (data.snapshot && !skipSnapshotUi) setSnapshot(data.snapshot);
+      // Form saves have their own inline feedback; never spam the browser-storage toast.
+      if (!quiet) setToast({ text: "تغییرات در این مرورگر ذخیره شد." });
+      return data as { createdPatientId?: number; qrToken?: string; sessionId?: string; snapshot: ClinicSnapshot };
     } catch (e) {
       setToast({ text: e instanceof Error ? e.message : "خطا در انجام عملیات", error: true });
       throw e;
     } finally {
-      setBusy(false);
+      if (blockUi) setBusy(false);
     }
   }, [role, user.id]);
 
@@ -322,8 +381,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     try {
       const row = mockStore.userById(user.id);
       if (!row) throw new Error("حساب کاربری پیدا نشد.");
-      row.fullName = profileName.trim();
-      row.jobTitle = profileTitle.trim();
+      row.fullName = normalizePersianLetters(profileName.trim());
+      row.jobTitle = normalizePersianLetters(profileTitle.trim());
       setUser({ ...user, fullName: row.fullName, jobTitle: row.jobTitle });
       setProfileOpen(false);
       setToast({ text: "اطلاعات حساب کاربری به‌روز شد." });
@@ -338,6 +397,35 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const specialistSection = current === "clinical-notes" ? "notes" : current === "clinical-complete" ? "complete" : "brief";
   const paraclinicSection = current === "diagnostics-tracker" ? "tracker" : current === "diagnostics-upload" ? "upload" : "queue";
   const adminSection = current === "pathways" ? "pathways" : current === "rooms" ? "rooms" : current === "team" ? "staff" : current === "forms" ? "forms" : "kpi";
+  const platformSection: PlatformSection =
+    current === "platform-users"
+      ? "users"
+      : current === "platform-fraud"
+        ? "fraud"
+        : current === "platform-health"
+          ? "health"
+          : current === "platform-settings"
+            ? "settings"
+            : current === "platform-integrations"
+              ? "integrations"
+              : current === "platform-audit"
+                ? "audit"
+                : "dashboard";
+
+  const revokeOwnSession = async (sessionId: string) => {
+    const data = await execute({ action: "REVOKE_AUTH_SESSION", sessionId });
+    if ((data as { wasCurrent?: boolean })?.wasCurrent) {
+      signOut();
+      navigateTo("/login", { replace: true });
+    }
+  };
+
+  const revokeOtherOwnSessions = async () => {
+    await execute({
+      action: "REVOKE_OTHER_AUTH_SESSIONS",
+      keepSessionId: readSessionId(),
+    });
+  };
 
   const dismissJourneyIntro = async () => {
     if (!activePatient) return;
@@ -502,7 +590,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                 className="flex items-center gap-2 rounded-lg border border-[#edf1ef] bg-[#f8faf9] px-3 py-2"
               >
                 <Search className="h-3.5 w-3.5 text-slate-400" />
-                <input
+                <AppInput
                   aria-label="جستجوی سراسری سلامتجو"
                   placeholder={role === "patient" || role === "owner" ? "جستجو در پرونده‌های من..." : "جستجوی سلامتجو، کد ملی یا شماره پرونده..."}
                   value={search}
@@ -680,28 +768,21 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
 
           {["companion-intake", "companion-map", "companion-records"].includes(current) &&
             (activePatient && activeLink ? (
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-3">
-                  <div className="text-[11px] text-slate-500">
-                    پرونده فعال: <strong className="font-semibold text-slate-700">{activePatient.fullName}</strong> · {relationLabel(activeLink.relationship)} · {permissionLabel(activeLink.permission)}
-                  </div>
-
-                </div>
-                {current === "companion-records" ? <CycleReport patient={activePatient} canDownload={isSelf || Boolean(activeLink.visibility.reports)} /> : !isSelf && current === "companion-intake" ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-xs text-amber-900">پرسشنامه پیش‌پذیرش فقط در داشبورد خود سلامتجو تکمیل و نمایش داده می‌شود. شما می‌توانید مسیر را پیگیری کنید.</div> : !isSelf && current === "companion-map" && !activeLink.visibility.journey ? <div className="rounded-xl bg-white p-6 text-xs text-slate-600">سلامتجو اجازه نمایش نقشه و مسیر را به همراه فعال نکرده است.</div> : <PatientMobileProfile
+              current === "companion-records" ? <CycleReport patient={activePatient} canDownload={isSelf || Boolean(activeLink.visibility.reports)} /> : !isSelf && current === "companion-intake" ? <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-xs text-amber-900">پرسشنامه پیش‌پذیرش فقط در داشبورد خود سلامتجو تکمیل و نمایش داده می‌شود. شما می‌توانید مسیر را پیگیری کنید.</div> : !isSelf && current === "companion-map" && !activeLink.visibility.journey ? <div className="rounded-xl bg-white p-6 text-xs text-slate-600">سلامتجو اجازه نمایش نقشه و مسیر را به همراه فعال نکرده است.</div> :               <PatientMobileProfile
                   key={`${current}-${activePatient.id}`}
                   snapshot={snapshot}
                   selectedPatientId={activePatient.id}
                   onSelectPatient={setSelectedPatientId}
-                  onAction={act}
+                  onAction={execute}
                   busy={busy}
+                  userId={user.id}
                   desktop
                   hidePatientSwitch
                   hideTabBar
                   initialTab={companionTab}
                   readOnly={!isSelf}
                   lockNonIntakeTabs={lockNonIntakeTabs}
-                />}
-              </div>
+                />
             ) : (
               <div className="mx-auto max-w-xl rounded-2xl border border-slate-200/80 bg-white p-10 text-center">
                 <p className="text-xs text-slate-400">برای مشاهده این بخش ابتدا یک پرونده سلامتجو را به حساب خود متصل کنید.</p>
@@ -745,6 +826,16 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
           )}
 
           {["reports", "pathways", "rooms", "team", "forms"].includes(current) && <AdminProfile key={current} snapshot={snapshot} onAction={act} busy={busy} initialSection={adminSection} />}
+
+          {current.startsWith("platform-") && (
+            <PlatformAdminPanel
+              key={current}
+              snapshot={snapshot}
+              onAction={execute}
+              busy={busy}
+              initialSection={platformSection}
+            />
+          )}
         </main>
       </div>
 
@@ -768,15 +859,30 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         )}
       </nav>
 
-      {toast && (
-        <div role="status" className={`fixed right-4 bottom-24 left-4 z-[100] flex max-w-md items-center gap-2.5 rounded-xl border bg-white px-4 py-3 shadow-xl lg:right-auto lg:bottom-6 lg:left-6 ${toast.error ? "border-rose-200 text-rose-700" : "border-teal-200 text-teal-700"}`}>
-          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${toast.error ? "bg-rose-50" : "bg-teal-50"}`}>
-            {toast.error ? <X className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
-          </span>
-          <span className="text-[11px] leading-6">{toast.text}</span>
-          <button onClick={() => setToast(null)} aria-label="بستن پیام">
-            <X className="h-3 w-3 text-slate-400" />
-          </button>
+      {(toast || recordTip) && (
+        <div className={`fixed right-4 bottom-24 left-4 z-[100] flex max-w-md flex-col gap-2 lg:right-auto lg:bottom-6 lg:left-6`}>
+          {recordTip && (
+            <div role="status" className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-600 shadow-xl">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-50">
+                <UserRound className="h-3.5 w-3.5 text-slate-500" />
+              </span>
+              <span className="flex-1 text-[11px] leading-6">{recordTip}</span>
+              <button type="button" onClick={() => setRecordTip(null)} aria-label="بستن پیام">
+                <X className="h-3 w-3 text-slate-400" />
+              </button>
+            </div>
+          )}
+          {toast && (
+            <div role="status" className={`flex items-center gap-2.5 rounded-xl border bg-white px-4 py-3 shadow-xl ${toast.error ? "border-rose-200 text-rose-700" : "border-teal-200 text-teal-700"}`}>
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${toast.error ? "bg-rose-50" : "bg-teal-50"}`}>
+                {toast.error ? <X className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
+              </span>
+              <span className="flex-1 text-[11px] leading-6">{toast.text}</span>
+              <button type="button" onClick={() => setToast(null)} aria-label="بستن پیام">
+                <X className="h-3 w-3 text-slate-400" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -790,21 +896,29 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               </button>
             </div>
             {profileOpen ? (
-              <form onSubmit={saveProfile} className="space-y-4">
-                <p className="rounded-xl bg-teal-50 p-3 text-[11px] leading-6 text-teal-800">همه نقش‌ها به همین حساب متصل‌اند. تغییر نقش نیازی به ورود مجدد ندارد.</p>
-                <label className="app-label">
-                  نام و نام خانوادگی
-                  <input required className="app-input mt-2" value={profileName} onChange={(e) => setProfileName(e.target.value)} />
-                </label>
-                <label className="app-label">
-                  سمت سازمانی
-                  <input required className="app-input mt-2" value={profileTitle} onChange={(e) => setProfileTitle(e.target.value)} />
-                </label>
-                <button disabled={busy} className="primary-button w-full justify-center">
-                  {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-                  ذخیره تغییرات
-                </button>
-              </form>
+              <div className="max-h-[80vh] space-y-4 overflow-y-auto">
+                <form onSubmit={saveProfile} className="space-y-4">
+                  <p className="rounded-xl bg-teal-50 p-3 text-[11px] leading-6 text-teal-800">همه نقش‌ها به همین حساب متصل‌اند. تغییر نقش نیازی به ورود مجدد ندارد.</p>
+                  <label className="app-label">
+                    نام و نام خانوادگی
+                    <AppInput required className="app-input mt-2" value={profileName} onChange={(e) => setProfileName(e.target.value)} />
+                  </label>
+                  <label className="app-label">
+                    سمت سازمانی
+                    <AppInput required className="app-input mt-2" value={profileTitle} onChange={(e) => setProfileTitle(e.target.value)} />
+                  </label>
+                  <button disabled={busy} className="primary-button w-full justify-center">
+                    {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                    ذخیره تغییرات
+                  </button>
+                </form>
+                <ActiveSessionsPanel
+                  sessions={snapshot.platform.authSessions ?? []}
+                  busy={busy}
+                  onRevoke={revokeOwnSession}
+                  onRevokeOthers={revokeOtherOwnSessions}
+                />
+              </div>
             ) : (
               <div className="space-y-4">
                 {[

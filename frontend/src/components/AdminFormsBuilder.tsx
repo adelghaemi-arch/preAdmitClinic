@@ -1,3 +1,5 @@
+import { AppInput, AppTextarea } from "@/components/AppInput";
+import { TerminologyConceptPicker } from "@/components/TerminologyConceptPicker";
 import React, { useMemo, useState } from "react";
 import {
   ArrowDown,
@@ -14,7 +16,12 @@ import type {
   FormItemDefinition,
   FormSectionDefinition,
 } from "@/types/clinic";
+import { itemCodingIssues, validateFormDefinitionCoding } from "@/lib/form-engine";
 import { toFaDigits } from "@/lib/persian";
+import {
+  mergeCodingFromConcept,
+  resolveCuiLabels,
+} from "@/lib/terminology-lookup";
 import { randomUUID } from "@/lib/uuid";
 
 interface AdminFormsBuilderProps {
@@ -24,7 +31,7 @@ interface AdminFormsBuilderProps {
 }
 
 const CONCEPT_KINDS: FormConceptKind[] = [
-  "demo",
+  "demographics",
   "symptom",
   "history",
   "family",
@@ -52,11 +59,19 @@ function emptyItem(sectionId: string, sortOrder: number): FormItemDefinition {
       snomed: [],
       loinc: [],
       icd10: [],
+      umls: [],
       conceptKind: "symptom",
       aiTags: [],
       redFlagOnYes: false,
     },
   };
+}
+
+function splitCodes(value: string): string[] {
+  return value
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
 }
 
 export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilderProps) {
@@ -81,8 +96,19 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
     return draft.items.filter((i) => i.sectionId === sectionId).sort((a, b) => a.sortOrder - b.sortOrder);
   }, [draft, sectionId]);
 
+  const codingIssues = useMemo(
+    () => (draft ? validateFormDefinitionCoding(draft) : []),
+    [draft]
+  );
+
   const saveDraft = async () => {
     if (!draft) return;
+    if (draft.status === "published" && codingIssues.length) {
+      setNotice(
+        `ذخیره ممکن نیست: ${toFaDigits(codingIssues.length)} آیتم بدون کدینگ کامل (UMLS + SNOMED/LOINC/ICD-10).`
+      );
+      return;
+    }
     await onAction({ action: "UPSERT_FORM", form: draft });
     setNotice("فرم ذخیره شد.");
     setSelectedId(draft.id);
@@ -90,7 +116,17 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
 
   const publish = async (bump: boolean) => {
     if (!draft) return;
-    await onAction({ action: "UPSERT_FORM", form: { ...draft, status: draft.status === "published" && bump ? "draft" : draft.status } });
+    const issues = validateFormDefinitionCoding(draft);
+    if (issues.length) {
+      setNotice(
+        `انتشار ممکن نیست: ${toFaDigits(issues.length)} آیتم بدون کدینگ کامل. ابتدا UMLS و حداقل یک کد استاندارد را تکمیل کنید.`
+      );
+      return;
+    }
+    await onAction({
+      action: "UPSERT_FORM",
+      form: { ...draft, status: draft.status === "published" && bump ? "draft" : draft.status },
+    });
     await onAction({ action: "PUBLISH_FORM", formId: draft.id, bumpVersion: bump });
     setNotice(bump ? "نسخه جدید منتشر شد." : "فرم منتشر شد.");
   };
@@ -202,7 +238,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
       <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-2">
         <label className="text-[11px] text-slate-600">
           عنوان
-          <input
+          <AppInput
             value={draft.title}
             onChange={(e) => setDraft({ ...draft, title: e.target.value })}
             className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs"
@@ -210,7 +246,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
         </label>
         <label className="text-[11px] text-slate-600">
           کد فرم
-          <input
+          <AppInput
             value={draft.code}
             onChange={(e) => setDraft({ ...draft, code: e.target.value })}
             className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs"
@@ -250,7 +286,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
         </label>
         <label className="text-[11px] text-slate-600 md:col-span-2">
           متن هشدار بالای فرم
-          <textarea
+          <AppTextarea
             value={draft.warningText}
             onChange={(e) => setDraft({ ...draft, warningText: e.target.value })}
             rows={2}
@@ -302,7 +338,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
           <div className="mb-3 grid gap-2 md:grid-cols-2">
             <label className="text-[11px] text-slate-600">
               عنوان بخش
-              <input
+              <AppInput
                 value={currentSection.title}
                 onChange={(e) =>
                   setDraft({
@@ -317,7 +353,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
             </label>
             <label className="text-[11px] text-slate-600">
               راهنما
-              <input
+              <AppInput
                 value={currentSection.guideText}
                 onChange={(e) =>
                   setDraft({
@@ -336,7 +372,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
             {sectionItems.map((item) => (
               <div key={item.id} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <input
+                  <AppInput
                     value={item.labelFa}
                     onChange={(e) =>
                       setDraft({
@@ -367,7 +403,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                 <div className="grid gap-2 md:grid-cols-4">
                   <label className="text-[10px] text-slate-500">
                     کد آیتم
-                    <input
+                    <AppInput
                       value={item.code}
                       onChange={(e) =>
                         setDraft({
@@ -397,12 +433,17 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                       <option value="number">عدد</option>
                       <option value="date">تاریخ</option>
                       <option value="select">انتخابی</option>
+                      <option value="province_city">استان / شهر</option>
                     </select>
                   </label>
                   <label className="text-[10px] text-slate-500">
                     conceptKind
                     <select
-                      value={item.coding.conceptKind}
+                      value={
+                        (item.coding.conceptKind as string) === "demo"
+                          ? "demographics"
+                          : item.coding.conceptKind
+                      }
                       onChange={(e) =>
                         setDraft({
                           ...draft,
@@ -417,7 +458,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                     >
                       {CONCEPT_KINDS.map((k) => (
                         <option key={k} value={k}>
-                          {k}
+                          {k === "demographics" ? "demographics (اطلاعات پایه)" : k}
                         </option>
                       ))}
                     </select>
@@ -439,10 +480,49 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                     />
                     redFlagOnYes
                   </label>
+                  {(() => {
+                    const issues = itemCodingIssues({
+                      ...item,
+                      coding: {
+                        ...item.coding,
+                        umls: item.coding.umls ?? [],
+                      },
+                    });
+                    return issues.length ? (
+                      <p className="md:col-span-4 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] text-amber-900">
+                        کدینگ ناقص: {issues.join(" · ")}
+                      </p>
+                    ) : null;
+                  })()}
+                  <TerminologyConceptPicker
+                    disabled={busy}
+                    onPick={(concept) =>
+                      setDraft({
+                        ...draft,
+                        items: draft.items.map((i) =>
+                          i.id === item.id
+                            ? {
+                                ...i,
+                                coding: mergeCodingFromConcept(
+                                  {
+                                    ...i.coding,
+                                    umls: i.coding.umls ?? [],
+                                    snomed: i.coding.snomed ?? [],
+                                    loinc: i.coding.loinc ?? [],
+                                    icd10: i.coding.icd10 ?? [],
+                                  },
+                                  concept
+                                ),
+                              }
+                            : i
+                        ),
+                      })
+                    }
+                  />
                   <label className="text-[10px] text-slate-500 md:col-span-2">
                     SNOMED (با ویرگول)
-                    <input
-                      value={item.coding.snomed.join(",")}
+                    <AppInput
+                      value={(item.coding.snomed ?? []).join(",")}
                       onChange={(e) =>
                         setDraft({
                           ...draft,
@@ -452,10 +532,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                                   ...i,
                                   coding: {
                                     ...i.coding,
-                                    snomed: e.target.value
-                                      .split(",")
-                                      .map((x) => x.trim())
-                                      .filter(Boolean),
+                                    snomed: splitCodes(e.target.value),
                                   },
                                 }
                               : i
@@ -468,8 +545,8 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                   </label>
                   <label className="text-[10px] text-slate-500">
                     LOINC
-                    <input
-                      value={item.coding.loinc.join(",")}
+                    <AppInput
+                      value={(item.coding.loinc ?? []).join(",")}
                       onChange={(e) =>
                         setDraft({
                           ...draft,
@@ -479,10 +556,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                                   ...i,
                                   coding: {
                                     ...i.coding,
-                                    loinc: e.target.value
-                                      .split(",")
-                                      .map((x) => x.trim())
-                                      .filter(Boolean),
+                                    loinc: splitCodes(e.target.value),
                                   },
                                 }
                               : i
@@ -495,8 +569,8 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                   </label>
                   <label className="text-[10px] text-slate-500">
                     ICD-10
-                    <input
-                      value={item.coding.icd10.join(",")}
+                    <AppInput
+                      value={(item.coding.icd10 ?? []).join(",")}
                       onChange={(e) =>
                         setDraft({
                           ...draft,
@@ -506,10 +580,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                                   ...i,
                                   coding: {
                                     ...i.coding,
-                                    icd10: e.target.value
-                                      .split(",")
-                                      .map((x) => x.trim())
-                                      .filter(Boolean),
+                                    icd10: splitCodes(e.target.value),
                                   },
                                 }
                               : i
@@ -520,10 +591,10 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                       dir="ltr"
                     />
                   </label>
-                  <label className="text-[10px] text-slate-500 md:col-span-4">
-                    aiTags (با ویرگول)
-                    <input
-                      value={item.coding.aiTags.join(",")}
+                  <label className="text-[10px] text-slate-500 md:col-span-2">
+                    UMLS CUI (با ویرگول)
+                    <AppInput
+                      value={(item.coding.umls ?? []).join(",")}
                       onChange={(e) =>
                         setDraft({
                           ...draft,
@@ -533,10 +604,37 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                                   ...i,
                                   coding: {
                                     ...i.coding,
-                                    aiTags: e.target.value
-                                      .split(",")
-                                      .map((x) => x.trim())
-                                      .filter(Boolean),
+                                    umls: splitCodes(e.target.value),
+                                  },
+                                }
+                              : i
+                          ),
+                        })
+                      }
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-1.5 text-[11px]"
+                      dir="ltr"
+                      placeholder="C0006826"
+                    />
+                    {(item.coding.umls ?? []).length > 0 && (
+                      <p className="mt-1 text-[10px] leading-relaxed text-teal-800" dir="rtl">
+                        {resolveCuiLabels(item.coding.umls ?? []).join(" · ")}
+                      </p>
+                    )}
+                  </label>
+                  <label className="text-[10px] text-slate-500 md:col-span-2">
+                    aiTags (با ویرگول)
+                    <AppInput
+                      value={(item.coding.aiTags ?? []).join(",")}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          items: draft.items.map((i) =>
+                            i.id === item.id
+                              ? {
+                                  ...i,
+                                  coding: {
+                                    ...i.coding,
+                                    aiTags: splitCodes(e.target.value),
                                   },
                                 }
                               : i
@@ -646,7 +744,29 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
         </button>
       </div>
 
-      {notice && <p className="text-xs text-emerald-700">{notice}</p>}
+      {codingIssues.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-950">
+          <p className="font-medium">
+            {toFaDigits(codingIssues.length)} آیتم بدون کدینگ کامل — انتشار تا تکمیل UMLS و حداقل یک کد استاندارد ممکن نیست.
+          </p>
+          <ul className="mt-1 max-h-28 list-disc space-y-0.5 overflow-auto pr-4 text-[10px]">
+            {codingIssues.slice(0, 12).map((row) => (
+              <li key={row.itemCode}>
+                <span dir="ltr">{row.itemCode}</span> — {row.labelFa}: {row.problems.join(" · ")}
+              </li>
+            ))}
+            {codingIssues.length > 12 && (
+              <li>و {toFaDigits(codingIssues.length - 12)} مورد دیگر…</li>
+            )}
+          </ul>
+        </div>
+      )}
+
+      {notice && (
+        <p className={`text-xs ${codingIssues.length && notice.includes("ممکن نیست") ? "text-amber-800" : "text-emerald-700"}`}>
+          {notice}
+        </p>
+      )}
     </div>
   );
 }

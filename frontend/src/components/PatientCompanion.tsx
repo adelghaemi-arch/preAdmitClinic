@@ -35,7 +35,7 @@ export function PatientCompanion({ token, initialSnapshot }: { token: string; in
     try {
       const full = (await readSnapshot(null)).patients.find((item) => item.qrToken.toUpperCase() === token.toUpperCase());
       if (!full) throw new Error("لینک پذیرش معتبر نیست.");
-      const allowed = ["SAVE_FORM_RESPONSE", "PATIENT_STATION_CHECKIN", "MARK_ALERTS_READ", "COMPLETE_REPORT_STEP", "UPDATE_COMPANION_VISIBILITY", "DISMISS_JOURNEY_INTRO"];
+      const allowed = ["SAVE_FORM_RESPONSE", "UPDATE_PATIENT_PHOTO", "PATIENT_STATION_CHECKIN", "MARK_ALERTS_READ", "COMPLETE_REPORT_STEP", "UPDATE_COMPANION_VISIBILITY", "DISMISS_JOURNEY_INTRO"];
       if (!allowed.includes(String(payload.action)) || Number(payload.patientId) !== full.id) throw new Error("این عملیات برای همراه سلامتجو مجاز نیست.");
       const data = await dispatchClinicAction(payload, { unscoped: true });
       if (!data.ok) throw new Error(data.error ?? "ذخیره اطلاعات انجام نشد.");

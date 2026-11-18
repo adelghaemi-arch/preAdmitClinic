@@ -85,6 +85,13 @@ export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
       homeLat: p.homeLat ?? null,
       homeLon: p.homeLon ?? null,
       homeAddress: p.homeAddress ?? null,
+      photoDataUrl: p.photoDataUrl ?? null,
+      intakeDocuments: Array.isArray(p.intakeDocuments)
+        ? p.intakeDocuments.filter(
+            (g): g is NonNullable<typeof g> =>
+              Boolean(g && typeof g === "object" && Array.isArray((g as { files?: unknown }).files))
+          )
+        : [],
       stations: patientStations,
       clinicalNotes: notes
         .filter((n) => n.patientId === p.id)
@@ -150,6 +157,7 @@ export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
     packageRuleLibrary: JSON.parse(JSON.stringify(mockStore.packageRuleLibrary)),
     contracts: JSON.parse(JSON.stringify(mockStore.contracts)),
     forms: JSON.parse(JSON.stringify(mockStore.forms)),
+    platform: JSON.parse(JSON.stringify(mockStore.platform)),
     serverTime: new Date().toISOString(),
   };
 }

@@ -65,14 +65,51 @@ export interface IntakeAnswers {
   diabetesStatus: string;
 }
 
+/** Prior medical documents uploaded during pre-admit (patient-supplied). */
+export type IntakeDocumentType =
+  | "lab_blood"
+  | "lab_urine"
+  | "pathology"
+  | "ecg"
+  | "echo"
+  | "ultrasound"
+  | "xray"
+  | "ct"
+  | "mri"
+  | "mammography"
+  | "endoscopy"
+  | "other";
+
+export interface PatientIntakeDocumentFile {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  dataUrl: string;
+}
+
+/** One type entry (duplicate types allowed) with optional date and up to 20 files. */
+export interface PatientIntakeDocumentGroup {
+  id: string;
+  documentType: IntakeDocumentType;
+  typeLabelFa: string;
+  note?: string | null;
+  /** Exam/report date — exact or approximate free text; optional. */
+  documentDate?: string | null;
+  files: PatientIntakeDocumentFile[];
+  uploadedAt: string;
+}
+
+/** @deprecated Prefer PatientIntakeDocumentGroup */
+export type PatientIntakeDocument = PatientIntakeDocumentGroup;
+
 /* ---------- configurable pre-admit forms (docs-driven) ---------- */
 
-export type FormInputType = "yn_unk" | "text" | "number" | "date" | "select" | "signature";
+export type FormInputType = "yn_unk" | "text" | "number" | "date" | "select" | "signature" | "province_city";
 export type FormNotesPolicy = "never" | "optional" | "required_if_yes";
 export type FormPublishStatus = "draft" | "published" | "archived";
 export type FormResponseStatus = "draft" | "submitted";
 export type FormConceptKind =
-  | "demo"
+  | "demographics"
   | "symptom"
   | "history"
   | "family"
@@ -92,6 +129,8 @@ export interface FormItemCoding {
   snomed: string[];
   loinc: string[];
   icd10: string[];
+  /** UMLS Concept Unique Identifiers (e.g. C0027051) */
+  umls: string[];
   conceptKind: FormConceptKind;
   aiTags: string[];
   redFlagOnYes?: boolean;
@@ -216,7 +255,217 @@ export type WorkspaceRole =
   | "specialist"
   | "paraclinic"
   | "supervisor"
-  | "admin";
+  | "admin"
+  | "platform";
+
+/* ---------- platform admin (multi-clinic control plane, mock) ---------- */
+
+export type PlatformClinicStatus = "active" | "suspended" | "onboarding";
+
+export interface PlatformClinic {
+  id: string;
+  name: string;
+  city: string;
+  status: PlatformClinicStatus;
+  plan: string;
+  adminContact: string;
+  adminPhone: string;
+  patientsToday: number;
+  staffCount: number;
+  contractsCount: number;
+  createdAt: string;
+  /** True when this row maps to the live local clinic dataset. */
+  isCurrentTenant: boolean;
+}
+
+export interface GpsPoint {
+  lat: number;
+  lon: number;
+  accuracy: number;
+  capturedAt: string;
+  source: "camera_session" | "checkin" | "manual" | "seed";
+  /** Evidence package this point belongs to (session / burst / day). */
+  packageId?: string | null;
+}
+
+export type UserPhotoKind = "portrait" | "fraud_auto" | "fraud_confirm";
+
+export interface UserPhotoRecord {
+  id: string;
+  patientId: number;
+  userId: number | null;
+  kind: UserPhotoKind;
+  dataUrl: string;
+  capturedAt: string;
+  sessionId: string | null;
+  gps: GpsPoint | null;
+  /** Evidence package this photo belongs to (session / burst / day). */
+  packageId?: string | null;
+}
+
+export type EvidencePackageKind = "camera_session" | "burst" | "day";
+
+/** Time-bounded bundle of photos + GPS for platform review. */
+export interface EvidencePackage {
+  id: string;
+  patientId: number;
+  userId: number | null;
+  kind: EvidencePackageKind;
+  startedAt: string;
+  endedAt: string;
+  sessionId: string | null;
+  label: string;
+  /** Calendar day key in Asia/Tehran, e.g. 2026-11-18 */
+  dayKey: string;
+}
+
+export type FraudReviewStatus = "pending" | "cleared" | "flagged";
+
+export interface FraudCaptureSession {
+  id: string;
+  patientId: number;
+  userId: number | null;
+  startedAt: string;
+  endedAt: string | null;
+  reviewStatus: FraudReviewStatus;
+  reviewNote: string;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  /** Linked evidence package for this camera session. */
+  packageId?: string | null;
+}
+
+export type AuthAppSurface = "clinic_web" | "patient_kiosk";
+
+/** Browser OTP login session tracked for self-service revoke and multi-session fraud watch. */
+export interface AuthSession {
+  id: string;
+  userId: number;
+  username: string;
+  createdAt: string;
+  lastSeenAt: string;
+  revokedAt: string | null;
+  deviceLabel: string;
+  system: string;
+  browser: string;
+  appSurface: AuthAppSurface;
+  ipHint: string;
+}
+
+/** Raised when one account holds 2+ concurrent active auth sessions. */
+export interface MultiSessionAlert {
+  id: string;
+  userId: number;
+  activeSessionCount: number;
+  openedAt: string;
+  reviewStatus: FraudReviewStatus;
+  reviewNote: string;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+}
+
+export type PlatformUserPrimaryRole =
+  | "platform"
+  | "clinic_admin"
+  | "staff"
+  | "patient"
+  | "supervisor";
+
+export interface PlatformUserProfile {
+  id: string;
+  userId: number | null;
+  patientId: number | null;
+  fullName: string;
+  phone: string;
+  nationalId: string;
+  email: string;
+  clinicId: string;
+  roleLabel: string;
+  primaryRole: PlatformUserPrimaryRole;
+  notes: string;
+  createdAt: string;
+  lastLoginAt: string | null;
+  /** Platform avatar; auto-filled from record portrait only when empty. */
+  profilePhotoDataUrl: string | null;
+  lastGps: GpsPoint | null;
+  gpsHistory: GpsPoint[];
+  isActive: boolean;
+}
+
+export interface PlatformHealthMetric {
+  id: string;
+  label: string;
+  value: number;
+  unit: string;
+  status: "ok" | "warn" | "critical";
+  sparkline: number[];
+}
+
+export interface PlatformIntegration {
+  id: string;
+  name: string;
+  kind: "hr_api" | "sms" | "otp" | "maps" | "storage";
+  endpoint: string;
+  apiKeyMasked: string;
+  status: "connected" | "degraded" | "offline";
+  lastSyncAt: string | null;
+  notes: string;
+}
+
+/** Local self-hosted OSM stack (Nominatim / OSRM / tiles) configured by platform admin. */
+export interface OsmLocalSettings {
+  /** Root URL without trailing slash; empty means public OSM only. */
+  baseUrl: string;
+  /** True only after a successful Nominatim probe against baseUrl. */
+  active: boolean;
+  nominatimOk: boolean;
+  osrmOk: boolean;
+  tileOk: boolean;
+  lastTestedAt: string | null;
+  lastError: string | null;
+}
+
+export interface PlatformSettings {
+  brandName: string;
+  supportPhone: string;
+  otpLength: number;
+  otpTtlSeconds: number;
+  smsSenderId: string;
+  fraudAutoCaptureSeconds: number;
+  maxPortraitDataUrlChars: number;
+  maxFraudFrameDataUrlChars: number;
+  featureFlags: {
+    fraudWatch: boolean;
+    gpsTracking: boolean;
+    multiClinicRegistry: boolean;
+    corporateContracts: boolean;
+    multiSessionWatch: boolean;
+  };
+  osmLocal: OsmLocalSettings;
+}
+
+export interface PlatformAuditEntry {
+  id: string;
+  at: string;
+  actor: string;
+  action: string;
+  target: string;
+  detail: string;
+}
+
+export interface PlatformState {
+  clinics: PlatformClinic[];
+  users: PlatformUserProfile[];
+  photos: UserPhotoRecord[];
+  packages: EvidencePackage[];
+  fraudSessions: FraudCaptureSession[];
+  authSessions: AuthSession[];
+  multiSessionAlerts: MultiSessionAlert[];
+  health: PlatformHealthMetric[];
+  integrations: PlatformIntegration[];
+  settings: PlatformSettings;
+  audit: PlatformAuditEntry[];
+}
 
 export type WorkspaceView = "overview" | WorkspaceRole;
 
@@ -370,6 +619,10 @@ export interface PatientFullDto {
   homeLat?: number | null;
   homeLon?: number | null;
   homeAddress?: string | null;
+  /** Pre-admit portrait as a compressed JPEG data URL. */
+  photoDataUrl?: string | null;
+  /** Patient-supplied prior labs/imaging uploaded during pre-admit (grouped by type entry). */
+  intakeDocuments?: PatientIntakeDocumentGroup[];
   stations: VisitStationDto[];
   clinicalNotes: ClinicalNoteDto[];
   paraclinicResults: ParaclinicResultDto[];
@@ -559,6 +812,7 @@ export interface ClinicSnapshot {
   patients: PatientFullDto[];
   contracts: CorporateContract[];
   forms: FormDefinition[];
+  platform: PlatformState;
   serverTime: string;
 }
 
@@ -636,6 +890,10 @@ export interface MockPatientRow {
   homeLat?: number | null;
   homeLon?: number | null;
   homeAddress?: string | null;
+  /** Pre-admit portrait as a compressed JPEG data URL. */
+  photoDataUrl?: string | null;
+  /** Patient-supplied prior labs/imaging uploaded during pre-admit (grouped by type entry). */
+  intakeDocuments?: PatientIntakeDocumentGroup[];
 }
 
 export interface MockStationRow {

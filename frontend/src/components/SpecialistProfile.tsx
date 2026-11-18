@@ -1,5 +1,6 @@
 ﻿import { ResultAttachment } from "./ResultAttachment";
 
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import React, { useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -755,7 +756,7 @@ export function SpecialistProfile({
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   شکایت اصلی / علت ارجاع
                 </label>
-                <input
+                <AppInput
                   type="text"
                   value={chiefComplaint}
                   onChange={(e) => setChiefComplaint(e.target.value)}
@@ -766,7 +767,7 @@ export function SpecialistProfile({
                 <label className="mb-1 block text-xs font-bold text-slate-700">
                   یادداشت خطابی به متخصص بعدی (اختیاری)
                 </label>
-                <input
+                <AppInput
                   type="text"
                   value={referralNote}
                   onChange={(e) => setReferralNote(e.target.value)}
@@ -780,7 +781,7 @@ export function SpecialistProfile({
               <label className="mb-1 block text-xs font-bold text-slate-700">
                 یافته‌های معاینه بالینی
               </label>
-              <textarea
+              <AppTextarea
                 rows={3}
                 required
                 value={examFindings}
@@ -794,7 +795,7 @@ export function SpecialistProfile({
               <label className="mb-1 block text-xs font-bold text-slate-700">
                 تشخیص نهایی پزشک متخصص
               </label>
-              <textarea
+              <AppTextarea
                 rows={2}
                 required
                 value={diagnosis}
@@ -840,21 +841,21 @@ export function SpecialistProfile({
               )}
 
               <div className="mt-3 grid gap-2 sm:grid-cols-4">
-                <input
+                <AppInput
                   type="text"
                   value={rxDrug}
                   onChange={(e) => setRxDrug(e.target.value)}
                   placeholder="نام دارو"
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
                 />
-                <input
+                <AppInput
                   type="text"
                   value={rxDosage}
                   onChange={(e) => setRxDosage(e.target.value)}
                   placeholder="دوز (مثلاً ۱۰ میلی‌گرم)"
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
                 />
-                <input
+                <AppInput
                   type="text"
                   value={rxInst}
                   onChange={(e) => setRxInst(e.target.value)}
@@ -862,7 +863,7 @@ export function SpecialistProfile({
                   className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
                 />
                 <div className="flex gap-1.5">
-                  <input
+                  <AppInput
                     type="text"
                     value={rxDur}
                     onChange={(e) => setRxDur(e.target.value)}

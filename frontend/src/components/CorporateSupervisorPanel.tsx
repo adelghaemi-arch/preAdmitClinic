@@ -1,4 +1,5 @@
 ﻿import React, { useMemo, useState } from "react";
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   Building2,
   Calendar,
@@ -382,7 +383,7 @@ export function CorporateSupervisorPanel({
               </select>
               <label className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs">
                 <Search className="h-3.5 w-3.5 text-slate-400" />
-                <input
+                <AppInput
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="نام یا واحد..."
@@ -458,7 +459,7 @@ export function CorporateSupervisorPanel({
             <p className="text-[11px] text-slate-500">
               ارسال پیامک یادآوری به {toFaDigits(incompleteInFilter)} نفر از همکاران تکمیل‌نکرده در فهرست فعلی.
             </p>
-            <textarea
+            <AppTextarea
               rows={4}
               value={smsBody}
               onChange={(e) => setSmsBody(e.target.value)}

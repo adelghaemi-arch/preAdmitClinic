@@ -1,4 +1,5 @@
 ﻿import React, { useMemo, useState } from "react";
+import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   Activity,
   CheckCircle2,
@@ -472,7 +473,7 @@ export function ParaclinicProfile({
               <label className="mb-1 block text-xs font-bold text-slate-700">
                 عنوان گزارش / آزمایش
               </label>
-              <input
+              <AppInput
                 type="text"
                 required
                 value={uploadTitle}
@@ -485,7 +486,7 @@ export function ParaclinicProfile({
               <label className="mb-1 block text-xs font-bold text-slate-700">
                 تفسیر فنی / شرح گزارش پاراکلینیک
               </label>
-              <textarea
+              <AppTextarea
                 rows={2}
                 required
                 value={interpretation}
@@ -496,7 +497,7 @@ export function ParaclinicProfile({
 
             <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
               <div className="flex items-center justify-between"><span className="text-xs font-semibold text-slate-700">شاخص‌های گزارش (اختیاری)</span><button type="button" className="secondary-button" onClick={() => setMetrics((prev) => [...prev, { parameter: '', value: '', unit: '', normalRange: '', abnormal: false }])}>+ افزودن شاخص</button></div>
-              {metrics.map((m, index) => <div key={index} className="mt-3 flex flex-wrap items-center gap-2">{(['parameter', 'value', 'unit', 'normalRange'] as const).map((key) => <input key={key} required className="min-w-20 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs" placeholder={({parameter:'نام شاخص',value:'مقدار نتیجه',unit:'واحد',normalRange:'بازه مرجع'})[key]} value={m[key]} onChange={(e) => setMetrics((prev) => prev.map((row, i) => i === index ? {...row, [key]: e.target.value} : row))} />)}<label className="flex items-center gap-1 text-[10px] text-rose-600"><input type="checkbox" checked={Boolean(m.abnormal)} onChange={(e) => setMetrics((prev) => prev.map((row, i) => i === index ? {...row, abnormal: e.target.checked} : row))} />خارج از محدوده</label><button type="button" onClick={() => setMetrics((prev) => prev.filter((_, i) => i !== index))} className="px-2 text-rose-500" aria-label="حذف شاخص">×</button></div>)}
+              {metrics.map((m, index) => <div key={index} className="mt-3 flex flex-wrap items-center gap-2">{(['parameter', 'value', 'unit', 'normalRange'] as const).map((key) => <AppInput key={key} required className="min-w-20 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs" placeholder={({parameter:'نام شاخص',value:'مقدار نتیجه',unit:'واحد',normalRange:'بازه مرجع'})[key]} value={m[key]} onChange={(e) => setMetrics((prev) => prev.map((row, i) => i === index ? {...row, [key]: e.target.value} : row))} />)}<label className="flex items-center gap-1 text-[10px] text-rose-600"><input type="checkbox" checked={Boolean(m.abnormal)} onChange={(e) => setMetrics((prev) => prev.map((row, i) => i === index ? {...row, abnormal: e.target.checked} : row))} />خارج از محدوده</label><button type="button" onClick={() => setMetrics((prev) => prev.filter((_, i) => i !== index))} className="px-2 text-rose-500" aria-label="حذف شاخص">×</button></div>)}
             </div>
             {/* File Attachment Dropzone + Preview */}
             <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4">
