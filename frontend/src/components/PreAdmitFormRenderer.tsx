@@ -31,10 +31,10 @@ import {
   prefillValue,
   resolveFormForPatient,
   sectionProgress,
-  sectionsOf,
   syncSkippedAnswers,
   upsertAnswer,
   validateForm,
+  visibleSections,
 } from "@/lib/form-engine";
 import { toFaDigits } from "@/lib/persian";
 import { iranLocalDayOffset } from "@/lib/date-iso";
@@ -42,6 +42,8 @@ import { birthDateBounds, PersianDateField } from "@/components/PersianDateField
 import { ProvinceCityField } from "@/components/ProvinceCityField";
 import { PatientPhotoCapture } from "@/components/PatientPhotoCapture";
 import { PreAdmitDocumentsPanel } from "@/components/PreAdmitDocumentsPanel";
+import { ContextualIntakeUpload } from "@/components/ContextualIntakeUpload";
+import { screeningDocumentPromptsForItem } from "@/lib/intake-documents";
 
 /** Screening / vaccination sections rendered as a final dossier phase, not in the main stepper. */
 const SCREENING_SECTION_CODES = new Set(["CA_F_SEC_9", "CA_M_SEC_10"]);
@@ -351,7 +353,10 @@ export function PreAdmitFormRenderer({
   userId = null,
   fraudIntervalSeconds = 3,
 }: PreAdmitFormRendererProps) {
-  const form = useMemo(() => resolveFormForPatient(forms, patient.gender), [forms, patient.gender]);
+  const form = useMemo(
+    () => resolveFormForPatient(forms, patient.gender, patient.age),
+    [forms, patient.gender, patient.age]
+  );
   const [sectionIndex, setSectionIndex] = useState(0);
   const [onScreeningPhase, setOnScreeningPhase] = useState(false);
   const [onDocumentsPhase, setOnDocumentsPhase] = useState(false);
@@ -440,10 +445,10 @@ export function PreAdmitFormRenderer({
     [form, patient, answers]
   );
 
-  const allSections = useMemo(
-    () => (form ? sectionsOf(form).filter((s) => !s.code.includes("SIG") && s.title !== "تأیید و امضا") : []),
-    [form]
-  );
+  const allSections = useMemo(() => {
+    if (!form) return [];
+    return visibleSections(form, ctx).filter((s) => !s.code.includes("SIG") && s.title !== "تأیید و امضا");
+  }, [form, ctx]);
   const screeningSection = useMemo(
     () => allSections.find((s) => SCREENING_SECTION_CODES.has(s.code)) ?? null,
     [allSections]
@@ -452,11 +457,29 @@ export function PreAdmitFormRenderer({
     () => allSections.filter((s) => !SCREENING_SECTION_CODES.has(s.code)),
     [allSections]
   );
-  const currentSection = onScreeningPhase || onDocumentsPhase ? null : sections[sectionIndex];
+  const currentSection = onScreeningPhase || onDocumentsPhase ? null : sections[sectionIndex] ?? null;
   const progress = form ? overallProgress(form, answers, ctx) : { total: 0, done: 0, pct: 0 };
   const screeningProg =
     form && screeningSection ? sectionProgress(form, screeningSection.id, answers, ctx) : { total: 0, done: 0 };
-  const screeningDone = screeningProg.total > 0 && screeningProg.done === screeningProg.total;
+  const screeningDone =
+    !screeningSection || (screeningProg.total > 0 && screeningProg.done === screeningProg.total);
+
+  // Keep stepper index valid when marital/age filters shrink the visible section list.
+  useEffect(() => {
+    if (sections.length === 0) {
+      if (sectionIndex !== 0) setSectionIndex(0);
+      return;
+    }
+    if (sectionIndex >= sections.length) setSectionIndex(sections.length - 1);
+  }, [sections.length, sectionIndex]);
+
+  // If screening has no visible items, never stay on that phase.
+  useEffect(() => {
+    if (onScreeningPhase && !screeningSection) {
+      setOnScreeningPhase(false);
+      setOnDocumentsPhase(true);
+    }
+  }, [onScreeningPhase, screeningSection]);
   const intakeDocuments = patient.intakeDocuments ?? [];
   const documentsDone = intakeDocuments.length > 0;
   const submitted =
@@ -778,9 +801,22 @@ export function PreAdmitFormRenderer({
   }
 
   if (!form) {
+    const blockedByAge = forms
+      .filter(
+        (f) =>
+          f.status === "published" &&
+          (f.targetAudience.gender === patient.gender || f.targetAudience.gender === "همه") &&
+          typeof patient.age === "number" &&
+          f.targetAudience.ageMin != null &&
+          patient.age < f.targetAudience.ageMin
+      )
+      .sort((a, b) => (a.targetAudience.ageMin ?? 0) - (b.targetAudience.ageMin ?? 0))[0];
+    const minAge = blockedByAge?.targetAudience.ageMin;
     return (
       <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
-        فرم منتشرشده‌ای برای جامعه هدف «{patient.gender}» یافت نشد. از پنل ادمین یک فرم با این مخاطب منتشر کنید.
+        {minAge != null
+          ? `پرسشنامه پیش‌پذیرش سرطان برای افراد ${toFaDigits(minAge)} سال به بالا است.`
+          : `فرم منتشرشده‌ای برای جامعه هدف «${patient.gender}» یافت نشد. از پنل ادمین یک فرم با این مخاطب منتشر کنید.`}
       </div>
     );
   }
@@ -827,11 +863,11 @@ export function PreAdmitFormRenderer({
   const canFinalSubmit = validateForm(form, answers, ctx).ok;
   const formTitle = displayFormTitle(form);
   const nextButtonLabel = onScreeningPhase
-    ? "مدارک مرتبط"
+    ? "سایر مدارک"
     : atLastMain && screeningSection
       ? "پرونده غربالگری"
       : atLastMain
-        ? "مدارک مرتبط"
+        ? "سایر مدارک"
         : "بخش بعد";
 
   return (
@@ -930,8 +966,8 @@ export function PreAdmitFormRenderer({
         )}
         <button
           type="button"
-          title="ارسال مدارک مرتبط"
-          aria-label="ارسال مدارک مرتبط پیش‌پذیرش"
+          title="سایر مدارک درمانی"
+          aria-label="سایر مدارک درمانی که در غربالگری نبود"
           aria-current={onDocumentsPhase ? "step" : undefined}
           onClick={() => void goDocumentsPhase()}
           className={`inline-flex shrink-0 items-center gap-1 rounded-full border py-1.5 px-3 text-[10px] ${
@@ -951,6 +987,7 @@ export function PreAdmitFormRenderer({
         <PreAdmitDocumentsPanel
           gender={patient.gender}
           documents={intakeDocuments}
+          finalPhaseOnly
           disabled={readOnly || submitted}
           busy={busy || saving}
           onAddGroup={addIntakeDocumentGroup}
@@ -996,6 +1033,10 @@ export function PreAdmitFormRenderer({
                   const complete = isItemComplete(item, answer, true);
                   const requiredEmpty = Boolean(item.required && !complete);
                   const invalid = invalidSet.has(item.code);
+                  const docPrompts =
+                    onScreeningPhase && answer.valueCode === "yes"
+                      ? screeningDocumentPromptsForItem(item.code)
+                      : [];
                   return (
                     <div
                       key={item.id}
@@ -1015,6 +1056,18 @@ export function PreAdmitFormRenderer({
                         readOnlyPrefill={locked}
                         onChange={(next) => updateItem(item, next)}
                       />
+                      {docPrompts.map((prompt) => (
+                        <ContextualIntakeUpload
+                          key={`${item.code}-${prompt.documentType}`}
+                          prompt={prompt}
+                          documents={intakeDocuments}
+                          disabled={readOnly || submitted}
+                          busy={busy || saving}
+                          onAddGroup={addIntakeDocumentGroup}
+                          onAddFiles={addIntakeDocumentFiles}
+                          onRemoveFile={removeIntakeDocumentFile}
+                        />
+                      ))}
                     </div>
                   );
                 };
@@ -1056,10 +1109,15 @@ export function PreAdmitFormRenderer({
                 });
               })()}
             </div>
+            {onScreeningPhase && (
+              <p className="mt-3 rounded-xl border border-teal-100 bg-teal-50/80 px-3 py-2 text-[11px] leading-5 text-teal-900">
+                اگر برای سوالی «بله» زدید، همان‌جا می‌توانید عکس یا PDF مرتبط را بفرستید. بقیهٔ مدارک در مرحلهٔ بعد است.
+              </p>
+            )}
             {atLastMain && (
               <p className="mt-3 rounded-xl border border-sky-100 bg-sky-50/80 px-3 py-2 text-[11px] leading-5 text-teal-900">
                 {screeningSection
-                  ? "بعد از این بخش، پرونده غربالگری و سپس مدارک مرتبط را ارسال کنید."
+                  ? "بعد از این بخش، در پرونده غربالگری مدارک مرتبط با هر سوال را همان‌جا می‌فرستید؛ سپس سایر مدارک."
                   : "بعد از این بخش می‌توانید مدارک مرتبط (آزمایش، نوار قلب، سونو و…) را ارسال کنید."}
               </p>
             )}

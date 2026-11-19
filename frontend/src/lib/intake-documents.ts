@@ -40,6 +40,102 @@ export function intakeDocumentTypesForGender(gender: string) {
   return INTAKE_DOCUMENT_TYPES.filter((t) => !t.femaleOnly || female);
 }
 
+/** Prompt shown under a screening Y/N question when the answer is «بله». */
+export type ScreeningDocumentPrompt = {
+  documentType: IntakeDocumentType;
+  titleFa: string;
+  hintFa: string;
+};
+
+/**
+ * Screening item codes → document upload prompts (same page, after the question).
+ * Types listed here are offered contextually; remaining types stay on the final «مدارک» step.
+ */
+export const SCREENING_ITEM_DOCUMENT_PROMPTS: Readonly<Record<string, readonly ScreeningDocumentPrompt[]>> = {
+  // Male — CA_M_SEC_10
+  CA_M_Q68: [
+    {
+      documentType: "lab_blood",
+      titleFa: "نتیجه آزمایش PSA",
+      hintFa: "اگر برگه یا عکس آزمایش خون پروستات (PSA) را دارید، همین‌جا بفرستید.",
+    },
+  ],
+  CA_M_Q70: [
+    {
+      documentType: "endoscopy",
+      titleFa: "گزارش کولونوسکوپی",
+      hintFa: "عکس یا PDF گزارش کولونوسکوپی را در صورت داشتن اینجا آپلود کنید.",
+    },
+  ],
+  CA_M_Q71: [
+    {
+      documentType: "lab_blood",
+      titleFa: "نتیجه خون مخفی مدفوع",
+      hintFa: "برگه یا عکس نتیجه آزمایش خون مخفی در مدفوع را اینجا بفرستید.",
+    },
+  ],
+  CA_M_Q72: [
+    {
+      documentType: "ct",
+      titleFa: "سی‌تی دوز پایین ریه",
+      hintFa: "گزارش یا تصویر سی‌تی اسکن غربالگری ریه را در صورت داشتن اینجا آپلود کنید.",
+    },
+  ],
+  // Female — CA_F_SEC_9
+  CA_F_Q57: [
+    {
+      documentType: "pathology",
+      titleFa: "نتیجه پاپ اسمیر / HPV",
+      hintFa: "برگه یا عکس نتیجه پاپ اسمیر یا تست HPV را اینجا بفرستید.",
+    },
+  ],
+  CA_F_Q60: [
+    {
+      documentType: "mammography",
+      titleFa: "ماموگرافی",
+      hintFa: "عکس یا PDF گزارش ماموگرافی را در صورت داشتن اینجا آپلود کنید.",
+    },
+  ],
+  CA_F_Q61: [
+    {
+      documentType: "ultrasound",
+      titleFa: "سونوگرافی پستان",
+      hintFa: "اگر سونوگرافی پستان دارید، گزارش یا تصویر آن را اینجا بفرستید.",
+    },
+    {
+      documentType: "mri",
+      titleFa: "ام‌آرآی پستان",
+      hintFa: "اگر ام‌آرآی پستان دارید، گزارش یا تصویر آن را اینجا بفرستید.",
+    },
+  ],
+  CA_F_Q62: [
+    {
+      documentType: "endoscopy",
+      titleFa: "گزارش کولونوسکوپی",
+      hintFa: "اگر کولونوسکوپی انجام داده‌اید، گزارش آن را اینجا آپلود کنید.",
+    },
+    {
+      documentType: "lab_blood",
+      titleFa: "نتیجه خون مخفی مدفوع",
+      hintFa: "اگر تست خون مخفی مدفوع دارید، برگه یا عکس نتیجه را اینجا بفرستید.",
+    },
+  ],
+};
+
+/** Document types that can appear inline under screening questions. */
+export const CONTEXTUAL_INTAKE_DOCUMENT_TYPES: ReadonlySet<IntakeDocumentType> = new Set(
+  Object.values(SCREENING_ITEM_DOCUMENT_PROMPTS).flatMap((prompts) => prompts.map((p) => p.documentType))
+);
+
+export function screeningDocumentPromptsForItem(itemCode: string): readonly ScreeningDocumentPrompt[] {
+  return SCREENING_ITEM_DOCUMENT_PROMPTS[itemCode] ?? [];
+}
+
+/** Types offered only on the final documents step (not tied to a screening question). */
+export function intakeDocumentTypesForFinalPhase(gender: string) {
+  return intakeDocumentTypesForGender(gender).filter((t) => !CONTEXTUAL_INTAKE_DOCUMENT_TYPES.has(t.code));
+}
+
 export function isAllowedIntakeMime(mimeType: string): boolean {
   return mimeType === "application/pdf" || mimeType.startsWith("image/");
 }

@@ -103,13 +103,23 @@ export function loadSeedForms(): FormDefinition[] {
 
 export function resolveFormForPatient(
   forms: FormDefinition[],
-  gender: string
+  gender: string,
+  age?: number | null
 ): FormDefinition | null {
   const g = gender === "زن" ? "زن" : gender === "مرد" ? "مرد" : "";
   if (!g) return null;
+  const ageNum = age == null || Number.isNaN(Number(age)) ? null : Number(age);
   const published = forms
     .filter((f) => f.status === "published")
     .filter((f) => f.targetAudience.gender === g || f.targetAudience.gender === "همه")
+    .filter((f) => {
+      const { ageMin, ageMax } = f.targetAudience ?? { ageMin: null, ageMax: null };
+      // Unknown age: do not block; only enforce bounds when age is known.
+      if (ageNum == null) return true;
+      if (ageMin != null && ageNum < ageMin) return false;
+      if (ageMax != null && ageNum > ageMax) return false;
+      return true;
+    })
     .sort((a, b) => a.sortOrder - b.sortOrder || b.version - a.version);
   return published[0] ?? null;
 }
@@ -139,6 +149,21 @@ export function sectionsOf(form: FormDefinition): FormSectionDefinition[] {
 
 export function itemsOfSection(form: FormDefinition, sectionId: string): FormItemDefinition[] {
   return form.items.filter((i) => i.sectionId === sectionId).sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+/** Sections that still have at least one visible non-signature item for this audience. */
+export function visibleSections(form: FormDefinition, ctx: AudienceContext): FormSectionDefinition[] {
+  return sectionsOf(form).filter((section) =>
+    itemsOfSection(form, section.id).some((item) => !item.code.includes("_SIG_") && isItemVisible(item, ctx))
+  );
+}
+
+export function sectionHasVisibleItems(
+  form: FormDefinition,
+  sectionId: string,
+  ctx: AudienceContext
+): boolean {
+  return itemsOfSection(form, sectionId).some((item) => !item.code.includes("_SIG_") && isItemVisible(item, ctx));
 }
 
 export function visibleItems(form: FormDefinition, ctx: AudienceContext): FormItemDefinition[] {

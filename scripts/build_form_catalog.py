@@ -25,6 +25,69 @@ SKIP = {
     "□",
 }
 
+# Fallback when docs labels are already cleaned of audience parentheticals.
+FEMALE_VISIBILITY_BY_NUM = {
+    15: [{"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]}],
+    18: [{"field": "age", "op": "gte", "value": 50}],
+    19: [{"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]}],
+    20: [{"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]}],
+    21: [{"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]}],
+    22: [{"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]}],
+    33: [{"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]}],
+    34: [{"field": "age", "op": "gte", "value": 50}],
+    38: [{"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]}],
+    57: [{"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]}],
+    58: [{"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]}],
+    60: [{"field": "age", "op": "gte", "value": 50}],
+    62: [{"field": "age", "op": "gte", "value": 50}],
+}
+
+MALE_VISIBILITY_BY_NUM = {
+    68: [{"field": "age", "op": "gte", "value": 50}],
+    69: [{"field": "age", "op": "gte", "value": 50}],
+    70: [{"field": "age", "op": "gte", "value": 50}],
+    71: [{"field": "age", "op": "gte", "value": 50}],
+    72: [{"field": "age", "op": "gte", "value": 50}],
+    75: [{"field": "age", "op": "gte", "value": 50}],
+}
+
+
+def clean_question_label(text: str) -> str:
+    """Strip audience parentheticals and normalize leftover spacing/punctuation."""
+    out = text
+    # Nested marital clause inside another paren, e.g. (در صورت داشتن زایمان(افراد متاهل...))
+    out = re.sub(
+        r"\(\s*افراد\s*متاهل\s*يا\s*ازدواج\s*كرده\s*\)",
+        "",
+        out,
+        flags=re.IGNORECASE,
+    )
+    out = re.sub(
+        r"\(\s*افراد\s*متأهل\s*یا\s*ازدواج[‌\s]*کرده\s*\)",
+        "",
+        out,
+        flags=re.IGNORECASE,
+    )
+    out = re.sub(
+        r"\(\s*براي\s*افراد\s*بالاي\s*50\s*سال\s*\)",
+        "",
+        out,
+        flags=re.IGNORECASE,
+    )
+    out = re.sub(
+        r"\(\s*برای\s*افراد\s*بالای\s*[۵5]۰?\s*سال\s*\)",
+        "",
+        out,
+        flags=re.IGNORECASE,
+    )
+    # Collapse leftover empty/orphan parens and double spaces before ؟
+    out = re.sub(r"\(\s*\)", "", out)
+    out = re.sub(r"\)\s*\)", ")", out)
+    out = re.sub(r"[ \t]{2,}", " ", out)
+    out = re.sub(r"\s+([؟?])", r"\1", out)
+    out = re.sub(r"([^\s])\(", r"\1 (", out)
+    return out.strip()
+
 
 def load_extracted(kind: str) -> str:
     files = list(DOCS.glob("*.extracted.txt"))
@@ -38,7 +101,7 @@ def load_extracted(kind: str) -> str:
     raise SystemExit("extracted texts not found")
 
 
-def parse_structure(text: str):
+def parse_structure(text: str, visibility_by_num: dict | None = None):
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     sections = []
     questions = []
@@ -63,14 +126,20 @@ def parse_structure(text: str):
             if j < len(lines) and not re.fullmatch(r"[0-9۰-۹]+", lines[j]) and not SEC_PAT.match(lines[j]):
                 qtext = lines[j]
                 rules = []
-                if any(x in qtext for x in ("متاهل", "متأهل", "ازدواج")):
+                # Single-only labels take precedence over married keywords if both appear.
+                if any(x in qtext for x in ("فقط مجرد", "افراد مجرد", "مخصوص مجرد")):
+                    rules.append({"field": "maritalStatus", "op": "in", "value": ["مجرد"]})
+                elif any(x in qtext for x in ("متاهل", "متأهل", "ازدواج")):
                     rules.append({"field": "maritalStatus", "op": "in", "value": ["متأهل", "ازدواج‌کرده"]})
                 if any(x in qtext for x in ("بالاي 50", "بالای ۵۰", "بالاي ۵۰", "افراد بالاي", "افراد بالای")):
                     rules.append({"field": "age", "op": "gte", "value": 50})
+                # Docs may already be cleaned; keep known visibility by question number.
+                if not rules and visibility_by_num and num in visibility_by_num:
+                    rules = [dict(r) for r in visibility_by_num[num]]
                 questions.append(
                     {
                         "num": num,
-                        "label": qtext,
+                        "label": clean_question_label(qtext),
                         "sectionOrder": current_sec or 1,
                         "visibilityRules": rules,
                     }
@@ -207,7 +276,8 @@ def validate_item_coding(code: str, coding: dict) -> None:
 
 
 def build_form(form_id: str, code: str, title: str, gender: str, prefix: str, text: str, warning: str):
-    sections_raw, questions = parse_structure(text)
+    visibility_by_num = FEMALE_VISIBILITY_BY_NUM if gender == "زن" else MALE_VISIBILITY_BY_NUM if gender == "مرد" else None
+    sections_raw, questions = parse_structure(text, visibility_by_num=visibility_by_num)
     # Ensure section 1 is demographics even if parser caught it
     if not sections_raw or "اطلاعات پایه" not in sections_raw[0]["title"]:
         sections_raw.insert(0, {"order": 1, "title": "اطلاعات پایه"})
@@ -309,7 +379,7 @@ def build_form(form_id: str, code: str, title: str, gender: str, prefix: str, te
         "warningText": warning,
         "targetAudience": {
             "gender": "مرد" if gender == "male" else "زن",
-            "ageMin": None,
+            "ageMin": 18,
             "ageMax": None,
             "maritalStatuses": [],
         },

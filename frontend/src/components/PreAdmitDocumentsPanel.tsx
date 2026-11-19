@@ -6,6 +6,7 @@ import {
   INTAKE_DOCUMENT_MAX_BYTES,
   INTAKE_DOCUMENT_MAX_FILES_PER_GROUP,
   INTAKE_DOCUMENT_MAX_GROUPS,
+  intakeDocumentTypesForFinalPhase,
   intakeDocumentTypesForGender,
 } from "@/lib/intake-documents";
 import {
@@ -34,6 +35,8 @@ type FilePayload = {
 interface PreAdmitDocumentsPanelProps {
   gender: string;
   documents: PatientIntakeDocumentGroup[];
+  /** When true, only non-contextual types (not tied to screening questions) can be added. */
+  finalPhaseOnly?: boolean;
   disabled?: boolean;
   busy?: boolean;
   onAddGroup: (payload: {
@@ -96,6 +99,7 @@ async function filesToPayloads(
 export function PreAdmitDocumentsPanel({
   gender,
   documents,
+  finalPhaseOnly,
   disabled,
   busy,
   onAddGroup,
@@ -105,7 +109,12 @@ export function PreAdmitDocumentsPanel({
 }: PreAdmitDocumentsPanelProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const datePickerWrapRef = useRef<HTMLDivElement>(null);
-  const types = intakeDocumentTypesForGender(gender);
+  const types = finalPhaseOnly
+    ? intakeDocumentTypesForFinalPhase(gender)
+    : intakeDocumentTypesForGender(gender);
+  const visibleDocuments = finalPhaseOnly
+    ? documents.filter((g) => types.some((t) => t.code === g.documentType))
+    : documents;
   const [modal, setModal] = useState<ModalMode>({ open: false });
   const [documentType, setDocumentType] = useState<IntakeDocumentType>(types[0]?.code ?? "other");
   const [documentDate, setDocumentDate] = useState("");
@@ -304,12 +313,16 @@ export function PreAdmitDocumentsPanel({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-sm font-semibold leading-6 text-slate-900">
-                هر تعداد آزمایش و مدارک درمانی مثل MRI و … دارید و فکر می‌کنید کمک‌کننده است اینجا ارسال کنید
+                {finalPhaseOnly
+                  ? "سایر مدارک درمانی که در پرونده غربالگری نبود"
+                  : "هر تعداد آزمایش و مدارک درمانی مثل MRI و … دارید و فکر می‌کنید کمک‌کننده است اینجا ارسال کنید"}
               </h3>
               <span className="rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] text-teal-800">اختیاری</span>
             </div>
             <p className="mt-1 text-[11px] leading-5 text-slate-500">
-              هر نوع مدرک یک کارت است؛ داخل هر کارت چند عکس یا PDF بگذارید.
+              {finalPhaseOnly
+                ? "نوار قلب، آزمایش ادرار، رادیوگرافی، اکو یا هر مدرک دیگری که هنوز نفرستاده‌اید را اینجا اضافه کنید."
+                : "هر نوع مدرک یک کارت است؛ داخل هر کارت چند عکس یا PDF بگذارید."}
             </p>
             <p className="mt-0.5 text-[10px] text-slate-400">
               نوع مدرک: {toFaDigits(documents.length)}/{toFaDigits(INTAKE_DOCUMENT_MAX_GROUPS)} · فایل:{" "}
@@ -320,9 +333,9 @@ export function PreAdmitDocumentsPanel({
       </div>
 
       <div className="space-y-3 p-3">
-        {documents.length > 1 && (
+        {visibleDocuments.length > 1 && (
           <div className="-mx-0.5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {documents.map((group) => (
+            {visibleDocuments.map((group) => (
               <button
                 key={`chip-${group.id}`}
                 type="button"
@@ -340,15 +353,17 @@ export function PreAdmitDocumentsPanel({
           </div>
         )}
 
-        {documents.length === 0 ? (
+        {visibleDocuments.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-5 text-center text-[11px] leading-6 text-slate-500">
-            هنوز چیزی نفرستاده‌اید. با دکمهٔ «افزودن مدرک» شروع کنید.
+            {finalPhaseOnly
+              ? "اگر مدرک دیگری غیر از موارد غربالگری دارید، با «افزودن مدرک» بفرستید."
+              : "هنوز چیزی نفرستاده‌اید. با دکمهٔ «افزودن مدرک» شروع کنید."}
           </p>
         ) : (
           <section className="space-y-2">
             <h4 className="text-[11px] font-semibold text-slate-700">مدارک ثبت‌شده</h4>
             <ul className="space-y-3">
-              {documents.map((group) => {
+              {visibleDocuments.map((group) => {
                 const fileRoom = INTAKE_DOCUMENT_MAX_FILES_PER_GROUP - group.files.length;
                 const highlighted = highlightGroupId === group.id;
                 return (

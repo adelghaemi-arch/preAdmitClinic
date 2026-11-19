@@ -10,7 +10,7 @@
       "warningText": "اگر هر یک از علائم هشدار (خونریزی، توده جدید، کاهش وزن بی‌دلیل، تب یا تعریق شبانه پایدار، درد شدید یا پیشرونده) را دارید، ارزیابی پزشکی را به تعویق نیندازید. این پرسشنامه برای غربالگری و پشتیبانی تصمیم پزشک است و جایگزین معاینه یا تشخیص نیست.",
       "targetAudience": {
         "gender": "مرد",
-        "ageMin": null,
+        "ageMin": 18,
         "ageMax": null,
         "maritalStatuses": []
       },
@@ -2670,7 +2670,13 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 68,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,
@@ -2705,7 +2711,13 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 69,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,
@@ -2738,7 +2750,13 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 70,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,
@@ -2770,7 +2788,13 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 71,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,
@@ -2804,7 +2828,13 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 72,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,
@@ -2903,7 +2933,13 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 75,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,
@@ -2999,7 +3035,7 @@
       "warningText": "اگر هر یک از علائم هشدار (خونریزی، توده جدید، کاهش وزن بی‌دلیل، تب یا تعریق شبانه پایدار، درد شدید یا پیشرونده) را دارید، ارزیابی پزشکی را به تعویق نیندازید. این پرسشنامه برای غربالگری و پشتیبانی تصمیم پزشک است و جایگزین معاینه یا تشخیص نیست.",
       "targetAudience": {
         "gender": "زن",
-        "ageMin": null,
+        "ageMin": 18,
         "ageMax": null,
         "maritalStatuses": []
       },
@@ -3907,7 +3943,16 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 15,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,
@@ -4009,7 +4054,7 @@
           "id": "CA_F_ITEM_18",
           "sectionId": "CA_F_SEC_4",
           "code": "CA_F_Q18",
-          "labelFa": "سن یائسگی ۵۵ سال یا بیشتر بوده است (براي افراد بالاي 50 سال)؟",
+          "labelFa": "سن یائسگی ۵۵ سال یا بیشتر بوده است؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 18,
@@ -4047,7 +4092,7 @@
           "id": "CA_F_ITEM_19",
           "sectionId": "CA_F_SEC_4",
           "code": "CA_F_Q19",
-          "labelFa": "تا کنون بارداری کامل نداشته‌اید(افراد متاهل يا ازدواج كرده) ؟",
+          "labelFa": "تا کنون بارداری کامل نداشته‌اید؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 19,
@@ -4088,7 +4133,7 @@
           "id": "CA_F_ITEM_20",
           "sectionId": "CA_F_SEC_4",
           "code": "CA_F_Q20",
-          "labelFa": "اولین بارداری کامل بعد از ۳۰ سالگی بوده است (افراد متاهل يا ازدواج كرده) ؟",
+          "labelFa": "اولین بارداری کامل بعد از ۳۰ سالگی بوده است؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 20,
@@ -4127,7 +4172,7 @@
           "id": "CA_F_ITEM_21",
           "sectionId": "CA_F_SEC_4",
           "code": "CA_F_Q21",
-          "labelFa": "سابقه ناباروری یا درمان‌های ناباروری داشته‌اید (افراد متاهل يا ازدواج كرده) ؟",
+          "labelFa": "سابقه ناباروری یا درمان‌های ناباروری داشته‌اید؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 21,
@@ -4168,7 +4213,7 @@
           "id": "CA_F_ITEM_22",
           "sectionId": "CA_F_SEC_4",
           "code": "CA_F_Q22",
-          "labelFa": "سابقه شیردهی کمتر از ۶ ماه یا عدم شیردهی (در صورت داشتن زایمان(افراد متاهل يا ازدواج كرده)) ؟",
+          "labelFa": "سابقه شیردهی کمتر از ۶ ماه یا عدم شیردهی (در صورت داشتن زایمان)؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 22,
@@ -4540,7 +4585,7 @@
           "id": "CA_F_ITEM_33",
           "sectionId": "CA_F_SEC_6",
           "code": "CA_F_Q33",
-          "labelFa": "خونریزی بین قاعدگی‌ها یا بعد از رابطه جنسی داشته‌اید(افراد متاهل يا ازدواج كرده) ؟",
+          "labelFa": "خونریزی بین قاعدگی‌ها یا بعد از رابطه جنسی داشته‌اید؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 33,
@@ -4586,7 +4631,13 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 34,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,
@@ -4712,7 +4763,7 @@
           "id": "CA_F_ITEM_38",
           "sectionId": "CA_F_SEC_6",
           "code": "CA_F_Q38",
-          "labelFa": "درد هنگام رابطه جنسی به‌صورت جدید یا پیشرونده دارید(افراد متاهل يا ازدواج كرده) ؟",
+          "labelFa": "درد هنگام رابطه جنسی به‌صورت جدید یا پیشرونده دارید؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 38,
@@ -5365,7 +5416,7 @@
           "id": "CA_F_ITEM_57",
           "sectionId": "CA_F_SEC_9",
           "code": "CA_F_Q57",
-          "labelFa": "آخرین پاپ اسمیر / HPV  تست شما در ۵ سال اخیر انجام شده است(افراد متاهل يا ازدواج كرده) ؟",
+          "labelFa": "آخرین پاپ اسمیر / HPV تست شما در ۵ سال اخیر انجام شده است؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 57,
@@ -5411,7 +5462,7 @@
           "id": "CA_F_ITEM_58",
           "sectionId": "CA_F_SEC_9",
           "code": "CA_F_Q58",
-          "labelFa": "نتیجه غیرطبیعی پاپ اسمیر / HPV  در گذشته داشته‌اید(افراد متاهل يا ازدواج كرده) ؟",
+          "labelFa": "نتیجه غیرطبیعی پاپ اسمیر / HPV در گذشته داشته‌اید؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 58,
@@ -5491,7 +5542,13 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 60,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,
@@ -5560,7 +5617,13 @@
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 62,
-          "visibilityRules": [],
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
           "helpText": "",
           "notesPolicy": "required_if_yes",
           "prefillFromPatient": null,

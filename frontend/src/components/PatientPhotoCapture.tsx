@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, CheckCircle2, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
+import {
+  checkLiveFaceInOval,
+  OVAL,
+  preloadPortraitFaceDetector,
+  validatePortraitDataUrl,
+} from "@/lib/portrait-face";
 
 type Phase = "live" | "preview";
 
@@ -35,6 +41,7 @@ const OUT_H = Math.round((PHOTO_H_CM / 2.54) * PHOTO_DPI); // ~472
 const JPEG_QUALITY = 0.85;
 const FRAUD_JPEG_QUALITY = 0.6;
 const ASPECT = PHOTO_W_CM / PHOTO_H_CM; // 0.75
+const LIVE_FACE_INTERVAL_MS = 320;
 
 function stopStream(stream: MediaStream | null) {
   stream?.getTracks().forEach((t) => t.stop());
@@ -95,10 +102,14 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
   const streamRef = useRef<MediaStream | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const gpsRef = useRef<{ lat: number; lon: number; accuracy: number } | null>(null);
+  const liveCheckBusyRef = useRef(false);
   const [phase, setPhase] = useState<Phase>("live");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState("");
+  const [faceError, setFaceError] = useState("");
+  const [faceInOval, setFaceInOval] = useState(false);
   const [starting, setStarting] = useState(true);
+  const [validating, setValidating] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
   const endFraudSession = useCallback(async () => {
@@ -109,9 +120,15 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
     }
   }, [fraudWatch]);
 
+  useEffect(() => {
+    preloadPortraitFaceDetector();
+  }, []);
+
   const startCamera = useCallback(async () => {
     setStarting(true);
     setCameraError("");
+    setFaceError("");
+    setFaceInOval(false);
     stopStream(streamRef.current);
     streamRef.current = null;
     try {
@@ -192,31 +209,87 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
     };
   }, [fraudWatch, phase, cameraError, starting]);
 
+  // Live face-in-oval guide (throttled).
+  useEffect(() => {
+    if (phase !== "live" || cameraError || starting || validating) {
+      setFaceInOval(false);
+      return;
+    }
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled || liveCheckBusyRef.current) return;
+      const video = videoRef.current;
+      if (!video || video.videoWidth < 2 || !streamRef.current) return;
+      liveCheckBusyRef.current = true;
+      try {
+        const check = await checkLiveFaceInOval(video);
+        if (!cancelled) setFaceInOval(check.inOval);
+      } catch {
+        if (!cancelled) setFaceInOval(false);
+      } finally {
+        liveCheckBusyRef.current = false;
+      }
+    };
+    const id = window.setInterval(() => {
+      void tick();
+    }, LIVE_FACE_INTERVAL_MS);
+    void tick();
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [phase, cameraError, starting, validating]);
+
+  const acceptPortrait = async (dataUrl: string): Promise<boolean> => {
+    setValidating(true);
+    setFaceError("");
+    try {
+      const check = await validatePortraitDataUrl(dataUrl);
+      if (!check.ok) {
+        setFaceError(check.message);
+        setFaceInOval(false);
+        return false;
+      }
+      setPreviewUrl(dataUrl);
+      setPhase("preview");
+      setFaceError("");
+      setFaceInOval(true);
+      return true;
+    } finally {
+      setValidating(false);
+    }
+  };
+
   const captureFrame = () => {
+    if (validating || busy || confirming) return;
     const video = videoRef.current;
     if (!video || video.videoWidth < 2) return;
     const dataUrl = frameToJpeg(video, video.videoWidth, video.videoHeight, true);
     if (!dataUrl) return;
-    setPreviewUrl(dataUrl);
-    setPhase("preview");
-    // Keep the stream alive for fraudWatch so auto-frames continue until confirm.
-    if (!fraudWatch) {
-      stopStream(streamRef.current);
-      streamRef.current = null;
-      if (videoRef.current) videoRef.current.srcObject = null;
-    }
+    void (async () => {
+      const ok = await acceptPortrait(dataUrl);
+      if (!ok) return;
+      // Keep the stream alive for fraudWatch so auto-frames continue until confirm.
+      if (!fraudWatch) {
+        stopStream(streamRef.current);
+        streamRef.current = null;
+        if (videoRef.current) videoRef.current.srcObject = null;
+      }
+    })();
   };
 
   const retake = () => {
     setPreviewUrl(null);
     setPhase("live");
+    setFaceError("");
+    setFaceInOval(false);
     void startCamera();
   };
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file || !file.type.startsWith("image/")) return;
+    if (!file || !file.type.startsWith("image/") || validating || busy || confirming) return;
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result !== "string") return;
@@ -225,15 +298,17 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
         // Gallery photos are not mirrored.
         const dataUrl = frameToJpeg(img, img.naturalWidth, img.naturalHeight, false);
         if (!dataUrl) return;
-        // Keep camera stream for fraud frames when fraudWatch is active.
-        if (!fraudWatch) {
-          stopStream(streamRef.current);
-          streamRef.current = null;
-          if (videoRef.current) videoRef.current.srcObject = null;
-        }
-        setPreviewUrl(dataUrl);
-        setPhase("preview");
-        setCameraError("");
+        void (async () => {
+          const ok = await acceptPortrait(dataUrl);
+          if (!ok) return;
+          // Keep camera stream for fraud frames when fraudWatch is active.
+          if (!fraudWatch) {
+            stopStream(streamRef.current);
+            streamRef.current = null;
+            if (videoRef.current) videoRef.current.srcObject = null;
+          }
+          setCameraError("");
+        })();
       };
       img.src = reader.result;
     };
@@ -241,9 +316,19 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
   };
 
   const confirm = async () => {
-    if (!previewUrl || confirming || busy) return;
+    if (!previewUrl || confirming || busy || validating) return;
     setConfirming(true);
+    setFaceError("");
     try {
+      const check = await validatePortraitDataUrl(previewUrl);
+      if (!check.ok) {
+        setFaceError(check.message);
+        setPreviewUrl(null);
+        setPhase("live");
+        setFaceInOval(false);
+        void startCamera();
+        return;
+      }
       const gps = gpsRef.current ?? (await readGps());
       await onConfirm(previewUrl, {
         fraudSessionId: sessionIdRef.current,
@@ -259,6 +344,8 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
       setConfirming(false);
     }
   };
+
+  const ovalBorderClass = faceInOval && phase === "live" ? "border-emerald-400/90" : "border-white/40";
 
   return (
     <div className="mx-auto w-full max-w-md space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
@@ -298,9 +385,10 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
         {phase === "preview" && previewUrl && (
           <img src={previewUrl} alt="پیش‌نمایش عکس پرونده سلامت الکترونیک" className="relative z-[1] h-full w-full object-cover" />
         )}
-        {starting && phase === "live" && !cameraError && (
-          <div className="absolute inset-0 z-[2] flex items-center justify-center bg-slate-900/50 text-white">
+        {(starting || validating) && phase === "live" && !cameraError && (
+          <div className="absolute inset-0 z-[3] flex flex-col items-center justify-center gap-2 bg-slate-900/50 text-white">
             <Loader2 className="h-6 w-6 animate-spin" />
+            {validating && <p className="px-3 text-center text-[10px] leading-4">در حال بررسی چهره…</p>}
           </div>
         )}
         {cameraError && phase === "live" && (
@@ -311,28 +399,41 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
         )}
         <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center">
           {/* Slightly above center so hair + neck fit; taller oval, not a circle. */}
-          <div className="h-[68%] w-[74%] -translate-y-[6%] rounded-[50%] border border-white/40 shadow-[inset_0_0_0_9999px_rgba(15,40,30,0.12)]" />
+          <div
+            className={`rounded-[50%] border shadow-[inset_0_0_0_9999px_rgba(15,40,30,0.12)] transition-colors duration-200 ${ovalBorderClass}`}
+            style={{
+              width: `${OVAL.widthRatio * 100}%`,
+              height: `${OVAL.heightRatio * 100}%`,
+              transform: `translateY(${OVAL.translateYRatio * 100}%)`,
+            }}
+          />
         </div>
       </div>
+
+      {faceError && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-[11px] leading-5 text-amber-900" role="alert">
+          {faceError}
+        </p>
+      )}
 
       {phase === "live" ? (
         <div className="flex flex-col gap-2">
           {!cameraError && (
             <button
               type="button"
-              disabled={starting || busy}
+              disabled={starting || busy || validating}
               onClick={captureFrame}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-3 py-2.5 text-xs font-medium text-white disabled:opacity-50"
             >
-              <Camera className="h-4 w-4" />
-              گرفتن عکس
+              {validating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              {validating ? "بررسی چهره…" : "گرفتن عکس"}
             </button>
           )}
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || validating}
             onClick={() => fileRef.current?.click()}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 disabled:opacity-50"
           >
             انتخاب از دوربین / گالری
           </button>
@@ -349,7 +450,7 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            disabled={confirming || busy}
+            disabled={confirming || busy || validating}
             onClick={retake}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 disabled:opacity-50"
           >
@@ -358,7 +459,7 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
           </button>
           <button
             type="button"
-            disabled={confirming || busy || !previewUrl}
+            disabled={confirming || busy || validating || !previewUrl}
             onClick={() => void confirm()}
             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-3 py-2.5 text-xs font-medium text-white disabled:opacity-50"
           >

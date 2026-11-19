@@ -15,6 +15,7 @@ import type {
   FormDefinition,
   FormItemDefinition,
   FormSectionDefinition,
+  FormVisibilityRule,
 } from "@/types/clinic";
 import { itemCodingIssues, validateFormDefinitionCoding } from "@/lib/form-engine";
 import { toFaDigits } from "@/lib/persian";
@@ -39,6 +40,37 @@ const CONCEPT_KINDS: FormConceptKind[] = [
   "screening",
   "behavior",
 ];
+
+const MARRIED_STATUSES = ["متأهل", "ازدواج‌کرده"] as const;
+const SINGLE_STATUSES = ["مجرد"] as const;
+
+type MaritalAudience = "all" | "married" | "single";
+
+function maritalAudienceOf(rules: FormVisibilityRule[]): MaritalAudience {
+  const rule = rules.find((r) => r.field === "maritalStatus");
+  if (!rule || !Array.isArray(rule.value)) return "all";
+  const values = rule.value.map(String);
+  if (values.includes("مجرد") && values.length === 1) return "single";
+  if (values.some((v) => MARRIED_STATUSES.includes(v as (typeof MARRIED_STATUSES)[number]))) return "married";
+  return "all";
+}
+
+function maritalAudienceLabel(audience: MaritalAudience): string | null {
+  if (audience === "married") return "متأهل";
+  if (audience === "single") return "مجرد";
+  return null;
+}
+
+function withMaritalAudience(rules: FormVisibilityRule[], audience: MaritalAudience): FormVisibilityRule[] {
+  const without = rules.filter((r) => r.field !== "maritalStatus");
+  if (audience === "married") {
+    return [...without, { field: "maritalStatus", op: "in", value: [...MARRIED_STATUSES] }];
+  }
+  if (audience === "single") {
+    return [...without, { field: "maritalStatus", op: "in", value: [...SINGLE_STATUSES] }];
+  }
+  return without;
+}
 
 function emptyItem(sectionId: string, sortOrder: number): FormItemDefinition {
   return {
@@ -273,6 +305,46 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
           </select>
         </label>
         <label className="text-[11px] text-slate-600">
+          حداقل سن (خالی = بدون محدودیت)
+          <AppInput
+            type="number"
+            min={0}
+            value={draft.targetAudience.ageMin ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              setDraft({
+                ...draft,
+                targetAudience: {
+                  ...draft.targetAudience,
+                  ageMin: raw === "" ? null : Number(raw),
+                },
+              });
+            }}
+            className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs"
+            dir="ltr"
+          />
+        </label>
+        <label className="text-[11px] text-slate-600">
+          حداکثر سن (خالی = بدون محدودیت)
+          <AppInput
+            type="number"
+            min={0}
+            value={draft.targetAudience.ageMax ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              setDraft({
+                ...draft,
+                targetAudience: {
+                  ...draft.targetAudience,
+                  ageMax: raw === "" ? null : Number(raw),
+                },
+              });
+            }}
+            className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs"
+            dir="ltr"
+          />
+        </label>
+        <label className="text-[11px] text-slate-600">
           وضعیت
           <select
             value={draft.status}
@@ -369,21 +441,36 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
           </div>
 
           <div className="space-y-3">
-            {sectionItems.map((item) => (
+            {sectionItems.map((item) => {
+              const maritalAudience = maritalAudienceOf(item.visibilityRules);
+              const maritalBadge = maritalAudienceLabel(maritalAudience);
+              return (
               <div key={item.id} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <AppInput
-                    value={item.labelFa}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        items: draft.items.map((i) =>
-                          i.id === item.id ? { ...i, labelFa: e.target.value } : i
-                        ),
-                      })
-                    }
-                    className="min-w-[220px] flex-1 rounded-lg border border-slate-200 bg-white p-2 text-xs"
-                  />
+                  <div className="flex min-w-[220px] flex-1 flex-wrap items-center gap-2">
+                    <AppInput
+                      value={item.labelFa}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          items: draft.items.map((i) =>
+                            i.id === item.id ? { ...i, labelFa: e.target.value } : i
+                          ),
+                        })
+                      }
+                      className="min-w-[180px] flex-1 rounded-lg border border-slate-200 bg-white p-2 text-xs"
+                    />
+                    {maritalBadge && (
+                      <span className="shrink-0 rounded-md border border-teal-200 bg-teal-50 px-1.5 py-0.5 text-[10px] font-medium text-teal-800">
+                        {maritalBadge}
+                      </span>
+                    )}
+                    {item.visibilityRules.some((r) => r.field === "age") && (
+                      <span className="shrink-0 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-600">
+                        ≥۵۰
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-1">
                     <button type="button" className="rounded-lg border bg-white p-1.5" onClick={() => void moveItem(item.id, -1)}>
                       <ArrowUp className="h-3.5 w-3.5" />
@@ -646,11 +733,9 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                     />
                   </label>
                   <label className="text-[10px] text-slate-500 md:col-span-2">
-                    شرط نمایش: فقط متأهل/ازدواج‌کرده
-                    <input
-                      type="checkbox"
-                      className="mr-2"
-                      checked={item.visibilityRules.some((r) => r.field === "maritalStatus")}
+                    شرط نمایش: مخاطب تأهل
+                    <select
+                      value={maritalAudience}
                       onChange={(e) =>
                         setDraft({
                           ...draft,
@@ -658,15 +743,21 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                             i.id === item.id
                               ? {
                                   ...i,
-                                  visibilityRules: e.target.checked
-                                    ? [{ field: "maritalStatus", op: "in", value: ["متأهل", "ازدواج‌کرده"] }]
-                                    : i.visibilityRules.filter((r) => r.field !== "maritalStatus"),
+                                  visibilityRules: withMaritalAudience(
+                                    i.visibilityRules,
+                                    e.target.value as MaritalAudience
+                                  ),
                                 }
                               : i
                           ),
                         })
                       }
-                    />
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-1.5 text-[11px]"
+                    >
+                      <option value="all">همه</option>
+                      <option value="married">فقط متأهل / ازدواج‌کرده</option>
+                      <option value="single">فقط مجرد</option>
+                    </select>
                   </label>
                   <label className="text-[10px] text-slate-500 md:col-span-2">
                     شرط نمایش: سن ≥ ۵۰
@@ -696,7 +787,8 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                   </label>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
 
           <button

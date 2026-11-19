@@ -12,6 +12,7 @@
   "dependencies": {
     "@jalali-js/holidays": "^0.4.3",
     "@jalali-js/react": "^0.4.3",
+    "@mediapipe/tasks-vision": "^1.2.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.511.0",
     "pdfjs-dist": "^6.5.438",
