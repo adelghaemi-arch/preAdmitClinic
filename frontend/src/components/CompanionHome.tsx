@@ -23,7 +23,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import type { ClinicSnapshot, RoomDto } from "@/types/clinic";
-import { currentStation, stationLabel, type AppPage } from "@/lib/workspace";
+import { COMPANION_FEATURE_ENABLED, currentStation, roomStaffDisplay, stationLabel, type AppPage } from "@/lib/workspace";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
 import {
   calculateRoute,
@@ -189,8 +189,17 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
       <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-10 text-center">
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-50 text-teal-700"><Link2 className="h-6 w-6" /></span>
         <h2 className="mt-4 text-base font-bold text-slate-700">هنوز پرونده‌ای به حساب شما متصل نیست</h2>
-        <p className="mt-2 text-xs leading-7 text-slate-400">اگر خودتان سلامتجو هستید یا همراه سلامتجو هستید، با کد QR پذیرش و کد ملی سلامتجو پرونده را متصل کنید تا نقشه راه سلامتی و مسیر درمان برایتان فعال شود.</p>
-        <button onClick={() => onNavigate("companion-links")} className="primary-button mt-6">اتصال پرونده سلامتجو<ArrowLeft className="h-3.5 w-3.5" /></button>
+        {COMPANION_FEATURE_ENABLED ? (
+          <>
+            <p className="mt-2 text-xs leading-7 text-slate-400">اگر خودتان سلامتجو هستید یا همراه سلامتجو هستید، با کد QR پذیرش و کد ملی سلامتجو پرونده را متصل کنید تا نقشه راه سلامتی و مسیر درمان برایتان فعال شود.</p>
+            <button onClick={() => onNavigate("companion-links")} className="primary-button mt-6">اتصال پرونده سلامتجو<ArrowLeft className="h-3.5 w-3.5" /></button>
+          </>
+        ) : (
+          <>
+            <p className="mt-2 text-xs leading-7 text-slate-400">بخش اتصال همراه موقتاً غیرفعال است. با حساب سلامتجو (مالک پرونده) وارد شوید تا پرسشنامه، نقشه و گزارش در دسترس باشد.</p>
+            <button type="button" onClick={() => onNavigate("dashboard")} className="primary-button mt-6">بازگشت به داشبورد<ArrowLeft className="h-3.5 w-3.5" /></button>
+          </>
+        )}
       </div>
     );
   }
@@ -484,7 +493,7 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
               <h4 className="mt-2 text-lg font-extrabold text-slate-800">{current.roomName}</h4>
               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500">
                 <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5 text-teal-600" />طبقه {toFaDigits(room.floor)}، اتاق {room.roomNumber}</span>
-                <span>{room.specialistName}</span>
+                <span>{roomStaffDisplay(room, snapshot.staff).name}</span>
               </div>
               {(current.status === "waiting" || current.status === "checked_in") && (
                 <div className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-[11px] font-semibold text-blue-800">
@@ -592,7 +601,7 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
                         </div>
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-400">
                           {stRoom && <span>طبقه {toFaDigits(stRoom.floor)} · اتاق {stRoom.roomNumber}</span>}
-                          {stRoom && <span>{stRoom.specialistName}</span>}
+                          {stRoom && <span>{roomStaffDisplay(stRoom, snapshot.staff).name}</span>}
                           {st.completedAt && <span className="text-emerald-500">✓ {formatFaTime(st.completedAt)}</span>}
                         </div>
                         {isCurrent && st.status === "waiting" && canManage && preAdmissionDone && (

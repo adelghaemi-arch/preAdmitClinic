@@ -1,4 +1,4 @@
-import type { PatientFullDto, VisitStationDto, WorkspaceRole } from "@/types/clinic";
+import type { PatientFullDto, RoomDto, StaffMemberDto, VisitStationDto, WorkspaceRole } from "@/types/clinic";
 import { normalizePersianLetters, toLatinDigits } from "@/lib/persian";
 
 export type AppPage =
@@ -88,6 +88,16 @@ export const PLATFORM_PAGES: AppPage[] = [
   "platform-audit",
 ];
 
+/**
+ * Temporary kill-switch for companion (همراه) linking / role.
+ * Patient self-journey pages (companion-intake/map/records) stay available.
+ * Flip to true in a later phase to restore companion UX without further refactor.
+ */
+export const COMPANION_FEATURE_ENABLED = false;
+
+/** Pages that only exist for companion linking / privacy management. */
+export const COMPANION_FEATURE_PAGES: AppPage[] = ["companion-links", "patient-privacy"];
+
 /** Role switcher entries. The first role is the default for every session. */
 export const ROLES: { id: WorkspaceRole; label: string; description: string; page: AppPage }[] = [
   { id: "owner", label: "سلامتجو", description: "داشبورد شخصی، پرسشنامه پیش‌پذیرش، مسیر درمان و گزارش من", page: "dashboard" },
@@ -99,6 +109,33 @@ export const ROLES: { id: WorkspaceRole; label: string; description: string; pag
   { id: "platform", label: "ادمین پلتفرم", description: "نظارت سیستمی، کاربران، ضدتقلب، سلامت فنی و تنظیمات پایه", page: "platform-dashboard" },
   { id: "supervisor", label: "ناظر سازمان (طرف قرارداد)", description: "پنل نظارت شرکت بر پیش‌ثبت‌نام، نوبت‌ها و حضور کارکنان", page: "dashboard" },
 ];
+
+/** Roles shown in the switcher; companion role hidden while feature flag is off. */
+export function selectableRoles(): typeof ROLES {
+  if (COMPANION_FEATURE_ENABLED) return ROLES;
+  return ROLES.filter((r) => r.id !== "patient");
+}
+
+export function filterPagesForCompanionFeature(pages: AppPage[]): AppPage[] {
+  if (COMPANION_FEATURE_ENABLED) return pages;
+  return pages.filter((p) => !COMPANION_FEATURE_PAGES.includes(p));
+}
+
+/** Role nav with companion-only pages stripped when the feature is disabled. */
+export function roleNavFor(role: WorkspaceRole): RoleNav {
+  const base = ROLE_NAV[role];
+  if (COMPANION_FEATURE_ENABLED) return base;
+  return {
+    ...base,
+    groups: base.groups
+      .map((group) => ({
+        ...group,
+        pages: filterPagesForCompanionFeature(group.pages),
+      }))
+      .filter((group) => group.pages.length > 0),
+    mobile: filterPagesForCompanionFeature(base.mobile),
+  };
+}
 
 export interface RoleNav {
   home: AppPage;
@@ -265,9 +302,11 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
 /** Clinic admin can open every clinic module; platform pages stay platform-only. */
 export function allowedPagesFor(role: WorkspaceRole): AppPage[] {
   if (role === "admin") {
-    return (Object.keys(PAGE_TITLES) as AppPage[]).filter((p) => !PLATFORM_PAGES.includes(p));
+    return filterPagesForCompanionFeature(
+      (Object.keys(PAGE_TITLES) as AppPage[]).filter((p) => !PLATFORM_PAGES.includes(p))
+    );
   }
-  return ROLE_NAV[role].groups.flatMap((group) => group.pages);
+  return roleNavFor(role).groups.flatMap((group) => group.pages);
 }
 
 export function labelFor(role: WorkspaceRole, page: AppPage): string {
@@ -305,6 +344,26 @@ export function permissionLabel(code?: string | null): string {
 export function currentStation(patient: PatientFullDto): VisitStationDto | undefined {
   return patient.stations.find((s) => ["waiting", "checked_in", "in_progress"].includes(s.status))
     ?? patient.stations.find((s) => s.status === "pending");
+}
+
+/** Display name/specialty for a room: active staff with matching roomCode wins over legacy room.specialistName. */
+export function roomStaffDisplay(
+  room: RoomDto,
+  staff: StaffMemberDto[]
+): { name: string; specialty: string; staffId: number | null } {
+  const assigned = staff.find((s) => s.isActive && s.roomCode === room.code);
+  if (assigned) {
+    return {
+      name: assigned.fullName,
+      specialty: assigned.specialtyOrDept || room.specialtyTitle,
+      staffId: assigned.id,
+    };
+  }
+  return {
+    name: room.specialistName,
+    specialty: room.specialtyTitle,
+    staffId: null,
+  };
 }
 
 export function stationLabel(code: string): string {

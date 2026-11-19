@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import type { ClinicSnapshot, PathwayDto, RoomDto } from "@/types/clinic";
 import { toFaDigits, toLatinDigits } from "@/lib/persian";
-import { totalVisitMinutes } from "@/lib/workspace";
+import { roomStaffDisplay, totalVisitMinutes } from "@/lib/workspace";
 import { AdminFormsBuilder } from "./AdminFormsBuilder";
 
 type AdminSection = "kpi" | "pathways" | "rooms" | "staff" | "forms";
@@ -68,12 +68,6 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
   );
   const [roomNum, setRoomNum] = useState<string>(
     selectedRoomObj?.roomNumber ?? "۲۰۴"
-  );
-  const [roomSpecName, setRoomSpecName] = useState<string>(
-    selectedRoomObj?.specialistName ?? ""
-  );
-  const [roomSpecTitle, setRoomSpecTitle] = useState<string>(
-    selectedRoomObj?.specialtyTitle ?? ""
   );
   const [roomPrep, setRoomPrep] = useState<string>(
     selectedRoomObj?.prepInstructions ?? ""
@@ -167,8 +161,6 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
     setSelectedRoomId(rm.id);
     setRoomFloor(rm.floor);
     setRoomNum(rm.roomNumber);
-    setRoomSpecName(rm.specialistName);
-    setRoomSpecTitle(rm.specialtyTitle);
     setRoomPrep(rm.prepInstructions);
     setRoomSteps(rm.wayfindingSteps);
     setRoomAvgMins(String(rm.avgServiceMinutes));
@@ -218,13 +210,15 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
   const handleSaveRoomConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRoomObj) return;
+    const display = roomStaffDisplay(selectedRoomObj, snapshot.staff);
     await onAction({
       action: "UPDATE_ROOM_CONFIG",
       id: selectedRoomObj.id,
       floor: roomFloor,
       roomNumber: roomNum,
-      specialistName: roomSpecName,
-      specialtyTitle: roomSpecTitle,
+      // Staff roster is source of truth for station lead; keep room fields synced.
+      specialistName: display.name,
+      specialtyTitle: display.specialty,
       prepInstructions: roomPrep,
       wayfindingSteps: roomSteps,
       avgServiceMinutes: Number(roomAvgMins) || 15,
@@ -601,7 +595,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   <div>
                     <div className="font-extrabold">{rm.name}</div>
                     <div className="mt-0.5 text-[11px] text-slate-500">
-                      {rm.specialistName}
+                      {roomStaffDisplay(rm, snapshot.staff).name}
                     </div>
                   </div>
                   <span className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 border border-slate-200">
@@ -668,23 +662,20 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   <label className="mb-1 block text-xs font-bold text-slate-700">
                     نام پزشک متخصص / اپراتور مستقر
                   </label>
-                  <AppInput
-                    type="text"
-                    value={roomSpecName}
-                    onChange={(e) => setRoomSpecName(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs"
-                  />
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800">
+                    {roomStaffDisplay(selectedRoomObj, snapshot.staff).name}
+                  </div>
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    از فهرست «کادر درمان» و اتاق تخصیص‌یافته می‌آید؛ اینجا قابل ویرایش نیست.
+                  </p>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-bold text-slate-700">
                     عنوان تخصصی
                   </label>
-                  <AppInput
-                    type="text"
-                    value={roomSpecTitle}
-                    onChange={(e) => setRoomSpecTitle(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs"
-                  />
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800">
+                    {roomStaffDisplay(selectedRoomObj, snapshot.staff).specialty}
+                  </div>
                 </div>
               </div>
 

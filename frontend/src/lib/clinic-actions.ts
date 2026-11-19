@@ -27,7 +27,13 @@ import type { SnapshotViewer } from "@/lib/clinic-scope";
 import { mockMutations, mockStore, resetMockStore } from "@/lib/mock-store";
 import { getClinicSnapshot } from "@/lib/clinic-server";
 import { normalizePersianInput, normalizePersianLetters, toFaDigits } from "@/lib/persian";
-import { COMPANION_RELATION_CODES, ROLES, normalizeNationalId, normalizeText } from "@/lib/workspace";
+import {
+  COMPANION_FEATURE_ENABLED,
+  COMPANION_RELATION_CODES,
+  ROLES,
+  normalizeNationalId,
+  normalizeText,
+} from "@/lib/workspace";
 import {
   defaultCompanionVisibility,
   emptyIntakeAnswers,
@@ -240,6 +246,18 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
 
     if (effectiveRole === "supervisor") {
       return NextResponse.json({ ok: false, error: "ناظر سازمان فقط دسترسی پایش قرارداد مربوطه را دارد." }, { status: 403 });
+    }
+
+    if (
+      !COMPANION_FEATURE_ENABLED &&
+      (action === "LINK_COMPANION" ||
+        action === "UNLINK_COMPANION" ||
+        action === "UPDATE_COMPANION_VISIBILITY")
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "بخش همراه موقتاً غیرفعال است و در فاز بعدی فعال می‌شود." },
+        { status: 403 }
+      );
     }
 
     if (!effectiveViewer && (action === "LINK_COMPANION" || action === "UNLINK_COMPANION")) {
@@ -1071,9 +1089,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         createdAt: now.toISOString(),
       });
 
-      if (stationId) {
-        mockMutations.updateStation(Number(stationId), { status: "in_progress", startedAt: now.toISOString() });
-      }
+      // Visit start is CALL_PATIENT_IN; note save no longer flips station to in_progress.
 
       if (addUrgentRoomCode) {
         const targetRoom = mockStore.roomByCode(addUrgentRoomCode);
@@ -1122,6 +1138,117 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
     }
 
+    if (action === "CALL_PATIENT_IN") {
+      if (effectiveRole === "patient" || effectiveRole === "owner") {
+        return NextResponse.json({ ok: false, error: "دسترسی مجاز نیست." }, { status: 403 });
+      }
+      const station = mockStore.stationById(Number(body.stationId));
+      if (!station) {
+        return NextResponse.json({ ok: false, error: "ایستگاه یافت نشد." }, { status: 404 });
+      }
+      if (!["waiting", "checked_in"].includes(station.status)) {
+        return NextResponse.json({ ok: false, error: "فقط سلامتجوی در صف یا اعلام‌حضور را می‌توان به داخل اتاق فراخواند." }, { status: 409 });
+      }
+      mockMutations.updateStation(station.id, { status: "in_progress", startedAt: now.toISOString() });
+      const doctorLabel = normalizePersianLetters(String(body.doctorName ?? "پزشک معالج"));
+      mockMutations.insertAlert({
+        patientId: station.patientId,
+        senderRole: doctorLabel,
+        alertType: "call_in",
+        message: `${doctorLabel} شما را به داخل اتاق فراخواند. لطفاً وارد ${station.roomName} شوید.`,
+        isRead: false,
+        createdAt: now.toISOString(),
+      });
+      return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
+    }
+
+    if (action === "ASSIGN_TO_DOCTOR_ROOM") {
+      if (effectiveRole === "patient" || effectiveRole === "owner") {
+        return NextResponse.json({ ok: false, error: "دسترسی مجاز نیست." }, { status: 403 });
+      }
+      const patientId = Number(body.patientId);
+      const roomCode = String(body.roomCode ?? "");
+      const patient = mockStore.patients.find((p) => p.id === patientId);
+      const targetRoom = mockStore.roomByCode(roomCode);
+      if (!patient || !targetRoom) {
+        return NextResponse.json({ ok: false, error: "سلامتجو یا اتاق مقصد یافت نشد." }, { status: 404 });
+      }
+      if (targetRoom.category !== "specialist") {
+        return NextResponse.json({ ok: false, error: "ارجاع مستقیم فقط به مطب پزشک (اتاق تخصصی) مجاز است." }, { status: 400 });
+      }
+
+      const stations = mockStore.stationsOf(patientId);
+      const activeOther = stations.find(
+        (st) =>
+          st.roomCode !== roomCode &&
+          (st.status === "waiting" || st.status === "checked_in" || st.status === "in_progress")
+      );
+      if (activeOther) {
+        return NextResponse.json({
+          ok: false,
+          error: `سلامتجو هم‌اکنون در «${activeOther.roomName}» فعال است. ابتدا همان ایستگاه را تمام کنید یا از مدیریت صف مسیر استفاده کنید.`,
+        }, { status: 409 });
+      }
+
+      const existingSame = stations.find((st) => st.roomCode === roomCode && st.status !== "completed");
+      if (existingSame && (existingSame.status === "waiting" || existingSame.status === "checked_in" || existingSame.status === "in_progress")) {
+        return NextResponse.json({ ok: false, error: "این سلامتجو هم‌اکنون در صف یا داخل همین مطب است." }, { status: 409 });
+      }
+
+      const roomQueue = mockStore.stations.filter(
+        (s) => s.roomCode === roomCode && (s.status === "waiting" || s.status === "checked_in")
+      );
+      const nextRank =
+        roomQueue.reduce((max, s) => Math.max(max, s.queueRank || 0), 0) + 1;
+
+      if (existingSame && existingSame.status === "pending") {
+        mockMutations.updateStation(existingSame.id, {
+          status: "waiting",
+          enteredQueueAt: now.toISOString(),
+          queueRank: nextRank,
+        });
+      } else if (!existingSame) {
+        const insertOrder =
+          stations.reduce((max, s) => Math.max(max, s.stepOrder), 0) + 1;
+        mockMutations.insertStation({
+          patientId,
+          roomCode: targetRoom.code,
+          roomName: targetRoom.name,
+          category: targetRoom.category,
+          stepOrder: insertOrder,
+          status: "waiting",
+          enteredQueueAt: now.toISOString(),
+          checkedInAt: null,
+          startedAt: null,
+          completedAt: null,
+          spentMinutes: 0,
+          addedByDoctor: "ارجاع پذیرش به مطب پزشک",
+          queueRank: nextRank,
+        });
+      } else {
+        return NextResponse.json({ ok: false, error: "وضعیت ایستگاه برای ارجاع قابل تغییر نیست." }, { status: 409 });
+      }
+
+      mockMutations.updatePatient(patientId, {
+        autoOpenWayfinding: Boolean(patient.intakeCompleted),
+        completedAt: null,
+      });
+
+      const sender = normalizePersianLetters(String(body.senderName ?? "پذیرش کلینیک"));
+      const locationDesc = `طبقه ${toFaDigits(targetRoom.floor)}، اتاق ${targetRoom.roomNumber} (${targetRoom.name})`;
+      const liveQueueText = await queueText(patientId, roomCode);
+      mockMutations.insertAlert({
+        patientId,
+        senderRole: sender,
+        alertType: "move_to_room",
+        message: `پذیرش شما را به ${locationDesc} ارجاع داد. لطفاً طبق نقشه به مطب مراجعه فرمایید.${liveQueueText}`,
+        isRead: false,
+        createdAt: now.toISOString(),
+      });
+
+      return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
+    }
+
     if (action === "UPSERT_PATHWAY") {
       const { id, code, title, description, stationCodes, estimatedTotalMinutes } = body;
       if (id) {
@@ -1163,12 +1290,18 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       const fullName = normalizePersianLetters(String(body.fullName ?? "").trim());
       const specialtyOrDept = normalizePersianLetters(String(body.specialtyOrDept ?? "").trim());
       const medicalCouncilCode = normalizePersianInput(String(body.medicalCouncilCode ?? "").trim());
+      const appUserId =
+        body.appUserId === null || body.appUserId === undefined || body.appUserId === ""
+          ? null
+          : Number(body.appUserId);
+      const resolvedRoom = roomCode || null;
       if (id) {
         const member = mockStore.staff.find((s) => s.id === Number(id));
         if (member) {
           Object.assign(member, {
-            fullName, role, specialtyOrDept, roomCode: roomCode || null,
+            fullName, role, specialtyOrDept, roomCode: resolvedRoom,
             medicalCouncilCode, permissions: permissions ?? [], isActive: isActive ?? true,
+            appUserId: Number.isFinite(appUserId as number) ? appUserId : member.appUserId ?? null,
           });
         }
       } else {
@@ -1177,11 +1310,22 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
           fullName,
           role,
           specialtyOrDept,
-          roomCode: roomCode || null,
+          roomCode: resolvedRoom,
           medicalCouncilCode: medicalCouncilCode || "12345",
           permissions: permissions ?? [],
           isActive: true,
+          appUserId: Number.isFinite(appUserId as number) ? appUserId : null,
         });
+      }
+      // Keep legacy room headline in sync so older UI paths stay consistent.
+      if (resolvedRoom) {
+        const room = mockStore.roomByCode(resolvedRoom);
+        if (room) {
+          Object.assign(room, {
+            specialistName: fullName,
+            specialtyTitle: specialtyOrDept || room.specialtyTitle,
+          });
+        }
       }
       return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
     }

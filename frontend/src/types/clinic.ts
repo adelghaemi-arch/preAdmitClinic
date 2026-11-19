@@ -532,6 +532,8 @@ export interface StaffMemberDto {
   medicalCouncilCode: string;
   permissions: string[];
   isActive: boolean;
+  /** Linked login account in appUsers; null when roster-only. */
+  appUserId: number | null;
 }
 
 export interface VisitStationDto {
@@ -866,6 +868,7 @@ export interface MockStaffRow {
   medicalCouncilCode: string;
   permissions: string[];
   isActive: boolean;
+  appUserId?: number | null;
 }
 
 export interface MockPatientRow {

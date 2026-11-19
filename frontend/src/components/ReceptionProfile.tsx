@@ -25,7 +25,7 @@ import { formatFaTime, toFaDigits, toLatinDigits } from "@/lib/persian";
 import { QrCodeVisual } from "./QrCodeVisual";
 import { RoomQueueBoard, sortRoomQueue, type RoomQueueEntry } from "./RoomQueueBoard";
 import { PatientDirectoryDialog, type DirectoryResult } from "./PatientDirectoryDialog";
-import { normalizeNationalId, normalizeText } from "@/lib/workspace";
+import { normalizeNationalId, normalizeText, roomStaffDisplay } from "@/lib/workspace";
 import { dispatchClinicAction } from "@/lib/client-db";
 
 type ReceptionSection = "flow" | "checkin" | "queue" | "alerts";
@@ -99,6 +99,14 @@ export function ReceptionProfile({
       selectedPatientId
   );
   const [queueSavedBanner, setQueueSavedBanner] = useState("");
+  const specialistRooms = useMemo(
+    () => snapshot.rooms.filter((r) => r.category === "specialist"),
+    [snapshot.rooms]
+  );
+  const [assignRoomCode, setAssignRoomCode] = useState<string>(
+    specialistRooms[0]?.code ?? "CARDIO"
+  );
+  const [assignBusyError, setAssignBusyError] = useState("");
 
   // Patient Alerts state
   const [alertPatientId, setAlertPatientId] = useState<number>(selectedPatientId);
@@ -316,6 +324,29 @@ export function ReceptionProfile({
     setTimeout(() => setQueueSavedBanner(""), 5000);
   };
 
+  const handleAssignToDoctorRoom = async () => {
+    if (!queueTargetPatient || !assignRoomCode) return;
+    setAssignBusyError("");
+    try {
+      await onAction({
+        action: "ASSIGN_TO_DOCTOR_ROOM",
+        patientId: queueTargetPatient.id,
+        roomCode: assignRoomCode,
+        senderName: "پذیرش کلینیک",
+        role: "reception",
+      });
+      const room = snapshot.rooms.find((r) => r.code === assignRoomCode);
+      setQueueSavedBanner(
+        `ارجاع به مطب انجام شد: «${queueTargetPatient.fullName}» به صف ${room?.name ?? assignRoomCode} اضافه شد.`
+      );
+      setTimeout(() => setQueueSavedBanner(""), 5000);
+    } catch (err) {
+      setAssignBusyError(
+        err instanceof Error ? err.message : "ارجاع به مطب انجام نشد."
+      );
+    }
+  };
+
   const handleSendAlert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!alertMessage.trim()) return;
@@ -435,7 +466,7 @@ export function ReceptionProfile({
                           </div>
                           <div className="mt-0.5 text-xs text-slate-500">
                             طبقه {toFaDigits(rm.floor)}، اتاق {rm.roomNumber} •{" "}
-                            {rm.specialistName}
+                            {roomStaffDisplay(rm, snapshot.staff).name}
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -484,7 +515,7 @@ export function ReceptionProfile({
                                 {activeSt && (activeSt.status === "waiting" || activeSt.status === "checked_in") && (
                                   <div className="mt-2 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[10px] font-semibold text-blue-800">
                                     {toFaDigits(activeSt.queueAhead)} نفر جلوتر · حدود {toFaDigits(activeSt.estimatedWaitMinutes)} دقیقه تا فراخوان
-                                    <span className="font-normal text-blue-600"> (میانگین خدمت {rm.specialistName}: {toFaDigits(rm.avgServiceMinutes)} دقیقه)</span>
+                                    <span className="font-normal text-blue-600"> (میانگین خدمت {roomStaffDisplay(rm, snapshot.staff).name}: {toFaDigits(rm.avgServiceMinutes)} دقیقه)</span>
                                   </div>
                                 )}
                                 <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
@@ -849,6 +880,48 @@ export function ReceptionProfile({
                 </button>
               </div>
 
+              {/* Direct referral to doctor room */}
+              <div className="mt-4 space-y-2 rounded-xl border border-violet-200 bg-violet-50/60 p-3.5">
+                <div className="text-xs font-extrabold text-violet-950">
+                  ارجاع مستقیم به مطب پزشک
+                </div>
+                <p className="text-[11px] leading-5 text-violet-900/80">
+                  سلامتجو را در صف یک مطب تخصصی قرار دهید. اگر ایستگاه دیگری فعال باشد، ابتدا آن را تمام کنید یا از جابه‌جایی مسیر استفاده کنید.
+                  {!queueTargetPatient.intakeCompleted && (
+                    <span className="mt-1 block font-bold text-amber-800">
+                      پرسشنامه پیش‌پذیرش هنوز تکمیل نشده؛ بیمار در صف قرار می‌گیرد ولی چک‌این پشت درب تا تکمیل فرم ممکن نیست.
+                    </span>
+                  )}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    aria-label="مطب مقصد"
+                    value={assignRoomCode}
+                    onChange={(e) => setAssignRoomCode(e.target.value)}
+                    className="rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    {specialistRooms.map((rm) => (
+                      <option key={rm.code} value={rm.code}>
+                        {rm.name} · {roomStaffDisplay(rm, snapshot.staff).name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={busy || !queueTargetPatient}
+                    onClick={handleAssignToDoctorRoom}
+                    className="rounded-xl bg-violet-700 px-4 py-2 text-xs font-extrabold text-white hover:bg-violet-800 disabled:opacity-50"
+                  >
+                    ارجاع به صف مطب
+                  </button>
+                </div>
+                {assignBusyError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-bold text-red-800">
+                    {assignBusyError}
+                  </div>
+                )}
+              </div>
+
               {/* Station Reorder List */}
               <div className="mt-4 space-y-2.5">
                 {queueTargetPatient.stations.map((st, idx) => {
@@ -1005,7 +1078,7 @@ export function ReceptionProfile({
                 return station ? (
                   <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-[11px] leading-6 text-blue-900">
                     <strong>وضعیت زنده صف برای این سلامتجو:</strong> {station.roomName} · {toFaDigits(station.queueAhead)} نفر جلوتر · حدود {toFaDigits(station.estimatedWaitMinutes)} دقیقه تا فراخوان.
-                    {roomInfo && <span className="block text-blue-700">بر اساس ترتیب فعلی صف و میانگین زمان خدمت {roomInfo.specialistName} ({toFaDigits(roomInfo.avgServiceMinutes)} دقیقه). این برآورد هنگام ارسال پیام حرکت، به متن اعلان اضافه می‌شود.</span>}
+                    {roomInfo && <span className="block text-blue-700">بر اساس ترتیب فعلی صف و میانگین زمان خدمت {roomStaffDisplay(roomInfo, snapshot.staff).name} ({toFaDigits(roomInfo.avgServiceMinutes)} دقیقه). این برآورد هنگام ارسال پیام حرکت، به متن اعلان اضافه می‌شود.</span>}
                   </div>
                 ) : <div className="rounded-xl bg-slate-50 p-3 text-[11px] text-slate-500">این سلامتجو در حال حاضر در صفِ در انتظار فراخوان نیست.</div>;
               })()}

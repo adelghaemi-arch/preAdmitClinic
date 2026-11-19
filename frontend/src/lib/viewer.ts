@@ -1,7 +1,7 @@
 import { ensureClientDb } from "@/lib/client-db";
 import { readUsername, getCurrentUser } from "@/lib/auth";
 import { mockStore } from "@/lib/mock-store";
-import { ROLES } from "@/lib/workspace";
+import { COMPANION_FEATURE_ENABLED, selectableRoles } from "@/lib/workspace";
 import type { SnapshotViewer } from "@/lib/clinic-scope";
 import type { AppUserDto, WorkspaceRole } from "@/types/clinic";
 
@@ -15,7 +15,7 @@ export interface SessionContext {
   viewer: SnapshotViewer & { role: WorkspaceRole };
 }
 
-const ALL_ROLE_IDS = ROLES.map((r) => r.id);
+const ALL_ROLE_IDS = selectableRoles().map((r) => r.id);
 
 /** Full-access accounts can switch across every role; external supervisors entered via phone only see their supervisor portal. */
 export function allowedRolesFor(user?: AppUserDto | null): WorkspaceRole[] {
@@ -26,7 +26,9 @@ export function allowedRolesFor(user?: AppUserDto | null): WorkspaceRole[] {
 }
 
 export function asRole(value: string | null | undefined): WorkspaceRole | null {
-  return ROLES.some((r) => r.id === value) ? (value as WorkspaceRole) : null;
+  if (!value) return null;
+  if (!COMPANION_FEATURE_ENABLED && value === "patient") return null;
+  return selectableRoles().some((r) => r.id === value) ? (value as WorkspaceRole) : null;
 }
 
 export function readStoredRole(): WorkspaceRole | null {
@@ -54,14 +56,21 @@ export async function resolveSession(requestedRole?: string): Promise<SessionCon
   const fallback: WorkspaceRole =
     session.user.primaryRole === "supervisor"
       ? "supervisor"
-      : userLinks.some((link) => link.relationship === "self") || session.user.primaryRole === "owner"
+      : userLinks.some((link) => link.relationship === "self") ||
+          session.user.primaryRole === "owner" ||
+          session.user.primaryRole === "companion" ||
+          !COMPANION_FEATURE_ENABLED
         ? "owner"
         : "patient";
   const allowed = allowedRolesFor(session.user);
   const requested = asRole(requestedRole) ?? readStoredRole();
   const roleAllowed = requested ? allowed.includes(requested) : true;
   const role: WorkspaceRole =
-    requested && allowed.includes(requested) ? requested : allowed.includes(fallback) ? fallback : (allowed[0] ?? fallback);
+    requested && allowed.includes(requested)
+      ? requested
+      : allowed.includes(fallback)
+        ? fallback
+        : (allowed[0] ?? "owner");
 
   return {
     user: session.user,

@@ -2,6 +2,7 @@
 import { ArrowDown, ArrowUp, ChevronsUp, Clock, FileHeart, GripVertical, MapPin, ShieldAlert, X } from "lucide-react";
 import type { ClinicSnapshot, PatientFullDto, RoomDto, VisitStationDto } from "@/types/clinic";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
+import { roomStaffDisplay } from "@/lib/workspace";
 
 export interface RoomQueueEntry {
   patient: PatientFullDto;
@@ -142,7 +143,7 @@ export function RoomQueueBoard({ snapshot, room, onClose, onOpenPatient, onActio
             <h2 className="text-base font-extrabold text-slate-800">تابلوی {room.name}</h2>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 text-[11px] text-slate-500">
               <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />طبقه {toFaDigits(room.floor)}، اتاق {room.roomNumber}</span>
-              <span>{room.specialistName}</span>
+              <span>{roomStaffDisplay(room, snapshot.staff).name}</span>
               <span>زمان استاندارد خدمت: {toFaDigits(room.avgServiceMinutes)} دقیقه</span>
             </p>
           </div>

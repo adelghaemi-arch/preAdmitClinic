@@ -102,8 +102,8 @@ export const MOCK_DATASET: MockDataset = {
       "category": "paraclinic",
       "floor": 1,
       "roomNumber": "۱۰۲",
-      "specialistName": "دکتر مینو حسینی (مسئول فنی)",
-      "specialtyTitle": "پاتولوژی و آزمایشگاه بالینی",
+      "specialistName": "علیرضا محمدی",
+      "specialtyTitle": "اپراتور آزمایشگاه تشخیص طبی",
       "prepInstructions": "لطفاً پیش از خون‌گیری ۱۰ تا ۱۲ ساعت ناشتا باشید (نوشیدن آب ساده بلامانع است). آستین لباس خود را آزاد بگذارید و در صورت سابقه سرگیجه هنگام خون‌گیری به نمونه‌گیر اطلاع دهید.",
       "wayfindingSteps": "طبقه ۱ (همکف) ← از میز پذیرش مرکزی ۲۰ متر به سمت راست حرکت کنید ← راهرو الف ← اتاق ۱۰۲.",
       "mapX": 300,
@@ -117,8 +117,8 @@ export const MOCK_DATASET: MockDataset = {
       "category": "paraclinic",
       "floor": 2,
       "roomNumber": "۲۰۴",
-      "specialistName": "پریسا نادری (اپراتور ارشد قلب)",
-      "specialtyTitle": "تست‌های تشخیصی غیرتهاجمی قلب",
+      "specialistName": "پریسا نادری",
+      "specialtyTitle": "اپراتور ارشد نوار قلب (ECG)",
       "prepInstructions": "پیش از ورود به اتاق نوار قلب، کلیه اشیای فلزی، ساعت هوشمند، کلید، کمربند و تلفن همراه را خارج کنید و ۵ دقیقه روی صندلی سالن استراحت نمایید تا ضربان قلب پایه ثبت شود.",
       "wayfindingSteps": "با آسانسور مرکزی به طبقه ۲ بروید ← پس از خروج از آسانسور به سمت چپ بپیچید ← دومین درب سمت راست، اتاق ۲۰۴.",
       "mapX": 115,
@@ -258,7 +258,8 @@ export const MOCK_DATASET: MockDataset = {
         "ثبت تشخیص و نسخه",
         "ارجاع به ایستگاه جدید"
       ],
-      "isActive": true
+      "isActive": true,
+      "appUserId": null
     },
     {
       "id": 2,
@@ -274,7 +275,8 @@ export const MOCK_DATASET: MockDataset = {
         "ثبت تشخیص و نسخه",
         "ارجاع به ایستگاه جدید"
       ],
-      "isActive": true
+      "isActive": true,
+      "appUserId": 3
     },
     {
       "id": 3,
@@ -289,7 +291,8 @@ export const MOCK_DATASET: MockDataset = {
         "ثبت تشخیص و نسخه",
         "ارجاع به رادیولوژی (OPG)"
       ],
-      "isActive": true
+      "isActive": true,
+      "appUserId": null
     },
     {
       "id": 4,
@@ -303,7 +306,8 @@ export const MOCK_DATASET: MockDataset = {
         "آپلود گزارش تصویربرداری",
         "ثبت تشخیص رادیولوژی"
       ],
-      "isActive": true
+      "isActive": true,
+      "appUserId": null
     },
     {
       "id": 5,
@@ -317,7 +321,8 @@ export const MOCK_DATASET: MockDataset = {
         "ثبت نمونه‌گیری",
         "آپلود جواب آزمایش"
       ],
-      "isActive": true
+      "isActive": true,
+      "appUserId": null
     },
     {
       "id": 6,
@@ -331,7 +336,8 @@ export const MOCK_DATASET: MockDataset = {
         "ثبت انجام تست",
         "آپلود تصویر نوار قلب"
       ],
-      "isActive": true
+      "isActive": true,
+      "appUserId": null
     },
     {
       "id": 7,
@@ -345,7 +351,8 @@ export const MOCK_DATASET: MockDataset = {
         "مدیریت پویا صف‌ها",
         "ارسال فراخوان و پیامک"
       ],
-      "isActive": true
+      "isActive": true,
+      "appUserId": 2
     },
     {
       "id": 8,
@@ -360,7 +367,8 @@ export const MOCK_DATASET: MockDataset = {
         "مدیریت نقشه و طبقات",
         "مدیریت دسترسی کادر درمان"
       ],
-      "isActive": true
+      "isActive": true,
+      "appUserId": 1
     }
   ],
   "patients": [

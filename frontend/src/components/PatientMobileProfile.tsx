@@ -37,6 +37,7 @@ import {
   findActiveContractMembership,
   roadmapProgress,
 } from "@/lib/health-roadmap";
+import { roomStaffDisplay } from "@/lib/workspace";
 import { QrCodeVisual } from "./QrCodeVisual";
 import { PrintableEmrReport } from "./PrintableEmrReport";
 import { PreAdmitFormRenderer } from "./PreAdmitFormRenderer";
@@ -473,7 +474,7 @@ export function PatientMobileProfile({
                     {toFaDigits(activeRoom.floor)}، اتاق {activeRoom.roomNumber}
                   </h2>
                   <p className="mt-1 text-xs text-slate-600">
-                    مسئول ایستگاه: {activeRoom.specialistName}
+                    مسئول ایستگاه: {roomStaffDisplay(activeRoom, snapshot.staff).name}
                   </p>
 
                   <div className="mt-3.5 grid grid-cols-2 gap-2">
@@ -630,7 +631,7 @@ export function PatientMobileProfile({
                                 طبقه {toFaDigits(rm.floor)}، اتاق {rm.roomNumber}
                               </span>
                               <span>•</span>
-                              <span className="truncate">{rm.specialistName}</span>
+                              <span className="truncate">{roomStaffDisplay(rm, snapshot.staff).name}</span>
                             </div>
                           )}
 

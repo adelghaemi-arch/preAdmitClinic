@@ -8,6 +8,7 @@ import {
 import { ensureClientDb, persistClientDb } from "@/lib/client-db";
 import { mockMutations, mockStore } from "@/lib/mock-store";
 import { toLatinDigits } from "@/lib/persian";
+import { COMPANION_FEATURE_ENABLED } from "@/lib/workspace";
 import type { AppUserDto } from "@/types/clinic";
 
 /**
@@ -339,5 +340,8 @@ export function signOut(): void {
 
 export async function listDemoAccounts(): Promise<AppUserDto[]> {
   ensureClientDb();
-  return mockStore.users.map((user) => toDto(user.id)!).filter(Boolean);
+  return mockStore.users
+    .map((user) => toDto(user.id)!)
+    .filter(Boolean)
+    .filter((user) => COMPANION_FEATURE_ENABLED || user.primaryRole !== "companion");
 }

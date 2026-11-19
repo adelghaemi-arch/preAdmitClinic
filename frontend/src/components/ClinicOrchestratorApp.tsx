@@ -53,14 +53,17 @@ import { PlatformAdminPanel, type PlatformSection } from "./PlatformAdminPanel";
 import type { AppUserDto, ClinicSnapshot, WorkspaceRole } from "@/types/clinic";
 import {
   allowedPagesFor,
+  COMPANION_FEATURE_ENABLED,
+  COMPANION_FEATURE_PAGES,
   initials,
   labelFor,
   matchesPatient,
   PAGE_TITLES,
   permissionLabel,
   relationLabel,
-  ROLE_NAV,
+  roleNavFor,
   ROLES,
+  selectableRoles,
   shortLabelFor,
   type AppPage,
 } from "@/lib/workspace";
@@ -181,8 +184,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     configureOsmFromSettings(snapshot.platform?.settings);
   }, [snapshot.platform?.settings]);
 
-  const navConfig = ROLE_NAV[role];
-  const activeRole = ROLES.find((r) => r.id === role) ?? ROLES[0];
+  const navConfig = roleNavFor(role);
+  const activeRole = selectableRoles().find((r) => r.id === role) ?? selectableRoles()[0] ?? ROLES[0];
   const activePatient = snapshot.patients.find((p) => p.id === selectedPatientId) ?? snapshot.patients[0];
   const activeId = activePatient?.id ?? 0;
   const activeLink = snapshot.links.find((l) => l.patientId === activeId && l.userId === user.id);
@@ -368,7 +371,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     setRequestRole(next);
     writeStoredRole(next);
     setRole(next);
-    const target = ROLES.find((r) => r.id === next) ?? ROLES[0];
+    const target = selectableRoles().find((r) => r.id === next) ?? selectableRoles()[0] ?? ROLES[0];
     navigate(target.page);
     setSnapshot(await readSnapshot({ userId: user.id, role: next }));
     setToast({ text: `نقش «${target.label}» فعال شد؛ حساب شما تغییری نکرده است.` });
@@ -445,7 +448,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
       return <CompanionHome snapshot={snapshot} selectedPatientId={activeId} onSelectPatient={setSelectedPatientId} onNavigate={navigate} onAction={act} busy={busy} isSelf={isSelf} canViewReports={isSelf || Boolean(activeLink?.visibility.reports)} userId={user.id} />;
     }
     if (role === "specialist") {
-      return <SpecialistProfile key="home-waiting" snapshot={snapshot} initialPatientId={activeId || undefined} onSwitchToPatientMobile={openPatient} onAction={act} busy={busy} initialSection="waiting" embedded />;
+      return <SpecialistProfile key="home-waiting" snapshot={snapshot} initialPatientId={activeId || undefined} onSwitchToPatientMobile={openPatient} onAction={act} busy={busy} initialSection="waiting" embedded sessionUserId={user.id} />;
     }
     if (role === "paraclinic") {
       return <ParaclinicProfile key="home-queue" snapshot={snapshot} onSwitchToPatientMobile={openPatient} onAction={act} busy={busy} initialSection="queue" embedded />;
@@ -502,7 +505,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
           {roleOpen && (
             <div className="absolute top-full right-0 left-0 mt-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-800/10">
               <div className="px-2 py-2 text-[10px] text-slate-400">تغییر نقش، بدون تغییر حساب کاربری</div>
-              {ROLES.filter((r) => allowedRolesFor(user).includes(r.id)).map((r) => (
+              {selectableRoles().filter((r) => allowedRolesFor(user).includes(r.id)).map((r) => (
                 <button key={r.id} onClick={() => void switchRole(r.id)} className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2.5 text-right hover:bg-slate-50 ${role === r.id ? "bg-teal-50/70" : ""}`}>
                   <span>
                     <strong className="block text-[11px] font-semibold text-slate-600">{r.label}</strong>
@@ -679,7 +682,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                     <span className="block text-xs font-semibold">{user.fullName}</span>
                     <span className="mt-1 block text-[10px] text-slate-400">{user.username} · {role === "owner" ? "داشبورد سلامتجو" : role === "patient" ? "داشبورد همراه سلامتجو" : "حساب کادر کلینیک"}</span>
                   </div>
-                  {(role === "patient" || role === "owner") && <div className="border-b border-slate-100 px-3 py-2"><div className="mb-1 text-[10px] font-semibold text-slate-500">پرونده فعال</div>{snapshot.patients.map((patient) => { const linked = snapshot.links.find((l) => l.userId === user.id && l.patientId === patient.id); return <button key={patient.id} onClick={() => { navigate("dashboard", patient.id); setAccountOpen(false); }} className={`flex w-full items-center justify-between rounded-lg px-2 py-2 text-right text-[11px] ${activeId === patient.id ? "bg-teal-50 text-teal-700" : "text-slate-600 hover:bg-slate-50"}`}><span>{patient.fullName}<span className="mr-1 text-[9px] opacity-70">· {relationLabel(linked?.relationship)}</span></span>{activeId === patient.id && <Check className="h-3 w-3" />}</button>; })}{isSelf && <button onClick={() => navigate("patient-privacy")} className="mt-1 w-full rounded-lg px-2 py-2 text-right text-[11px] text-teal-700 hover:bg-teal-50">تنظیم نمایش اطلاعات برای همراه‌ها</button>}</div>}
+                  {(role === "patient" || role === "owner") && <div className="border-b border-slate-100 px-3 py-2"><div className="mb-1 text-[10px] font-semibold text-slate-500">پرونده فعال</div>{snapshot.patients.map((patient) => { const linked = snapshot.links.find((l) => l.userId === user.id && l.patientId === patient.id); return <button key={patient.id} onClick={() => { navigate("dashboard", patient.id); setAccountOpen(false); }} className={`flex w-full items-center justify-between rounded-lg px-2 py-2 text-right text-[11px] ${activeId === patient.id ? "bg-teal-50 text-teal-700" : "text-slate-600 hover:bg-slate-50"}`}><span>{patient.fullName}<span className="mr-1 text-[9px] opacity-70">· {relationLabel(linked?.relationship)}</span></span>{activeId === patient.id && <Check className="h-3 w-3" />}</button>; })}{COMPANION_FEATURE_ENABLED && isSelf && <button onClick={() => navigate("patient-privacy")} className="mt-1 w-full rounded-lg px-2 py-2 text-right text-[11px] text-teal-700 hover:bg-teal-50">تنظیم نمایش اطلاعات برای همراه‌ها</button>}</div>}
                   <button onClick={() => { setProfileOpen(true); setAccountOpen(false); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[11px] text-slate-500 hover:bg-slate-50">
                     <UserRound className="h-3.5 w-3.5" />
                     تنظیمات حساب کاربری
@@ -755,6 +758,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               busy={busy}
               initialSection={specialistSection}
               embedded={role !== "admin"}
+              sessionUserId={user.id}
             />
           )}
 
@@ -789,15 +793,36 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                 />
             ) : (
               <div className="mx-auto max-w-xl rounded-2xl border border-slate-200/80 bg-white p-10 text-center">
-                <p className="text-xs text-slate-400">برای مشاهده این بخش ابتدا یک پرونده سلامتجو را به حساب خود متصل کنید.</p>
-                <button onClick={() => navigate("companion-links")} className="primary-button mt-5">
-                  اتصال پرونده سلامتجو
-                </button>
+                <p className="text-xs text-slate-400">
+                  {COMPANION_FEATURE_ENABLED
+                    ? "برای مشاهده این بخش ابتدا یک پرونده سلامتجو را به حساب خود متصل کنید."
+                    : "پرونده‌ای برای این حساب یافت نشد. بخش اتصال همراه موقتاً غیرفعال است؛ با حساب سلامتجو وارد شوید."}
+                </p>
+                {COMPANION_FEATURE_ENABLED ? (
+                  <button onClick={() => navigate("companion-links")} className="primary-button mt-5">
+                    اتصال پرونده سلامتجو
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => navigate("dashboard")} className="primary-button mt-5">
+                    بازگشت به داشبورد
+                  </button>
+                )}
               </div>
             ))}
 
-          {current === "companion-links" && <CompanionLinks snapshot={snapshot} userId={user.id} onNavigate={navigate} onAction={act} busy={busy} />}
-          {current === "patient-privacy" && (isSelf && activePatient ? <PatientPrivacySettings snapshot={snapshot} userId={user.id} patientId={activePatient.id} onAction={act} busy={busy} /> : <div className="rounded-xl bg-white p-6 text-xs text-slate-600">این تنظیمات فقط توسط خود سلامتجو قابل تغییر است.</div>)}
+          {COMPANION_FEATURE_PAGES.includes(current) && !COMPANION_FEATURE_ENABLED && (
+            <div className="mx-auto max-w-xl rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center">
+              <p className="text-sm font-bold text-amber-950">بخش همراه موقتاً غیرفعال است</p>
+              <p className="mt-2 text-xs leading-6 text-amber-900/80">
+                اتصال همراه و تنظیم دسترسی همراه‌ها در فاز بعدی فعال می‌شود. مسیر خود سلامتجو (پرسشنامه، نقشه و گزارش) همچنان در دسترس است.
+              </p>
+              <button type="button" onClick={() => navigate("dashboard")} className="primary-button mt-5">
+                بازگشت به داشبورد
+              </button>
+            </div>
+          )}
+          {COMPANION_FEATURE_ENABLED && current === "companion-links" && <CompanionLinks snapshot={snapshot} userId={user.id} onNavigate={navigate} onAction={act} busy={busy} />}
+          {COMPANION_FEATURE_ENABLED && current === "patient-privacy" && (isSelf && activePatient ? <PatientPrivacySettings snapshot={snapshot} userId={user.id} patientId={activePatient.id} onAction={act} busy={busy} /> : <div className="rounded-xl bg-white p-6 text-xs text-slate-600">این تنظیمات فقط توسط خود سلامتجو قابل تغییر است.</div>)}
 
           {["contracts", "contract-packages", "contract-schedule", "contract-funnel"].includes(current) && (
             <CorporateContractsHub
@@ -926,9 +951,11 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             ) : (
               <div className="space-y-4">
                 {[
-                  { n: "۱", title: "از همراه سلامتجو شروع کنید", text: "در نقش پیش‌فرض، پرونده سلامتجویی را که با آن نسبت دارید ببینید، پرسشنامه پیش‌پذیرش را تکمیل کنید یا پیگیری کنید." },
-                  { n: "۲", title: "سلامتجویان خود را متصل کنید", text: "از بخش سلامتجویان من، با کد QR و کد ملی سلامتجو پرونده را متصل کنید و سطح دسترسی را مشخص کنید." },
-                  { n: "۳", title: "نقش کاری را تغییر دهید", text: "برای پذیرش، پزشک، پاراکلینیک یا مدیریت، نقش فعال را از بالای منوی کناری انتخاب کنید." },
+                  { n: "۱", title: "از داشبورد سلامتجو شروع کنید", text: "در نقش سلامتجو، پرسشنامه پیش‌پذیرش را تکمیل کنید، مسیر درمان و نقشه را ببینید و گزارش پایانی را دریافت کنید." },
+                  ...(COMPANION_FEATURE_ENABLED
+                    ? [{ n: "۲", title: "سلامتجویان خود را متصل کنید", text: "از بخش سلامتجویان من، با کد QR و کد ملی سلامتجو پرونده را متصل کنید و سطح دسترسی را مشخص کنید." }]
+                    : []),
+                  { n: COMPANION_FEATURE_ENABLED ? "۳" : "۲", title: "نقش کاری را تغییر دهید", text: "برای پذیرش، پزشک، پاراکلینیک یا مدیریت، نقش فعال را از بالای منوی کناری انتخاب کنید." },
                 ].map((s) => (
                   <div key={s.n} className="flex items-start gap-3">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-xs text-teal-700">{s.n}</span>

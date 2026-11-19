@@ -34,6 +34,8 @@ interface SpecialistProfileProps {
   initialSection?: SpecialistSection;
   onSectionChange?: (section: SpecialistSection) => void;
   initialPatientId?: number;
+  /** Logged-in app user id — used to default the doctor desk from staff.appUserId. */
+  sessionUserId?: number;
 }
 
 export function SpecialistProfile({
@@ -45,6 +47,7 @@ export function SpecialistProfile({
   onSectionChange,
   embedded = false,
   initialPatientId,
+  sessionUserId,
 }: SpecialistProfileProps) {
   const specialistStaff = useMemo(
     () => snapshot.staff.filter((s) => s.role === "specialist" && s.isActive && s.roomCode),
@@ -52,7 +55,7 @@ export function SpecialistProfile({
   );
 
   // When opened from the dashboard for a specific patient, focus the room that
-  // patient is actually routed to; otherwise default to the pulmonology desk.
+  // patient is actually routed to; otherwise prefer the logged-in doctor's desk.
   const focusPatient = initialPatientId
     ? snapshot.patients.find((p) => p.id === initialPatientId)
     : undefined;
@@ -62,10 +65,16 @@ export function SpecialistProfile({
     )?.roomCode ??
     focusPatient?.stations.find((s) => s.category === "specialist")?.roomCode;
 
+  const linkedDoc =
+    sessionUserId != null
+      ? specialistStaff.find((s) => s.appUserId === sessionUserId)
+      : undefined;
+
   const defaultDoc =
     (focusRoomCode
       ? specialistStaff.find((s) => s.roomCode === focusRoomCode)
       : undefined) ??
+    linkedDoc ??
     specialistStaff.find((s) => s.roomCode === "PULMO") ??
     specialistStaff[0];
 
@@ -208,6 +217,19 @@ export function SpecialistProfile({
     );
     setUrgentRoomCode("");
     setTimeout(() => setFeedbackBanner(""), 4500);
+  };
+
+  const handleCallPatientIn = async (patientId: number, stationId: number) => {
+    if (!activeDoctor) return;
+    await onAction({
+      action: "CALL_PATIENT_IN",
+      patientId,
+      stationId,
+      doctorName: activeDoctor.fullName,
+    });
+    setSelectedPatientId(patientId);
+    setFeedbackBanner(`فراخوان ورود به مطب برای سلامتجو ارسال شد؛ وضعیت به «در حال معاینه» تغییر کرد.`);
+    setTimeout(() => setFeedbackBanner(""), 4000);
   };
 
   const handleCompleteStation = async () => {
@@ -365,7 +387,17 @@ export function SpecialistProfile({
                       </span>
                     </div>
 
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {(myStation.status === "waiting" || myStation.status === "checked_in") && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => handleCallPatientIn(p.id, myStation.id)}
+                          className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          فراخوان به داخل مطب
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
@@ -717,6 +749,27 @@ export function SpecialistProfile({
             onSubmit={handleSaveNoteAndOrders}
             className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs"
           >
+            {(activeEntry.myStation.status === "waiting" ||
+              activeEntry.myStation.status === "checked_in") && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-950">
+                <span>
+                  ویزیت هنوز شروع نشده است. ابتدا سلامتجو را به داخل مطب فراخوانید.
+                </span>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    handleCallPatientIn(
+                      activeEntry.patient.id,
+                      activeEntry.myStation.id
+                    )
+                  }
+                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  فراخوان به داخل مطب
+                </button>
+              </div>
+            )}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <h1 className="text-lg font-extrabold text-slate-900">

@@ -59,6 +59,10 @@
 .secondary-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; border: 1px solid #e3e9e5; background: white; color: #718078; font-size: 10px; font-weight: 500; border-radius: 9px; transition: all .2s; }
 .secondary-button:hover { border-color: #bfd9c8; background: #f6faf7; color: #2d7352; }
 .metric-card { box-shadow: 0 2px 3px #1a433002; }
+.dashboard-content { width: 100%; min-width: 0; }
+@media (max-width: 639px) {
+  .dashboard-content .primary-button { width: 100%; justify-content: center; }
+}
 .metric-icon { display: flex; height: 33px; width: 33px; justify-content: center; align-items: center; border-radius: 11px; }
 .metric-teal { background: #edf7f1; color: #5c9e7d; }
 .metric-blue { background: #edf3fb; color: #769ed5; }

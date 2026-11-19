@@ -151,7 +151,10 @@ export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
       visibility: l.visibility,
     })),
     pathways: mockStore.pathways,
-    staff: mockStore.staff,
+    staff: mockStore.staff.map((s) => ({
+      ...s,
+      appUserId: s.appUserId ?? null,
+    })),
     patients: enrichedPatients,
     clinicLocation: { ...clinicLocation },
     packageRuleLibrary: JSON.parse(JSON.stringify(mockStore.packageRuleLibrary)),
