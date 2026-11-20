@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   BookOpen,
@@ -86,6 +86,11 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   const [tab, setTab] = useState<ContractHubTab>(initialTab);
   const [selectedContractId, setSelectedContractId] = useState<number>(contracts[0]?.id ?? 0);
   const [banner, setBanner] = useState("");
+  // بعد از hydrate seed، اگر id قبلی در لیست نبود اولین قرارداد را انتخاب کن
+  useEffect(() => {
+    if (!contracts.length) return;
+    if (!contracts.some((c) => c.id === selectedContractId)) setSelectedContractId(contracts[0].id);
+  }, [contracts, selectedContractId]);
   const contract = contracts.find((c) => c.id === selectedContractId) ?? contracts[0];
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -215,8 +220,37 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
     return library.filter((r) => !q || normalizeText(`${r.title} ${r.description} ${r.jobCategory} ${r.gender}`).includes(q));
   }, [library, libQuery]);
 
+  const createModal = createOpen && (
+    <div className="fixed inset-0 z-[85] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" onClick={() => setCreateOpen(false)}>
+      <div role="dialog" aria-modal="true" aria-label="تعریف قرارداد سازمانی جدید" onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">تعریف قرارداد سازمانی جدید</h2><button type="button" onClick={() => setCreateOpen(false)} aria-label="بستن"><X className="h-4 w-4 text-slate-400" /></button></div>
+        <form onSubmit={async (e) => { e.preventDefault(); const r = (await run({ action: "CREATE_CONTRACT", title: newTitle, organizationName: newOrg, apiEndpoint: newEndpoint, apiKey: newApiKey, defaultPathwayCode: newDefaultPkg, initialDailyCap: Number(newDailyCap) || 20, supervisorName: newSupName, supervisorTitle: newSupTitle, supervisorPhone: newSupPhone, fetchFromApiNow: fetchNowOnCreate })) as { createdContractId?: number }; if (r?.createdContractId) setSelectedContractId(Number(r.createdContractId)); setCreateOpen(false); setNewTitle(""); setNewOrg(""); setNewSupName(""); setNewSupPhone(""); flash(fetchNowOnCreate ? "قرارداد ساخته شد." : "قرارداد جدید ثبت شد."); }} className="space-y-3.5">
+          <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">نام سازمان<AppInput required value={newOrg} onChange={(e) => setNewOrg(e.target.value)} placeholder="مثلاً: شرکت فولاد مبارکه" className="app-input mt-1 text-xs" /></label><label className="app-label">عنوان قرارداد<AppInput required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="پایش سلامت سالانه" className="app-input mt-1 text-xs" /></label></div>
+          <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">آدرس API خارجی<AppInput dir="ltr" value={newEndpoint} onChange={(e) => setNewEndpoint(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label><label className="app-label">کلید API قرارداد<AppInput dir="ltr" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label></div>
+          <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">بسته پایه پیش‌فرض{pathways.length > 0 ? <select value={newDefaultPkg} onChange={(e) => setNewDefaultPkg(e.target.value)} className="app-select mt-1 w-full text-xs">{pathways.map((p) => <option key={p.code} value={p.code}>{p.title}</option>)}</select> : <AppInput value={newDefaultPkg} onChange={(e) => setNewDefaultPkg(e.target.value)} className="app-input mt-1 text-xs" />}</label><label className="app-label">سقف پذیرش روزانه<AppInput type="number" min={1} value={newDailyCap} onChange={(e) => setNewDailyCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
+          <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5"><div className="text-xs font-semibold text-amber-900">ناظر خارجی شرکت</div><div className="grid gap-2 sm:grid-cols-3"><AppInput value={newSupName} onChange={(e) => setNewSupName(e.target.value)} placeholder="نام ناظر" className="app-input text-xs" /><AppInput value={newSupTitle} onChange={(e) => setNewSupTitle(e.target.value)} placeholder="سمت" className="app-input text-xs" /><AppInput dir="ltr" value={newSupPhone} onChange={(e) => setNewSupPhone(e.target.value)} placeholder="موبایل: 0912..." className="app-input font-mono text-left text-xs" /></div></div>
+          <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={fetchNowOnCreate} onChange={(e) => setFetchNowOnCreate(e.target.checked)} className="accent-teal-700" />دریافت فوری لیست افراد از API و ارسال پیامک تکمیل پروفایل (در این موج پس از ایجاد نادیده گرفته می‌شود)</label>
+          <button type="submit" disabled={busy} className="primary-button w-full justify-center py-3">ایجاد قرارداد</button>
+        </form>
+      </div>
+    </div>
+  );
+
+  // مودال باید حتی در empty-state mount شود؛ early-return قبلی createOpen را بی‌اثر می‌کرد
   if (!contract || !stats) {
-    return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center"><Building2 className="mx-auto h-10 w-10 text-teal-600" /><h2 className="mt-3 text-base font-bold text-slate-800">هنوز قراردادی تعریف نشده است</h2><button type="button" onClick={() => setCreateOpen(true)} className="primary-button mt-4"><Plus className="h-4 w-4" />تعریف اولین قرارداد سازمانی</button></div>;
+    return (
+      <>
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+          <Building2 className="mx-auto h-10 w-10 text-teal-600" />
+          <h2 className="mt-3 text-base font-bold text-slate-800">هنوز قراردادی تعریف نشده است</h2>
+          <button type="button" onClick={() => setCreateOpen(true)} className="primary-button mt-4">
+            <Plus className="h-4 w-4" />
+            تعریف اولین قرارداد سازمانی
+          </button>
+        </div>
+        {createModal}
+      </>
+    );
   }
 
   const stepChip: Record<ContractHubTab, string> = {
@@ -609,22 +643,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
         </div>
       )}
 
-      {/* Create contract */}
-      {createOpen && (
-        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" onClick={() => setCreateOpen(false)}>
-          <div role="dialog" aria-modal="true" aria-label="تعریف قرارداد سازمانی جدید" onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">تعریف قرارداد سازمانی جدید</h2><button type="button" onClick={() => setCreateOpen(false)} aria-label="بستن"><X className="h-4 w-4 text-slate-400" /></button></div>
-            <form onSubmit={async (e) => { e.preventDefault(); const r = (await run({ action: "CREATE_CONTRACT", title: newTitle, organizationName: newOrg, apiEndpoint: newEndpoint, apiKey: newApiKey, defaultPathwayCode: newDefaultPkg, initialDailyCap: Number(newDailyCap) || 20, supervisorName: newSupName, supervisorTitle: newSupTitle, supervisorPhone: newSupPhone, fetchFromApiNow: fetchNowOnCreate })) as { createdContractId?: number }; if (r?.createdContractId) setSelectedContractId(Number(r.createdContractId)); setCreateOpen(false); setNewTitle(""); setNewOrg(""); setNewSupName(""); setNewSupPhone(""); flash(fetchNowOnCreate ? "قرارداد ساخته شد، افراد از API دریافت شدند و پیامک‌ها ارسال گردید." : "قرارداد جدید ثبت شد."); }} className="space-y-3.5">
-              <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">نام سازمان<AppInput required value={newOrg} onChange={(e) => setNewOrg(e.target.value)} placeholder="مثلاً: شرکت فولاد مبارکه" className="app-input mt-1 text-xs" /></label><label className="app-label">عنوان قرارداد<AppInput required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="پایش سلامت سالانه" className="app-input mt-1 text-xs" /></label></div>
-              <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">آدرس API خارجی<AppInput dir="ltr" value={newEndpoint} onChange={(e) => setNewEndpoint(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label><label className="app-label">کلید API قرارداد<AppInput dir="ltr" required value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label></div>
-              <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">بسته پایه پیش‌فرض<select value={newDefaultPkg} onChange={(e) => setNewDefaultPkg(e.target.value)} className="app-select mt-1 w-full text-xs">{pathways.map((p) => <option key={p.code} value={p.code}>{p.title}</option>)}</select></label><label className="app-label">سقف پذیرش روزانه<AppInput type="number" min={1} value={newDailyCap} onChange={(e) => setNewDailyCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
-              <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5"><div className="text-xs font-semibold text-amber-900">ناظر خارجی شرکت</div><div className="grid gap-2 sm:grid-cols-3"><AppInput value={newSupName} onChange={(e) => setNewSupName(e.target.value)} placeholder="نام ناظر" className="app-input text-xs" /><AppInput value={newSupTitle} onChange={(e) => setNewSupTitle(e.target.value)} placeholder="سمت" className="app-input text-xs" /><AppInput dir="ltr" value={newSupPhone} onChange={(e) => setNewSupPhone(e.target.value)} placeholder="موبایل: 0912..." className="app-input font-mono text-left text-xs" /></div></div>
-              <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={fetchNowOnCreate} onChange={(e) => setFetchNowOnCreate(e.target.checked)} className="accent-teal-700" />دریافت فوری لیست افراد از API و ارسال پیامک تکمیل پروفایل</label>
-              <button type="submit" disabled={busy} className="primary-button w-full justify-center py-3">ایجاد قرارداد</button>
-            </form>
-          </div>
-        </div>
-      )}
+      {createModal}
     </div>
   );
 }

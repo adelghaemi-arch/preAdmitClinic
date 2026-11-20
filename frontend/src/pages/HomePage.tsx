@@ -1,6 +1,13 @@
+/*
+ File: frontend/src/pages/HomePage.tsx
+ Description: bootstrap از API؛ بدون نشست → لاگین
+ Parent Dependencies: viewer, api/workspace, ClinicOrchestratorApp
+ */
+
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { isAppPage, type AppPage } from "@/lib/workspace";
-import { ensureClientDb, readSnapshot } from "@/lib/client-db";
+import { loadWorkspaceSnapshot } from "@/lib/api/workspace";
 import { resolveSession } from "@/lib/viewer";
 import type { AppUserDto, ClinicSnapshot, WorkspaceRole } from "@/types/clinic";
 import { ClinicOrchestratorApp } from "@/components/ClinicOrchestratorApp";
@@ -15,38 +22,60 @@ interface Bootstrap {
 }
 
 export function HomePage() {
+  const navigate = useNavigate();
   const [boot, setBoot] = useState<Bootstrap | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      ensureClientDb();
       const query = new URLSearchParams(window.location.search);
       const rawPatient = Number(query.get("patient"));
       const view = query.get("view");
-      const session = await resolveSession();
-      const snapshot = await readSnapshot(session.viewer);
-      if (cancelled) return;
-      setBoot({
-        snapshot,
-        user: session.user,
-        isDemoSession: session.isDemoSession,
-        role: session.role,
-        page: isAppPage(view) ? view : "dashboard",
-        patientId: Number.isSafeInteger(rawPatient) && rawPatient > 0 ? rawPatient : undefined,
-      });
+      try {
+        const session = await resolveSession();
+        if (!session) {
+          navigate("/login", { replace: true });
+          return;
+        }
+        const snapshot = await loadWorkspaceSnapshot();
+        if (cancelled) return;
+        setBoot({
+          snapshot,
+          user: session.user,
+          isDemoSession: false,
+          role: session.role,
+          page: isAppPage(view) ? view : "dashboard",
+          patientId: Number.isSafeInteger(rawPatient) && rawPatient > 0 ? rawPatient : undefined,
+        });
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "بارگذاری ناموفق بود.");
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [navigate]);
+
+  if (error) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f7f9fa] p-6">
+        <div className="max-w-sm rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center text-xs text-rose-700">
+          {error}
+          <button type="button" className="mt-3 block w-full text-teal-700" onClick={() => navigate("/login", { replace: true })}>
+            بازگشت به ورود
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   if (!boot) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f7f9fa]">
         <div className="flex flex-col items-center gap-3 text-xs text-slate-400">
           <span className="h-8 w-8 animate-spin rounded-full border-2 border-teal-600 border-t-transparent" />
-          در حال بارگذاری داده نمایشی کلینیک…
+          در حال اتصال به سرور نبض…
         </div>
       </main>
     );

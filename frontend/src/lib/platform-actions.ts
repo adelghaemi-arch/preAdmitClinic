@@ -1,3 +1,9 @@
+/*
+ File: frontend/src/lib/platform-actions.ts
+ Description: اکشن‌های پلتفرم/کاربران دمو؛ گارد ادمین کلینیک برای مخفی‌کردن نقش Platform
+ Parent Dependencies: mock-store, auth-sessions
+ */
+
 import { revokeAllAuthSessionsForUser } from "@/lib/auth-sessions";
 import { randomUUID } from "@/lib/uuid";
 import { ensureCameraSessionPackage, resolveOrCreatePackage } from "@/lib/evidence-packages";
@@ -59,7 +65,7 @@ const PLATFORM_USER_ROLES: PlatformUserPrimaryRole[] = [
 ];
 
 const ROLE_LABELS: Record<PlatformUserPrimaryRole, string> = {
-  platform: "ادمین پلتفرم",
+  platform: "ادمین کل",
   clinic_admin: "ادمین کلینیک",
   staff: "کادر درمان",
   patient: "سلامتجو",
@@ -73,6 +79,16 @@ const PATIENT_PLATFORM_ACTIONS = new Set([
   "END_FRAUD_CAMERA_SESSION",
   "RECORD_USER_GPS",
 ]);
+
+/** ادمین کلینیک فقط مدیریت کاربر غیر-Platform را دارد */
+const CLINIC_ADMIN_USER_ACTIONS = new Set(["PLATFORM_UPSERT_USER", "PLATFORM_SET_USER_ACTIVE"]);
+
+const CLINIC_ASSIGNABLE_ROLES: PlatformUserPrimaryRole[] = [
+  "clinic_admin",
+  "staff",
+  "patient",
+  "supervisor",
+];
 
 export interface PlatformActionOutcome {
   ok: boolean;
@@ -102,11 +118,12 @@ function normalizePlatformUser(profile: PlatformUserProfile): PlatformUserProfil
   if (profile.lastLoginAt === undefined) profile.lastLoginAt = null;
   if (profile.profilePhotoDataUrl === undefined) profile.profilePhotoDataUrl = null;
   if (!profile.primaryRole) {
+    // «ادمین کلینیک» شامل زیروند «ادمین کل» است؛ اول کلینیک را چک کن
     profile.primaryRole =
-      profile.roleLabel.includes("ادمین پلتفرم")
-        ? "platform"
-        : profile.roleLabel.includes("ادمین")
-          ? "clinic_admin"
+      profile.roleLabel.includes("ادمین کلینیک")
+        ? "clinic_admin"
+        : profile.roleLabel === "ادمین کل" || profile.roleLabel.startsWith("ادمین کل ·")
+          ? "platform"
           : profile.roleLabel.includes("ناظر")
             ? "supervisor"
             : profile.roleLabel.includes("کادر")
@@ -217,8 +234,9 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
   }
 
   const isPatientSide = PATIENT_PLATFORM_ACTIONS.has(action);
-  if (!isPatientSide && viewerRole !== "platform") {
-    return { ok: false, status: 403, error: "فقط ادمین پلتفرم به این بخش دسترسی دارد." };
+  const isClinicAdminUserAction = viewerRole === "admin" && CLINIC_ADMIN_USER_ACTIONS.has(action);
+  if (!isPatientSide && viewerRole !== "platform" && !isClinicAdminUserAction) {
+    return { ok: false, status: 403, error: "فقط ادمین کل به این بخش دسترسی دارد." };
   }
   if (isPatientSide && viewerRole === "supervisor") {
     return { ok: false, status: 403, error: "ناظر سازمان مجاز به ثبت رویداد ضدتقلب نیست." };
@@ -226,6 +244,7 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
 
   const platform = mockStore.platform;
   const now = new Date().toISOString();
+  const actorLabel = viewerRole === "admin" ? "ادمین کلینیک" : "ادمین کل";
 
   if (action === "PLATFORM_UPDATE_CLINIC_STATUS") {
     const clinicId = String(body.clinicId ?? "");
@@ -240,7 +259,7 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     }
     clinic.status = status;
     pushAudit({
-      actor: "ادمین پلتفرم",
+      actor: "ادمین کل",
       action: "PLATFORM_UPDATE_CLINIC_STATUS",
       target: clinic.name,
       detail: `وضعیت به «${status}» تغییر کرد`,
@@ -273,7 +292,7 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     }
     platform.settings = next;
     pushAudit({
-      actor: "ادمین پلتفرم",
+      actor: "ادمین کل",
       action: "PLATFORM_UPDATE_SETTINGS",
       target: "تنظیمات پایه",
       detail: `برند «${next.brandName}» · ضدتقلب هر ${next.fraudAutoCaptureSeconds} ثانیه`,
@@ -310,7 +329,7 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     platform.settings = { ...platform.settings, osmLocal: nextOsm };
     syncOsmMapsIntegration(nextOsm);
     pushAudit({
-      actor: "ادمین پلتفرم",
+      actor: "ادمین کل",
       action: "PLATFORM_UPDATE_OSM_LOCAL",
       target: "سرویس OSM محلی",
       detail: baseUrl
@@ -343,7 +362,7 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     platform.settings = { ...platform.settings, osmLocal: nextOsm };
     syncOsmMapsIntegration(nextOsm);
     pushAudit({
-      actor: "ادمین پلتفرم",
+      actor: "ادمین کل",
       action: "PLATFORM_APPLY_OSM_LOCAL_TEST",
       target: "سرویس OSM محلی",
       detail: active
@@ -365,10 +384,10 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     alert.reviewStatus = reviewStatus;
     alert.reviewNote = String(body.reviewNote ?? "").trim();
     alert.reviewedAt = now;
-    alert.reviewedBy = "ادمین پلتفرم";
+    alert.reviewedBy = "ادمین کل";
     const user = mockStore.userById(alert.userId);
     pushAudit({
-      actor: "ادمین پلتفرم",
+      actor: "ادمین کل",
       action: "PLATFORM_REVIEW_MULTI_SESSION",
       target: user?.fullName ?? `کاربر ${alert.userId}`,
       detail: `بازبینی چندسشنی: ${reviewStatus}${alert.reviewNote ? ` — ${alert.reviewNote}` : ""}`,
@@ -381,7 +400,7 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     if (!Number.isFinite(userId) || userId <= 0) {
       return { ok: false, status: 400, error: "شناسه کاربر نامعتبر است." };
     }
-    const count = revokeAllAuthSessionsForUser(userId, "ادمین پلتفرم");
+    const count = revokeAllAuthSessionsForUser(userId, "ادمین کل");
     return { ok: true, status: 200, meta: { revokedCount: count } };
   }
 
@@ -396,10 +415,10 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     session.reviewStatus = reviewStatus;
     session.reviewNote = String(body.reviewNote ?? "").trim();
     session.reviewedAt = now;
-    session.reviewedBy = "ادمین پلتفرم";
+    session.reviewedBy = "ادمین کل";
     const patient = mockStore.patientById(session.patientId);
     pushAudit({
-      actor: "ادمین پلتفرم",
+      actor: "ادمین کل",
       action: "PLATFORM_REVIEW_FRAUD_SESSION",
       target: patient?.fullName ?? `بیمار ${session.patientId}`,
       detail: `بازبینی: ${reviewStatus}${session.reviewNote ? ` — ${session.reviewNote}` : ""}`,
@@ -409,7 +428,7 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
 
   if (action === "PLATFORM_APPEND_AUDIT") {
     pushAudit({
-      actor: String(body.actor ?? "ادمین پلتفرم"),
+      actor: String(body.actor ?? "ادمین کل"),
       action: String(body.auditAction ?? "NOTE"),
       target: String(body.target ?? "—"),
       detail: String(body.detail ?? ""),
@@ -430,6 +449,10 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     if (!PLATFORM_USER_ROLES.includes(primaryRole)) {
       return { ok: false, status: 400, error: "نقش کاربر نامعتبر است." };
     }
+    // ادمین کلینیک هرگز نقش ادمین کل را منصوب نمی‌کند
+    if (viewerRole === "admin" && !CLINIC_ASSIGNABLE_ROLES.includes(primaryRole)) {
+      return { ok: false, status: 403, error: "انتصاب این نقش مجاز نیست." };
+    }
     if (clinicId && !platform.clinics.some((c) => c.id === clinicId)) {
       return { ok: false, status: 400, error: "کلینیک انتخاب‌شده یافت نشد." };
     }
@@ -441,6 +464,10 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     let profile = id ? platform.users.find((u) => u.id === id) : undefined;
     if (profile) {
       normalizePlatformUser(profile);
+      // وجود ادمین کل از دید ادمین کلینیک لو نمی‌رود
+      if (viewerRole === "admin" && profile.primaryRole === "platform") {
+        return { ok: false, status: 404, error: "کاربر یافت نشد." };
+      }
       profile.fullName = fullName;
       profile.phone = phone;
       profile.nationalId = nationalId;
@@ -453,7 +480,7 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
       else if (photoRaw && photoRaw !== "null") profile.profilePhotoDataUrl = photoRaw;
       if (typeof body.isActive === "boolean") profile.isActive = body.isActive;
       pushAudit({
-        actor: "ادمین پلتفرم",
+        actor: actorLabel,
         action: "PLATFORM_UPSERT_USER",
         target: profile.fullName,
         detail: `ویرایش کاربر · نقش ${ROLE_LABELS[primaryRole]}`,
@@ -482,7 +509,7 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     };
     platform.users.unshift(created);
     pushAudit({
-      actor: "ادمین پلتفرم",
+      actor: actorLabel,
       action: "PLATFORM_UPSERT_USER",
       target: created.fullName,
       detail: `ایجاد کاربر · نقش ${ROLE_LABELS[primaryRole]}`,
@@ -495,10 +522,13 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     const profile = platform.users.find((u) => u.id === id);
     if (!profile) return { ok: false, status: 404, error: "کاربر یافت نشد." };
     normalizePlatformUser(profile);
+    if (viewerRole === "admin" && profile.primaryRole === "platform") {
+      return { ok: false, status: 404, error: "کاربر یافت نشد." };
+    }
     const isActive = Boolean(body.isActive);
     profile.isActive = isActive;
     pushAudit({
-      actor: "ادمین پلتفرم",
+      actor: actorLabel,
       action: "PLATFORM_SET_USER_ACTIVE",
       target: profile.fullName,
       detail: isActive ? "فعال‌سازی حساب" : "تعلیق حساب",
@@ -513,9 +543,9 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
     normalizePlatformUser(profile);
     profile.lastLoginAt = null;
     const revoked =
-      profile.userId != null ? revokeAllAuthSessionsForUser(profile.userId, "ادمین پلتفرم") : 0;
+      profile.userId != null ? revokeAllAuthSessionsForUser(profile.userId, "ادمین کل") : 0;
     pushAudit({
-      actor: "ادمین پلتفرم",
+      actor: "ادمین کل",
       action: "PLATFORM_RESET_USER_ACCESS",
       target: profile.fullName,
       detail: `ریست دسترسی / OTP و قطع ${revoked} نشست`,

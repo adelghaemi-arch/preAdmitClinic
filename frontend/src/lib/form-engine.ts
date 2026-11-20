@@ -352,12 +352,187 @@ export function submittedResponse(patient: PatientFullDto): FormResponse | null 
   );
 }
 
-export function redFlagAnswers(form: FormDefinition, response: FormResponse): Array<{ item: FormItemDefinition; answer: FormAnswer }> {
+export function isRedFlagItem(item: FormItemDefinition): boolean {
+  const coding = normalizeCoding(item.coding);
+  return Boolean(coding.redFlagOnYes) || coding.aiTags.includes("red_flag");
+}
+
+export function resolveFormFromResponse(
+  forms: FormDefinition[],
+  response: FormResponse | null | undefined
+): FormDefinition | null {
+  if (!response) return null;
+  return forms.find((f) => f.id === response.formId) ?? null;
+}
+
+export type FormAnswerRow = {
+  item: FormItemDefinition;
+  answer: FormAnswer;
+  isRedFlag: boolean;
+  hasNotes: boolean;
+  isSpecial: boolean;
+};
+
+export function hasAnswerContent(item: FormItemDefinition, answer: FormAnswer): boolean {
+  if (answer.skippedByRule) return false;
+  if (item.inputType === "yn_unk") return Boolean(answer.valueCode);
+  return Boolean(answer.valueRaw.trim());
+}
+
+export function isSpecialCaseAnswer(item: FormItemDefinition, answer: FormAnswer): boolean {
+  if (answer.skippedByRule) return false;
+  const notes = answer.notes.trim();
+  if (notes && (item.inputType !== "yn_unk" || answer.valueCode === "yes")) return true;
+  if (item.inputType === "yn_unk" && answer.valueCode === "yes") return true;
+  return false;
+}
+
+export function redFlagAnswers(
+  form: FormDefinition,
+  response: FormResponse
+): Array<{ item: FormItemDefinition; answer: FormAnswer }> {
   const map = answerMap(response.answers);
   return form.items
-    .filter((item) => item.coding.redFlagOnYes || item.coding.aiTags.includes("red_flag"))
+    .filter((item) => isRedFlagItem(item))
     .map((item) => ({ item, answer: map.get(item.code) ?? getAnswer(response.answers, item.code) }))
     .filter(({ answer }) => answer.valueCode === "yes" && !answer.skippedByRule);
+}
+
+export function specialCaseAnswers(form: FormDefinition, response: FormResponse): FormAnswerRow[] {
+  const map = answerMap(response.answers);
+  return form.items
+    .map((item) => {
+      const answer = map.get(item.code) ?? getAnswer(response.answers, item.code);
+      const isRedFlag = isRedFlagItem(item) && answer.valueCode === "yes" && !answer.skippedByRule;
+      const hasNotes =
+        Boolean(answer.notes.trim()) &&
+        !answer.skippedByRule &&
+        (item.inputType !== "yn_unk" || answer.valueCode === "yes");
+      const isSpecial = isSpecialCaseAnswer(item, answer) || isRedFlag;
+      return { item, answer, isRedFlag, hasNotes, isSpecial };
+    })
+    .filter((row) => row.isSpecial)
+    .sort((a, b) => {
+      const sa = form.sections.find((s) => s.id === a.item.sectionId)?.sortOrder ?? 0;
+      const sb = form.sections.find((s) => s.id === b.item.sectionId)?.sortOrder ?? 0;
+      return sa - sb || a.item.sortOrder - b.item.sortOrder;
+    });
+}
+
+export type SectionAnswerBundle = {
+  section: FormSectionDefinition;
+  rows: FormAnswerRow[];
+  flagCount: number;
+  specialCount: number;
+};
+
+export function answersBySection(
+  form: FormDefinition,
+  response: FormResponse,
+  mode: "flags" | "full"
+): SectionAnswerBundle[] {
+  const map = answerMap(response.answers);
+  return sectionsOf(form)
+    .map((section) => {
+      const rows = itemsOfSection(form, section.id)
+        .map((item) => {
+          const answer = map.get(item.code) ?? getAnswer(response.answers, item.code);
+          const isRedFlag = isRedFlagItem(item) && answer.valueCode === "yes" && !answer.skippedByRule;
+          const hasNotes =
+            Boolean(answer.notes.trim()) &&
+            !answer.skippedByRule &&
+            (item.inputType !== "yn_unk" || answer.valueCode === "yes");
+          const isSpecial = isSpecialCaseAnswer(item, answer) || isRedFlag;
+          return { item, answer, isRedFlag, hasNotes, isSpecial };
+        })
+        .filter((row) => {
+          if (!hasAnswerContent(row.item, row.answer)) return false;
+          if (mode === "flags") return row.isSpecial;
+          return true;
+        });
+      return {
+        section,
+        rows,
+        flagCount: rows.filter((r) => r.isRedFlag).length,
+        specialCount: rows.filter((r) => r.isSpecial).length,
+      };
+    })
+    .filter((bundle) => bundle.rows.length > 0);
+}
+
+export function specialCasesBySection(form: FormDefinition, response: FormResponse): SectionAnswerBundle[] {
+  return answersBySection(form, response, "flags");
+}
+
+/** Build a complete submitted demo response for physician cartable testing. */
+export function buildDemoSubmittedResponse(
+  patient: Pick<PatientFullDto, "id" | "gender" | "age" | "fullName" | "nationalId" | "phone">,
+  form: FormDefinition,
+  highlightCodes: string[] = []
+): FormResponse {
+  const highlight = new Set(highlightCodes);
+  const maritalItem = form.items.find((i) => i.code.includes("maritalStatus"));
+  const answers: FormAnswer[] = form.items.map((item) => {
+    if (item.code.includes("_SIG_")) {
+      return { itemCode: item.code, valueCode: null, valueRaw: "", notes: "", skippedByRule: true };
+    }
+    if (highlight.has(item.code) && item.inputType === "yn_unk") {
+      return {
+        itemCode: item.code,
+        valueCode: "yes" as const,
+        valueRaw: "",
+        notes: "توضیح ثبت‌شده توسط سلامتجو برای مرور پزشک",
+      };
+    }
+    if (item.inputType === "yn_unk") {
+      return { itemCode: item.code, valueCode: "no" as const, valueRaw: "", notes: "" };
+    }
+    if (item.inputType === "select" && item.selectOptions?.length) {
+      return {
+        itemCode: item.code,
+        valueCode: null,
+        valueRaw: item.code.includes("maritalStatus")
+          ? item.selectOptions.find((o) => o.includes("تاهل") || o.includes("تأهل")) ?? item.selectOptions[0]
+          : item.selectOptions[0],
+        notes: "",
+      };
+    }
+    if (item.inputType === "number") {
+      const raw =
+        item.code.includes("height") ? "170" : item.code.includes("weight") ? "72" : item.code.includes("waist") ? "90" : "1";
+      return { itemCode: item.code, valueCode: null, valueRaw: raw, notes: "" };
+    }
+    if (item.inputType === "date" || isFormDateItem(item)) {
+      return { itemCode: item.code, valueCode: null, valueRaw: iranLocalDayOffset(0), notes: "" };
+    }
+    if (item.inputType === "province_city") {
+      return { itemCode: item.code, valueCode: null, valueRaw: "تهران / تهران", notes: "" };
+    }
+    const prefilled = prefillValue(item, patient);
+    return { itemCode: item.code, valueCode: null, valueRaw: prefilled || "—", notes: "" };
+  });
+  const ctx = buildContext(patient, answers, form);
+  const synced = syncSkippedAnswers(form, answers, ctx);
+  const now = new Date().toISOString();
+  const maritalRaw = maritalItem ? getAnswer(synced, maritalItem.code).valueRaw : ctx.maritalStatus;
+  return {
+    id: `demo_resp_${patient.id}_${form.id}`,
+    patientId: patient.id,
+    formId: form.id,
+    formCode: form.code,
+    formVersion: form.version,
+    formVersionId: formVersionId(form),
+    status: "submitted",
+    startedAt: now,
+    updatedAt: now,
+    completedAt: now,
+    answers: synced,
+    context: {
+      gender: patient.gender,
+      age: patient.age,
+      maritalStatus: maritalRaw || "متأهل",
+    },
+  };
 }
 
 export function buildAiPayload(form: FormDefinition, response: FormResponse) {

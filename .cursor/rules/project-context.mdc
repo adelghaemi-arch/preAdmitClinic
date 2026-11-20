@@ -1,0 +1,89 @@
+/*
+ File: .cursor/rules/project-context.mdc
+ Description: Overlay اختصاصی Nabz / clinicPreAdmit — نام‌ها، نقش‌ها، Auth/SMS، docs و deploy
+ Parent Dependencies: .cursorrules
+ */
+
+---
+description: Project overlay — Nabz names, roles, Auth/SMS keys, docs/server paths (always apply)
+alwaysApply: true
+---
+
+# Project context (Nabz)
+
+استاندارد پرتابل در [`.cursorrules`](../../.cursorrules). این فایل فقط جزئیات این ریپو است؛ در پروژهٔ جدید همین اسکلت را با مقادیر خودت پر کن.
+
+## لایه‌ها و مرجع طلایی
+
+| لایه | مسیر |
+|------|------|
+| اینترفیس سرویس / Options | `Nabz.Application` (`Interfaces`, `Options`) |
+| پیاده‌سازی سرویس | `Nabz.Infrastructure/Services` |
+| EF | `Nabz.Database.EF.Sql` |
+| مرجع طلایی | `AuthService` + `AuthRepository` |
+
+- جزئیات لایه‌بندی: [`.cursor/rules/backend-layering.mdc`](backend-layering.mdc)، [`.cursor/rules/services-no-ef.mdc`](services-no-ef.mdc)
+- گیت بیلد: `ForbidEfInServices` در `backend/Directory.Build.targets`
+
+## Auth — OTP و کاوه‌نگار
+
+| کلید | نقش |
+|------|-----|
+| `Auth__FixedOtp` | بای‌پس رندم + SMS |
+| `Kavenegar__ApiKey` | احراز API کاوه‌نگار |
+| `Kavenegar__Sender` | خط ارسال (در صورت نیاز قالب) |
+| `Kavenegar__OtpTemplate` | نام قالب OTP ورود |
+| `Kavenegar__InviteTemplate` | نام قالب دعوت/یادآوری گروهی |
+
+- Options: `AuthOptions` / `KavenegarOptions` در `Nabz.Application/Options`
+- FixedOtp در Serviceهایی مثل `AuthService` / `ContractService` قبل از تولید کد و قبل از `ISmsSender`
+- اعتماد به `actingUserId` / `AsSupervisor` از body کلاینت ممنوع
+
+### ادمین کل (قفل)
+
+- موبایل ادمین کل **همیشه** `09133752696` — تغییر بدون تصمیم صریح مالک پروژه ممنوع.
+- در seed اولیه (`Program.cs` / `SeedAsync`) این کاربر با نقش `Platform` باید ایجاد یا نقشش تضمین شود.
+- لاگین OTP / پنل پلتفرم / دمو و README با همین شماره هم‌تراز باشند (نه `09120000000`).
+
+## اسناد و مسیرها
+
+پوشه‌های زندهٔ `docs/`: `backend/` · `my/` · `news/` · `shared/` · `exports/`  
+سند بازیگران و قالب UC: [`docs/processes/use-cases/00-actors-and-system.md`](../../docs/processes/use-cases/00-actors-and-system.md)  
+ماتریس / کاتالوگ تست: `docs/shared/pre-release-test-matrix.md` · `docs/shared/unit-test-scenarios.md`  
+Deploy: [`docs/shared/server-deploy.md`](../../docs/shared/server-deploy.md)
+
+## پیشوند UC و فایل نقش
+
+| پیشوند | نقش | سند UC |
+|--------|-----|--------|
+| `UC-OWN` | owner | `01-owner.md` |
+| `UC-SPC` | specialist | `02-specialist.md` |
+| `UC-ADM` | admin | `03-admin.md` |
+| `UC-SUP` | supervisor | `04-supervisor.md` |
+| `UC-PLT` | platform | `05-platform.md` |
+
+- نام‌گذاری تست: بک `UcOwn01_...`؛ فرانت `describe('UC-OWN-01', …)` — جزئیات [`.cursor/rules/testing-unit.mdc`](testing-unit.mdc)
+
+## نگاشت نقش → سند → سرویس
+
+| نقش | سند UC | سرویس اصلی بک | ماژول فرانت نمونه |
+|-----|--------|---------------|-------------------|
+| owner | `01-owner.md` | Auth / Form / Evidence / Patient | `owner-intake-gate`, pre-admit UI |
+| specialist | `02-specialist.md` | Patient / Form / Evidence | specialist chart / search |
+| admin | `03-admin.md` | Contract / Form / UserAdmin / Patient | admin forms / contracts / users |
+| supervisor | `04-supervisor.md` | Auth / Contract | supervisor panel |
+| platform | `05-platform.md` | Platform / Evidence / Auth | platform panel |
+
+## Server deploy (این ریپو)
+
+نقطهٔ ورود: `server/publish.bat`  
+سرویس‌ها: `server/api` · `server/my` · `server/news`  
+Persist نمونه: `persist/uploads/` · `persist/news-data/`
+
+هر `server/{api,my,news}/.env.example` باید `KEY=value` واقعی داشته باشد:
+
+- `my`: حداقل `VITE_API_BASE_URL=<API_PUBLIC_URL>` (بدون `/api`)
+- `news`: حداقل `VITE_API_URL=<API_PUBLIC_URL>`
+- `api`: `ConnectionStrings__*`، `Auth__*`، `Kavenegar__*`، `FrontendUrls__*` با نمونهٔ قابل‌کپی
+
+Path داخل کانتینر: `wwwroot/uploads`، `/app/news-vitrine`، URL `/data/`.

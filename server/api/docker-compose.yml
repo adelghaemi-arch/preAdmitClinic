@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    container_name: adel-maryam-nabz-clinic-api
+    restart: unless-stopped
+    ports:
+      - "5438:8080"
+    env_file:
+      - .env
+    environment:
+      ASPNETCORE_URLS: "http://+:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../persist/uploads:/app/wwwroot/uploads
+      - ../persist/news-data:/app/news-vitrine

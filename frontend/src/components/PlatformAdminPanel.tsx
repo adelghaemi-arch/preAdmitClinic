@@ -1,3 +1,9 @@
+/*
+ File: frontend/src/components/PlatformAdminPanel.tsx
+ Description: پنل ادمین کل و مدیریت کاربران با userScope کلینیک/کامل
+ Parent Dependencies: types/clinic, platform-actions via onAction
+ */
+
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -63,6 +69,8 @@ interface Props {
   onAction: (payload: Record<string, unknown>) => Promise<unknown>;
   busy?: boolean;
   initialSection?: PlatformSection;
+  /** کلینیک: بدون نقش/کاربران ادمین کل؛ full: ادمین کل */
+  userScope?: "full" | "clinic";
 }
 
 const REVIEW_FA = {
@@ -81,12 +89,15 @@ type PackageFilter = "all" | "today" | "camera";
 type UserDetailTab = "profile" | "access" | "case";
 
 const PRIMARY_ROLE_OPTIONS: { id: PlatformUserPrimaryRole; label: string }[] = [
-  { id: "platform", label: "ادمین پلتفرم" },
+  { id: "platform", label: "ادمین کل" },
   { id: "clinic_admin", label: "ادمین کلینیک" },
   { id: "staff", label: "کادر درمان" },
   { id: "patient", label: "سلامتجو" },
   { id: "supervisor", label: "ناظر سازمان" },
 ];
+
+/** ادمین کلینیک نباید نقش ادمین کل را در select ببیند */
+const CLINIC_ROLE_OPTIONS = PRIMARY_ROLE_OPTIONS.filter((r) => r.id !== "platform");
 
 function emptyUserDraft(clinicId: string): PlatformUserProfile {
   const now = new Date().toISOString();
@@ -149,10 +160,23 @@ function formatFileSizeFa(bytes: number): string {
   return `${toFaDigits(String(mb))} مگابایت`;
 }
 
-export function PlatformAdminPanel({ snapshot, onAction, busy = false, initialSection = "dashboard" }: Props) {
+export function PlatformAdminPanel({
+  snapshot,
+  onAction,
+  busy = false,
+  initialSection = "dashboard",
+  userScope = "full",
+}: Props) {
   const platform = snapshot.platform;
   const section = initialSection;
-  const [selectedUserId, setSelectedUserId] = useState(platform.users[0]?.id ?? "");
+  const isClinicScope = userScope === "clinic";
+  // ادمین کلینیک اصلاً نباید کاربران ادمین کل را در فهرست ببیند
+  const visibleUsers = useMemo(
+    () => (isClinicScope ? platform.users.filter((u) => u.primaryRole !== "platform") : platform.users),
+    [isClinicScope, platform.users],
+  );
+  const roleOptions = isClinicScope ? CLINIC_ROLE_OPTIONS : PRIMARY_ROLE_OPTIONS;
+  const [selectedUserId, setSelectedUserId] = useState(visibleUsers[0]?.id ?? "");
   const [selectedSessionId, setSelectedSessionId] = useState(platform.fraudSessions[0]?.id ?? "");
   const [selectedAlertId, setSelectedAlertId] = useState(platform.multiSessionAlerts?.[0]?.id ?? "");
   const [fraudTab, setFraudTab] = useState<FraudQueueTab>("sessions");
@@ -189,7 +213,7 @@ export function PlatformAdminPanel({ snapshot, onAction, busy = false, initialSe
 
   const selectedUser = creatingUser
     ? null
-    : platform.users.find((u) => u.id === selectedUserId) ?? platform.users[0] ?? null;
+    : visibleUsers.find((u) => u.id === selectedUserId) ?? visibleUsers[0] ?? null;
 
   useEffect(() => {
     if (creatingUser) return;
@@ -327,6 +351,8 @@ export function PlatformAdminPanel({ snapshot, onAction, busy = false, initialSe
   const saveUserDraft = async () => {
     const res = (await onAction({
       action: "PLATFORM_UPSERT_USER",
+      // شناسه Guid سرور برای ویرایش؛ در ایجاد خالی است
+      serverUserId: creatingUser ? undefined : userDraft.id,
       id: creatingUser ? undefined : userDraft.id,
       fullName: userDraft.fullName,
       phone: userDraft.phone,
@@ -346,7 +372,7 @@ export function PlatformAdminPanel({ snapshot, onAction, busy = false, initialSe
 
   const setUserActive = async (isActive: boolean) => {
     if (!userDraft.id) return;
-    await onAction({ action: "PLATFORM_SET_USER_ACTIVE", id: userDraft.id, isActive });
+    await onAction({ action: "PLATFORM_SET_USER_ACTIVE", id: userDraft.id, serverUserId: userDraft.id, isActive });
   };
 
   const resetUserAccess = async () => {
@@ -448,7 +474,7 @@ export function PlatformAdminPanel({ snapshot, onAction, busy = false, initialSe
               </button>
             </div>
             <ul className="space-y-1">
-              {platform.users.map((u) => {
+              {visibleUsers.map((u) => {
                 const thumb = u.profilePhotoDataUrl;
                 const active = !creatingUser && selectedUser?.id === u.id;
                 return (
@@ -470,7 +496,7 @@ export function PlatformAdminPanel({ snapshot, onAction, busy = false, initialSe
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{u.fullName}</span>
                         <span className="block truncate text-[10px] text-slate-400">
-                          {u.roleLabel || PRIMARY_ROLE_OPTIONS.find((r) => r.id === u.primaryRole)?.label} ·{" "}
+                          {u.roleLabel || roleOptions.find((r) => r.id === u.primaryRole)?.label} ·{" "}
                           {u.isActive === false ? "تعلیق" : "فعال"}
                         </span>
                       </span>
@@ -510,7 +536,7 @@ export function PlatformAdminPanel({ snapshot, onAction, busy = false, initialSe
                       [
                         ["profile", "مشخصات"],
                         ["access", "دسترسی"],
-                        ["case", "بررسی موردی"],
+                        ...(!isClinicScope ? ([["case", "بررسی موردی"]] as const) : []),
                       ] as const
                     ).map(([id, label]) => (
                       <button
@@ -555,12 +581,12 @@ export function PlatformAdminPanel({ snapshot, onAction, busy = false, initialSe
                         value={userDraft.primaryRole}
                         onChange={(e) => {
                           const primaryRole = e.target.value as PlatformUserPrimaryRole;
-                          const roleLabel = PRIMARY_ROLE_OPTIONS.find((r) => r.id === primaryRole)?.label ?? primaryRole;
+                          const roleLabel = roleOptions.find((r) => r.id === primaryRole)?.label ?? primaryRole;
                           setUserDraft((d) => ({ ...d, primaryRole, roleLabel }));
                         }}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[11px]"
                       >
-                        {PRIMARY_ROLE_OPTIONS.map((r) => (
+                        {roleOptions.map((r) => (
                           <option key={r.id} value={r.id}>
                             {r.label}
                           </option>
@@ -633,15 +659,17 @@ export function PlatformAdminPanel({ snapshot, onAction, busy = false, initialSe
                     >
                       تعلیق
                     </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void resetUserAccess()}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-slate-700 disabled:opacity-40"
-                    >
-                      ریست دسترسی / قطع نشست‌ها
-                    </button>
-                    {selectedUser?.userId != null && selectedUserSessions.length > 0 && (
+                    {!isClinicScope && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void resetUserAccess()}
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-slate-700 disabled:opacity-40"
+                      >
+                        ریست دسترسی / قطع نشست‌ها
+                      </button>
+                    )}
+                    {!isClinicScope && selectedUser?.userId != null && selectedUserSessions.length > 0 && (
                       <button
                         type="button"
                         disabled={busy}

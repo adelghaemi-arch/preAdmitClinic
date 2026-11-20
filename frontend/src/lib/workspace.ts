@@ -1,3 +1,9 @@
+/*
+ File: frontend/src/lib/workspace.ts
+ Description: ناوبری نقش‌ها، صفحات workspace و برچسب‌ها (شامل clinic-users و ادمین کل)
+ Parent Dependencies: types/clinic, persian
+ */
+
 import type { PatientFullDto, RoomDto, StaffMemberDto, VisitStationDto, WorkspaceRole } from "@/types/clinic";
 import { normalizePersianLetters, toLatinDigits } from "@/lib/persian";
 
@@ -30,6 +36,7 @@ export type AppPage =
   | "pathways"
   | "rooms"
   | "team"
+  | "clinic-users"
   | "forms"
   | "platform-dashboard"
   | "platform-users"
@@ -68,6 +75,7 @@ export const PAGE_TITLES: Record<AppPage, string> = {
   pathways: "مسیرهای درمانی",
   rooms: "طبقات و اتاق‌ها",
   team: "کادر درمان و دسترسی‌ها",
+  "clinic-users": "مدیریت کاربران",
   forms: "فرم‌های پیش‌پذیرش",
   "platform-dashboard": "داشبورد پلتفرم",
   "platform-users": "مدیریت کاربران",
@@ -89,6 +97,23 @@ export const PLATFORM_PAGES: AppPage[] = [
 ];
 
 /**
+ * Reception / paraclinic operational pages — temporarily platform-admin only.
+ * Kept as a named set so ROLE_NAV and action guards stay aligned.
+ */
+export const OPS_PAGES: AppPage[] = [
+  "admission",
+  "flow",
+  "queues",
+  "alerts",
+  "diagnostics",
+  "diagnostics-tracker",
+  "diagnostics-upload",
+];
+
+/** Workspace roles whose switcher entries are hidden until ops reopen for clinic staff. */
+export const OPS_ROLES_HIDDEN_FROM_SWITCHER: WorkspaceRole[] = ["reception", "paraclinic"];
+
+/**
  * Temporary kill-switch for companion (همراه) linking / role.
  * Patient self-journey pages (companion-intake/map/records) stay available.
  * Flip to true in a later phase to restore companion UX without further refactor.
@@ -98,6 +123,31 @@ export const COMPANION_FEATURE_ENABLED = false;
 /** Pages that only exist for companion linking / privacy management. */
 export const COMPANION_FEATURE_PAGES: AppPage[] = ["companion-links", "patient-privacy"];
 
+/**
+ * سطح محصول v1: فقط نقش‌ها و صفحات دامنهٔ مستند (بدون صف/اتاق/همراه/پاراکلینیک عملیاتی).
+ * خاموش کردن این فلگ فقط برای فازهای آیندهٔ غیر-v1 مجاز است.
+ */
+export const V1_PRODUCT_SURFACE = true;
+
+/** نقش‌های دامنهٔ v1 که در سوئیچر دیده می‌شوند. */
+export const V1_ROLES: WorkspaceRole[] = ["owner", "specialist", "admin", "supervisor", "platform"];
+
+/** صفحات خارج از v1 که حتی برای ادمین کل هم در ناوبری فعال نیستند. */
+export const NON_V1_PAGES: AppPage[] = [
+  ...OPS_PAGES,
+  "rooms",
+  "pathways",
+  "team",
+  "reports",
+  "clinical",
+  "clinical-notes",
+  "clinical-complete",
+  "companion-links",
+  "patient-privacy",
+  "companion-map",
+  "contract-schedule",
+];
+
 /** Role switcher entries. The first role is the default for every session. */
 export const ROLES: { id: WorkspaceRole; label: string; description: string; page: AppPage }[] = [
   { id: "owner", label: "سلامتجو", description: "داشبورد شخصی، پرسشنامه پیش‌پذیرش، مسیر درمان و گزارش من", page: "dashboard" },
@@ -106,25 +156,34 @@ export const ROLES: { id: WorkspaceRole; label: string; description: string; pag
   { id: "specialist", label: "پزشک متخصص", description: "لیست انتظار، معاینه، تشخیص و نسخه", page: "dashboard" },
   { id: "paraclinic", label: "کارشناس پاراکلینیک", description: "صف بخش تشخیصی و نتایج آزمایش", page: "dashboard" },
   { id: "admin", label: "ادمین و راهبر کلینیک", description: "قراردادهای سازمانی، قیف ثبت‌نام، نوبت‌دهی سقفی و تنظیمات", page: "contracts" },
-  { id: "platform", label: "ادمین پلتفرم", description: "نظارت سیستمی، کاربران، ضدتقلب، سلامت فنی و تنظیمات پایه", page: "platform-dashboard" },
+  { id: "platform", label: "ادمین کل", description: "نظارت سیستمی، کاربران، ضدتقلب، سلامت فنی و تنظیمات پایه", page: "platform-dashboard" },
   { id: "supervisor", label: "ناظر سازمان (طرف قرارداد)", description: "پنل نظارت شرکت بر پیش‌ثبت‌نام، نوبت‌ها و حضور کارکنان", page: "dashboard" },
 ];
 
-/** Roles shown in the switcher; companion role hidden while feature flag is off. */
+function filterPagesForV1(pages: AppPage[]): AppPage[] {
+  if (!V1_PRODUCT_SURFACE) return pages;
+  return pages.filter((p) => !NON_V1_PAGES.includes(p));
+}
+
+/** Roles shown in the switcher; companion + ops staff roles hidden while feature gates are off. */
 export function selectableRoles(): typeof ROLES {
-  if (COMPANION_FEATURE_ENABLED) return ROLES;
-  return ROLES.filter((r) => r.id !== "patient");
+  return ROLES.filter((r) => {
+    if (V1_PRODUCT_SURFACE && !V1_ROLES.includes(r.id)) return false;
+    if (!COMPANION_FEATURE_ENABLED && r.id === "patient") return false;
+    if (OPS_ROLES_HIDDEN_FROM_SWITCHER.includes(r.id)) return false;
+    return true;
+  });
 }
 
 export function filterPagesForCompanionFeature(pages: AppPage[]): AppPage[] {
-  if (COMPANION_FEATURE_ENABLED) return pages;
-  return pages.filter((p) => !COMPANION_FEATURE_PAGES.includes(p));
+  let next = pages;
+  if (!COMPANION_FEATURE_ENABLED) next = next.filter((p) => !COMPANION_FEATURE_PAGES.includes(p));
+  return filterPagesForV1(next);
 }
 
 /** Role nav with companion-only pages stripped when the feature is disabled. */
 export function roleNavFor(role: WorkspaceRole): RoleNav {
   const base = ROLE_NAV[role];
-  if (COMPANION_FEATURE_ENABLED) return base;
   return {
     ...base,
     groups: base.groups
@@ -245,33 +304,28 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
   admin: {
     home: "contracts",
     groups: [
-      { title: "قراردادهای سازمانی", pages: ["contracts", "contract-packages", "contract-schedule", "contract-funnel"] },
-      { title: "نمای کلی و جریان", pages: ["dashboard", "patients", "admission", "flow", "queues", "records"] },
-      { title: "درمان و تشخیص", pages: ["clinical", "diagnostics", "alerts"] },
-      { title: "پیکربندی کلینیک", pages: ["reports", "pathways", "rooms", "team", "forms"] },
+      { title: "قراردادهای سازمانی", pages: ["contracts", "contract-packages", "contract-funnel"] },
+      { title: "نمای کلی", pages: ["dashboard", "patients", "records"] },
+      { title: "پیکربندی کلینیک", pages: ["clinic-users", "forms"] },
     ],
-    mobile: ["contracts", "contract-packages", "contract-funnel", "dashboard"],
+    mobile: ["contracts", "contract-funnel", "dashboard", "clinic-users", "forms"],
     labels: {
       contracts: "افراد قرارداد و منابع ورود",
       "contract-packages": "بسته‌ها و کتابخانه قوانین",
-      "contract-schedule": "نوبت‌دهی و فرمول سقفی",
       "contract-funnel": "قیف ثبت‌نام و پیامک گروهی",
       dashboard: "داشبورد کلینیک",
       patients: "سلامتجویان حاضر",
-      flow: "جریان زنده",
-      queues: "مدیریت صف‌ها",
-      admission: "پذیرش موردی",
       records: "پرونده سلامتجو",
-      clinical: "ویزیت و نسخه",
-      diagnostics: "خدمات تشخیصی",
-      alerts: "اعلان‌ها",
-      reports: "گزارش‌ها و KPI",
-      pathways: "بسته‌ها و مسیرها",
-      rooms: "طبقات و اتاق‌ها",
-      team: "کادر و دسترسی‌ها",
+      "clinic-users": "مدیریت کاربران",
       forms: "فرم‌های پیش‌پذیرش",
     },
-    short: { contracts: "افراد", "contract-packages": "بسته‌ها", "contract-schedule": "نوبت‌دهی", "contract-funnel": "قیف و پیامک", dashboard: "کلینیک" },
+    short: {
+      contracts: "افراد",
+      "contract-packages": "بسته‌ها",
+      "contract-funnel": "قیف و پیامک",
+      dashboard: "کلینیک",
+      "clinic-users": "کاربران",
+    },
   },
   platform: {
     home: "platform-dashboard",
@@ -279,6 +333,7 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       { title: "نمای پلتفرم", pages: ["platform-dashboard"] },
       { title: "کاربران و نظارت", pages: ["platform-users", "platform-fraud"] },
       { title: "فنی و پیکربندی", pages: ["platform-health", "platform-settings", "platform-integrations", "platform-audit"] },
+      { title: "پرونده‌ها", pages: ["patients", "records"] },
     ],
     mobile: ["platform-dashboard", "platform-users", "platform-fraud", "platform-settings"],
     labels: {
@@ -289,6 +344,8 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       "platform-settings": "تنظیمات پایه",
       "platform-integrations": "یکپارچه‌سازی",
       "platform-audit": "ممیزی",
+      patients: "فهرست سلامتجویان",
+      records: "پرونده سلامتجو",
     },
     short: {
       "platform-dashboard": "پلتفرم",
@@ -299,14 +356,13 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
   },
 };
 
-/** Clinic admin can open every clinic module; platform pages stay platform-only. */
+/** Pages a role may open — در v1 دیگر OPS به ادمین کل ضمیمه نمی‌شود. */
 export function allowedPagesFor(role: WorkspaceRole): AppPage[] {
-  if (role === "admin") {
-    return filterPagesForCompanionFeature(
-      (Object.keys(PAGE_TITLES) as AppPage[]).filter((p) => !PLATFORM_PAGES.includes(p))
-    );
-  }
-  return roleNavFor(role).groups.flatMap((group) => group.pages);
+  return filterPagesForCompanionFeature(roleNavFor(role).groups.flatMap((group) => group.pages));
+}
+
+export function isOpsPage(page: AppPage): boolean {
+  return OPS_PAGES.includes(page);
 }
 
 export function labelFor(role: WorkspaceRole, page: AppPage): string {

@@ -7,3 +7,21 @@ dist
 .env.*
 !.env.example
 .cursor/debug-*.log
+backend/**/bin/
+backend/**/obj/
+backend/**/*.user
+*.suo
+.vs/
+
+# آرتیفکت دیپلوی — سکرت و publish/dist محلی (قالب‌ها و .env.example می‌مانند)
+server/api/publish/
+server/api/.env
+server/my/dist/
+server/news/dist/
+server/persist/uploads/*
+!server/persist/uploads/.gitkeep
+server/persist/news-data/*
+!server/persist/news-data/.gitkeep
+
+**/__pycache__/
+*.pyc

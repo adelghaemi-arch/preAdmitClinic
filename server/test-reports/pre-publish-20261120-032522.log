@@ -1,0 +1,197 @@
+=== Nabz Clinic pre-publish tests ===
+Server: c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server
+Repo:   c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3
+Log:    c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server\test-reports\pre-publish-20261120-032522.log
+Started: 2026-11-20T03:25:23.2492417+03:30
+ECHO is off.
+--- [0] Stop locking processes ---
+  [skip] Nabz.Api.exe not running
+  [skip] testhost.exe not running
+  [skip] Nabz.Api.Tests.exe not running
+  [skip] testhost.net48.exe not running
+  [skip] testhost.netcoreapp.exe not running
+  [skip] vstest.console.exe not running
+ECHO is off.
+--- [1/3] Backend unit (Nabz.Infrastructure.Tests) ---
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Nabz.Domain -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Domain\bin\Debug\net10.0\Nabz.Domain.dll
+  Nabz.Application -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Application\bin\Debug\net10.0\Nabz.Application.dll
+  Nabz.Infrastructure -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Infrastructure\bin\Debug\net10.0\Nabz.Infrastructure.dll
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Fakes\FakeRepositories.cs(169,30): warning CS8601: Possible null reference assignment. [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Nabz.Infrastructure.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\UseCases\Owner\UcOwn05_11_EvidenceAndSessionTests.cs(45,9): warning xUnit2013: Do not use Assert.Equal() to check for collection size. Use Assert.Single instead. (https://xunit.net/xunit.analyzers/rules/xUnit2013) [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Nabz.Infrastructure.Tests.csproj]
+  Nabz.Infrastructure.Tests -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\bin\Debug\net10.0\Nabz.Infrastructure.Tests.dll
+Test run for c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\bin\Debug\net10.0\Nabz.Infrastructure.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    68, Skipped:     0, Total:    68, Duration: 76 ms - Nabz.Infrastructure.Tests.dll (net10.0)
+ECHO is off.
+--- [2/3] API smoke (Nabz.Api.Tests) ---
+  [skip] Nabz.Api.exe not running
+  Determining projects to restore...
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Api\Nabz.Api.csproj : warning NU1903: Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj : warning NU1903: Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Api\Nabz.Api.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1902: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-2fmv-rv2c-59x7 [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Api\Nabz.Api.csproj : warning NU1902: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-2fmv-rv2c-59x7 [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known high severity vulnerability, https://github.com/advisories/GHSA-846f-f764-76mx [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Api\Nabz.Api.csproj : warning NU1903: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known high severity vulnerability, https://github.com/advisories/GHSA-846f-f764-76mx [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj : warning NU1902: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-2fmv-rv2c-59x7
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-23rf-6693-g89p [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj : warning NU1903: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known high severity vulnerability, https://github.com/advisories/GHSA-846f-f764-76mx
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-6588-8gv4-xfgh [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-7hqp-7c5m-4vq6 [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-8q5v-6pqq-x66h [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-c399-9853-6jmj [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-cvvh-rhrc-wg4q [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-g8r8-53c2-pm3f [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-mmjf-rqrv-855v [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-r955-8q5j-3h83 [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf [c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj]
+  All projects are up-to-date for restore.
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj : warning NU1903: Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj : warning NU1902: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-2fmv-rv2c-59x7
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj : warning NU1903: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known high severity vulnerability, https://github.com/advisories/GHSA-846f-f764-76mx
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Api\Nabz.Api.csproj : warning NU1903: Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Api\Nabz.Api.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Api\Nabz.Api.csproj : warning NU1902: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-2fmv-rv2c-59x7
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'SQLitePCLRaw.lib.e_sqlite3' 2.1.11 has a known high severity vulnerability, https://github.com/advisories/GHSA-2m69-gcr7-jv3q
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Api\Nabz.Api.csproj : warning NU1903: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known high severity vulnerability, https://github.com/advisories/GHSA-846f-f764-76mx
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1902: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-2fmv-rv2c-59x7
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Pkcs' 9.0.4 has a known high severity vulnerability, https://github.com/advisories/GHSA-846f-f764-76mx
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-23rf-6693-g89p
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-6588-8gv4-xfgh
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-7hqp-7c5m-4vq6
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-8q5v-6pqq-x66h
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-c399-9853-6jmj
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-cvvh-rhrc-wg4q
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-g8r8-53c2-pm3f
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-mmjf-rqrv-855v
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-r955-8q5j-3h83
+c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\Nabz.Database.EF.Sql.csproj : warning NU1903: Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf
+  Nabz.Domain -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Domain\bin\Debug\net10.0\Nabz.Domain.dll
+  Nabz.Application -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Application\bin\Debug\net10.0\Nabz.Application.dll
+  Nabz.Infrastructure -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Infrastructure\bin\Debug\net10.0\Nabz.Infrastructure.dll
+  Nabz.Database.EF.Sql -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Database.EF.Sql\bin\Debug\net10.0\Nabz.Database.EF.Sql.dll
+  Nabz.Api -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Api\bin\Debug\net10.0\Nabz.Api.dll
+  Nabz.Api.Tests -> c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\bin\Debug\net10.0\Nabz.Api.Tests.dll
+Test run for c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\bin\Debug\net10.0\Nabz.Api.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     4, Skipped:     0, Total:     4, Duration: 3 s - Nabz.Api.Tests.dll (net10.0)
+ECHO is off.
+--- [3/3] Frontend unit (npm run test:run) ---
+
+> nabz-clinic-react@1.0.0 test:run
+> vitest run
+
+
+ RUN  v5.1.1 C:/Adel/Projects/Own/Maryam/clinicPreAdmit/type3/frontend
+
+ ❯ src/lib/__tests__/uc-form-engine.test.ts (0 test)
+ ❯ src/lib/__tests__/uc-plt.test.ts (0 test)
+ ❯ src/lib/__tests__/uc-adm.test.ts (0 test)
+ ❯ src/lib/__tests__/uc-sup.test.ts (0 test)
+ ❯ src/lib/__tests__/uc-spc.test.ts (0 test)
+ ❯ src/lib/__tests__/uc-own.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/__tests__/uc-adm.test.ts [ src/lib/__tests__/uc-adm.test.ts ]
+TypeError: Cannot read properties of undefined (reading 'config')
+ ❯ src/lib/__tests__/uc-adm.test.ts:18:1
+     16| const ADMIN_EXPECTED = ["contracts", "contract-packages", "contract-fu…
+     17|
+     18| describe("UC-ADM-01", () => {
+       | ^
+     19|   it("خانه ادمین contracts است", () => {
+     20|     expect(ROLE_NAV.admin.home).toBe("contracts");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  src/lib/__tests__/uc-form-engine.test.ts [ src/lib/__tests__/uc-form-engine.test.ts ]
+TypeError: Cannot read properties of undefined (reading 'config')
+ ❯ src/lib/__tests__/uc-form-engine.test.ts:60:1
+     58| }
+     59|
+     60| describe("UC-ADM-09", () => {
+       | ^
+     61|   it("validateFormDefinitionCoding: بدون UMLS خطا می‌دهد", () => {
+     62|     const form = minimalForm([minimalItem()]);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  src/lib/__tests__/uc-own.test.ts [ src/lib/__tests__/uc-own.test.ts ]
+TypeError: Cannot read properties of undefined (reading 'config')
+ ❯ src/lib/__tests__/uc-own.test.ts:34:1
+     32| }
+     33|
+     34| describe("UC-OWN-01", () => {
+       | ^
+     35|   it("normalizePhone: فارسی، 98 و 0098 را به ۰۹… تبدیل می‌کند", () => {
+     36|     expect(normalizePhone("۰۹۱۲۳۴۵۶۷۸۹")).toBe("09123456789");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  src/lib/__tests__/uc-plt.test.ts [ src/lib/__tests__/uc-plt.test.ts ]
+TypeError: Cannot read properties of undefined (reading 'config')
+ ❯ src/lib/__tests__/uc-plt.test.ts:17:1
+     15| } from "@/lib/workspace";
+     16|
+     17| describe("UC-PLT-01", () => {
+       | ^
+     18|   it("همهٔ PLATFORM_PAGES برای نقش platform مجازند", () => {
+     19|     const pages = allowedPagesFor("platform");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  src/lib/__tests__/uc-spc.test.ts [ src/lib/__tests__/uc-spc.test.ts ]
+TypeError: Cannot read properties of undefined (reading 'config')
+ ❯ src/lib/__tests__/uc-spc.test.ts:19:1
+     17| import { minimalPatient } from "./test-fixtures";
+     18|
+     19| describe("UC-SPC-01", () => {
+       | ^
+     20|   it("matchesPatient: جستجو روی نام، کد ملی، تلفن، qr", () => {
+     21|     const p = minimalPatient({ fullName: "علی رضایی", nationalId: "123…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  src/lib/__tests__/uc-sup.test.ts [ src/lib/__tests__/uc-sup.test.ts ]
+TypeError: Cannot read properties of undefined (reading 'config')
+ ❯ src/lib/__tests__/uc-sup.test.ts:10:1
+      8| import { allowedPagesFor, PLATFORM_PAGES, ROLE_NAV } from "@/lib/works…
+      9|
+     10| describe("UC-SUP-01", () => {
+       | ^
+     11|   it("allowedPages ناظر فقط داشبورد و supervisor-roster", () => {
+     12|     const pages = allowedPagesFor("supervisor");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  6 failed (6)
+      Tests  no tests
+   Start at  03:25:43
+   Duration  4.10s (environment 78%, setup 21%, worker 1%)
+
+[FAIL] Frontend unit exit=1        Tests  no tests
+ECHO is off.
+========================================
+  PRE-PUBLISH TEST REPORT
+========================================
+Started:  2026-11-20T03:25:23.2492417+03:30
+Finished: 2026-11-20T03:25:47.5359621+03:30
+Duration: 24s
+ECHO is off.
+Suite                          Status   Code   Summary
+------------------------------ -------- ------ ------------------------------
+3 Frontend Vitest test:run      FAIL     1          Tests  no tests
+ECHO is off.
+Full log: c:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server\test-reports\pre-publish-20261120-032522.log
+PRE-PUBLISH TESTS: FAIL

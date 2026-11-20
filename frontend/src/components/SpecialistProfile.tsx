@@ -515,7 +515,7 @@ export function SpecialistProfile({
               <FormResponseSummary
                 patient={activeEntry.patient}
                 forms={snapshot.forms ?? []}
-                compact
+                enableViewToggle
                 showAiPayloadToggle
               />
             </div>

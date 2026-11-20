@@ -1,0 +1,5720 @@
+{
+  "forms": [
+    {
+      "id": "form_cancer_male_v02",
+      "code": "cancer_screening_male_v02",
+      "title": "آگاهی و رفتار سلامت",
+      "version": 2,
+      "status": "published",
+      "sortOrder": 1,
+      "warningText": "اگر هر یک از علائم هشدار (خونریزی، توده جدید، کاهش وزن بی‌دلیل، تب یا تعریق شبانه پایدار، درد شدید یا پیشرونده) را دارید، ارزیابی پزشکی را به تعویق نیندازید. این پرسشنامه برای غربالگری و پشتیبانی تصمیم پزشک است و جایگزین معاینه یا تشخیص نیست.",
+      "targetAudience": {
+        "gender": "مرد",
+        "ageMin": 18,
+        "ageMax": null,
+        "maritalStatuses": []
+      },
+      "sections": [
+        {
+          "id": "CA_M_SEC_1",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_BASE",
+          "title": "اطلاعات پایه",
+          "sortOrder": 1,
+          "timeWindowHint": "",
+          "guideText": "این بخش برای تفسیر درست خطر و انتخاب روش غربالگری لازم است."
+        },
+        {
+          "id": "CA_M_SEC_2",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_2",
+          "title": "سابقه پزشکی فردی و عوامل خطر پزشکی",
+          "sortOrder": 2,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_M_SEC_3",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_3",
+          "title": "سابقه خانوادگی و ژنتیک (خویشاوندان درجه یک: پدر/مادر/خواهر/برادر/فرزند)",
+          "sortOrder": 3,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_M_SEC_4",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_4",
+          "title": "سبک زندگی و مواجهات محیطی/شغلی",
+          "sortOrder": 4,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_M_SEC_5",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_5",
+          "title": "علائم عمومی  (در ۳ ماه اخیر)",
+          "sortOrder": 5,
+          "timeWindowHint": "۳ ماه اخیر",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_M_SEC_6",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_6",
+          "title": "علائم ادراری و پروستات (در ۳ ماه اخیر)",
+          "sortOrder": 6,
+          "timeWindowHint": "۳ ماه اخیر",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_M_SEC_7",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_7",
+          "title": "علائم گوارشی و روده بزرگ  (در ۳ ماه اخیر)",
+          "sortOrder": 7,
+          "timeWindowHint": "۳ ماه اخیر",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_M_SEC_8",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_8",
+          "title": "علائم تنفسی (در ۳ ماه اخیر)",
+          "sortOrder": 8,
+          "timeWindowHint": "۳ ماه اخیر",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_M_SEC_9",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_9",
+          "title": "بیضه و پوست",
+          "sortOrder": 9,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_M_SEC_10",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_10",
+          "title": "سوابق غربالگری و پیگیری‌های قبلی",
+          "sortOrder": 10,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_M_SEC_11",
+          "formId": "form_cancer_male_v02",
+          "code": "CA_M_SEC_11",
+          "title": "آگاهی و رفتار سلامت",
+          "sortOrder": 11,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        }
+      ],
+      "items": [
+        {
+          "id": "CA_M_BASE_1",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_fullName",
+          "labelFa": "نام و نام خانوادگی",
+          "inputType": "text",
+          "required": true,
+          "sortOrder": 1,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": "fullName",
+          "readOnlyIfPrefill": true,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "371484003"
+            ],
+            "loinc": [
+              "45392-8"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0027365"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "fullName"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_BASE_2",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_nationalId",
+          "labelFa": "کدملی",
+          "inputType": "text",
+          "required": true,
+          "sortOrder": 2,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": "nationalId",
+          "readOnlyIfPrefill": true,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "398724002"
+            ],
+            "loinc": [
+              "45397-7"
+            ],
+            "icd10": [],
+            "umls": [
+              "C1301944"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "nationalId"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_BASE_3",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_birthDate",
+          "labelFa": "تاریخ تولد",
+          "inputType": "date",
+          "required": true,
+          "sortOrder": 3,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "184099003"
+            ],
+            "loinc": [
+              "21112-8"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0011008"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "birthDate"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_BASE_4",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_formDate",
+          "labelFa": "تاریخ تکمیل پرسشنامه",
+          "inputType": "date",
+          "required": true,
+          "sortOrder": 4,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "399651003"
+            ],
+            "loinc": [
+              "29846-2"
+            ],
+            "icd10": [],
+            "umls": [
+              "C1301886"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "formDate"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_BASE_5",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_heightCm",
+          "labelFa": "قد (سانتی‌متر)",
+          "inputType": "number",
+          "required": true,
+          "sortOrder": 5,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "50373000"
+            ],
+            "loinc": [
+              "8302-2"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0005890"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "heightCm"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_BASE_6",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_weightKg",
+          "labelFa": "وزن (کیلوگرم)",
+          "inputType": "number",
+          "required": true,
+          "sortOrder": 6,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "27113001"
+            ],
+            "loinc": [
+              "29463-7"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0005910"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "weightKg"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_BASE_7",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_waistCm",
+          "labelFa": "دور کمر (سانتی‌متر)",
+          "inputType": "number",
+          "required": true,
+          "sortOrder": 7,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "276361009"
+            ],
+            "loinc": [
+              "8280-0"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0455829"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "waistCm"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_BASE_8",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_phone",
+          "labelFa": "شماره تماس",
+          "inputType": "text",
+          "required": true,
+          "sortOrder": 8,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": "phone",
+          "readOnlyIfPrefill": true,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "428341000124108"
+            ],
+            "loinc": [
+              "42077-8"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0421447"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "phone"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_BASE_9",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_city",
+          "labelFa": "شهر محل سکونت",
+          "inputType": "province_city",
+          "required": true,
+          "sortOrder": 9,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "224294005"
+            ],
+            "loinc": [
+              "52831-5"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0013916"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "city"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_BASE_10",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_maritalStatus",
+          "labelFa": "وضعیت تاهل",
+          "inputType": "select",
+          "required": true,
+          "sortOrder": 10,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": [
+            "مجرد",
+            "متأهل",
+            "ازدواج‌کرده",
+            "سایر"
+          ],
+          "coding": {
+            "snomed": [
+              "125680007"
+            ],
+            "loinc": [
+              "11370-4"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0024841"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "maritalStatus"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_1",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q1",
+          "labelFa": "آیا تاکنون به هر نوع سرطان مبتلا شده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 1,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "363346000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z85.9"
+            ],
+            "umls": [
+              "C0006826"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_2",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q2",
+          "labelFa": "آیا سابقه ضایعات یا بیماری‌های پیش‌سرطانی گوارش داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 2,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "128301008"
+            ],
+            "loinc": [],
+            "icd10": [
+              "K63.5"
+            ],
+            "umls": [
+              "C0032584"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_3",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q3",
+          "labelFa": "آیا سابقه پرتودرمانی (Radiotherapy)  داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 3,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "108290001"
+            ],
+            "loinc": [
+              "21946-9"
+            ],
+            "icd10": [],
+            "umls": [
+              "C1522449"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_4",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q4",
+          "labelFa": "آیا سابقه شیمی‌درمانی یا درمان‌های سرکوب‌کننده ایمنی داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 4,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "367336001"
+            ],
+            "loinc": [
+              "55752-0"
+            ],
+            "icd10": [],
+            "umls": [
+              "C3665472"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_5",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q5",
+          "labelFa": "آیا پیوند عضو داشته‌اید یا داروهای سرکوب‌کننده ایمنی مصرف می‌کنید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 5,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "313039003"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z94.9"
+            ],
+            "umls": [
+              "C0027696"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_6",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q6",
+          "labelFa": "آیا دیابت نوع ۲ دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 6,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "44054006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "E11"
+            ],
+            "umls": [
+              "C0011860"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_7",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q7",
+          "labelFa": "آیا بیماری التهابی روده (کولیت اولسراتیو یا کرون) دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 7,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "24526004",
+              "34000006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "K51",
+              "K50"
+            ],
+            "umls": [
+              "C0009324",
+              "C0010346"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male",
+              "colorectal"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_8",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q8",
+          "labelFa": "آیا سابقه زخم یا عفونت هلیکوباکتر پیلوری معده (H. pylori) داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 8,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "307058004"
+            ],
+            "loinc": [],
+            "icd10": [
+              "B96.81"
+            ],
+            "umls": [
+              "C0085508"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_9",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q9",
+          "labelFa": "آیا سابقه هپاتیت (B/C) یا بیماری مزمن کبدی دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 9,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "66071002",
+              "50711007"
+            ],
+            "loinc": [],
+            "icd10": [
+              "B18.1",
+              "B18.2"
+            ],
+            "umls": [
+              "C0019163",
+              "C0019196"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_10",
+          "sectionId": "CA_M_SEC_2",
+          "code": "CA_M_Q10",
+          "labelFa": "آیا سابقه(HIV) یا ضعف ایمنی شناخته‌شده دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 10,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "86406008"
+            ],
+            "loinc": [],
+            "icd10": [
+              "B20"
+            ],
+            "umls": [
+              "C0019693"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_11",
+          "sectionId": "CA_M_SEC_3",
+          "code": "CA_M_Q11",
+          "labelFa": "آیا در خویشاوندان درجه یک شما سابقه ابتلا به سرطان وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 11,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275937001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_12",
+          "sectionId": "CA_M_SEC_3",
+          "code": "CA_M_Q12",
+          "labelFa": "آیا در خانواده شما سابقه سرطان پروستات وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 12,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275938006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.42"
+            ],
+            "umls": [
+              "C0235873"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "male",
+              "prostate",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_13",
+          "sectionId": "CA_M_SEC_3",
+          "code": "CA_M_Q13",
+          "labelFa": "آیا در خانواده شما سابقه سرطان روده بزرگ یا پولیپ‌های متعدد وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 13,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275937001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.0"
+            ],
+            "umls": [
+              "C0260418"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "male",
+              "colorectal",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_14",
+          "sectionId": "CA_M_SEC_3",
+          "code": "CA_M_Q14",
+          "labelFa": "آیا در خانواده شما سابقه سرطان پستان/تخمدان/پانکراس (در زنان یا مردان) وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 14,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "429740004"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.3",
+              "Z80.41"
+            ],
+            "umls": [
+              "C0429966"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "male",
+              "breast",
+              "ovary",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_15",
+          "sectionId": "CA_M_SEC_3",
+          "code": "CA_M_Q15",
+          "labelFa": "آیا در خانواده شما سابقه سرطان معده یا مری وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 15,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275940002"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.0"
+            ],
+            "umls": [
+              "C0260419"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "male",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_16",
+          "sectionId": "CA_M_SEC_3",
+          "code": "CA_M_Q16",
+          "labelFa": "آیا در خانواده شما سابقه سرطان ریه وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 16,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275939003"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.1"
+            ],
+            "umls": [
+              "C0260420"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "male",
+              "lung",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_17",
+          "sectionId": "CA_M_SEC_3",
+          "code": "CA_M_Q17",
+          "labelFa": "آیا سرطان در بستگان شما در سن کمتر از ۵۰ سال رخ داده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 17,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275937001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_18",
+          "sectionId": "CA_M_SEC_3",
+          "code": "CA_M_Q18",
+          "labelFa": "آیا در خانواده شما بیش از یک نفر به سرطان مبتلا شده‌اند؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 18,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275937001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "male",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_19",
+          "sectionId": "CA_M_SEC_3",
+          "code": "CA_M_Q19",
+          "labelFa": "آیا کسی در خانواده تست ژنتیک مثبت  سرطان (BRCA/LYNCH) داشته است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 19,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "412734009",
+              "445243001"
+            ],
+            "loinc": [
+              "50995-0"
+            ],
+            "icd10": [],
+            "umls": [
+              "C1515112",
+              "C1333991"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "male",
+              "genetics",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_20",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q20",
+          "labelFa": "آیا در حال حاضر سیگار می‌کشید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 20,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "77176002"
+            ],
+            "loinc": [],
+            "icd10": [
+              "F17.210"
+            ],
+            "umls": [
+              "C0037369"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male",
+              "tobacco"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_21",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q21",
+          "labelFa": "آیا سابقه مصرف سیگار دارید  (حتی اگر ترک کرده‌اید)؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 21,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "8517006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z87.891"
+            ],
+            "umls": [
+              "C3241966"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male",
+              "tobacco"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_22",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q22",
+          "labelFa": "مجموع مصرف سیگار شما بیش از ۲۰ پاکت درسال بوده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 22,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "160603005"
+            ],
+            "loinc": [
+              "64234-8"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0424947"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male",
+              "tobacco"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_23",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q23",
+          "labelFa": "آیا در معرض دود سیگار دیگران  (در منزل/محیط کار) به طور منظم هستید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 23,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "228523000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z77.22"
+            ],
+            "umls": [
+              "C0037370"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male",
+              "tobacco"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_24",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q24",
+          "labelFa": "آیا قلیان یا محصولات دخانی دیگر مصرف می‌کنید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 24,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "722499006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "F17.290"
+            ],
+            "umls": [
+              "C4554196"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male",
+              "tobacco"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_25",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q25",
+          "labelFa": "آیا الکل مصرف می‌کنید؟  (مصرف منظم یا زیاد)",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 25,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "219006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "F10.10"
+            ],
+            "umls": [
+              "C0001948"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male",
+              "alcohol"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_26",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q26",
+          "labelFa": "آیا فعالیت بدنی منظم شما کمتر از ۱۵۰ دقیقه در هفته است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 26,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "228448000"
+            ],
+            "loinc": [
+              "68516-4"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0425305"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_27",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q27",
+          "labelFa": "آیا اضافه وزن یا چاقی دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 27,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "414915002",
+              "414916001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "E66.9"
+            ],
+            "umls": [
+              "C0028754"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_28",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q28",
+          "labelFa": "آیا مصرف میوه و سبزی در رژیم غذایی شما کم است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 28,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "226167000"
+            ],
+            "loinc": [
+              "75285-2"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0425411"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_29",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q29",
+          "labelFa": "آیا مصرف گوشت قرمز/فرآوری‌شده (سوسیس، کالباس و...) در رژیم شما زیاد است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 29,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "226145004"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0684233"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_30",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q30",
+          "labelFa": "آیا در شغل/زندگی با مواد سرطان‌زا مواجهه داشته‌اید؟  (آزبست، سیلیس، دود دیزل، بنزن، رنگ‌ها، حلال‌ها)",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 30,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "370977006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z57.5"
+            ],
+            "umls": [
+              "C0038436"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_31",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q31",
+          "labelFa": "آیا تماس طولانی‌مدت با آفت‌کش‌ها یا مواد شیمیایی کشاورزی داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 31,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "418189009"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z57.4"
+            ],
+            "umls": [
+              "C0031225"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_32",
+          "sectionId": "CA_M_SEC_4",
+          "code": "CA_M_Q32",
+          "labelFa": "آیا سابقه مواجهه با اشعه یونیزان (کاری/درمانی) دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 32,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "370952001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z57.1"
+            ],
+            "umls": [
+              "C0034559"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_33",
+          "sectionId": "CA_M_SEC_5",
+          "code": "CA_M_Q33",
+          "labelFa": "کاهش وزن ناخواسته (مثلاً بیش از ۵ کیلو در ۳ ماه)) داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 33,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "89362005"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R63.4"
+            ],
+            "umls": [
+              "C0043096"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_34",
+          "sectionId": "CA_M_SEC_5",
+          "code": "CA_M_Q34",
+          "labelFa": "بی‌اشتهایی پایدار داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 34,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "79890006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R63.0"
+            ],
+            "umls": [
+              "C0003123"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_35",
+          "sectionId": "CA_M_SEC_5",
+          "code": "CA_M_Q35",
+          "labelFa": "خستگی شدید یا کاهش توان غیرقابل توجیه داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 35,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "84229001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R53.83"
+            ],
+            "umls": [
+              "C0015672"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_36",
+          "sectionId": "CA_M_SEC_5",
+          "code": "CA_M_Q36",
+          "labelFa": "تعریق شبانه شدید و تکرارشونده داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 36,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "42984000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R61"
+            ],
+            "umls": [
+              "C0028081"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_37",
+          "sectionId": "CA_M_SEC_5",
+          "code": "CA_M_Q37",
+          "labelFa": "تب‌های طولانی‌مدت بدون علت مشخص داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 37,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "386661006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R50.9"
+            ],
+            "umls": [
+              "C0015967"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_38",
+          "sectionId": "CA_M_SEC_5",
+          "code": "CA_M_Q38",
+          "labelFa": "دردهای مداوم یا پیشرونده بدون علت مشخص داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 38,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "22253000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R52"
+            ],
+            "umls": [
+              "C0030193"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_39",
+          "sectionId": "CA_M_SEC_5",
+          "code": "CA_M_Q39",
+          "labelFa": "توده یا برآمدگی جدید (گردن، زیر بغل، کشاله ران، بیضه، پستان) احساس کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 39,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "274667000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R22.9"
+            ],
+            "umls": [
+              "C0577559"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "testis",
+              "breast",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_40",
+          "sectionId": "CA_M_SEC_5",
+          "code": "CA_M_Q40",
+          "labelFa": "زخم یا ضایعه پوستی/دهانی که بیش از ۳ هفته خوب نشود داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 40,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "95324001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "L98.9"
+            ],
+            "umls": [
+              "C0037285"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_41",
+          "sectionId": "CA_M_SEC_6",
+          "code": "CA_M_Q41",
+          "labelFa": "تکرر ادرار یا فوریت ادرار پیدا کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 41,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "162116003"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R35.0"
+            ],
+            "umls": [
+              "C0042023"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "urinary"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_42",
+          "sectionId": "CA_M_SEC_6",
+          "code": "CA_M_Q42",
+          "labelFa": "شب‌ها بیش از حد معمول برای ادرار از خواب بیدار می‌شوید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 42,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "51178009"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R35.1"
+            ],
+            "umls": [
+              "C0080274"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "urinary"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_43",
+          "sectionId": "CA_M_SEC_6",
+          "code": "CA_M_Q43",
+          "labelFa": "سوزش یا درد هنگام ادرار دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 43,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "49650001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R30.0"
+            ],
+            "umls": [
+              "C0013378"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "urinary"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_44",
+          "sectionId": "CA_M_SEC_6",
+          "code": "CA_M_Q44",
+          "labelFa": "شروع ادرار برایتان سخت شده یا قطع و وصل می‌شود؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 44,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "267064002"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R39.1"
+            ],
+            "umls": [
+              "C0080276"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "urinary"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_45",
+          "sectionId": "CA_M_SEC_6",
+          "code": "CA_M_Q45",
+          "labelFa": "جریان ادرار ضعیف شده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 45,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "250450001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R39.14"
+            ],
+            "umls": [
+              "C0426395"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "urinary"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_46",
+          "sectionId": "CA_M_SEC_6",
+          "code": "CA_M_Q46",
+          "labelFa": "احساس تخلیه ناقص مثانه دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 46,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "162103003"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R39.14"
+            ],
+            "umls": [
+              "C0232849"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_47",
+          "sectionId": "CA_M_SEC_6",
+          "code": "CA_M_Q47",
+          "labelFa": "خون در ادرار مشاهده کرده‌اید؟ (حتی یک بار)",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 47,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "34436003"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R31.9"
+            ],
+            "umls": [
+              "C0018965"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "urinary",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_48",
+          "sectionId": "CA_M_SEC_6",
+          "code": "CA_M_Q48",
+          "labelFa": "خون در مایع منی مشاهده کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 48,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "405729008"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R36.1"
+            ],
+            "umls": [
+              "C0018978"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_49",
+          "sectionId": "CA_M_SEC_6",
+          "code": "CA_M_Q49",
+          "labelFa": "درد مداوم در لگن، کشاله ران یا پایین کمر دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 49,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "30473006",
+              "279039007"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R10.2",
+              "M54.5"
+            ],
+            "umls": [
+              "C0019559",
+              "C0022821"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_50",
+          "sectionId": "CA_M_SEC_7",
+          "code": "CA_M_Q50",
+          "labelFa": "تغییر واضح و مداوم در الگوی اجابت مزاج داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 50,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "266529003"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R19.4"
+            ],
+            "umls": [
+              "C0009214"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_51",
+          "sectionId": "CA_M_SEC_7",
+          "code": "CA_M_Q51",
+          "labelFa": "یبوست یا اسهال مزمن (بیش از ۴ هفته) داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 51,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "14760008",
+              "62315008"
+            ],
+            "loinc": [],
+            "icd10": [
+              "K59.00",
+              "K59.1"
+            ],
+            "umls": [
+              "C0009806",
+              "C0011991"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_52",
+          "sectionId": "CA_M_SEC_7",
+          "code": "CA_M_Q52",
+          "labelFa": "وجود خون روشن در مدفوع مشاهده کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 52,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "405729008"
+            ],
+            "loinc": [],
+            "icd10": [
+              "K92.1"
+            ],
+            "umls": [
+              "C0018932"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "colorectal",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_53",
+          "sectionId": "CA_M_SEC_7",
+          "code": "CA_M_Q53",
+          "labelFa": "مدفوع سیاه قیری (ملنا يا خون تيره) داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 53,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "2901004"
+            ],
+            "loinc": [],
+            "icd10": [
+              "K92.1"
+            ],
+            "umls": [
+              "C0025222"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "colorectal",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_54",
+          "sectionId": "CA_M_SEC_7",
+          "code": "CA_M_Q54",
+          "labelFa": "درد شکمی مداوم یا عودکننده دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 54,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "21522001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R10.9"
+            ],
+            "umls": [
+              "C0000737"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_55",
+          "sectionId": "CA_M_SEC_7",
+          "code": "CA_M_Q55",
+          "labelFa": "نفخ/احساس پری یا سیری زودرس پایدار دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 55,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "73879007",
+              "162059005"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R14.0"
+            ],
+            "umls": [
+              "C0016204",
+              "C0239135"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_56",
+          "sectionId": "CA_M_SEC_7",
+          "code": "CA_M_Q56",
+          "labelFa": "تهوع یا استفراغ مکرر یا دشواری بلع دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 56,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "422587007",
+              "288227007"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R11.2",
+              "R13.10"
+            ],
+            "umls": [
+              "C0027497",
+              "C0011168"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_57",
+          "sectionId": "CA_M_SEC_7",
+          "code": "CA_M_Q57",
+          "labelFa": "کم‌خونی بدون علت مشخص یا سابقه فقر آهن داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 57,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "271737000",
+              "87572000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "D50.9"
+            ],
+            "umls": [
+              "C0002871",
+              "C0162316"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "male",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_58",
+          "sectionId": "CA_M_SEC_8",
+          "code": "CA_M_Q58",
+          "labelFa": "سرفه‌ای که بیش از ۳ هفته طول کشیده باشد داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 58,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "49727002"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R05.9"
+            ],
+            "umls": [
+              "C0010200"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "lung"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_59",
+          "sectionId": "CA_M_SEC_8",
+          "code": "CA_M_Q59",
+          "labelFa": "تغییر واضح در الگوی سرفه  شدت/ نوع)) داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 59,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "49727002"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R05.3"
+            ],
+            "umls": [
+              "C0010200"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "lung"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_60",
+          "sectionId": "CA_M_SEC_8",
+          "code": "CA_M_Q60",
+          "labelFa": "تنگی نفس غیرمعمول یا بدترشونده دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 60,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "267036007"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R06.02"
+            ],
+            "umls": [
+              "C0013404"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_61",
+          "sectionId": "CA_M_SEC_8",
+          "code": "CA_M_Q61",
+          "labelFa": "درد مداوم قفسه سینه دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 61,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "29857009"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R07.9"
+            ],
+            "umls": [
+              "C0008031"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_62",
+          "sectionId": "CA_M_SEC_8",
+          "code": "CA_M_Q62",
+          "labelFa": "خون در خلط مشاهده کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 62,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "66857006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R04.2"
+            ],
+            "umls": [
+              "C0019079"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_63",
+          "sectionId": "CA_M_SEC_8",
+          "code": "CA_M_Q63",
+          "labelFa": "گرفتگی صدا که بیش از ۳ هفته طول بکشد داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 63,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "1641000119105"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R49.0"
+            ],
+            "umls": [
+              "C0019825"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_64",
+          "sectionId": "CA_M_SEC_9",
+          "code": "CA_M_Q64",
+          "labelFa": "توده، سفتی یا تغییر اندازه بیضه‌ها را احساس کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 64,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "300888008"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N50.9"
+            ],
+            "umls": [
+              "C0232940"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "testis",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_65",
+          "sectionId": "CA_M_SEC_9",
+          "code": "CA_M_Q65",
+          "labelFa": "درد یا احساس سنگینی بیضه/کیسه بیضه به طور پایدار دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 65,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "102616008"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N50.81"
+            ],
+            "umls": [
+              "C0039591"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "testis"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_66",
+          "sectionId": "CA_M_SEC_9",
+          "code": "CA_M_Q66",
+          "labelFa": "خال یا ضایعه پوستی که اندازه/رنگ/شکل آن تغییر کرده یا خونریزی کند دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 66,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "26946001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "D48.5"
+            ],
+            "umls": [
+              "C0025202"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "male",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_67",
+          "sectionId": "CA_M_SEC_9",
+          "code": "CA_M_Q67",
+          "labelFa": "سابقه آفتاب‌سوختگی شدید و مکرر یا سولاریوم داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 67,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "403180003",
+              "399963005"
+            ],
+            "loinc": [],
+            "icd10": [
+              "L55.9"
+            ],
+            "umls": [
+              "C0038814"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_68",
+          "sectionId": "CA_M_SEC_10",
+          "code": "CA_M_Q68",
+          "labelFa": "آیا تاکنون آزمایش خون جهت بررسي پروستات (PSA) انجام داده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 68,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "63476007"
+            ],
+            "loinc": [
+              "2857-1"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0201544"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "male",
+              "prostate",
+              "red_flag",
+              "screening"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_69",
+          "sectionId": "CA_M_SEC_10",
+          "code": "CA_M_Q69",
+          "labelFa": "آیا تاکنون معاینه انگشتی پروستات انجام داده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 69,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "410457007"
+            ],
+            "loinc": [
+              "32465-7"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0201570"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "male",
+              "prostate"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_70",
+          "sectionId": "CA_M_SEC_10",
+          "code": "CA_M_Q70",
+          "labelFa": "آیا تاکنون کولونوسکوپی انجام داده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 70,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "73761001"
+            ],
+            "loinc": [
+              "28026-4"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0009378"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_71",
+          "sectionId": "CA_M_SEC_10",
+          "code": "CA_M_Q71",
+          "labelFa": "آیا آزمایش خون مخفی در مدفوع انجام داده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 71,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "167777007"
+            ],
+            "loinc": [
+              "2335-8"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0016399"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "male",
+              "colorectal",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_M_ITEM_72",
+          "sectionId": "CA_M_SEC_10",
+          "code": "CA_M_Q72",
+          "labelFa": "آیا سی‌تی اسکن دوز پایین ریه برای غربالگری انجام داده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 72,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "16310003"
+            ],
+            "loinc": [
+              "79190-6"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0040405"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "male",
+              "lung",
+              "screening"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_73",
+          "sectionId": "CA_M_SEC_10",
+          "code": "CA_M_Q73",
+          "labelFa": "آیا نتیجه غیرطبیعی در هر کدام از غربالگری‌ها داشته‌اید که نیاز به پیگیری داشته باشد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 73,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "439401001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z12.9"
+            ],
+            "umls": [
+              "C0420112"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "male",
+              "screening"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_74",
+          "sectionId": "CA_M_SEC_11",
+          "code": "CA_M_Q74",
+          "labelFa": "آیا درباره غربالگری سرطان روده بزرگ آگاهی کافی دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 74,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "171207006"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0420113"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "male",
+              "colorectal",
+              "screening"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_75",
+          "sectionId": "CA_M_SEC_11",
+          "code": "CA_M_Q75",
+          "labelFa": "آیا درباره مزایا و محدودیت‌های غربالگری سرطان پروستات آگاهی دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 75,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "171207006"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0420114"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "male",
+              "prostate",
+              "screening"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_76",
+          "sectionId": "CA_M_SEC_11",
+          "code": "CA_M_Q76",
+          "labelFa": "آیا در صورت مشاهده علائم غیرطبیعی، مراجعه به پزشک را به تعویق می‌اندازید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 76,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "225328001"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0424472"
+            ],
+            "conceptKind": "behavior",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_M_ITEM_77",
+          "sectionId": "CA_M_SEC_11",
+          "code": "CA_M_Q77",
+          "labelFa": "آیا تاکنون به دلیل ترس/شرم/هزینه از پیگیری آزمایش یا مراجعه منصرف شده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 77,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "266757002"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0424473"
+            ],
+            "conceptKind": "behavior",
+            "aiTags": [
+              "male"
+            ],
+            "redFlagOnYes": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "form_cancer_female_v02",
+      "code": "cancer_screening_female_v02",
+      "title": "سابقه غربالگری و واکسیناسیون",
+      "version": 2,
+      "status": "published",
+      "sortOrder": 2,
+      "warningText": "اگر هر یک از علائم هشدار (خونریزی، توده جدید، کاهش وزن بی‌دلیل، تب یا تعریق شبانه پایدار، درد شدید یا پیشرونده) را دارید، ارزیابی پزشکی را به تعویق نیندازید. این پرسشنامه برای غربالگری و پشتیبانی تصمیم پزشک است و جایگزین معاینه یا تشخیص نیست.",
+      "targetAudience": {
+        "gender": "زن",
+        "ageMin": 18,
+        "ageMax": null,
+        "maritalStatuses": []
+      },
+      "sections": [
+        {
+          "id": "CA_F_SEC_1",
+          "formId": "form_cancer_female_v02",
+          "code": "CA_F_SEC_BASE",
+          "title": "اطلاعات پایه",
+          "sortOrder": 1,
+          "timeWindowHint": "",
+          "guideText": "این بخش برای تفسیر درست خطر و انتخاب روش غربالگری لازم است."
+        },
+        {
+          "id": "CA_F_SEC_2",
+          "formId": "form_cancer_female_v02",
+          "code": "CA_F_SEC_2",
+          "title": "سابقه خانوادگی و عوامل ژنتیک",
+          "sortOrder": 2,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_F_SEC_3",
+          "formId": "form_cancer_female_v02",
+          "code": "CA_F_SEC_3",
+          "title": "سابقه پزشکی فردی و درمان‌های قبلی",
+          "sortOrder": 3,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_F_SEC_4",
+          "formId": "form_cancer_female_v02",
+          "code": "CA_F_SEC_4",
+          "title": "سابقه باروری، قاعدگی و هورمون",
+          "sortOrder": 4,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_F_SEC_5",
+          "formId": "form_cancer_female_v02",
+          "code": "CA_F_SEC_5",
+          "title": "علائم پستان و زیربغل (3 ماه اخیر)",
+          "sortOrder": 5,
+          "timeWindowHint": "۳ ماه اخیر",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_F_SEC_6",
+          "formId": "form_cancer_female_v02",
+          "code": "CA_F_SEC_6",
+          "title": "علائم زنانگی (دهانه رحم/رحم/تخمدان)",
+          "sortOrder": 6,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_F_SEC_7",
+          "formId": "form_cancer_female_v02",
+          "code": "CA_F_SEC_7",
+          "title": "علائم عمومی و گوارشی",
+          "sortOrder": 7,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_F_SEC_8",
+          "formId": "form_cancer_female_v02",
+          "code": "CA_F_SEC_8",
+          "title": "سبک زندگی و مواجهات",
+          "sortOrder": 8,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        },
+        {
+          "id": "CA_F_SEC_9",
+          "formId": "form_cancer_female_v02",
+          "code": "CA_F_SEC_9",
+          "title": "سابقه غربالگری و واکسیناسیون",
+          "sortOrder": 9,
+          "timeWindowHint": "",
+          "guideText": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید."
+        }
+      ],
+      "items": [
+        {
+          "id": "CA_F_BASE_1",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_fullName",
+          "labelFa": "نام و نام خانوادگی",
+          "inputType": "text",
+          "required": true,
+          "sortOrder": 1,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": "fullName",
+          "readOnlyIfPrefill": true,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "371484003"
+            ],
+            "loinc": [
+              "45392-8"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0027365"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "fullName"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_BASE_2",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_nationalId",
+          "labelFa": "کدملی",
+          "inputType": "text",
+          "required": true,
+          "sortOrder": 2,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": "nationalId",
+          "readOnlyIfPrefill": true,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "398724002"
+            ],
+            "loinc": [
+              "45397-7"
+            ],
+            "icd10": [],
+            "umls": [
+              "C1301944"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "nationalId"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_BASE_3",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_birthDate",
+          "labelFa": "تاریخ تولد",
+          "inputType": "date",
+          "required": true,
+          "sortOrder": 3,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "184099003"
+            ],
+            "loinc": [
+              "21112-8"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0011008"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "birthDate"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_BASE_4",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_formDate",
+          "labelFa": "تاریخ تکمیل پرسشنامه",
+          "inputType": "date",
+          "required": true,
+          "sortOrder": 4,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "399651003"
+            ],
+            "loinc": [
+              "29846-2"
+            ],
+            "icd10": [],
+            "umls": [
+              "C1301886"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "formDate"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_BASE_5",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_heightCm",
+          "labelFa": "قد (سانتی‌متر)",
+          "inputType": "number",
+          "required": true,
+          "sortOrder": 5,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "50373000"
+            ],
+            "loinc": [
+              "8302-2"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0005890"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "heightCm"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_BASE_6",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_weightKg",
+          "labelFa": "وزن (کیلوگرم)",
+          "inputType": "number",
+          "required": true,
+          "sortOrder": 6,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "27113001"
+            ],
+            "loinc": [
+              "29463-7"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0005910"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "weightKg"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_BASE_7",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_waistCm",
+          "labelFa": "دور کمر (سانتی‌متر)",
+          "inputType": "number",
+          "required": true,
+          "sortOrder": 7,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "276361009"
+            ],
+            "loinc": [
+              "8280-0"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0455829"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "waistCm"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_BASE_8",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_phone",
+          "labelFa": "شماره تماس",
+          "inputType": "text",
+          "required": true,
+          "sortOrder": 8,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": "phone",
+          "readOnlyIfPrefill": true,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "428341000124108"
+            ],
+            "loinc": [
+              "42077-8"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0421447"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "phone"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_BASE_9",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_city",
+          "labelFa": "شهر محل سکونت",
+          "inputType": "province_city",
+          "required": true,
+          "sortOrder": 9,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "224294005"
+            ],
+            "loinc": [
+              "52831-5"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0013916"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "city"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_BASE_10",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_maritalStatus",
+          "labelFa": "وضعیت تاهل",
+          "inputType": "select",
+          "required": true,
+          "sortOrder": 10,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "never",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": [
+            "مجرد",
+            "متأهل",
+            "ازدواج‌کرده",
+            "سایر"
+          ],
+          "coding": {
+            "snomed": [
+              "125680007"
+            ],
+            "loinc": [
+              "11370-4"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0024841"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "maritalStatus"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_1",
+          "sectionId": "CA_F_SEC_2",
+          "code": "CA_F_Q1",
+          "labelFa": "سابقه هر نوع سرطان در بستگان درجه یک (مادر، خواهر، دختر) وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 1,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275937001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_2",
+          "sectionId": "CA_F_SEC_2",
+          "code": "CA_F_Q2",
+          "labelFa": "سابقه سرطان پستان در خانواده وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 2,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "429740004"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.3"
+            ],
+            "umls": [
+              "C0429966"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "female",
+              "breast",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_3",
+          "sectionId": "CA_F_SEC_2",
+          "code": "CA_F_Q3",
+          "labelFa": "سابقه سرطان تخمدان/لوله فالوپ/صفاق در خانواده وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 3,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275941003"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.41"
+            ],
+            "umls": [
+              "C0260421"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "female",
+              "ovary",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_4",
+          "sectionId": "CA_F_SEC_2",
+          "code": "CA_F_Q4",
+          "labelFa": "سابقه سرطان کولون/رکتوم، رحم، معده یا مجاری ادراری در خانواده وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 4,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275937001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.0",
+              "Z80.49"
+            ],
+            "umls": [
+              "C0260418"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "female",
+              "urinary",
+              "uterus",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_5",
+          "sectionId": "CA_F_SEC_2",
+          "code": "CA_F_Q5",
+          "labelFa": "ابتلای یکی از بستگان به سرطان در سن کمتر از ۵۰ سال رخ داده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 5,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275937001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_6",
+          "sectionId": "CA_F_SEC_2",
+          "code": "CA_F_Q6",
+          "labelFa": "بیش از یک نفر از بستگان نزدیک به سرطان مبتلا شده‌اند؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 6,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "275937001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.9"
+            ],
+            "umls": [
+              "C0241888"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_7",
+          "sectionId": "CA_F_SEC_2",
+          "code": "CA_F_Q7",
+          "labelFa": "سابقه سرطان پستان در مردان خانواده وجود دارد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 7,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "429740004"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z80.3"
+            ],
+            "umls": [
+              "C0429966"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "female",
+              "breast",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_8",
+          "sectionId": "CA_F_SEC_2",
+          "code": "CA_F_Q8",
+          "labelFa": "آیا در خانواده تست ژنتیک مثبت  مثلLynch (سرطان‌های ارثی روده/رحم) یا BRCA (سرطان ارثی پستان/تخمدان/پانکراس ..) گزارش شده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 8,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "412734009",
+              "445243001"
+            ],
+            "loinc": [
+              "50995-0"
+            ],
+            "icd10": [],
+            "umls": [
+              "C1515112",
+              "C1333991"
+            ],
+            "conceptKind": "family",
+            "aiTags": [
+              "female",
+              "breast",
+              "ovary",
+              "uterus",
+              "colorectal",
+              "genetics",
+              "family_hx"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_9",
+          "sectionId": "CA_F_SEC_3",
+          "code": "CA_F_Q9",
+          "labelFa": "خودتان سابقه ابتلا به سرطان یا ضایعات پیش‌سرطانی داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 9,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "363346000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z85.9"
+            ],
+            "umls": [
+              "C0006826"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_10",
+          "sectionId": "CA_F_SEC_3",
+          "code": "CA_F_Q10",
+          "labelFa": "سابقه بیوپسی پستان/تخمدان/دهانه رحم/رحم داشته‌اید؟ (حتی اگر خوش‌خیم بوده)",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 10,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "86273004"
+            ],
+            "loinc": [
+              "33717-0"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0005558"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female",
+              "breast",
+              "ovary",
+              "uterus",
+              "cervix"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_11",
+          "sectionId": "CA_F_SEC_3",
+          "code": "CA_F_Q11",
+          "labelFa": "سابقه پرتودرمانی به ناحیه قفسه سینه قبل از ۳۰ سالگی داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 11,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "108290001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z92.3"
+            ],
+            "umls": [
+              "C1522449"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_12",
+          "sectionId": "CA_F_SEC_3",
+          "code": "CA_F_Q12",
+          "labelFa": "سابقه بیماری‌های التهابی مزمن روده (مثل کولیت اولسراتیو/کرون/ IBD )دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 12,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "24526004",
+              "34000006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "K51",
+              "K50"
+            ],
+            "umls": [
+              "C0009324",
+              "C0010346"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female",
+              "colorectal"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_13",
+          "sectionId": "CA_F_SEC_3",
+          "code": "CA_F_Q13",
+          "labelFa": "سابقه هپاتیت (B/C) یا بیماری مزمن کبدی دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 13,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "66071002",
+              "50711007"
+            ],
+            "loinc": [],
+            "icd10": [
+              "B18.1",
+              "B18.2"
+            ],
+            "umls": [
+              "C0019163",
+              "C0019196"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_14",
+          "sectionId": "CA_F_SEC_3",
+          "code": "CA_F_Q14",
+          "labelFa": "سابقه نقص ایمنی/مصرف طولانی کورتون یا داروهای تضعیف ایمنی دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 14,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "370388006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "D84.9"
+            ],
+            "umls": [
+              "C0021051"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_15",
+          "sectionId": "CA_F_SEC_3",
+          "code": "CA_F_Q15",
+          "labelFa": "سابقه عفونت (HPV) یا درمان زگیل تناسلی/ضایعات دهانه رحم داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 15,
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "240532009"
+            ],
+            "loinc": [],
+            "icd10": [
+              "B97.7"
+            ],
+            "umls": [
+              "C0001486"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female",
+              "uterus",
+              "cervix",
+              "hpv"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_16",
+          "sectionId": "CA_F_SEC_3",
+          "code": "CA_F_Q16",
+          "labelFa": "سابقه دیابت، فشار خون، یا چربی خون دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 16,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "44054006",
+              "38341003",
+              "55822004"
+            ],
+            "loinc": [],
+            "icd10": [
+              "E11",
+              "I10",
+              "E78.5"
+            ],
+            "umls": [
+              "C0011860",
+              "C0020538",
+              "C0020473"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_17",
+          "sectionId": "CA_F_SEC_4",
+          "code": "CA_F_Q17",
+          "labelFa": "سن اولین قاعدگی کمتر از ۱۲ سال بوده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 17,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "398057008"
+            ],
+            "loinc": [
+              "42759-4"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0025329"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_18",
+          "sectionId": "CA_F_SEC_4",
+          "code": "CA_F_Q18",
+          "labelFa": "سن یائسگی ۵۵ سال یا بیشتر بوده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 18,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "161712005"
+            ],
+            "loinc": [
+              "42829-5"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0025325"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_19",
+          "sectionId": "CA_F_SEC_4",
+          "code": "CA_F_Q19",
+          "labelFa": "تا کنون بارداری کامل نداشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 19,
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "102872001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z64.0"
+            ],
+            "umls": [
+              "C0032977"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_20",
+          "sectionId": "CA_F_SEC_4",
+          "code": "CA_F_Q20",
+          "labelFa": "اولین بارداری کامل بعد از ۳۰ سالگی بوده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 20,
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "102873006"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0425959"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_21",
+          "sectionId": "CA_F_SEC_4",
+          "code": "CA_F_Q21",
+          "labelFa": "سابقه ناباروری یا درمان‌های ناباروری داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 21,
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "8619003"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N97.9"
+            ],
+            "umls": [
+              "C0021359"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_22",
+          "sectionId": "CA_F_SEC_4",
+          "code": "CA_F_Q22",
+          "labelFa": "سابقه شیردهی کمتر از ۶ ماه یا عدم شیردهی (در صورت داشتن زایمان)؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 22,
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "169741004"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0006147"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_23",
+          "sectionId": "CA_F_SEC_4",
+          "code": "CA_F_Q23",
+          "labelFa": "سابقه مصرف طولانی‌مدت هورمون (قرص جلوگیری/هورمون درمانی یائسگی) بیش از ۵ سال دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 23,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "182838006",
+              "266717002"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z79.3"
+            ],
+            "umls": [
+              "C0009905",
+              "C0282411"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_24",
+          "sectionId": "CA_F_SEC_4",
+          "code": "CA_F_Q24",
+          "labelFa": "سابقه سندرم تخمدان پلی‌کیستیک (PCOS) یا قاعدگی‌های بسیار نامنظم طولانی‌مدت دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 24,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "237055002"
+            ],
+            "loinc": [],
+            "icd10": [
+              "E28.2"
+            ],
+            "umls": [
+              "C0032460"
+            ],
+            "conceptKind": "history",
+            "aiTags": [
+              "female",
+              "ovary"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_25",
+          "sectionId": "CA_F_SEC_5",
+          "code": "CA_F_Q25",
+          "labelFa": "توده یا سفتی جدید در پستان احساس کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 25,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "271825005"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N63"
+            ],
+            "umls": [
+              "C0025566"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "breast",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_26",
+          "sectionId": "CA_F_SEC_5",
+          "code": "CA_F_Q26",
+          "labelFa": "توده/ورم در ناحیه زیر بغل یا بالای ترقوه احساس کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 26,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "127189005"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R59.0"
+            ],
+            "umls": [
+              "C0578736"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_27",
+          "sectionId": "CA_F_SEC_5",
+          "code": "CA_F_Q27",
+          "labelFa": "تغییر واضح در اندازه یا شکل پستان ایجاد شده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 27,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "290113009"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N64.89"
+            ],
+            "umls": [
+              "C0239379"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "breast"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_28",
+          "sectionId": "CA_F_SEC_5",
+          "code": "CA_F_Q28",
+          "labelFa": "فرورفتگی/چروک شدن پوست پستان (مثل پوست پرتقالی) دیده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 28,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "290066008"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N64.59"
+            ],
+            "umls": [
+              "C0239381"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "breast"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_29",
+          "sectionId": "CA_F_SEC_5",
+          "code": "CA_F_Q29",
+          "labelFa": "قرمزی، گرمی یا ضخیم شدن پوست پستان که بیش از ۲ هفته طول کشیده باشد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 29,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "290113009"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N61"
+            ],
+            "umls": [
+              "C0006145"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "breast"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_30",
+          "sectionId": "CA_F_SEC_5",
+          "code": "CA_F_Q30",
+          "labelFa": "ترشح خونی یا شفاف یک‌طرفه از نوک پستان داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 30,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "290068009"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N64.52"
+            ],
+            "umls": [
+              "C0149740"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "breast",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_31",
+          "sectionId": "CA_F_SEC_5",
+          "code": "CA_F_Q31",
+          "labelFa": "تغییر نوک پستان (فرورفتگی جدید، انحراف، زخم/اگزمای مقاوم) دیده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 31,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "290113009"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N64.59"
+            ],
+            "umls": [
+              "C0239382"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "breast"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_32",
+          "sectionId": "CA_F_SEC_5",
+          "code": "CA_F_Q32",
+          "labelFa": "درد موضعی پایدار در پستان که با سیکل قاعدگی مرتبط نباشد؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 32,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "53430007"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N64.4"
+            ],
+            "umls": [
+              "C0024902"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "breast"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_33",
+          "sectionId": "CA_F_SEC_6",
+          "code": "CA_F_Q33",
+          "labelFa": "خونریزی بین قاعدگی‌ها یا بعد از رابطه جنسی داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 33,
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "266599000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N92.1"
+            ],
+            "umls": [
+              "C0025323"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_34",
+          "sectionId": "CA_F_SEC_6",
+          "code": "CA_F_Q34",
+          "labelFa": "خونریزی بعد از یائسگی داشته‌اید؟ (حتی یک‌بار)",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 34,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "21840007"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N95.0"
+            ],
+            "umls": [
+              "C0135212"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_35",
+          "sectionId": "CA_F_SEC_6",
+          "code": "CA_F_Q35",
+          "labelFa": "قاعدگی‌ها بسیار شدید یا طولانی‌تر از معمول شده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 35,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "386692008"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N92.0"
+            ],
+            "umls": [
+              "C0025322"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_36",
+          "sectionId": "CA_F_SEC_6",
+          "code": "CA_F_Q36",
+          "labelFa": "درد لگنی مداوم یا فشار لگنی در ۳ ماه اخیر دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 36,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "30473006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R10.2"
+            ],
+            "umls": [
+              "C0019559"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_37",
+          "sectionId": "CA_F_SEC_6",
+          "code": "CA_F_Q37",
+          "labelFa": "ترشحات غیرطبیعی واژینال (بدبو، خونی، چرکی) بیش از ۲ هفته دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 37,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "271939006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N89.8"
+            ],
+            "umls": [
+              "C0042251"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_38",
+          "sectionId": "CA_F_SEC_6",
+          "code": "CA_F_Q38",
+          "labelFa": "درد هنگام رابطه جنسی به‌صورت جدید یا پیشرونده دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 38,
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "266599000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "N94.1"
+            ],
+            "umls": [
+              "C0013394"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_39",
+          "sectionId": "CA_F_SEC_6",
+          "code": "CA_F_Q39",
+          "labelFa": "نفخ مداوم، احساس پری زودرس یا بزرگ شدن شکم بیش از ۲-۳ هفته دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 39,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "73879007",
+              "162059005"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R14.0"
+            ],
+            "umls": [
+              "C0016204",
+              "C0239135"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_40",
+          "sectionId": "CA_F_SEC_6",
+          "code": "CA_F_Q40",
+          "labelFa": "تکرر ادرار/فوریت ادرار جدید همراه با نفخ یا درد لگن دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 40,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "162116003",
+              "30473006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R35.0",
+              "R10.2"
+            ],
+            "umls": [
+              "C0042023",
+              "C0019559"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "urinary"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_41",
+          "sectionId": "CA_F_SEC_7",
+          "code": "CA_F_Q41",
+          "labelFa": "کاهش وزن بی‌دلیل (بیش از ۵٪ وزن طی ۶ ماه) داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 41,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "89362005"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R63.4"
+            ],
+            "umls": [
+              "C0043096"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_42",
+          "sectionId": "CA_F_SEC_7",
+          "code": "CA_F_Q42",
+          "labelFa": "خستگی مداوم یا بی‌حالی غیرقابل توجیه دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 42,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "84229001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R53.83"
+            ],
+            "umls": [
+              "C0015672"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_43",
+          "sectionId": "CA_F_SEC_7",
+          "code": "CA_F_Q43",
+          "labelFa": "کم‌خونی یا فقر آهن بدون علت مشخص گزارش شده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 43,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "271737000",
+              "87572000"
+            ],
+            "loinc": [],
+            "icd10": [
+              "D50.9"
+            ],
+            "umls": [
+              "C0002871",
+              "C0162316"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_44",
+          "sectionId": "CA_F_SEC_7",
+          "code": "CA_F_Q44",
+          "labelFa": "تغییر پایدار در عادات دفع (یبوست/اسهال/تغییر قطر مدفوع) بیش از ۴ هفته دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 44,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "266529003"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R19.4"
+            ],
+            "umls": [
+              "C0009214"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "colorectal"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_45",
+          "sectionId": "CA_F_SEC_7",
+          "code": "CA_F_Q45",
+          "labelFa": "خون در مدفوع یا مدفوع سیاه (قیری) مشاهده کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 45,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "405729008",
+              "2901004"
+            ],
+            "loinc": [],
+            "icd10": [
+              "K92.1"
+            ],
+            "umls": [
+              "C0018932",
+              "C0025222"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "colorectal",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_46",
+          "sectionId": "CA_F_SEC_7",
+          "code": "CA_F_Q46",
+          "labelFa": "درد شکمی مداوم یا عودکننده همراه با کاهش اشتها دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 46,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "21522001",
+              "79890006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R10.9",
+              "R63.0"
+            ],
+            "umls": [
+              "C0000737",
+              "C0003123"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_47",
+          "sectionId": "CA_F_SEC_7",
+          "code": "CA_F_Q47",
+          "labelFa": "سوزش/ریفلاکس شدید یا مشکل بلع بیش از ۳ هفته دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 47,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "266433003",
+              "288227007"
+            ],
+            "loinc": [],
+            "icd10": [
+              "K21.9",
+              "R13.10"
+            ],
+            "umls": [
+              "C0018834",
+              "C0011168"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_48",
+          "sectionId": "CA_F_SEC_7",
+          "code": "CA_F_Q48",
+          "labelFa": "سرفه مزمن، تنگی نفس یا خلط خونی (بیش از ۳ هفته))دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 48,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "49727002",
+              "267036007",
+              "66857006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R05.9",
+              "R06.02",
+              "R04.2"
+            ],
+            "umls": [
+              "C0010200",
+              "C0013404",
+              "C0019079"
+            ],
+            "conceptKind": "symptom",
+            "aiTags": [
+              "female",
+              "lung",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_49",
+          "sectionId": "CA_F_SEC_8",
+          "code": "CA_F_Q49",
+          "labelFa": "سیگار مصرف می‌کنید یا سابقه مصرف داشته‌اید؟(یکساله)",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 49,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "77176002",
+              "8517006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "F17.210",
+              "Z87.891"
+            ],
+            "umls": [
+              "C0037369",
+              "C3241966"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "female",
+              "tobacco"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_50",
+          "sectionId": "CA_F_SEC_8",
+          "code": "CA_F_Q50",
+          "labelFa": "قلیان مصرف می‌کنید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 50,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "722499006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "F17.290"
+            ],
+            "umls": [
+              "C4554196"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "female",
+              "tobacco"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_51",
+          "sectionId": "CA_F_SEC_8",
+          "code": "CA_F_Q51",
+          "labelFa": "الکل مصرف می‌کنید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 51,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "219006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "F10.10"
+            ],
+            "umls": [
+              "C0001948"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "female",
+              "alcohol"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_52",
+          "sectionId": "CA_F_SEC_8",
+          "code": "CA_F_Q52",
+          "labelFa": "فعالیت بدنی شما کمتر از ۱۵۰ دقیقه در هفته است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 52,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "228448000"
+            ],
+            "loinc": [
+              "68516-4"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0425305"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_53",
+          "sectionId": "CA_F_SEC_8",
+          "code": "CA_F_Q53",
+          "labelFa": "رژیم غذایی شما پر از غذاهای فراوری‌شده/گوشت قرمز زیاد است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 53,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "226145004"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0684233"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_54",
+          "sectionId": "CA_F_SEC_8",
+          "code": "CA_F_Q54",
+          "labelFa": "مصرف میوه و سبزی در رژیم غذایی شما کم است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 54,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "226167000"
+            ],
+            "loinc": [
+              "75285-2"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0425411"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_55",
+          "sectionId": "CA_F_SEC_8",
+          "code": "CA_F_Q55",
+          "labelFa": "شاخص توده بدنی بالا/چاقی شکمی دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 55,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "414916001",
+              "238136002"
+            ],
+            "loinc": [],
+            "icd10": [
+              "E66.9"
+            ],
+            "umls": [
+              "C0028754",
+              "C0349218"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "female",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_56",
+          "sectionId": "CA_F_SEC_8",
+          "code": "CA_F_Q56",
+          "labelFa": "مواجهه شغلی/محیطی با مواد سرطان‌زا (مثل آزبست، دود، حلال‌ها) دارید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 56,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "370977006"
+            ],
+            "loinc": [],
+            "icd10": [
+              "Z57.5"
+            ],
+            "umls": [
+              "C0038436"
+            ],
+            "conceptKind": "lifestyle",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_57",
+          "sectionId": "CA_F_SEC_9",
+          "code": "CA_F_Q57",
+          "labelFa": "آخرین پاپ اسمیر / HPV تست شما در ۵ سال اخیر انجام شده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 57,
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "171149006",
+              "439958008"
+            ],
+            "loinc": [
+              "10524-7",
+              "77378-9"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0030354",
+              "C1515110"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "female",
+              "hpv",
+              "pap"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_58",
+          "sectionId": "CA_F_SEC_9",
+          "code": "CA_F_Q58",
+          "labelFa": "نتیجه غیرطبیعی پاپ اسمیر / HPV در گذشته داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 58,
+          "visibilityRules": [
+            {
+              "field": "maritalStatus",
+              "op": "in",
+              "value": [
+                "متأهل",
+                "ازدواج‌کرده"
+              ]
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "439401001"
+            ],
+            "loinc": [],
+            "icd10": [
+              "R87.61"
+            ],
+            "umls": [
+              "C0420112"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "female",
+              "hpv",
+              "pap"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_59",
+          "sectionId": "CA_F_SEC_9",
+          "code": "CA_F_Q59",
+          "labelFa": "واکسن (HPV) دریافت کرده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 59,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "33879002"
+            ],
+            "loinc": [
+              "30940-0"
+            ],
+            "icd10": [],
+            "umls": [
+              "C1515111"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "female",
+              "hpv"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_60",
+          "sectionId": "CA_F_SEC_9",
+          "code": "CA_F_Q60",
+          "labelFa": "آخرین ماموگرافی برای سن توصیه‌شده یا پرخطر( در ۲ سال اخیر انجام شده است؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 60,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "71651007"
+            ],
+            "loinc": [
+              "24606-6"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0024671"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "female",
+              "screening"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_61",
+          "sectionId": "CA_F_SEC_9",
+          "code": "CA_F_Q61",
+          "labelFa": "سونوگرافی یا (MRI) پستان به دلیل ریسک بالا/توصیه پزشک داشته‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 61,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "47079000",
+              "241615005"
+            ],
+            "loinc": [
+              "24604-1",
+              "30719-6"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0041618",
+              "C0024485"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "female",
+              "breast"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_62",
+          "sectionId": "CA_F_SEC_9",
+          "code": "CA_F_Q62",
+          "labelFa": "کولونوسکوپی یا تست خون مخفی مدفوع بر اساس سن/ریسک انجام داده‌اید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 62,
+          "visibilityRules": [
+            {
+              "field": "age",
+              "op": "gte",
+              "value": 50
+            }
+          ],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "73761001",
+              "167777007"
+            ],
+            "loinc": [
+              "28026-4",
+              "2335-8"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0009378",
+              "C0016399"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "female",
+              "colorectal",
+              "red_flag"
+            ],
+            "redFlagOnYes": true
+          }
+        },
+        {
+          "id": "CA_F_ITEM_63",
+          "sectionId": "CA_F_SEC_9",
+          "code": "CA_F_Q63",
+          "labelFa": "آیا به‌طور منظم خودآزمایی/آگاهی از تغییرات پستان را انجام می‌دهید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 63,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "171207006"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0420115"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "female",
+              "breast"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
+          "id": "CA_F_ITEM_64",
+          "sectionId": "CA_F_SEC_9",
+          "code": "CA_F_Q64",
+          "labelFa": "در صورت مشاهده علائم غیرطبیعی، طی ۱-۲ هفته به پزشک مراجعه می‌کنید؟",
+          "inputType": "yn_unk",
+          "required": true,
+          "sortOrder": 64,
+          "visibilityRules": [],
+          "helpText": "",
+          "notesPolicy": "required_if_yes",
+          "prefillFromPatient": null,
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "225328001"
+            ],
+            "loinc": [],
+            "icd10": [],
+            "umls": [
+              "C0424472"
+            ],
+            "conceptKind": "screening",
+            "aiTags": [
+              "female"
+            ],
+            "redFlagOnYes": false
+          }
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 2
+}

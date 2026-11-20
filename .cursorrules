@@ -1,0 +1,243 @@
+# Project Architecture Rules: Modular Monolith
+
+You are an expert software architect. This project is a modular monolith containing potentially many light modules. To prevent tight coupling, complexity explosion, and performance drops, strict architectural rules must be followed for any new code or refactoring.
+
+**Portable vs project overlay:** This file is the reusable standard. Concrete product names, roles, SMS provider keys, seed identities, app folder names, and role→doc→service rows live in `.cursor/rules/project-context.mdc` (`alwaysApply`). Never hard-code those into this file.
+
+## 0. Backend layering (غیرقابل نقض — تکرار ممنوع)
+
+زنجیرهٔ اجباری:
+
+```
+Controller → I*Service → *Service → I*Repository → *Repository → SQL
+```
+
+### هرگز در Services / Controllers / Background
+
+- `ApplicationDbContext` (یا هر DbContext پروژه) تزریق یا استفاده نکن
+- `using Microsoft.EntityFrameworkCore` ننویس
+- `using …Database.EF.Sql…` ننویس
+- `SaveChanges` / `DbSet` / `Include` روی context نزن
+- در پروژهٔ Services هرگز `ProjectReference` به لایهٔ EF یا `PackageReference` به `Microsoft.EntityFrameworkCore*` اضافه نکن
+- هلپر EF داخل Services نساز (مثل paging با `CountAsync`/`ToListAsync` اکستنشن EF)
+- برای ارتباط فرانت یا بک با بیرون حتماً DTO استفاده کن
+
+### Controllers و Background
+
+- فقط `I*Service`؛ نه DbContext، نه Repository مستقیم، نه `IAsyncQuery`
+- صفحه‌بندی / materialize لیست: متد روی Service (مثلاً `List*PagedAsync`) که داخلش `IAsyncQuery` دارد
+- HostedService → `I*Service` از scope
+
+### جای درست EF
+
+فقط لایهٔ `Database.EF.Sql` (یا معادل پروژه) به‌همراه Seed / DI / Migrator در API.
+
+### materialize بدون EF در Services
+
+`IAsyncQuery` (پیاده‌سازی در لایهٔ EF) یا متد اختصاصی `I*Repository`.
+
+### اگر دامنه Repository ندارد
+
+اول `I*Repository` در Core/Application + `*Repository` در EF + ثبت DI، بعد Service. از کپی کردن الگوی آلوده به EF خودداری کن.
+
+### مرجع و گیت بیلد
+
+- جفت طلایی Service+Repository و مسیرهای `Application` / `Infrastructure` در `.cursor/rules/project-context.mdc`
+- جزئیات لایه‌بندی: `.cursor/rules/backend-layering.mdc` و `.cursor/rules/services-no-ef.mdc`
+- در صورت وجود گیت بیلد (مثل `ForbidEfInServices` در `Directory.Build.targets`)، نقض لایه‌بندی باید بیلد را بشکند
+- **بدهی DbContext در Services بسته است.** ظهور مجدد باگ است، نه الگو.
+
+## 0.1 Auth — OTP و پیامک (غیرقابل نقض)
+
+### `Auth__FixedOtp` (env / User Secrets / `Auth:FixedOtp`)
+
+- اگر **غیرخالی** باشد:
+  - کد OTP = **همان مقدار ثابت** (بدون تولید رندم)
+  - هیچ مسیر ارسال SMS صدا زده نمی‌شود (OTP و دعوت/یادآوری گروهی)
+  - Verify همان مقایسهٔ hash را طی می‌کند؛ کلاینت همان کد ثابت را وارد می‌کند
+- اگر **خالی** باشد:
+  - کد OTP رندم تولید می‌شود
+  - ارسال فقط از مسیر **قالبی** (`ISmsSender.SendTemplateAsync`) — متن آزاد ممنوع
+- **Production:** `Auth__FixedOtp` نباید ست باشد؛ فقط dev/demo.
+- کلیدها را در git commit نکن؛ از env / `dotnet user-secrets` استفاده کن.
+- نام کلیدهای provider و Options در `.cursor/rules/project-context.mdc`
+
+### قواعد پیاده‌سازی
+
+- Options احراز و SMS در لایهٔ Application؛ ارسال: `ISmsSender` در Application؛ پیادهٔ قالبی در Infrastructure — **نه** `SendText` آزاد
+- منطق FixedOtp فقط در Service قبل از تولید کد و قبل از فراخوانی `ISmsSender`
+- توکن نشست opaque + middleware اعتبارسنجی؛ اعتماد به شناسهٔ کاربر/نقش impersonation از body کلاینت ممنوع
+
+### ادمین پلتفرم (seed قفل‌شده)
+
+- شناسهٔ seed ادمین پلتفرم (مثلاً موبایل) در `.cursor/rules/project-context.mdc` قفل است — تغییر بدون تصمیم صریح مالک پروژه ممنوع.
+- در seed اولیهٔ API این کاربر با نقش پلتفرم باید اتوماتیک ایجاد یا نقشش تضمین شود.
+- لاگین OTP / پنل پلتفرم / دمو و README باید با همان شناسه هم‌تراز باشند (نه placeholder ساختگی).
+
+## 1. File Header Standard
+
+- Every newly created or modified file MUST include a top header comment in the following format:
+
+```
+/*
+ File: path/filename
+ Description: functionalities
+ Parent Dependencies: project.ts
+ */
+```
+
+## 2. Language & Code Comments (اجباری در نقاط اثرگذار)
+
+جزئیات: `.cursor/rules/inline-comments.mdc` (در صورت وجود)
+
+- **زبان:** همهٔ inline commentها MUST فارسی باشند.
+- **هدف:** توضیح **چرا / قید بیزینس / دام / سازگاری** — نه بازنویسی خط بعدی به فارسی.
+- **اجباری** وقتی کد جدید می‌نویسی یا منطق اثرگذار را تغییر می‌دهی (backend + frontend + schema/migration):
+  - قوانین و گاردهای دامنه (انتقال وضعیت، قفل موجودیت، مجوز نقش، …)
+  - جریان مالی / کیف / تسویه / پرداخت در صورت وجود در دامنه
+  - مسیرهای خاص نقش‌ها (طبق نگاشت نقش در overlay)
+  - سازگاری با داده/کد قدیمی، معنای nullable، `Guid.Empty` در برابر `null`
+  - فرانت: گیت UI وابسته به وضعیت، مالکیت نمایش، شرط مخفی/غیرفعال دکمه‌ها، mapping غیرواضح API→UI
+  - تصمیم‌های غیربدیهی عملکردی یا امنیتی
+- **ممنوع:** کامنت بدیهی (`// افزایش شمارنده`)، کامنت انگلیسی برای منطق، کامنت روی هر خط ساده CRUD بدون قید بیزینس.
+- **تعادل Clean Code:** کد خوانا اولویت دارد؛ کامنت جایگزین نام‌گذاری بد نمی‌شود؛ فقط نقاط اثرگذار را پوشش بده.
+
+الگو:
+
+```csharp
+// پس از Assign، شناسهٔ عملیاتی عوض می‌شود؛ شناسهٔ ثبت‌کننده مالک اولیه می‌ماند
+```
+
+```js
+// تا قبل از انتقال به وضعیت بعدی، دکمهٔ لغو برای نقش مجاز فعال است
+```
+
+## 3. Coding
+
+- تو یک برنامه‌نویس ارشد و متخصص Clean Code هستی. کدی که تولید می‌کنی باید بالاترین استانداردهای خوانایی، نگهداری و بازدهی را داشته باشد. اصول SOLID و کتاب Clean Code رابرت سی. مارتین (Uncle Bob) باید در تمام پاسخ‌های تو رعایت شوند.
+- خوانایی + SOLID کافی نیست؛ در نقاط اثرگذار بیزینس/فرانت، inline comment فارسی طبق بخش ۲ الزامی است.
+
+## 4. اسناد (`docs/`) — ایندکس ریشه و پوشه‌بندی موضوعی
+
+ایندکس اصلی: [`docs/README.md`](docs/README.md) با عنوان **مستندات — ایندکس**.  
+پوشه‌های زنده: موضوعی (مثلاً `backend/`، اپ‌های فرانت، `shared/`، `exports/`) — نام دقیق اپ‌ها در `.cursor/rules/project-context.mdc`.  
+ریشهٔ `docs/` فقط ایندکس + این پوشه‌ها — فایل پراکنده ممنوع.  
+`docs/shared/` منبع حقیقت **فرایندهای مشترک / changelog / field-ops** است؛ هر تغییر رفتار دامنه باید سند مربوط را هم‌زمان و دقیق به‌روز کند.
+
+### فایل‌های changelog فرایند (اجباری)
+
+| فایل | نقش |
+|------|-----|
+| [`docs/shared/process-changelog.md`](docs/shared/process-changelog.md) | changelog **فرایندی** (تاریخ **شمسی**) |
+| [`docs/shared/CHANGELOG.md`](docs/shared/CHANGELOG.md) | تغییرات **نگارش اسناد** فرایند (تاریخ **شمسی**؛ در صورت وجود) |
+
+### قواعد
+
+1. سند جدید فقط داخل پوشهٔ موضوعی درست + **ردیف در [`docs/README.md`](docs/README.md)**.
+2. هر سند زنده باید لینک برگشتی با متن دقیق **[مستندات — ایندکس](docs/README.md)** داشته باشد.
+3. سند فرایند با رفتار واقعی کد هم‌خوان باشد.
+4. اگر **رفتار فرایند** عوض شد → بند در `docs/shared/process-changelog.md`؛ اگر فقط نگارش عوض شد → بند در CHANGELOG نگارشی.
+5. تاریخ changelogها **فقط شمسی**؛ اسناد بسته/تکراری را حذف کن و ایندکس را هم‌زمان کوتاه نگه دار.
+6. تکمیل کد بدون به‌روزرسانی اسناد اثرگذار ناقص است.
+7. استارت API با `MigrateAsync` (یا معادل) زنجیرهٔ مایگریشن را اعمال می‌کند؛ تأیید بدهی migration از ماتریس تست پروژه کافی است (اعمال دستی DB خارج از scope مگر خلاف آن در overlay).
+
+## 4.1 چرخه اجباری Use Case → مستند → تست کامل (غیرقابل نقض)
+
+هر قابلیت یا تغییر رفتار دامنه **ناقص است** مگر هر سه گام زیر هم‌زمان بسته شوند. Agent / توسعه‌دهنده حق ندارد کار را «تمام» اعلام کند اگر یکی ناقص باشد.
+
+```
+Create UC  →  Document UC  →  Full Tests (BE + FE [+ API smoke])
+```
+
+### پکیج توسعه — جریان نهایی‌شده توسط کاربر (غیرقابل نقض)
+
+هر جریان یا فرایندی که کاربر توضیح می‌دهد و **نهایی می‌شود** یک **پکیج توسعه** است. پیاده‌سازی کد به‌تنهایی کافی نیست؛ کار ناقص است مگر همهٔ اقلام زیر در همان موج بسته شوند:
+
+1. **UC** در فایل نقش مربوط (`docs/processes/use-cases/…` یا `future/`) — فهرست + بدنه با قالب بازیگران
+2. **اسناد همراه:** بند در [`docs/shared/process-changelog.md`](docs/shared/process-changelog.md) (تاریخ شمسی) + در صورت نیاز ردیف ماتریس پیش‌انتشار و کاتالوگ Unit
+3. **تست کامل:** Unit بک + Unit فرانت (+ API smoke وقتی مسیر HTTP بحرانی است)
+4. **دروازهٔ قبل‌از‌انتشار:** اطمینان که [`server/pre-publish-tests.bat`](server/pre-publish-tests.bat) همان سوئیت‌ها را اجرا می‌کند؛ اگر پروژه/گام تست جدید لازم شد، bat هم‌زمان اصلاح شود و تا سبز شدن اجرا شود
+
+این چهار مورد یک پکیج‌اند — جدا کردن «فقط کد» یا «فقط سند» یا «تست بعداً» ممنوع است.
+
+### گام ۱ — ساخت UC
+
+- شناسه: `UC-{ROLE}-{NN}` — پیشوندهای نقش در overlay / سند بازیگران
+- قالب اجباری از سند بازیگران (`docs/processes/use-cases/00-actors-and-system.md` یا معادل): بازیگر، هدف، پیش/پس‌شرط، اکشن فنی، سناریوی اصلی، `Na`، `Nx`
+- نقش خارج از نسخهٔ جاری فقط در `docs/processes/future/` (یا معادل)
+
+### گام ۲ — مستندسازی
+
+- ثبت در فایل نقش مربوط + ردیف فهرست همان فایل (مسیرها در overlay)
+- تغییر رفتار فرایند → بند در [`docs/shared/process-changelog.md`](docs/shared/process-changelog.md) (تاریخ شمسی)
+- در صورت نیاز ردیف در ماتریس تست پیش‌انتشار و کاتالوگ سناریوی Unit پروژه
+
+### گام ۳ — تست کامل
+
+| لایه | ابزار | الزام |
+|------|-------|--------|
+| Unit بک‌اند | روی `*Service` با fake/mock `I*Repository` (بدون EF) | مسیر اصلی + همهٔ `Na`/`Nx` مستندشده |
+| Unit فرانت | Vitest (+ Testing Library برای گیت UI نقش) | منطق خالص / گیت‌ها / mapping نقش↔صفحه |
+| API smoke | `WebApplicationFactory` (یا معادل) وقتی UC مسیر HTTP بحرانی دارد | حداقل Auth/OTP و مسیرهای حیاتی مرتبط |
+
+- نام‌گذاری: بک و فرانت باید به `UC-xxx` ارجاع دهند؛ قرارداد دقیق در overlay و `.cursor/rules/testing-unit.mdc`
+- جزئیات اسکلت و ممنوعیت‌ها: [`.cursor/rules/testing-unit.mdc`](.cursor/rules/testing-unit.mdc)
+- **اجرای عملیاتی قبل‌از‌انتشار:** [`server/pre-publish-tests.bat`](server/pre-publish-tests.bat) (از طریق `publish.bat` یا جداگانه) — §5
+
+### ممنوع
+
+- پیاده‌سازی کد دامنه بدون UC
+- UC بدون سند در `docs/processes/use-cases/` (یا مسیر معادل overlay)
+- سند بدون تست هم‌نام در کاتالوگ و کد
+- تست بدون ارجاع `UC-xxx`
+- ادعای «تمام» وقتی فقط کد یا فقط سند یا فقط تست آماده است
+- اتمام جریان نهایی‌شدهٔ کاربر بدون بستن کامل **پکیج توسعه** (UC + changelog/ماتریس + تست‌ها + دروازهٔ pre-publish)
+
+### نگاشت نقش → سند → سرویس
+
+هر پروژه **باید** جدول نقش → سند UC → سرویس اصلی بک → ماژول فرانت را در `.cursor/rules/project-context.mdc` و/یا سند بازیگران نگه دارد. Agent برای کار نقش‌محور همان نگاشت را می‌خواند — ردیف‌های نقش را اینجا تکرار نکن.
+
+## 5. Server deploy layout (`server/`) — اجباری
+
+درخت استاندارد و جزئیات عملیاتی: سند deploy پروژه (معمولاً [`docs/shared/server-deploy.md`](docs/shared/server-deploy.md)). نام سرویس‌های اجرا و مسیرهای persist خاص در overlay.
+
+**نقطهٔ ورود واحد از ویندوز:** فقط `server/publish.bat` (یا معادل اعلام‌شده در overlay).  
+ترتیب داخلی اجباری: بارگذاری config → **`pre-publish-tests`** → اسکلت → بیلد/پابلیش → rsync در صورت `DEPLOY_REMOTE` → چاپ دستورهای `docker compose` روی لینوکس.
+
+```
+server/
+  publish.bat                    # تنها مرجع اپراتور برای انتشار کامل
+  pre-publish-tests.bat          # wrapper دروازهٔ تست (فراخوانی _pre-publish-tests.ps1)
+  _pre-publish-tests.ps1         # ارکستراتور: کنسول ساکت + heartbeat؛ لاگ کامل
+  _run-frontend-tests.ps1        # helper Vitest از PowerShell (بدون redirect فایل)
+  sync.config.bat                # پورت / URL عمومی / DEPLOY_REMOTE
+  init-server-structure.bat      # helper داخلی — اسکلت بدون بیلد
+  sync-deploy.bat                # helper داخلی — بیلد/پابلیش
+  deploy-rsync-exclude.txt
+  _templates/write-deploy-files.ps1   # منبع حقیقت compose / .env.example / Dockerfile
+  test-reports/                  # لاگ تست قبل‌از‌انتشار (محلی ویندوز؛ rsync exclude)
+  persist/                       # دادهٔ پایدار روی هاست (زیرپوشه‌ها در overlay)
+  {app}/                         # آرتیفکت + compose هر سرویس — بدون دادهٔ کاربر داخل image
+```
+
+### دروازهٔ تست قبل‌از‌انتشار (غیرقابل نقض)
+
+- [`server/pre-publish-tests.bat`](server/pre-publish-tests.bat) قبل از بیلد آرتیفکت اجرا می‌شود (از `publish.bat` یا جداگانه)؛ منطق در `_pre-publish-tests.ps1`.
+- قبل از `dotnet test`: بستن پروسس‌های قفل‌کننده (`Nabz.Api`، `testhost`، …) تا قفل DLL شکست ندهد.
+- پوشش اجباری: Unit بک (`Nabz.Infrastructure.Tests`) + API smoke (`Nabz.Api.Tests`) + فرانت (`npm run test:run`).
+- شکست هر سوئیت → `exit /b 1` و **ممنوعیت ادامهٔ** `publish.bat`.
+- **کنسول:** خلاصه + heartbeat هر ۵ثانیه (`… still running (Ns)`) تا معلوم باشد گیر نکرده؛ جزئیات کامل فقط در لاگ.
+- `PRE_PUBLISH_VERBOSE=1` → خروجی کامل سوئیت روی کنسول (دیباگ).
+- گزارش در `server/test-reports/` (`pre-publish-*.log` + `latest.log`)؛ `test-reports/` در `deploy-rsync-exclude.txt`.
+- `SKIP_PRE_PUBLISH_TESTS=1` فقط اضطراری است و باید در کنسول هشدار بزند — پیش‌فرض همیشه تست.
+
+### قواعد غیرقابل نقض
+
+- آرتیفکت اجرا زیر `server/{app}`؛ **دادهٔ پایدار فقط** زیر `server/persist/`
+- در `docker-compose` این داده‌ها **bind mount** به `persist/` باشند؛ named volume Docker یا کپی داخل image برای آپلود/ویترین ممنوع است
+- در ریپو و پکیج ارسالی فقط **`.env.example`**؛ فایل `.env` واقعی روی سرور می‌ماند و اسکریپت‌های publish/sync/init **هرگز** آن را overwrite نمی‌کنند
+- قالب‌های `docker-compose.yml` / `Dockerfile` / `.env.example` فقط از `_templates` تولید شوند؛ ویرایش دستی خارج از قالب ممنوع
+- هر `server/{app}/.env.example` باید **نمونهٔ واقعی `KEY=value`** داشته باشد (نه فقط کامنت). placeholder برای سکرت مجاز است؛ کلیدهای runtime در overlay
+- مسیر اصلی انتشار: `publish.bat` — نه اجرای جداگانهٔ helpers به‌عنوان جریان رسمی
+- کپی ویندوز→لینوکس با exclude؛ overwrite روی `persist/**` و `{api}/.env` ممنوع
+- path داخل کانتینر ثابت می‌ماند؛ فقط مسیر هاست به `persist/` است

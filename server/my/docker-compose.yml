@@ -1,0 +1,9 @@
+services:
+  app:
+    image: nginx:alpine
+    container_name: adel-maryam-nabz-clinic-my
+    restart: unless-stopped
+    ports:
+      - "5437:80"
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro

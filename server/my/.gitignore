@@ -1,0 +1,12 @@
+# File: server/my/.gitignore
+# Description: نادیده گرفتن dist و سکرت‌ها برای دیپلوی my
+# Parent Dependencies: sync-deploy.bat
+
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example

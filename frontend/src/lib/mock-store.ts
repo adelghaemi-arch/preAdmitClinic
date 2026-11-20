@@ -1,8 +1,10 @@
 import { MOCK_DATASET, type MockDataset } from "@/lib/mock-dataset";
 import { buildSeededContracts, buildSeededPackageRuleLibrary } from "@/lib/mock-contracts";
 import {
+  buildDemoSubmittedResponse,
   loadSeedForms,
   migrateDemoItemCodesInAnswers,
+  resolveFormForPatient,
   stripSignatureParts,
 } from "@/lib/form-engine";
 import { rebuildPackagesFromFlat } from "@/lib/evidence-packages";
@@ -101,6 +103,42 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+/** Seed submitted formResponses for a few waiting-list patients so physician brief is demoable. */
+function ensureDemoFormResponses(
+  patients: MockPatientRow[],
+  forms: FormDefinition[]
+): MockPatientRow[] {
+  const highlightsById: Record<number, string[]> = {
+    1: ["CA_F_Q25", "CA_F_Q41"],
+    2: ["CA_M_Q33", "CA_M_Q1"],
+    3: ["CA_M_Q33"],
+  };
+  return patients.map((patient) => {
+    const existing = patient.formResponses ?? [];
+    const hasSubmitted = existing.some((r) => r.status === "submitted");
+    if (hasSubmitted) {
+      return { ...patient, formResponses: existing, intakeCompleted: true };
+    }
+    // Do not overwrite in-progress drafts; only seed when the patient has no responses at all.
+    if (existing.length > 0) {
+      return { ...patient, formResponses: existing, intakeCompleted: false };
+    }
+    const codes = highlightsById[patient.id];
+    if (!codes) {
+      return { ...patient, formResponses: existing, intakeCompleted: false };
+    }
+    const form = resolveFormForPatient(forms, patient.gender, patient.age);
+    if (!form) {
+      return { ...patient, formResponses: existing, intakeCompleted: false };
+    }
+    return {
+      ...patient,
+      formResponses: [buildDemoSubmittedResponse(patient, form, codes)],
+      intakeCompleted: true,
+    };
+  });
+}
+
 function buildStore(): MockStore {
   const dataset = shiftTimestamps(clone(MOCK_DATASET));
   // Demo accounts share one simple mock password; nothing secret is stored or signed.
@@ -109,13 +147,15 @@ function buildStore(): MockStore {
     ...link,
     visibility: { ...defaultCompanionVisibility, ...(link.visibility ?? {}) },
   }));
-  dataset.patients = dataset.patients.map((patient) => ({
-    ...patient,
-    intakeAnswers: { ...emptyIntakeAnswers, ...(patient.intakeAnswers ?? {}) },
-    formResponses: patient.formResponses ?? [],
-    // Docs-driven forms replace legacy intake; demo patients start incomplete unless they already have a submitted response.
-    intakeCompleted: Boolean((patient.formResponses ?? []).some((r) => r.status === "submitted")),
-  }));
+  const seedForms = loadSeedForms();
+  dataset.patients = ensureDemoFormResponses(
+    dataset.patients.map((patient) => ({
+      ...patient,
+      intakeAnswers: { ...emptyIntakeAnswers, ...(patient.intakeAnswers ?? {}) },
+      formResponses: patient.formResponses ?? [],
+    })),
+    seedForms
+  );
   if (!dataset.appUsers.some((u) => u.username === "supervisor")) {
     dataset.appUsers.push({
       id: dataset.appUsers.reduce((m, u) => Math.max(m, u.id), 0) + 1,
@@ -160,7 +200,7 @@ function buildStore(): MockStore {
     clinicLocation: { lat: 35.7448, lon: 51.3753, address: "تهران، خیابان کارگر شمالی، بین بهشتی و مجیدیه، پلاک ۱۲۰", city: "تهران" },
     contracts: seededContracts,
     packageRuleLibrary: buildSeededPackageRuleLibrary(),
-    forms: loadSeedForms(),
+    forms: seedForms,
     platform,
   };
 }
@@ -354,19 +394,21 @@ export function hydrateMockStore(data: Partial<MockStore>): void {
       : [];
     current.forms = [...seedForms, ...extras];
   }
-  current.patients = (current.patients ?? []).map((p) => {
-    const formResponses = (p.formResponses ?? []).map((response) => ({
-      ...response,
-      answers: migrateDemoItemCodesInAnswers(response.answers ?? []),
-    }));
-    return {
-      ...p,
-      formResponses,
-      intakeAnswers: { ...emptyIntakeAnswers, ...(p.intakeAnswers ?? {}) },
-      // Truth source for completion is a submitted FormResponse, not legacy flags.
-      intakeCompleted: formResponses.some((r) => r.status === "submitted"),
-    };
-  });
+  current.patients = ensureDemoFormResponses(
+    (current.patients ?? []).map((p) => {
+      const formResponses = (p.formResponses ?? []).map((response) => ({
+        ...response,
+        answers: migrateDemoItemCodesInAnswers(response.answers ?? []),
+      }));
+      return {
+        ...p,
+        formResponses,
+        intakeAnswers: { ...emptyIntakeAnswers, ...(p.intakeAnswers ?? {}) },
+        intakeCompleted: formResponses.some((r) => r.status === "submitted"),
+      };
+    }),
+    current.forms
+  );
   if (!current.appUsers.some((u) => u.username === "supervisor")) {
     current.appUsers.push({
       id: current.appUsers.reduce((m, u) => Math.max(m, u.id), 0) + 1,

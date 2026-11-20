@@ -168,7 +168,12 @@ export function PrintableEmrReport({
           {/* Pre-admit questionnaire summary */}
           <div className="mt-5 rounded-xl border border-teal-200 bg-teal-50/50 p-4 text-xs leading-7">
             <h4 className="mb-2 font-bold text-teal-900">پرسشنامه پیش‌پذیرش ثبت‌شده برای همین مراجعه</h4>
-            <FormResponseSummary patient={patient} forms={formCatalog} />
+            <FormResponseSummary
+              patient={patient}
+              forms={formCatalog}
+              viewMode="full"
+              expandAllSections
+            />
           </div>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">

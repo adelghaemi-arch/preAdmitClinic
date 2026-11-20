@@ -1,3 +1,9 @@
+/*
+ File: frontend/src/lib/mock-platform.ts
+ Description: seed دمو پلتفرم شامل کاربر ادمین کل برای تست فیلتر کلینیک
+ Parent Dependencies: types/clinic, evidence-packages
+ */
+
 import { faDayLabel, tehranDayKey } from "@/lib/evidence-packages";
 import type {
   AuthSession,
@@ -235,6 +241,26 @@ export function buildSeedPlatformState(): PlatformState {
       gpsHistory: [{ lat: 35.7448, lon: 51.3753, accuracy: 12, capturedAt: iso(8), source: "manual", packageId: null }],
       isActive: true,
     },
+    // برای تست فیلتر ادمین کلینیک: این کاربر فقط در scope ادمین کل دیده می‌شود
+    {
+      id: "pu-platform",
+      userId: 99,
+      patientId: null,
+      fullName: "ادمین کل",
+      phone: "09133752696",
+      nationalId: "0011111111",
+      email: "platform@nabz.clinic",
+      clinicId: "clinic-nabz-tehran",
+      roleLabel: "ادمین کل",
+      primaryRole: "platform",
+      notes: "seed ثابت پروژه — مخفی از ادمین کلینیک",
+      createdAt: iso(60 * 24 * 365),
+      lastLoginAt: iso(2),
+      profilePhotoDataUrl: null,
+      lastGps: null,
+      gpsHistory: [],
+      isActive: true,
+    },
     {
       id: "pu-aria-patient",
       userId: null,
@@ -456,7 +482,7 @@ export function buildSeedPlatformState(): PlatformState {
     {
       id: "aud-1",
       at: iso(20),
-      actor: "ادمین پلتفرم",
+      actor: "ادمین کل",
       action: "SEED_PLATFORM",
       target: "پلتفرم",
       detail: "راه‌اندازی داده نمایشی پلتفرم (تک‌مستأجر)",

@@ -1,0 +1,11 @@
+services:
+  app:
+    image: nginx:alpine
+    container_name: adel-maryam-nabz-clinic-news
+    restart: unless-stopped
+    ports:
+      - "5436:80"
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+      - ../persist/news-data:/usr/share/nginx/html/data:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro

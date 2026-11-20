@@ -1,0 +1,5 @@
+# دادهٔ پایدار هاست — هرگز در گیت یا پکیج overwrite نشود
+uploads/*
+!uploads/.gitkeep
+news-data/*
+!news-data/.gitkeep

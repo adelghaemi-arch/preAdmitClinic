@@ -1,3 +1,9 @@
+/*
+ File: frontend/src/components/AdminFormsBuilder.tsx
+ Description: سازنده فرم پیش‌پذیرش ادمین + export/import بسته JSON/Excel
+ Parent Dependencies: lib/api/forms, types/clinic, form-engine
+ */
+
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import { TerminologyConceptPicker } from "@/components/TerminologyConceptPicker";
 import React, { useMemo, useState } from "react";
@@ -5,10 +11,18 @@ import {
   ArrowDown,
   ArrowUp,
   CheckCircle2,
+  Download,
   Plus,
   Save,
   Trash2,
+  Upload,
 } from "lucide-react";
+import {
+  downloadFormPackageExcel,
+  downloadFormPackageJson,
+  uploadFormPackageExcel,
+  uploadFormPackageJson,
+} from "@/lib/api/forms";
 import type {
   ClinicSnapshot,
   FormConceptKind,
@@ -113,6 +127,23 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
   const [draft, setDraft] = useState<FormDefinition | null>(null);
   const [sectionId, setSectionId] = useState("");
   const [notice, setNotice] = useState("");
+  const clinicId = snapshot.platform.clinics.find((c) => c.isCurrentTenant)?.id ?? snapshot.platform.clinics[0]?.id ?? "";
+  const jsonInputRef = React.useRef<HTMLInputElement | null>(null);
+  const excelInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const runPackageIo = async (fn: () => Promise<string | void>, okMsg: string) => {
+    if (!clinicId) {
+      setNotice("کلینیک جاری یافت نشد.");
+      return;
+    }
+    try {
+      const custom = await fn();
+      setNotice(custom || okMsg);
+      await onAction({ action: "REFRESH_WORKSPACE", silent: true });
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "عملیات بسته فرم ناموفق بود.");
+    }
+  };
 
   React.useEffect(() => {
     if (!selected) {
@@ -218,16 +249,85 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
   if (!draft) {
     return (
       <div className="space-y-3">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void createForm()}
-          className="inline-flex items-center gap-1 rounded-xl bg-teal-700 px-3 py-2 text-xs text-white"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          افزودن فرم جدید
-        </button>
-        <p className="text-xs text-slate-500">هنوز فرمی در کاتالوگ نیست.</p>
+        {notice ? <p className="text-xs text-teal-800">{notice}</p> : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={busy || !clinicId}
+            onClick={() => void runPackageIo(() => downloadFormPackageJson(clinicId), "بسته JSON دانلود شد.")}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          >
+            <Download className="h-3.5 w-3.5" />
+            خروجی JSON
+          </button>
+          <button
+            type="button"
+            disabled={busy || !clinicId}
+            onClick={() => void runPackageIo(() => downloadFormPackageExcel(clinicId), "بسته Excel دانلود شد.")}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          >
+            <Download className="h-3.5 w-3.5" />
+            خروجی Excel
+          </button>
+          <button
+            type="button"
+            disabled={busy || !clinicId}
+            onClick={() => jsonInputRef.current?.click()}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            ورود JSON
+          </button>
+          <button
+            type="button"
+            disabled={busy || !clinicId}
+            onClick={() => excelInputRef.current?.click()}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            ورود Excel
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void createForm()}
+            className="inline-flex items-center gap-1 rounded-xl bg-teal-700 px-3 py-2 text-xs text-white"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            افزودن فرم جدید
+          </button>
+        </div>
+        <input
+          ref={jsonInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            void runPackageIo(async () => {
+              const r = await uploadFormPackageJson(clinicId, file);
+              return `ورود JSON: ${r.importedForms} فرم.`;
+            }, "ورود JSON انجام شد.");
+          }}
+        />
+        <input
+          ref={excelInputRef}
+          type="file"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            void runPackageIo(async () => {
+              const r = await uploadFormPackageExcel(clinicId, file);
+              return `ورود Excel: ${r.importedForms} فرم.`;
+            }, "ورود Excel انجام شد.");
+          }}
+        />
+        <p className="text-xs text-slate-500">هنوز فرمی در کاتالوگ نیست — می‌توانید بسته JSON/Excel وارد کنید.</p>
       </div>
     );
   }
@@ -241,15 +341,83 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
           <h2 className="text-sm font-semibold text-slate-900">مدیریت فرم‌های پیش‌پذیرش</h2>
           <p className="text-[11px] text-slate-500">جامعه هدف، آیتم‌ها، جابجایی و کدینگ استاندارد برای تحلیل AI</p>
         </div>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void createForm()}
-          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          فرم جدید
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={busy || !clinicId}
+            onClick={() => void runPackageIo(() => downloadFormPackageJson(clinicId), "بسته JSON دانلود شد.")}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          >
+            <Download className="h-3.5 w-3.5" />
+            خروجی JSON
+          </button>
+          <button
+            type="button"
+            disabled={busy || !clinicId}
+            onClick={() => void runPackageIo(() => downloadFormPackageExcel(clinicId), "بسته Excel دانلود شد.")}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          >
+            <Download className="h-3.5 w-3.5" />
+            خروجی Excel
+          </button>
+          <button
+            type="button"
+            disabled={busy || !clinicId}
+            onClick={() => jsonInputRef.current?.click()}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            ورود JSON
+          </button>
+          <button
+            type="button"
+            disabled={busy || !clinicId}
+            onClick={() => excelInputRef.current?.click()}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            ورود Excel
+          </button>
+          <input
+            ref={jsonInputRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              void runPackageIo(async () => {
+                const r = await uploadFormPackageJson(clinicId, file);
+                return `ورود JSON: ${r.importedForms} فرم.`;
+              }, "ورود JSON انجام شد.");
+            }}
+          />
+          <input
+            ref={excelInputRef}
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              void runPackageIo(async () => {
+                const r = await uploadFormPackageExcel(clinicId, file);
+                return `ورود Excel: ${r.importedForms} فرم.`;
+              }, "ورود Excel انجام شد.");
+            }}
+          />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void createForm()}
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            فرم جدید
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

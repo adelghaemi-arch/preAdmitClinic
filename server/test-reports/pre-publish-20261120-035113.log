@@ -1,0 +1,25 @@
+=== Nabz Clinic pre-publish tests ===
+Server: C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server
+Repo:   C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3
+Log:    C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server\test-reports\pre-publish-20261120-035113.log
+Started: 2026-11-20T03:51:14.1709037+03:30
+---
+--- [0] Stop locking processes ---
+  [skip] Nabz.Api.exe not running
+  [skip] testhost.exe not running
+  [skip] Nabz.Api.Tests.exe not running
+  [skip] testhost.net48.exe not running
+  [skip] testhost.netcoreapp.exe not running
+  [skip] vstest.console.exe not running
+---
+--- [1/3] Backend unit (Nabz.Infrastructure.Tests) ---
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Nabz.Domain -> C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Domain\bin\Debug\net10.0\Nabz.Domain.dll
+  Nabz.Application -> C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Application\bin\Debug\net10.0\Nabz.Application.dll
+  Nabz.Infrastructure -> C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\src\Nabz.Infrastructure\bin\Debug\net10.0\Nabz.Infrastructure.dll
+  Nabz.Infrastructure.Tests -> C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\bin\Debug\net10.0\Nabz.Infrastructure.Tests.dll
+Test run for C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\bin\Debug\net10.0\Nabz.Infrastructure.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    77, Skipped:     0, Total:    77, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0)

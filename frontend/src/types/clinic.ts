@@ -473,6 +473,8 @@ export type WorkspaceView = "overview" | WorkspaceRole;
 
 export interface AppUserDto {
   id: number;
+  /** شناسه Guid کاربر در Nabz.Api */
+  serverId?: string;
   username: string;
   fullName: string;
   jobTitle: string;
@@ -747,6 +749,8 @@ export interface ContractSmsLog {
 
 export interface ContractMember {
   id: number;
+  /** شناسه Guid سرور برای فراخوانی API */
+  serverId?: string;
   contractId: number;
   inviteToken: string;
   personnelCode: string;
@@ -787,6 +791,8 @@ export interface ContractMember {
 
 export interface CorporateContract {
   id: number;
+  /** شناسه Guid سرور برای فراخوانی API */
+  serverId?: string;
   code: string;
   title: string;
   organizationName: string;

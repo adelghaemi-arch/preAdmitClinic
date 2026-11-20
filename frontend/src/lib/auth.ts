@@ -1,30 +1,49 @@
-import {
-  assertLocalSessionValid,
-  clearSessionId,
-  createAuthSession,
-  readSessionId,
-  revokeAuthSession,
-} from "@/lib/auth-sessions";
-import { ensureClientDb, persistClientDb } from "@/lib/client-db";
-import { mockMutations, mockStore } from "@/lib/mock-store";
-import { toLatinDigits } from "@/lib/persian";
-import { COMPANION_FEATURE_ENABLED } from "@/lib/workspace";
-import type { AppUserDto } from "@/types/clinic";
-
-/**
- * Browser-only OTP (one-time code) session for the fully client-side demo.
- * There is no password and no server: the patient enters their mobile number,
- * receives a simulated SMS code inside the app, and is signed in as that patient.
+/*
+ File: frontend/src/lib/auth.ts
+ Description: ورود OTP از Nabz.Api؛ بدون mock-store
+ Parent Dependencies: api/auth, api/http, api/roles
  */
+
+import {
+  apiGetMe,
+  apiRequestOtp,
+  apiRevokeSession,
+  apiVerifyOtp,
+  type AuthMeDto,
+} from "@/lib/api/auth";
+import { clearApiSession, readApiToken } from "@/lib/api/http";
+import { guidToNumericId, primaryWorkspaceRole } from "@/lib/api/roles";
+import { toLatinDigits } from "@/lib/persian";
+import type { AppUserDto, WorkspaceRole } from "@/types/clinic";
 
 export const SESSION_COOKIE = "nabz_session";
 const SESSION_KEY = "nabz_session_user";
-const OTP_KEY = "nabz_otp_challenge";
-const OTP_TTL_MS = 2 * 60 * 1000;
 
 export interface SessionResult {
   user: AppUserDto;
   isDemoSession: boolean;
+  me?: AuthMeDto;
+}
+
+export function normalizePhone(value: string): string {
+  let digits = toLatinDigits(value).replace(/\D/g, "");
+  if (digits.startsWith("0098")) digits = `0${digits.slice(4)}`;
+  else if (digits.startsWith("98") && digits.length === 12) digits = `0${digits.slice(2)}`;
+  return digits;
+}
+
+function meToUser(me: AuthMeDto): AppUserDto {
+  const primary = primaryWorkspaceRole(me.roles);
+  return {
+    id: guidToNumericId(me.userId),
+    serverId: me.userId,
+    username: me.mobile,
+    fullName: me.fullName,
+    jobTitle: primary === "platform" ? "ادمین کل" : primary === "admin" ? "ادمین کلینیک" : primary === "specialist" ? "پزشک" : primary === "supervisor" ? "ناظر سازمان" : "سلامتجو",
+    primaryRole: primary,
+    medicalCouncilCode: "—",
+    canAccessAllRoles: me.roles.includes("Platform") || me.roles.includes("Admin"),
+  };
 }
 
 export function readUsername(): string | null {
@@ -36,312 +55,98 @@ export function readUsername(): string | null {
   }
 }
 
-function toDto(id: number): AppUserDto | null {
-  const row = mockStore.userById(id);
-  if (!row) return null;
-  return {
-    id: row.id,
-    username: row.username,
-    fullName: row.fullName,
-    jobTitle: row.jobTitle,
-    primaryRole: row.primaryRole,
-    medicalCouncilCode: row.medicalCouncilCode,
-    canAccessAllRoles: row.canAccessAllRoles,
-  };
-}
-
-export async function getCurrentUser(): Promise<SessionResult> {
-  ensureClientDb();
-  const username = readUsername();
-  if (username) {
-    if (!assertLocalSessionValid()) {
-      try {
-        window.localStorage.removeItem(SESSION_KEY);
-        window.localStorage.removeItem("nabz_tab_role");
-        window.localStorage.removeItem(OTP_KEY);
-      } catch {}
-    } else {
-      const row = mockStore.userByUsername(username);
-      if (row) {
-        if (!readSessionId()) {
-          createAuthSession({ userId: row.id, username: row.username, appSurface: "clinic_web" });
-        }
-        persistClientDb();
-        return { user: toDto(row.id)!, isDemoSession: false };
-      }
+export async function getCurrentUser(): Promise<SessionResult | null> {
+  if (!readApiToken()) return null;
+  try {
+    const me = await apiGetMe();
+    const user = meToUser(me);
+    try {
+      window.localStorage.setItem(SESSION_KEY, user.username);
+    } catch {
+      /* ignore */
     }
+    return { user, isDemoSession: false, me };
+  } catch {
+    clearApiSession();
+    return null;
   }
-  const fallback = mockStore.userByUsername("maryam") ?? mockStore.users[0];
-  return { user: toDto(fallback.id)!, isDemoSession: true };
-}
-
-/* ------------------------------- OTP login ------------------------------- */
-
-export function normalizePhone(value: string): string {
-  let digits = toLatinDigits(value).replace(/\D/g, "");
-  if (digits.startsWith("0098")) digits = `0${digits.slice(4)}`;
-  else if (digits.startsWith("98") && digits.length === 12) digits = `0${digits.slice(2)}`;
-  return digits;
 }
 
 export interface OtpRequestResult {
   ok: boolean;
   error?: string;
-  /** Demo code shown inside the simulated SMS panel (no real SMS gateway in the mock). */
   code?: string;
   targetName?: string;
   kind?: "patient" | "supervisor";
   expiresInSec?: number;
 }
 
-interface OtpChallenge {
-  phone: string;
-  code: string;
-  expiresAt: number;
-  attempts: number;
-}
-
-function readChallenge(): OtpChallenge | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(OTP_KEY);
-    return raw ? (JSON.parse(raw) as OtpChallenge) : null;
-  } catch {
-    return null;
-  }
-}
-
-function findPatientByPhone(phone: string) {
-  return mockStore.patients.find((p) => normalizePhone(p.phone) === phone) ?? null;
-}
-
-function findSupervisorContract(phone: string) {
-  return (
-    mockStore.contracts.find(
-      (c) => c.supervisor.isActive && normalizePhone(c.supervisor.phone) === phone
-    ) ?? null
-  );
-}
-
-/** Steps 1 of OTP login: validates the mobile number and issues a demo code. */
-export function requestOtp(phoneRaw: string): OtpRequestResult {
-  ensureClientDb();
+export async function requestOtp(phoneRaw: string): Promise<OtpRequestResult> {
   const phone = normalizePhone(phoneRaw);
   if (!/^09\d{9}$/.test(phone)) {
     return { ok: false, error: "شماره موبایل معتبر ۱۱ رقمی وارد کنید (مثل ۰۹۱۲۳۴۵۶۷۸۹)." };
   }
-
-  const patient = findPatientByPhone(phone);
-  const supervisorContract = patient ? null : findSupervisorContract(phone);
-  if (!patient && !supervisorContract) {
-    return {
-      ok: false,
-      error: "این شماره موبایل در میان سلامتجویان یا ناظران سازمانی ثبت نشده است. یکی از شماره‌های فهرست ورود سریع پایین را انتخاب کنید.",
-    };
-  }
-
-  const code = String(Math.floor(10000 + Math.random() * 90000));
-  const challenge: OtpChallenge = { phone, code, expiresAt: Date.now() + OTP_TTL_MS, attempts: 0 };
   try {
-    window.localStorage.setItem(OTP_KEY, JSON.stringify(challenge));
-  } catch {}
-
-  return {
-    ok: true,
-    code,
-    kind: patient ? "patient" : "supervisor",
-    targetName: patient ? patient.fullName : supervisorContract!.supervisor.fullName,
-    expiresInSec: Math.round(OTP_TTL_MS / 1000),
-  };
+    const r = await apiRequestOtp(phone);
+    if (!r.ok) return { ok: false, error: r.error ?? "ارسال کد انجام نشد." };
+    return {
+      ok: true,
+      code: r.demoCode ?? undefined,
+      expiresInSec: 120,
+      targetName: phone,
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "ارسال کد انجام نشد." };
+  }
 }
 
 export interface OtpVerifyResult {
   ok: boolean;
   error?: string;
   user?: AppUserDto;
-  patientId?: number;
-  role?: "owner" | "supervisor";
+  role?: WorkspaceRole;
 }
 
-function ensurePatientUser(patientId: number) {
-  const patient = mockStore.patientById(patientId);
-  if (!patient) return null;
-
-  const selfLink = mockStore.links.find((l) => l.patientId === patientId && l.relationship === "self");
-  if (selfLink) {
-    const existing = mockStore.userById(selfLink.userId);
-    if (existing) return existing;
-  }
-
-  const byPhoneUsername = mockStore.userByUsername(patient.phone);
-  const existingUser =
-    byPhoneUsername ??
-    mockStore.users.find(
-      (u) => normalizePhone(u.fullName) === normalizePhone(patient.fullName) && u.primaryRole === "owner"
-    );
-  const user =
-    existingUser ??
-    (() => {
-      const nextId = mockStore.users.reduce((m, u) => Math.max(m, u.id), 0) + 1;
-      const created = {
-        id: nextId,
-        username: patient.phone,
-        fullName: patient.fullName,
-        jobTitle: "سلامتجو",
-        primaryRole: "owner",
-        medicalCouncilCode: "—",
-        canAccessAllRoles: true,
-        isActive: true,
-        lastLoginAt: new Date().toISOString(),
-      };
-      mockStore.users.push(created);
-      return created;
-    })();
-
-  if (!mockStore.links.some((l) => l.userId === user.id && l.patientId === patientId && l.relationship === "self")) {
-    mockMutations.insertLink({
-      userId: user.id,
-      patientId,
-      relationship: "self",
-      permission: "manage",
-      visibility: {
-        journey: true,
-        results: true,
-        diagnoses: true,
-        medications: true,
-        allergies: true,
-        familyHistory: true,
-        reports: true,
-      },
-      createdAt: new Date().toISOString(),
-    });
-  }
-  return user;
-}
-
-function ensureSupervisorUser(phone: string) {
-  const contract = findSupervisorContract(phone);
-  if (!contract) return null;
-  let user = mockStore.users.find(
-    (u) => u.username === phone || normalizePhone(u.medicalCouncilCode) === phone
-  );
-  if (!user) {
-    const nextId = mockStore.users.reduce((m, u) => Math.max(m, u.id), 0) + 1;
-    user = {
-      id: nextId,
-      username: phone,
-      fullName: contract.supervisor.fullName,
-      jobTitle: `ناظر سازمان (${contract.organizationName})`,
-      primaryRole: "supervisor",
-      medicalCouncilCode: phone,
-      canAccessAllRoles: false,
-      isActive: true,
-      lastLoginAt: new Date().toISOString(),
-    };
-    mockStore.users.push(user);
-  }
-  contract.supervisor.lastSeenAt = new Date().toISOString();
-  return user;
-}
-
-function startSession(username: string, userId: number) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(SESSION_KEY, username);
-    window.localStorage.removeItem(OTP_KEY);
-  } catch {}
-  createAuthSession({ userId, username, appSurface: "clinic_web" });
-}
-
-/** Step 2 of OTP login: verifies the code and opens the session. */
-export function verifyOtp(phoneRaw: string, codeRaw: string): OtpVerifyResult {
-  ensureClientDb();
+export async function verifyOtp(phoneRaw: string, codeRaw: string): Promise<OtpVerifyResult> {
   const phone = normalizePhone(phoneRaw);
-  const code = normalizePhone(codeRaw);
-  const challenge = readChallenge();
-
-  if (!challenge || challenge.phone !== phone) {
-    return { ok: false, error: "کد تأییدی برای این شماره صادر نشده است. دوباره درخواست کد بدهید." };
-  }
-  if (Date.now() > challenge.expiresAt) {
-    return { ok: false, error: "کد تأیید منقضی شده است. کد جدید درخواست کنید." };
-  }
-  if (challenge.attempts >= 5) {
-    return { ok: false, error: "تعداد تلاش‌های ناموفق زیاد است. کد جدید درخواست کنید." };
-  }
-  if (code !== challenge.code) {
-    challenge.attempts += 1;
+  const code = toLatinDigits(codeRaw).replace(/\D/g, "");
+  try {
+    const r = await apiVerifyOtp(phone, code);
+    if (!r.ok || !r.token) return { ok: false, error: r.error ?? "ورود انجام نشد." };
+    const me = await apiGetMe();
+    const user = meToUser(me);
     try {
-      window.localStorage.setItem(OTP_KEY, JSON.stringify(challenge));
-    } catch {}
-    return { ok: false, error: "کد واردشده درست نیست. کد داخل پیامک نمایشی را بررسی کنید." };
+      window.localStorage.setItem(SESSION_KEY, user.username);
+    } catch {
+      /* ignore */
+    }
+    return { ok: true, user, role: primaryWorkspaceRole(me.roles) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "ورود انجام نشد." };
   }
-
-  const patient = findPatientByPhone(phone);
-  if (patient) {
-    const user = ensurePatientUser(patient.id);
-    if (!user) return { ok: false, error: "حساب سلامتجو ساخته نشد. دوباره تلاش کنید." };
-    mockMutations.touchUserLogin(user.id, new Date().toISOString());
-    startSession(user.username, user.id);
-    persistClientDb();
-    return { ok: true, user: toDto(user.id)!, patientId: patient.id, role: "owner" };
-  }
-
-  const supervisorUser = ensureSupervisorUser(phone);
-  if (supervisorUser) {
-    mockMutations.touchUserLogin(supervisorUser.id, new Date().toISOString());
-    startSession(supervisorUser.username, supervisorUser.id);
-    persistClientDb();
-    return { ok: true, user: toDto(supervisorUser.id)!, role: "supervisor" };
-  }
-
-  return { ok: false, error: "حسابی برای این شماره پیدا نشد." };
 }
 
-/** Demo patients/supervisors that can request an OTP code right away. */
+/** شماره‌های seed بک‌اند برای ورود سریع دمو (نه mock-store). */
 export function listOtpDemoLogins(): Array<{ name: string; phone: string; hint: string; kind: "patient" | "supervisor" }> {
-  ensureClientDb();
-  const patients = mockStore.patients
-    .slice()
-    .sort((a, b) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime())
-    .map((p) => ({
-      name: p.fullName,
-      phone: normalizePhone(p.phone),
-      hint: p.completedAt ? "پرونده تکمیل‌شده" : "مسیر درمان فعال",
-      kind: "patient" as const,
-    }));
-  const supervisors = mockStore.contracts
-    .filter((c) => c.supervisor.isActive && c.supervisor.phone)
-    .map((c) => ({
-      name: c.supervisor.fullName,
-      phone: normalizePhone(c.supervisor.phone),
-      hint: `ناظر ${c.organizationName}`,
-      kind: "supervisor" as const,
-    }));
-  return [...supervisors, ...patients];
+  return [
+    { name: "ادمین کلینیک", phone: "09120000001", hint: "نقش Admin", kind: "supervisor" },
+    { name: "پزشک نمونه", phone: "09120000002", hint: "نقش Specialist", kind: "supervisor" },
+    { name: "مریم‌السادات تابش", phone: "09123458910", hint: "سلامتجو / Owner", kind: "patient" },
+    { name: "ناظر سازمانی نمونه", phone: "09123409876", hint: "نقش Supervisor", kind: "supervisor" },
+  ];
 }
 
-export function signOut(): void {
-  if (typeof window === "undefined") return;
-  ensureClientDb();
-  const sessionId = readSessionId();
-  if (sessionId) {
-    revokeAuthSession(sessionId, { actor: "کاربر", clearLocalIfCurrent: true });
-    persistClientDb();
-  } else {
-    clearSessionId();
-  }
+export async function signOut(): Promise<void> {
+  await apiRevokeSession();
   try {
     window.localStorage.removeItem(SESSION_KEY);
     window.localStorage.removeItem("nabz_tab_role");
-    window.localStorage.removeItem(OTP_KEY);
-  } catch {}
+    window.localStorage.removeItem("nabz_active_role");
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function listDemoAccounts(): Promise<AppUserDto[]> {
-  ensureClientDb();
-  return mockStore.users
-    .map((user) => toDto(user.id)!)
-    .filter(Boolean)
-    .filter((user) => COMPANION_FEATURE_ENABLED || user.primaryRole !== "companion");
+  return [];
 }

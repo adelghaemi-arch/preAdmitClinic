@@ -250,7 +250,7 @@ export function revokeAllAuthSessionsForUser(userId: number, actor?: string): nu
   if (count > 0) {
     const user = mockStore.userById(userId);
     pushAudit(
-      actor ?? "ادمین پلتفرم",
+      actor ?? "ادمین کل",
       "PLATFORM_REVOKE_USER_SESSIONS",
       user?.fullName ?? `کاربر ${userId}`,
       `${count} نشست فعال قطع شد`

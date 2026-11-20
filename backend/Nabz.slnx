@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Nabz.Api/Nabz.Api.csproj" />
+    <Project Path="src/Nabz.Application/Nabz.Application.csproj" />
+    <Project Path="src/Nabz.Database.EF.Sql/Nabz.Database.EF.Sql.csproj" />
+    <Project Path="src/Nabz.Domain/Nabz.Domain.csproj" />
+    <Project Path="src/Nabz.Infrastructure/Nabz.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Nabz.Api.Tests/Nabz.Api.Tests.csproj" />
+    <Project Path="tests/Nabz.Infrastructure.Tests/Nabz.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

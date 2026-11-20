@@ -65,10 +65,12 @@ export function PatientDirectoryDialog({ open, snapshot: liveSnapshot, onClose, 
     if (!trimmed && nextStatus === "any" && nextRoom === "any") return;
     setBusy(true); setError("");
     try {
-      const data = await dispatchClinicAction(
-        { action: "SEARCH_PATIENT_DIRECTORY", query: trimmed, visitStatus: nextStatus, roomCode: nextRoom },
-        { role: "reception" }
-      );
+      const data = await dispatchClinicAction({
+        action: "SEARCH_PATIENT_DIRECTORY",
+        query: trimmed,
+        visitStatus: nextStatus,
+        roomCode: nextRoom,
+      });
       if (!data.ok) throw new Error(data.error ?? "جست‌وجو انجام نشد.");
       setResults((data.candidates ?? []) as DirectoryResult[]);
       setSearched(true);

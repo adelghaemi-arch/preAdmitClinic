@@ -54,8 +54,9 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const canManageRooms = role === "admin";
-  const diagnosticsPage: AppPage = role === "admin" ? "diagnostics-upload" : "queues";
-  const stationsManagePage: AppPage = canManageRooms ? "rooms" : "flow";
+  const canRunOps = role === "platform";
+  const diagnosticsPage: AppPage = "diagnostics-upload";
+  const stationsManagePage: AppPage = canManageRooms ? "rooms" : canRunOps ? "flow" : "patients";
 
   const stats = useMemo(() => {
     const active = snapshot.patients.filter((p) => !p.completedAt);
@@ -251,14 +252,16 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
             <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
             به‌روزرسانی {formatFaTime(snapshot.serverTime)}
           </span>
-          <button
-            type="button"
-            onClick={() => onNavigate("admission")}
-            className="primary-button w-full justify-center sm:w-auto"
-          >
-            <Plus className="h-4 w-4" />
-            پذیرش سلامتجو جدید
-          </button>
+          {canRunOps && (
+            <button
+              type="button"
+              onClick={() => onNavigate("admission")}
+              className="primary-button w-full justify-center sm:w-auto"
+            >
+              <Plus className="h-4 w-4" />
+              پذیرش سلامتجو جدید
+            </button>
+          )}
         </div>
       </div>
 
@@ -319,14 +322,25 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate("flow")}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d3e5da] bg-white/80 px-4 py-2.5 text-[11px] font-semibold text-[#3f6e58] transition hover:bg-white sm:w-auto"
-          >
-            مشاهده جریان سلامتجویان
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </button>
+          {canRunOps ? (
+            <button
+              type="button"
+              onClick={() => onNavigate("flow")}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d3e5da] bg-white/80 px-4 py-2.5 text-[11px] font-semibold text-[#3f6e58] transition hover:bg-white sm:w-auto"
+            >
+              مشاهده جریان سلامتجویان
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onNavigate("patients")}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#d3e5da] bg-white/80 px-4 py-2.5 text-[11px] font-semibold text-[#3f6e58] transition hover:bg-white sm:w-auto"
+            >
+              فهرست سلامتجویان
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
         <div className="pointer-events-none absolute -left-16 -top-36 hidden h-96 w-96 rounded-full border-[35px] border-white/25 sm:block" />
       </section>
@@ -365,8 +379,8 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
         ))}
       </div>
 
-      {/* Operational workboard */}
-      {(role === "admin" || role === "reception") && (
+      {/* Operational workboard — platform admin only while reception/paraclinic are gated */}
+      {canRunOps && (
         <section className="rounded-2xl border border-[#e6ebea] bg-white p-3.5 sm:p-5">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
@@ -514,7 +528,7 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
             <div className="mt-4 border-t border-white/10 pt-3">
               <button
                 type="button"
-                onClick={() => onNavigate("queues")}
+                onClick={() => onNavigate(canRunOps ? "queues" : "patients")}
                 className="flex w-full items-center justify-between gap-2 text-right text-[10px] text-white/75"
               >
                 <span className="min-w-0 truncate">
@@ -592,7 +606,7 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
             onClick={() => onNavigate(stationsManagePage)}
             className="flex items-center gap-1.5 text-[10px] font-medium text-teal-700"
           >
-            {canManageRooms ? "مدیریت ایستگاه‌ها" : "مشاهده جریان"}
+            {canManageRooms ? "مدیریت ایستگاه‌ها" : canRunOps ? "مشاهده جریان" : "فهرست سلامتجویان"}
             <ArrowLeft className="h-3 w-3" />
           </button>
         </div>
@@ -601,7 +615,7 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
             <button
               key={room.id}
               type="button"
-              onClick={() => onNavigate("flow")}
+              onClick={() => onNavigate(canRunOps ? "flow" : canManageRooms ? "rooms" : "patients")}
               className="rounded-xl border border-[#e6ebea] bg-white p-3 text-right transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-sm sm:p-3.5"
             >
               <div className="flex items-center justify-between">

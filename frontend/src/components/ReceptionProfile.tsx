@@ -26,7 +26,11 @@ import { QrCodeVisual } from "./QrCodeVisual";
 import { RoomQueueBoard, sortRoomQueue, type RoomQueueEntry } from "./RoomQueueBoard";
 import { PatientDirectoryDialog, type DirectoryResult } from "./PatientDirectoryDialog";
 import { normalizeNationalId, normalizeText, roomStaffDisplay } from "@/lib/workspace";
-import { dispatchClinicAction } from "@/lib/client-db";
+import { apiFetch } from "@/lib/api/http";
+import { guidToNumericId } from "@/lib/api/roles";
+
+const NOT_IN_CONTRACT_MSG =
+  "کد ملی شما در هیچ قراردادی یافت نشد. لطفا با سازمان خود جهت ثبت اطلاعات تماس حاصل فرمایید.";
 
 type ReceptionSection = "flow" | "checkin" | "queue" | "alerts";
 
@@ -76,7 +80,26 @@ export function ReceptionProfile({
     ]
   );
   // Step-1 national id lookup state
-  type LookupResult = { found: boolean; patient?: { id: number; fullName: string; nationalId: string; age: number; gender: string; phone: string; pathwayTitle: string; allergies: { substance: string }[]; medications: { name: string }[]; intakeCompleted: boolean }; activeVisitId?: number | null; visits?: { id: number; checkInTime: string; completedAt: string | null; pathwayTitle: string }[] };
+  type LookupResult = {
+    found: boolean;
+    inContract?: boolean;
+    blocked?: boolean;
+    error?: string;
+    patient?: {
+      id: number;
+      fullName: string;
+      nationalId: string;
+      age: number;
+      gender: string;
+      phone: string;
+      pathwayTitle: string;
+      allergies: { substance: string }[];
+      medications: { name: string }[];
+      intakeCompleted: boolean;
+    };
+    activeVisitId?: number | null;
+    visits?: { id: number; checkInTime: string; completedAt: string | null; pathwayTitle: string }[];
+  };
   const [lookupId, setLookupId] = useState("");
   const lookupVersion = useRef(0);
   const [lookupBusy, setLookupBusy] = useState(false);
@@ -177,24 +200,69 @@ export function ReceptionProfile({
     const requestVersion = ++lookupVersion.current;
     setLookupError("");
     if (!/^\d{10}$/.test(id)) { setLookupError("کد ملی باید ۱۰ رقم باشد."); return; }
+    const clinicId = snapshot.platform.clinics.find((c) => c.isCurrentTenant)?.id ?? snapshot.platform.clinics[0]?.id;
+    if (!clinicId) { setLookupError("کلینیک جاری یافت نشد."); return; }
     setLookupBusy(true);
     try {
-      const data = await dispatchClinicAction(
-        { action: "LOOKUP_PATIENT_BY_NATIONAL_ID", nationalId: id },
-        { role: "reception" }
-      );
-      if (!data.ok) throw new Error(data.error ?? "جست‌وجو انجام نشد.");
+      const data = await apiFetch<{
+        ok: boolean;
+        found: boolean;
+        inContract: boolean;
+        blocked: boolean;
+        error?: string | null;
+        patient?: {
+          id: string;
+          fullName: string;
+          nationalId: string;
+          phone: string;
+          age?: number | null;
+          gender?: string | null;
+          intakeCompleted: boolean;
+          assignedPackageTitle?: string | null;
+        } | null;
+      }>(`/api/patients/by-national-id?clinicId=${encodeURIComponent(clinicId)}&nationalId=${encodeURIComponent(id)}`);
       if (requestVersion !== lookupVersion.current) return;
-      setLookup(data as unknown as LookupResult);
-      setNationalId(id);
-      const foundPatient = (data as unknown as LookupResult).patient;
-      if (data.found && foundPatient) {
-        setFullName(foundPatient.fullName);
-        setAge(String(foundPatient.age));
-        setGender(foundPatient.gender);
-        setPhone(foundPatient.phone);
-      } else {
+      if (data.blocked || (!data.found && !data.inContract)) {
+        const msg = data.error || NOT_IN_CONTRACT_MSG;
+        setLookup({ found: false, inContract: false, blocked: true, error: msg });
+        setLookupError(msg);
+        setNationalId(id);
         setFullName(""); setAge("۴۵"); setGender(""); setPhone("");
+        setIssuedQrPatient(null);
+        return;
+      }
+      const mapped: LookupResult = {
+        found: data.found,
+        inContract: data.inContract,
+        blocked: false,
+        patient: data.patient
+          ? {
+              id: guidToNumericId(data.patient.id),
+              fullName: data.patient.fullName,
+              nationalId: data.patient.nationalId,
+              age: data.patient.age ?? 0,
+              gender: data.patient.gender ?? "",
+              phone: data.patient.phone,
+              pathwayTitle: data.patient.assignedPackageTitle ?? "",
+              allergies: [],
+              medications: [],
+              intakeCompleted: data.patient.intakeCompleted,
+            }
+          : undefined,
+        activeVisitId: null,
+        visits: [],
+      };
+      setLookup(mapped);
+      setNationalId(id);
+      if (mapped.found && mapped.patient) {
+        setFullName(mapped.patient.fullName);
+        setAge(String(mapped.patient.age || 45));
+        setGender(mapped.patient.gender);
+        setPhone(mapped.patient.phone);
+      } else {
+        // عضو قرارداد است ولی هنوز بیمار کلینیک نیست — پذیرش از مسیر قرارداد
+        setFullName(""); setAge("۴۵"); setGender(""); setPhone("");
+        setLookupError("این کد ملی در قرارداد هست؛ پذیرش از مسیر «پذیرش به کلینیک» در قرارداد سازمانی انجام شود.");
       }
       setIssuedQrPatient(null);
     } catch (err) {
@@ -215,6 +283,11 @@ export function ReceptionProfile({
 
   const handleCheckinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // گیت: بدون عضویت قرارداد walk-in ممنوع
+    if (lookup?.blocked || lookup?.inContract === false) {
+      setLookupError(lookup.error || NOT_IN_CONTRACT_MSG);
+      return;
+    }
     if (gender !== "مرد" && gender !== "زن") {
       setLookupError("جنسیت سلامتجو را صریحاً انتخاب کنید؛ فرم پیش‌پذیرش بر اساس آن انتخاب می‌شود.");
       return;
@@ -333,7 +406,6 @@ export function ReceptionProfile({
         patientId: queueTargetPatient.id,
         roomCode: assignRoomCode,
         senderName: "پذیرش کلینیک",
-        role: "reception",
       });
       const room = snapshot.rooms.find((r) => r.code === assignRoomCode);
       setQueueSavedBanner(
@@ -687,7 +759,16 @@ export function ReceptionProfile({
                   {lookup && <button type="button" onClick={resetAdmission} className="secondary-button">کد ملی دیگر</button>}
                 </div>
                 {lookupError && <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-600">{lookupError}</p>}
-                {lookup && !lookup.found && <p className="mt-3 rounded-xl border border-teal-200 bg-teal-50 p-3 text-xs text-teal-800">سابقه‌ای برای این کد ملی یافت نشد. سلامتجو جدید است؛ اطلاعات را در مرحله بعد تکمیل کنید.</p>}
+                {lookup?.blocked && (
+                  <p role="alert" className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs leading-6 text-amber-950">
+                    {lookup.error || NOT_IN_CONTRACT_MSG}
+                  </p>
+                )}
+                {lookup && !lookup.found && !lookup.blocked && lookup.inContract && (
+                  <p className="mt-3 rounded-xl border border-teal-200 bg-teal-50 p-3 text-xs text-teal-800">
+                    این کد ملی در قرارداد سازمانی هست؛ پذیرش نهایی از هاب قرارداد («پذیرش به کلینیک») انجام شود.
+                  </p>
+                )}
                 <div className="mt-5 border-t border-slate-100 pt-4">
                   <button type="button" onClick={() => setDirectoryOpen(true)} className="secondary-button w-full justify-between !py-3">
                     <span className="flex items-center gap-2 text-xs font-semibold text-slate-700"><Search className="h-4 w-4 text-teal-600" />جست‌وجوی پیشرفته سلامتجو (نام خانوادگی، کد ملی، تلفن، بسته و ایستگاه فعلی)</span>
@@ -719,7 +800,7 @@ export function ReceptionProfile({
               </form>
 
               {/* STEP 2: details + pathway (enabled after lookup) */}
-              <form onSubmit={handleCheckinSubmit} className={`space-y-4 rounded-2xl border border-slate-200 bg-white p-5 ${!lookup || lookup.activeVisitId ? "pointer-events-none opacity-50" : ""}`} aria-disabled={!lookup || Boolean(lookup.activeVisitId)}>
+              <form onSubmit={handleCheckinSubmit} className={`space-y-4 rounded-2xl border border-slate-200 bg-white p-5 ${!lookup || lookup.activeVisitId || lookup.blocked || lookup.inContract === false || (!lookup.found && lookup.inContract) ? "pointer-events-none opacity-50" : ""}`} aria-disabled={!lookup || Boolean(lookup.activeVisitId) || Boolean(lookup.blocked) || lookup.inContract === false || (!lookup.found && Boolean(lookup.inContract))}>
                 <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">۲</span><h2 className="text-base font-extrabold text-slate-900">{lookup?.found ? "تایید اطلاعات و انتخاب بسته امروز" : "ثبت مشخصات سلامتجو جدید و بسته امروز"}</h2></div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div><label htmlFor="admission-name" className="mb-1 block text-xs font-bold text-slate-700">نام و نام خانوادگی</label><AppInput id="admission-name" name="fullName" type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs" /></div>

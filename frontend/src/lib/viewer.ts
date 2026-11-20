@@ -1,8 +1,13 @@
-import { ensureClientDb } from "@/lib/client-db";
-import { readUsername, getCurrentUser } from "@/lib/auth";
-import { mockStore } from "@/lib/mock-store";
-import { COMPANION_FEATURE_ENABLED, selectableRoles } from "@/lib/workspace";
+/*
+ File: frontend/src/lib/viewer.ts
+ Description: حل نشست و نقش فعال از API auth/me (بدون mock-store)
+ Parent Dependencies: auth, api/roles, workspace
+ */
+
+import { getCurrentUser } from "@/lib/auth";
+import { primaryWorkspaceRole } from "@/lib/api/roles";
 import type { SnapshotViewer } from "@/lib/clinic-scope";
+import { COMPANION_FEATURE_ENABLED, selectableRoles } from "@/lib/workspace";
 import type { AppUserDto, WorkspaceRole } from "@/types/clinic";
 
 export const ACTIVE_ROLE_KEY = "nabz_active_role";
@@ -17,10 +22,13 @@ export interface SessionContext {
 
 const ALL_ROLE_IDS = selectableRoles().map((r) => r.id);
 
-/** Full-access accounts can switch across every role; external supervisors entered via phone only see their supervisor portal. */
 export function allowedRolesFor(user?: AppUserDto | null): WorkspaceRole[] {
   if (user && !user.canAccessAllRoles && user.primaryRole === "supervisor") {
     return ["supervisor"];
+  }
+  if (user?.primaryRole && ALL_ROLE_IDS.includes(user.primaryRole as WorkspaceRole)) {
+    // نقش‌های واقعی سرور را اولویت بده؛ سوئیچ آزاد فقط برای canAccessAllRoles
+    if (!user.canAccessAllRoles) return [user.primaryRole as WorkspaceRole];
   }
   return ALL_ROLE_IDS;
 }
@@ -45,23 +53,16 @@ export function writeStoredRole(role: WorkspaceRole): void {
   try {
     window.localStorage.setItem(ACTIVE_ROLE_KEY, role);
     window.localStorage.setItem("nabz_tab_role", role);
-  } catch {}
+  } catch {
+    /* ignore */
+  }
 }
 
-/** Resolves the browser session and active role (no cookies, no server). */
-export async function resolveSession(requestedRole?: string): Promise<SessionContext> {
-  ensureClientDb();
+export async function resolveSession(requestedRole?: string): Promise<SessionContext | null> {
   const session = await getCurrentUser();
-  const userLinks = mockStore.linksOfUser(session.user.id);
-  const fallback: WorkspaceRole =
-    session.user.primaryRole === "supervisor"
-      ? "supervisor"
-      : userLinks.some((link) => link.relationship === "self") ||
-          session.user.primaryRole === "owner" ||
-          session.user.primaryRole === "companion" ||
-          !COMPANION_FEATURE_ENABLED
-        ? "owner"
-        : "patient";
+  if (!session) return null;
+
+  const fallback = (session.user.primaryRole as WorkspaceRole) || "owner";
   const allowed = allowedRolesFor(session.user);
   const requested = asRole(requestedRole) ?? readStoredRole();
   const roleAllowed = requested ? allowed.includes(requested) : true;
@@ -72,9 +73,23 @@ export async function resolveSession(requestedRole?: string): Promise<SessionCon
         ? fallback
         : (allowed[0] ?? "owner");
 
+  // نقش‌های سرور در me — اگر موجود باشد هم‌تراز کن
+  if (session.me?.roles?.length) {
+    const fromApi = primaryWorkspaceRole(session.me.roles);
+    if (!requested && allowed.includes(fromApi)) {
+      return {
+        user: session.user,
+        isDemoSession: false,
+        role: fromApi,
+        roleAllowed: true,
+        viewer: { userId: session.user.id, role: fromApi },
+      };
+    }
+  }
+
   return {
     user: session.user,
-    isDemoSession: session.isDemoSession && !readUsername(),
+    isDemoSession: false,
     role,
     roleAllowed,
     viewer: { userId: session.user.id, role },

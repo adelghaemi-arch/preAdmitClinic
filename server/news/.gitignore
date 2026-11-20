@@ -1,0 +1,16 @@
+# File: server/news/.gitignore
+# Description: نادیده گرفتن dist و سکرت‌ها؛ دادهٔ پایدار در server/persist/news-data
+# Parent Dependencies: sync-deploy.bat
+
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# بقایای layout قدیمی
+data/
+uploads/

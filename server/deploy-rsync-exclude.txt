@@ -1,0 +1,26 @@
+# File: server/deploy-rsync-exclude.txt
+# Description: مسیرهایی که هنگام کپی پکیج ویندوز→لینوکس نباید overwrite شوند
+# Parent Dependencies: docs/shared/server-deploy.md, init-server-structure.bat
+#
+# نمونه:
+#   rsync -av --exclude-from=deploy-rsync-exclude.txt ./ user@host:/path/to/server/
+# هرگز --delete را روی کل درخت با persist روشن نکنید.
+
+# سکرت‌های پرشده روی سرور
+api/.env
+**/.env
+!**/.env.example
+
+# دادهٔ پایدار روی هاست لینوکس (آپلود + ویترین)
+persist/uploads/**
+!persist/uploads/.gitkeep
+persist/news-data/**
+!persist/news-data/.gitkeep
+
+# بقایای layout قدیمی (اگر هنوز روی مقصد باشند، دست نخورده بمانند تا اپراتور منتقل کند)
+api/uploads/**
+news/data/**
+
+# لاگ تست قبل‌از‌انتشار روی ویندوز — به لینوکس نرود
+test-reports/**
+!test-reports/.gitkeep

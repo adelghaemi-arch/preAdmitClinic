@@ -1,4 +1,9 @@
-﻿import { useEffect, useMemo, useRef, useState } from "react";
+﻿/*
+ File: frontend/src/components/LoginForm.tsx
+ Description: فرم ورود OTP؛ normalizePhone فقط برای نمایش موبایل
+ Parent Dependencies: lib/auth.ts, lib/persian.ts, lib/viewer.ts
+ */
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppInput } from "@/components/AppInput";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,8 +17,8 @@ import {
 } from "lucide-react";
 import { listOtpDemoLogins, normalizePhone, requestOtp, verifyOtp } from "@/lib/auth";
 import { writeStoredRole } from "@/lib/viewer";
-import { ensureClientDb } from "@/lib/client-db";
 import { toFaDigits, toLatinDigits } from "@/lib/persian";
+import type { WorkspaceRole } from "@/types/clinic";
 
 type Step = "phone" | "code";
 
@@ -29,14 +34,7 @@ export function LoginForm() {
   const [error, setError] = useState("");
   const codeInputRef = useRef<HTMLInputElement | null>(null);
 
-  const demos = useMemo(() => {
-    try {
-      ensureClientDb();
-      return listOtpDemoLogins();
-    } catch {
-      return [];
-    }
-  }, []);
+  const demos = useMemo(() => listOtpDemoLogins(), []);
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -48,9 +46,9 @@ export function LoginForm() {
     if (step === "code") codeInputRef.current?.focus();
   }, [step]);
 
-  const sendCode = (rawPhone: string) => {
+  const sendCode = async (rawPhone: string) => {
     setError("");
-    const result = requestOtp(rawPhone);
+    const result = await requestOtp(rawPhone);
     if (!result.ok) {
       setError(result.error ?? "ارسال کد انجام نشد.");
       return false;
@@ -63,33 +61,33 @@ export function LoginForm() {
     return true;
   };
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      sendCode(phone);
+      await sendCode(phone);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerify = (value: string) => {
-    const result = verifyOtp(phone, value);
+  const handleVerify = async (value: string) => {
+    const result = await verifyOtp(phone, value);
     if (!result.ok || !result.user) {
       setError(result.error ?? "ورود انجام نشد.");
       return;
     }
-    writeStoredRole(result.role === "supervisor" ? "supervisor" : "owner");
-    const target = result.patientId ? `/?patient=${result.patientId}` : "/";
-    navigate(target, { replace: true });
+    const role = (result.role ?? (result.user.primaryRole as WorkspaceRole)) || "owner";
+    writeStoredRole(role);
+    navigate("/", { replace: true });
   };
 
-  const handleVerifySubmit = (e: React.FormEvent) => {
+  const handleVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      handleVerify(code);
+      await handleVerify(code);
     } finally {
       setLoading(false);
     }
@@ -97,7 +95,7 @@ export function LoginForm() {
 
   const quickLogin = (demoPhone: string) => {
     setPhone(demoPhone);
-    sendCode(demoPhone);
+    void sendCode(demoPhone);
   };
 
   return (
@@ -179,7 +177,8 @@ export function LoginForm() {
             onChange={(e) => {
               const next = toLatinDigits(e.target.value).replace(/\D/g, "").slice(0, 5);
               setCode(next);
-              if (normalizePhone(next).length === 5) {
+              // طول کد OTP جدا از نرمال‌سازی موبایل است
+              if (next.length === 5) {
                 setLoading(true);
                 setError("");
                 try {
@@ -218,7 +217,7 @@ export function LoginForm() {
             </p>
           )}
 
-          <button disabled={loading || normalizePhone(code).length !== 5} type="submit" className="primary-button w-full justify-center !py-3 disabled:opacity-50">
+          <button disabled={loading || code.length !== 5} type="submit" className="primary-button w-full justify-center !py-3 disabled:opacity-50">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowLeft className="h-4 w-4" />}
             تأیید و ورود
           </button>

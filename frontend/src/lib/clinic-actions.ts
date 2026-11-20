@@ -34,6 +34,17 @@ import {
   normalizeNationalId,
   normalizeText,
 } from "@/lib/workspace";
+
+/** Reception / paraclinic mutations — temporarily platform-admin only. */
+const OPS_CLINIC_ACTIONS = new Set([
+  "CHECKIN_NEW_PATIENT",
+  "REORDER_ROOM_QUEUE",
+  "REORDER_PATIENT_QUEUE",
+  "SEND_PATIENT_ALERT",
+  "ASSIGN_TO_DOCTOR_ROOM",
+  "UPDATE_PARACLINIC_STATUS",
+  "UPLOAD_PARACLINIC_RESULT",
+]);
 import {
   defaultCompanionVisibility,
   emptyIntakeAnswers,
@@ -191,7 +202,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
           return NextResponse.json({ ok: false, error: "اجازه قطع این نشست را ندارید." }, { status: 403 });
         }
         const result = revokeAuthSession(sessionId, {
-          actor: isPlatform ? "ادمین پلتفرم" : "کاربر",
+          actor: isPlatform ? "ادمین کل" : "کاربر",
           clearLocalIfCurrent: true,
         });
         if (!result.ok) {
@@ -207,7 +218,7 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       const count = revokeOtherAuthSessions(
         effectiveViewer.userId,
         keepId,
-        effectiveRole === "platform" ? "ادمین پلتفرم" : "کاربر"
+        effectiveRole === "platform" ? "ادمین کل" : "کاربر"
       );
       return NextResponse.json({
         ok: true,
@@ -241,7 +252,22 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
     }
 
     if (effectiveRole === "platform") {
-      return NextResponse.json({ ok: false, error: "ادمین پلتفرم فقط به اقدامات کنترل پلتفرم دسترسی دارد." }, { status: 403 });
+      if (!OPS_CLINIC_ACTIONS.has(action)) {
+        return NextResponse.json(
+          { ok: false, error: "ادمین کل فقط به کنترل پلتفرم و عملیات پذیرش/پاراکلینیک (دمو) دسترسی دارد." },
+          { status: 403 }
+        );
+      }
+      // Fall through: platform may run temporary OPS clinic actions.
+    } else if (OPS_CLINIC_ACTIONS.has(action)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "عملیات پذیرش، صف و پاراکلینیک فعلاً فقط برای ادمین کل فعال است. پزشک از لیست انتظار و پرونده استفاده کند.",
+        },
+        { status: 403 }
+      );
     }
 
     if (effectiveRole === "supervisor") {
@@ -433,12 +459,24 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       if (effectiveRole === "patient" || effectiveRole === "owner") return NextResponse.json({ ok: false, error: "دسترسی مجاز نیست." }, { status: 403 });
       const nationalId = normalizeNationalId(String(body.nationalId ?? ""));
       if (!/^\d{10}$/.test(nationalId)) return NextResponse.json({ ok: false, error: "کد ملی باید ۱۰ رقم باشد." }, { status: 400 });
+      const notInContractMsg =
+        "کد ملی شما در هیچ قراردادی یافت نشد. لطفا با سازمان خود جهت ثبت اطلاعات تماس حاصل فرمایید.";
+      const inContract = (mockStore.contracts ?? []).some(
+        (c) => c.status === "active" && (c.members ?? []).some((m) => normalizeNationalId(m.nationalId) === nationalId),
+      );
       const rows = mockStore.patientByNationalId(nationalId).sort((a, b) => new Date(b.checkInTime).getTime() - new Date(a.checkInTime).getTime());
-      if (!rows.length) return NextResponse.json({ ok: true, found: false });
+      if (!rows.length) {
+        if (!inContract) {
+          return NextResponse.json({ ok: true, found: false, inContract: false, blocked: true, error: notInContractMsg });
+        }
+        return NextResponse.json({ ok: true, found: false, inContract: true, blocked: false });
+      }
       const latest = rows[0];
       return NextResponse.json({
         ok: true,
         found: true,
+        inContract,
+        blocked: false,
         patient: { id: latest.id, fullName: latest.fullName, nationalId: latest.nationalId, age: latest.age, gender: latest.gender, phone: latest.phone, pathwayTitle: latest.pathwayTitle, allergies: latest.allergies ?? [], medications: latest.medications ?? [], intakeCompleted: latest.intakeCompleted },
         activeVisitId: rows.find((r) => !r.completedAt)?.id ?? null,
         visits: rows.map((r) => ({ id: r.id, checkInTime: r.checkInTime, completedAt: r.completedAt, pathwayTitle: r.pathwayTitle })),
@@ -475,6 +513,16 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
       const phone = normalizeText(String(body.phone ?? "")).replace(/\D/g, "");
       const age = Number(normalizeText(String(body.age ?? "")));
       if (fullName.length < 3 || fullName.length > 100 || !/^\d{10}$/.test(nationalId) || !/^09\d{9}$/.test(phone) || !Number.isFinite(age) || age < 1 || age > 120) return NextResponse.json({ ok: false, error: "نام کامل، کد ملی ۱۰ رقمی، موبایل معتبر و سن صحیح را وارد کنید." }, { status: 400 });
+      // دفاع دوم: پذیرش walk-in بدون عضویت قرارداد فعال ممنوع
+      const inActiveContract = (mockStore.contracts ?? []).some(
+        (c) => c.status === "active" && (c.members ?? []).some((m) => normalizeNationalId(m.nationalId) === nationalId),
+      );
+      if (!inActiveContract) {
+        return NextResponse.json({
+          ok: false,
+          error: "کد ملی شما در هیچ قراردادی یافت نشد. لطفا با سازمان خود جهت ثبت اطلاعات تماس حاصل فرمایید.",
+        }, { status: 403 });
+      }
       if (body.gender !== "زن" && body.gender !== "مرد") {
         return NextResponse.json({ ok: false, error: "جنسیت سلامتجو را صریحاً مرد یا زن انتخاب کنید؛ برای پرسشنامه پیش‌پذیرش الزامی است." }, { status: 400 });
       }

@@ -537,7 +537,7 @@ export function runContractAction(
     if (body.fetchFromApiNow) {
       const pool = EXTERNAL_HR_API_POOLS[newContract.apiKey] ?? EXTERNAL_HR_API_POOLS.DEFAULT;
       newContract.lastApiSyncAt = now;
-      addMembersToContract(newContract, pool, "api", true, "ادمین کل کلینیک");
+      addMembersToContract(newContract, pool, "api", true, "ادمین کلینیک");
     }
 
     return { ok: true, status: 200, meta: { createdContractId: newContract.id } };
@@ -582,7 +582,7 @@ export function runContractAction(
     }
     const pool = EXTERNAL_HR_API_POOLS[contract.apiKey.trim()] ?? EXTERNAL_HR_API_POOLS.DEFAULT;
     const sendSms = body.sendInviteSms !== false;
-    const result = addMembersToContract(contract, pool, "api", sendSms, "ادمین کل کلینیک (API)");
+    const result = addMembersToContract(contract, pool, "api", sendSms, "ادمین کلینیک (API)");
     contract.lastApiSyncAt = now;
     return { ok: true, status: 200, meta: result };
   }
@@ -592,7 +592,7 @@ export function runContractAction(
     if (!rows.length) return { ok: false, status: 400, error: "هیچ ردیف معتبری برای ثبت یافت نشد." };
     const source = body.source === "manual" ? "manual" : "excel";
     const sendSms = body.sendInviteSms !== false;
-    const result = addMembersToContract(contract, rows, source, sendSms, "ادمین کل کلینیک");
+    const result = addMembersToContract(contract, rows, source, sendSms, "ادمین کلینیک");
     return { ok: true, status: 200, meta: result };
   }
 

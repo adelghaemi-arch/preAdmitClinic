@@ -1,0 +1,15 @@
+<!--
+  File: backend/Directory.Build.targets
+  Description: ForbidEfInServices / ForbidEfInApiSurface — جلوگیری از ارجاع EF در Application و Infrastructure
+-->
+<Project>
+  <Target Name="ForbidEfInServices" BeforeTargets="Build"
+          Condition="'$(MSBuildProjectName)' == 'Nabz.Infrastructure' Or '$(MSBuildProjectName)' == 'Nabz.Application'">
+    <Error
+      Condition="'%(PackageReference.Identity)' == 'Microsoft.EntityFrameworkCore' Or $([System.String]::Copy('%(PackageReference.Identity)').StartsWith('Microsoft.EntityFrameworkCore.'))"
+      Text="ForbidEfInServices: پروژه $(MSBuildProjectName) نباید به EF ارجاع دهد. EF فقط در Nabz.Database.EF.Sql مجاز است." />
+    <Error
+      Condition="'%(ProjectReference.Identity)' != '' And $([System.String]::Copy('%(ProjectReference.Identity)').Contains('Database.EF.Sql'))"
+      Text="ForbidEfInServices: پروژه $(MSBuildProjectName) نباید به Nabz.Database.EF.Sql ارجاع دهد." />
+  </Target>
+</Project>

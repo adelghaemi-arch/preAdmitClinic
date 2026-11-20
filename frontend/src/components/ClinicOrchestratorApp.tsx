@@ -68,7 +68,7 @@ import {
   type AppPage,
 } from "@/lib/workspace";
 import { filterNavPagesForGate, resolveGatedPage, shouldGateOwner } from "@/lib/owner-intake-gate";
-import { normalizePersianLetters, toFaDigits } from "@/lib/persian";
+import { toFaDigits } from "@/lib/persian";
 import { ClinicDashboard } from "./ClinicDashboard";
 import { CompanionHome } from "./CompanionHome";
 import { CompanionLinks } from "./CompanionLinks";
@@ -85,13 +85,13 @@ import { AdminProfile } from "./AdminProfile";
 import { CorporateContractsHub } from "./CorporateContractsHub";
 import { CorporateSupervisorPanel } from "./CorporateSupervisorPanel";
 import { setRequestRole } from "@/lib/role-context";
-import { dispatchClinicAction, readSnapshot, resetClientDb } from "@/lib/client-db";
-import { mockStore } from "@/lib/mock-store";
 import { ActiveSessionsPanel } from "@/components/ActiveSessionsPanel";
-import { readSessionId } from "@/lib/auth-sessions";
 import { signOut } from "@/lib/auth";
+import { loadWorkspaceSnapshot } from "@/lib/api/workspace";
+import { apiFetch } from "@/lib/api/http";
 import { allowedRolesFor, writeStoredRole } from "@/lib/viewer";
 import { configureOsmFromSettings } from "@/lib/osm-routing";
+import { normalizePersianLetters } from "@/lib/persian";
 
 interface Props {
   initialSnapshot: ClinicSnapshot;
@@ -131,6 +131,7 @@ const PAGE_ICONS: Record<AppPage, LucideIcon> = {
   pathways: GitBranch,
   rooms: Hospital,
   team: ShieldCheck,
+  "clinic-users": Users,
   forms: ClipboardList,
   "platform-dashboard": LayoutDashboard,
   "platform-users": MapPinned,
@@ -164,16 +165,17 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const hydrated = useRef(false);
   const lastRecordTipKey = useRef<string | null>(null);
 
-  // The page already bootstrapped the browser database; refresh once on mount so a
-  // deep link (?view=...) or a previously saved session is reflected immediately.
+  // bootstrap اولیه از HomePage آمده؛ یک‌بار از API تازه می‌کنیم
   useEffect(() => {
     if (hydrated.current) return;
     hydrated.current = true;
     void (async () => {
-      const next = await readSnapshot({ userId: user.id, role });
-      setSnapshot(next);
+      try {
+        setSnapshot(await loadWorkspaceSnapshot());
+      } catch {
+        /* snapshot اولیه کافی است */
+      }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Keep this tab's role on every clinic request (see lib/role-context).
@@ -308,14 +310,13 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setBusy(true);
     try {
-      // Everything lives in the browser: re-read the local mock database.
-      setSnapshot(await readSnapshot({ userId: user.id, role }));
+      setSnapshot(await loadWorkspaceSnapshot());
     } catch (e) {
       if (!silent) setToast({ text: e instanceof Error ? e.message : "بارگذاری داده ممکن نشد.", error: true });
     } finally {
       if (!silent) setBusy(false);
     }
-  }, [role, user.id]);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -325,42 +326,94 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   }, [refresh]);
 
   const execute = useCallback(async (payload: Record<string, unknown>) => {
-    const quiet =
-      payload.silent === true ||
-      payload.action === "SAVE_FORM_RESPONSE" ||
-      payload.action === "UPDATE_PATIENT_PHOTO" ||
-      payload.action === "START_FRAUD_CAMERA_SESSION" ||
-      payload.action === "CAPTURE_FRAUD_FRAME" ||
-      payload.action === "END_FRAUD_CAMERA_SESSION" ||
-      payload.action === "RECORD_USER_GPS" ||
-      payload.action === "ADD_INTAKE_DOCUMENT_GROUP" ||
-      payload.action === "ADD_INTAKE_DOCUMENT_FILES" ||
-      payload.action === "REMOVE_INTAKE_DOCUMENT_GROUP" ||
-      payload.action === "REMOVE_INTAKE_DOCUMENT_FILE";
-    // Draft autosave must not flip global busy (would flicker the whole shell).
-    const blockUi = payload.action === "SAVE_FORM_RESPONSE" ? payload.mode === "submit" : !quiet;
+    const action = String(payload.action ?? "");
+    const quiet = payload.silent === true;
+    const blockUi = !quiet;
     if (blockUi) setBusy(true);
     try {
-      if (payload.action === "RESET_MOCK_DATA") resetClientDb();
-      const data = await dispatchClinicAction(payload, { viewer: { userId: user.id, role }, role });
-      if (!data.ok) throw new Error(data.error ?? "ذخیره اطلاعات انجام نشد.");
-      // Fraud auto-frames must not remount the camera UI every 3s.
-      const skipSnapshotUi =
-        payload.action === "CAPTURE_FRAUD_FRAME" ||
-        payload.action === "START_FRAUD_CAMERA_SESSION" ||
-        payload.action === "END_FRAUD_CAMERA_SESSION" ||
-        payload.action === "RECORD_USER_GPS";
-      if (data.snapshot && !skipSnapshotUi) setSnapshot(data.snapshot);
-      // Form saves have their own inline feedback; never spam the browser-storage toast.
-      if (!quiet) setToast({ text: "تغییرات در این مرورگر ذخیره شد." });
-      return data as { createdPatientId?: number; qrToken?: string; sessionId?: string; snapshot: ClinicSnapshot };
+      // مسیرهای وصل‌شده به API؛ بقیه تا موج D خطا می‌دهند (بدون mock)
+      if (action === "PLATFORM_UPSERT_USER") {
+        const roleMap: Record<string, string> = {
+          platform: "Platform",
+          clinic_admin: "Admin",
+          staff: "Specialist",
+          patient: "Owner",
+          supervisor: "Supervisor",
+        };
+        const primaryRole = roleMap[String(payload.primaryRole ?? "patient")] ?? "Owner";
+        await apiFetch("/api/users", {
+          method: "POST",
+          body: {
+            userId: payload.serverUserId ?? null,
+            fullName: payload.fullName,
+            mobile: payload.phone,
+            nationalId: payload.nationalId ?? null,
+            primaryRole,
+            clinicId: null,
+            contractId: null,
+          },
+        });
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        if (!quiet) setToast({ text: "کاربر در سرور ذخیره شد." });
+        return { ok: true, snapshot: snap };
+      }
+      if (action === "PLATFORM_SET_USER_ACTIVE") {
+        const id = String(payload.serverUserId ?? payload.id ?? "");
+        if (!id) throw new Error("شناسه کاربر نامعتبر است.");
+        await apiFetch(`/api/users/${id}/active`, { method: "POST", body: { isActive: Boolean(payload.isActive) } });
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        if (!quiet) setToast({ text: "وضعیت کاربر به‌روز شد." });
+        return { ok: true, snapshot: snap };
+      }
+      if (action === "REFRESH_WORKSPACE") {
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        return { ok: true, snapshot: snap };
+      }
+      if (action === "CREATE_CONTRACT") {
+        const clinic = await apiFetch<{ id: string }>("/api/clinics/current");
+        const title = String(payload.title ?? "").trim();
+        const organizationName = String(payload.organizationName ?? "").trim();
+        if (title.length < 3 || organizationName.length < 2) {
+          throw new Error("عنوان قرارداد و نام سازمان را وارد کنید.");
+        }
+        const created = await apiFetch<{ id: string }>(`/api/contracts?clinicId=${encodeURIComponent(clinic.id)}`, {
+          method: "POST",
+          body: { title, organizationName, code: null },
+        });
+        const supName = String(payload.supervisorName ?? "").trim();
+        const supPhone = String(payload.supervisorPhone ?? "").trim();
+        if (supName && supPhone) {
+          await apiFetch(`/api/contracts/${created.id}/supervisor`, {
+            method: "PUT",
+            body: {
+              fullName: supName,
+              phone: supPhone,
+              title: String(payload.supervisorTitle ?? "").trim() || null,
+              nationalId: null,
+              canSendReminders: true,
+            },
+          });
+        }
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        const createdContractId = snap.contracts.find((c) => c.serverId === created.id)?.id;
+        if (!quiet) setToast({ text: "قرارداد سازمانی ثبت شد." });
+        return { ok: true, snapshot: snap, createdContractId };
+      }
+      if (action === "RESET_MOCK_DATA") {
+        throw new Error("دادهٔ mock حذف شده است؛ ریست دمو از سرور انجام نمی‌شود.");
+      }
+      throw new Error(`عملیات «${action || "نامشخص"}» هنوز به API وصل نشده است.`);
     } catch (e) {
       setToast({ text: e instanceof Error ? e.message : "خطا در انجام عملیات", error: true });
       throw e;
     } finally {
       if (blockUi) setBusy(false);
     }
-  }, [role, user.id]);
+  }, []);
 
   const act = async (payload: Record<string, unknown>) => {
     await execute(payload);
@@ -373,12 +426,12 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     setRole(next);
     const target = selectableRoles().find((r) => r.id === next) ?? selectableRoles()[0] ?? ROLES[0];
     navigate(target.page);
-    setSnapshot(await readSnapshot({ userId: user.id, role: next }));
+    setSnapshot(await loadWorkspaceSnapshot());
     setToast({ text: `نقش «${target.label}» فعال شد؛ حساب شما تغییری نکرده است.` });
   };
 
   const logout = async () => {
-    signOut();
+    await signOut();
     navigateTo("/login", { replace: true });
   };
 
@@ -386,13 +439,12 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     e.preventDefault();
     setBusy(true);
     try {
-      const row = mockStore.userById(user.id);
-      if (!row) throw new Error("حساب کاربری پیدا نشد.");
-      row.fullName = normalizePersianLetters(profileName.trim());
-      row.jobTitle = normalizePersianLetters(profileTitle.trim());
-      setUser({ ...user, fullName: row.fullName, jobTitle: row.jobTitle });
+      // ویرایش پروفایل سروری در موج بعد؛ فعلاً فقط state محلی
+      const fullName = normalizePersianLetters(profileName.trim());
+      const jobTitle = normalizePersianLetters(profileTitle.trim());
+      setUser({ ...user, fullName, jobTitle });
       setProfileOpen(false);
-      setToast({ text: "اطلاعات حساب کاربری به‌روز شد." });
+      setToast({ text: "نام نمایشی در این نشست به‌روز شد." });
     } catch {
       setToast({ text: "ذخیره حساب انجام نشد.", error: true });
     } finally {
@@ -419,19 +471,14 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                 ? "audit"
                 : "dashboard";
 
-  const revokeOwnSession = async (sessionId: string) => {
-    const data = await execute({ action: "REVOKE_AUTH_SESSION", sessionId });
-    if ((data as { wasCurrent?: boolean })?.wasCurrent) {
-      signOut();
-      navigateTo("/login", { replace: true });
-    }
+  const revokeOwnSession = async (_sessionId: string) => {
+    await signOut();
+    navigateTo("/login", { replace: true });
   };
 
   const revokeOtherOwnSessions = async () => {
-    await execute({
-      action: "REVOKE_OTHER_AUTH_SESSIONS",
-      keepSessionId: readSessionId(),
-    });
+    await apiFetch("/api/auth/sessions/revoke-others", { method: "POST" });
+    setToast({ text: "سایر نشست‌ها قطع شد." });
   };
 
   const dismissJourneyIntro = async () => {
@@ -449,9 +496,6 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     }
     if (role === "specialist") {
       return <SpecialistProfile key="home-waiting" snapshot={snapshot} initialPatientId={activeId || undefined} onSwitchToPatientMobile={openPatient} onAction={act} busy={busy} initialSection="waiting" embedded sessionUserId={user.id} />;
-    }
-    if (role === "paraclinic") {
-      return <ParaclinicProfile key="home-queue" snapshot={snapshot} onSwitchToPatientMobile={openPatient} onAction={act} busy={busy} initialSection="queue" embedded />;
     }
     if (role === "supervisor") {
       return <CorporateSupervisorPanel snapshot={snapshot} user={user} initialView="overview" onAction={execute} busy={busy} />;
@@ -516,7 +560,9 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               ))}
               <div className="m-1 flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-2 text-[9px] text-slate-500">
                 <ShieldCheck className="h-3 w-3 text-teal-600" />
-                تمام نقش‌ها برای حساب شما فعال است.
+                {allowedRolesFor(user).length >= selectableRoles().length
+                  ? "نقش‌های قابل‌انتخاب برای حساب شما فعال است."
+                  : "فقط نقش‌های مجاز این حساب در فهرست بالا نمایش داده می‌شود."}
               </div>
             </div>
           )}
@@ -558,18 +604,17 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
           <div className="mt-3 flex items-center justify-between px-1">
             <span className="flex items-center gap-1.5 text-[9px] text-slate-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              حافظه مرورگر (بدون بک‌اند)
+              متصل به Nabz.Api
             </span>
             <button
               type="button"
               onClick={async () => {
-                resetClientDb();
-                setSnapshot(await readSnapshot({ userId: user.id, role }));
-                setToast({ text: "داده‌های اولیه فارسی بازنشانی شد." });
+                await refresh();
+                setToast({ text: "داده از سرور تازه شد." });
               }}
               className="text-[9px] text-slate-400 hover:text-teal-700"
             >
-              بازنشانی
+              تازه‌سازی
             </button>
           </div>
         </div>
@@ -735,7 +780,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             <PatientWorkspace key={`record-${activeId}`} snapshot={snapshot} selectedPatientId={activeId} onSelectPatient={(id) => navigate("records", id)} onNavigate={navigate} onAction={act} busy={busy} />
           )}
 
-          {["admission", "flow", "queues", "alerts"].includes(current) && (
+          {["admission", "flow", "queues", "alerts"].includes(current) && role === "platform" && (
             <ReceptionProfile
               key={current}
               snapshot={snapshot}
@@ -762,7 +807,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             />
           )}
 
-          {["diagnostics", "diagnostics-tracker", "diagnostics-upload"].includes(current) && (
+          {["diagnostics", "diagnostics-tracker", "diagnostics-upload"].includes(current) && role === "platform" && (
             <ParaclinicProfile
               key={current}
               snapshot={snapshot}
@@ -770,7 +815,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               onAction={act}
               busy={busy}
               initialSection={paraclinicSection}
-              embedded={role !== "admin"}
+              embedded
             />
           )}
 
@@ -856,6 +901,17 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
 
           {["reports", "pathways", "rooms", "team", "forms"].includes(current) && <AdminProfile key={current} snapshot={snapshot} onAction={act} busy={busy} initialSection={adminSection} />}
 
+          {current === "clinic-users" && (
+            <PlatformAdminPanel
+              key="clinic-users"
+              snapshot={snapshot}
+              onAction={execute}
+              busy={busy}
+              initialSection="users"
+              userScope="clinic"
+            />
+          )}
+
           {current.startsWith("platform-") && (
             <PlatformAdminPanel
               key={current}
@@ -863,6 +919,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               onAction={execute}
               busy={busy}
               initialSection={platformSection}
+              userScope="full"
             />
           )}
         </main>
