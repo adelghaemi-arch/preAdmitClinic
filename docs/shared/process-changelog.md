@@ -9,6 +9,12 @@
 
 # Changelog فرایندی
 
+## ۱۴۰۵/۰۸/۲۹ — خانه مینیمال Owner → پیش‌پذیرش نشست‌محور
+
+- ورود Owner همیشه به داشبورد با فاصله بالای مسیر (موبایل فشرده)؛ صفحهٔ اجباری `journey-intro` حذف شد.
+- «ورود به پیش‌پذیرش» مسیر/هیرو را در همان نشست مخفی می‌کند؛ رفرش یا بستن اپ خانه را برمی‌گرداند (`preAdmitOpen` فقط حافظه + ریست URL Owner).
+- عکس پرونده بدون پرتره قبلی در پیش‌پذیرش اجباری است (مستقل از `journeyIntroSeen`).
+
 ## ۱۴۰۵/۰۸/۲۹ — SaveResponse: ۴۰۳/۴۰۰ خوانا + رفع DbUpdateConcurrency روی answers
 
 - ریشهٔ ۵۰۰ autosave: `RemoveAnswers` بدون `Clear` روی navigation → `DbUpdateConcurrencyException` (ظاهر CORS ثانویه).

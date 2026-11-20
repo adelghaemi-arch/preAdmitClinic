@@ -1,6 +1,6 @@
 /*
  File: frontend/src/pages/HomePage.tsx
- Description: bootstrap از API؛ بدون نشست → لاگین
+ Description: bootstrap از API؛ Owner پس از رفرش به خانه مسیر برمی‌گردد
  Parent Dependencies: viewer, api/workspace, ClinicOrchestratorApp
  */
 
@@ -40,12 +40,17 @@ export function HomePage() {
         }
         const snapshot = await loadWorkspaceSnapshot();
         if (cancelled) return;
+        // رفرش وسط پیش‌پذیرش نباید مسیر را پنهان نگه دارد — Owner همیشه خانه را می‌بیند
+        const rawPage = isAppPage(view) ? view : "dashboard";
+        const ownerReset =
+          session.role === "owner" &&
+          (rawPage === "companion-intake" || rawPage === "journey-intro");
         setBoot({
           snapshot,
           user: session.user,
           isDemoSession: false,
           role: session.role,
-          page: isAppPage(view) ? view : "dashboard",
+          page: ownerReset ? "dashboard" : rawPage,
           patientId: Number.isSafeInteger(rawPatient) && rawPatient > 0 ? rawPatient : undefined,
         });
       } catch (e) {

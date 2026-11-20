@@ -57,7 +57,7 @@ interface PatientMobileProfileProps {
   initialTab?: MobileTab;
   readOnly?: boolean;
   hideTabBar?: boolean;
-  /** When true, keep the patient on intake until pre-admission is completed. */
+  /** مخفی‌کردن مسیر/هیرو و قفل تب‌ها روی پیش‌پذیرش (نشست یا گیت عکس) */
   lockNonIntakeTabs?: boolean;
 }
 

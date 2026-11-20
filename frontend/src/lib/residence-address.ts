@@ -1,6 +1,6 @@
 /*
  File: frontend/src/lib/residence-address.ts
- Description: پارس و اعتبارسنجی JSON آدرس سکونت (مختصات + پلاک/واحد/کدپستی)
+ Description: پارس و اعتبارسنجی JSON آدرس سکونت؛ draft بدون پلاک برای UI بعد از نقشه
  Parent Dependencies: none
  */
 
@@ -15,17 +15,30 @@ export interface ResidenceAddressValue {
 
 const IRAN_POSTAL = /^\d{10}$/;
 
-export function parseResidenceAddress(raw: string | null | undefined): ResidenceAddressValue | null {
-  const trimmed = (raw ?? "").trim();
-  if (!trimmed) return null;
+function readResidenceFields(raw: string): {
+  lat: number;
+  lon: number;
+  address: string;
+  plaque: string;
+  unit?: string;
+  postalCode?: string;
+} | null {
   try {
-    const parsed = JSON.parse(trimmed) as Partial<ResidenceAddressValue>;
+    const parsed = JSON.parse(raw) as Partial<ResidenceAddressValue> & {
+      lat?: unknown;
+      lon?: unknown;
+    };
+    // Number(null)===0 است؛ lat/lon تهی را مختصات معتبر نگیر
+    if (parsed.lat == null || parsed.lon == null || parsed.lat === "" || parsed.lon === "") {
+      return null;
+    }
     const lat = Number(parsed.lat);
     const lon = Number(parsed.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      return null;
+    }
     const address = String(parsed.address ?? "").trim();
     const plaque = String(parsed.plaque ?? "").trim();
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !address || !plaque) return null;
-    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
     const unit = String(parsed.unit ?? "").trim() || undefined;
     const postalRaw = String(parsed.postalCode ?? "").replace(/\D/g, "");
     const postalCode = postalRaw || undefined;
@@ -33,6 +46,28 @@ export function parseResidenceAddress(raw: string | null | undefined): Residence
   } catch {
     return null;
   }
+}
+
+/** پارس کامل برای submit — مختصات + آدرس + پلاک الزامی */
+export function parseResidenceAddress(raw: string | null | undefined): ResidenceAddressValue | null {
+  const trimmed = (raw ?? "").trim();
+  if (!trimmed) return null;
+  const fields = readResidenceFields(trimmed);
+  if (!fields || !fields.address || !fields.plaque) return null;
+  return fields;
+}
+
+/**
+ * پارس جزئی برای ویرایش UI بعد از انتخاب نقشه.
+ * پلاک می‌تواند خالی باشد تا مختصات/آدرس از دست نرود.
+ */
+export function parseResidenceAddressDraft(raw: string | null | undefined): ResidenceAddressValue | null {
+  const trimmed = (raw ?? "").trim();
+  if (!trimmed) return null;
+  const fields = readResidenceFields(trimmed);
+  // حداقل یکی از مختصات معتبر یا متن جزئی لازم است تا draft از NaN ساخته نشود
+  if (!fields) return null;
+  return fields;
 }
 
 export function serializeResidenceAddress(value: ResidenceAddressValue): string {
@@ -62,6 +97,9 @@ export function residenceAddressValidationMessage(raw: string | null | undefined
     parsed = JSON.parse(trimmed) as Partial<ResidenceAddressValue>;
   } catch {
     return "دادهٔ آدرس نامعتبر است؛ دوباره روی نقشه انتخاب کنید.";
+  }
+  if (parsed.lat == null || parsed.lon == null || parsed.lat === "" || parsed.lon === "") {
+    return "مختصات موقعیت معتبر نیست؛ نقطه را روی نقشه انتخاب کنید.";
   }
   const lat = Number(parsed.lat);
   const lon = Number(parsed.lon);

@@ -1,6 +1,6 @@
 /*
  File: frontend/src/components/PreAdmitFormRenderer.tsx
- Description: رندر پرسشنامه پیش‌پذیرش؛ autosave سریال draft؛ submit نهایی
+ Description: پرسشنامه پیش‌پذیرش؛ گیت عکس اجباری؛ autosave سریال draft
  Parent Dependencies: form-engine, clinic types, ApiError
  */
 
@@ -900,13 +900,9 @@ export function PreAdmitFormRenderer({
   }
 
   const resolvedPhoto = localPhotoUrl || patient.photoDataUrl || null;
-  // hasPortrait سرور هم کافی است تا بعد از رفرش دوباره گیت عکس باز نشود
+  // بدون پرتره قبلی، ورود به پیش‌پذیرش همیشه عکس را اجباری می‌کند (مستقل از journeyIntroSeen)
   const needsPhotoGate =
-    !readOnly &&
-    !submitted &&
-    !resolvedPhoto &&
-    !patient.hasPortrait &&
-    Boolean(patient.journeyIntroSeen);
+    !readOnly && !submitted && !resolvedPhoto && !patient.hasPortrait;
 
   if (needsPhotoGate) {
     return (

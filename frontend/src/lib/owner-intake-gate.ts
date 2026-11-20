@@ -1,15 +1,15 @@
 /*
  File: frontend/src/lib/owner-intake-gate.ts
- Description: گیت Owner — پروفایل/عکس اجباری؛ پیش‌پذیرش اختیاری
+ Description: گیت Owner — خانه با مسیر مجاز؛ پروفایل/عکس اجباری در پیش‌پذیرش
  Parent Dependencies: types/clinic, workspace
  */
 
 import type { CompanionLinkDto, PatientFullDto, WorkspaceRole } from "@/types/clinic";
 import type { AppPage } from "@/lib/workspace";
 
-/** صفحات مجاز وقتی گیت پروفایل/عکس فعال است. */
+/** صفحات مجاز وقتی گیت پروفایل/عکس فعال است — خانه برای دیدن مسیر قبل از ورود. */
 export const GATED_OWNER_PAGES: AppPage[] = [
-  "journey-intro",
+  "dashboard",
   "companion-intake",
   "companion-links",
   "patient-privacy",
@@ -40,19 +40,24 @@ type OwnerGateArgs = {
   intakeGate?: "needs_form" | "already_complete" | null;
 };
 
-/** مقصد Owner با توجه به intro و تکمیل پروفایل/عکس. */
+/**
+ * مقصد Owner با گیت پروفایل/عکس.
+ * خانه همیشه مجاز است تا فاصله+مسیر قبل از «ورود به پیش‌پذیرش» دیده شود.
+ */
 export function resolveGatedPage(requested: AppPage, args: OwnerGateArgs): AppPage {
-  if (!shouldGateOwner(args)) return requested;
-  const seen = Boolean(args.patient?.journeyIntroSeen);
-  if (!seen) {
-    if (requested === "companion-links" || requested === "patient-privacy") return requested;
-    return "journey-intro";
+  if (!shouldGateOwner(args)) {
+    // intro جدا دیگر اجباری نیست؛ مستقیم به خانه
+    if (requested === "journey-intro") return "dashboard";
+    return requested;
   }
-  if (GATED_OWNER_PAGES.includes(requested) && requested !== "journey-intro") return requested;
+  if (requested === "dashboard" || requested === "journey-intro") return "dashboard";
+  if (requested === "companion-links" || requested === "patient-privacy") return requested;
+  if (requested === "companion-intake") return "companion-intake";
+  // صفحات غیرمرتبط → پیش‌پذیرش (تکمیل عکس/پروفایل)
   return "companion-intake";
 }
 
 export function filterNavPagesForGate(pages: AppPage[], gated: boolean): AppPage[] {
   if (!gated) return pages;
-  return pages.filter((p) => GATED_OWNER_PAGES.includes(p) && p !== "journey-intro");
+  return pages.filter((p) => GATED_OWNER_PAGES.includes(p));
 }

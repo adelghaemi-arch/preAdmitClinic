@@ -1,6 +1,6 @@
 /*
  File: frontend/src/components/ClinicReachCard.tsx
- Description: کارت بیمارستان — فاصله پس از دکمهٔ GPS؛ مختصات را به والد برای شواهد می‌دهد
+ Description: کارت بیمارستان — آمار فاصله در یک ردیف فشرده موبایل؛ GPS برای شواهد
  Parent Dependencies: osm-routing, media-permission, PermissionRetryPanel
  */
 
@@ -139,31 +139,42 @@ export function ClinicReachCard({ clinic, clinicName, compact, onStartEvidenceGp
 
         {route && (
           <>
-            <div className={`grid gap-2 ${compact ? "grid-cols-2" : "sm:grid-cols-3"}`}>
-              <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-3 text-center">
-                <div className="text-[10px] text-teal-700">فاصله فعلی</div>
-                <div className="mt-1 text-xl font-extrabold text-teal-900 tabular-fa">
+            {/* سه آمار همیشه در یک ردیف — روی موبایل فشرده */}
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+              <div className="rounded-lg border border-teal-200 bg-teal-50/60 p-2 text-center sm:rounded-xl sm:p-3">
+                <div className="text-[9px] text-teal-700 sm:text-[10px]">
+                  <span className="sm:hidden">فاصله</span>
+                  <span className="hidden sm:inline">فاصله فعلی</span>
+                </div>
+                <div className="mt-0.5 text-base font-extrabold text-teal-900 tabular-fa sm:mt-1 sm:text-xl">
                   {toFaDigits(route.distanceKm)}
                 </div>
-                <div className="text-[10px] text-teal-700">
-                  کیلومتر {route.source === "osrm" ? "(مسیر واقعی)" : "(مستقیم)"}
+                <div className="text-[9px] text-teal-700 sm:text-[10px]">
+                  <span className="sm:hidden">کیلومتر</span>
+                  <span className="hidden sm:inline">
+                    کیلومتر {route.source === "osrm" ? "(مسیر واقعی)" : "(مستقیم)"}
+                  </span>
                 </div>
               </div>
-              {!compact && (
-                <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-3 text-center">
-                  <div className="text-[10px] text-sky-700">با خودرو</div>
-                  <div className="mt-1 text-xl font-extrabold text-sky-900 tabular-fa">
-                    {toFaDigits(travel?.carMinutes ?? 0)}
-                  </div>
-                  <div className="text-[10px] text-sky-700">دقیقه</div>
+              <div className="rounded-lg border border-sky-200 bg-sky-50/60 p-2 text-center sm:rounded-xl sm:p-3">
+                <div className="text-[9px] text-sky-700 sm:text-[10px]">
+                  <span className="sm:hidden">خودرو</span>
+                  <span className="hidden sm:inline">با خودرو</span>
                 </div>
-              )}
-              <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-center">
-                <div className="text-[10px] text-amber-700">پیاده تقریبی</div>
-                <div className="mt-1 text-xl font-extrabold text-amber-900 tabular-fa">
+                <div className="mt-0.5 text-base font-extrabold text-sky-900 tabular-fa sm:mt-1 sm:text-xl">
+                  {toFaDigits(travel?.carMinutes ?? 0)}
+                </div>
+                <div className="text-[9px] text-sky-700 sm:text-[10px]">دقیقه</div>
+              </div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-2 text-center sm:rounded-xl sm:p-3">
+                <div className="text-[9px] text-amber-700 sm:text-[10px]">
+                  <span className="sm:hidden">پیاده</span>
+                  <span className="hidden sm:inline">پیاده تقریبی</span>
+                </div>
+                <div className="mt-0.5 text-base font-extrabold text-amber-900 tabular-fa sm:mt-1 sm:text-xl">
                   {toFaDigits(travel?.walkMinutes ?? 0)}
                 </div>
-                <div className="text-[10px] text-amber-700">دقیقه</div>
+                <div className="text-[9px] text-amber-700 sm:text-[10px]">دقیقه</div>
               </div>
             </div>
 

@@ -1,7 +1,7 @@
 ﻿/*
  File: frontend/src/components/ClinicOrchestratorApp.tsx
- Description: ارکستراتور کلینیک — execute اکشن‌ها شامل SEND_CONTRACT_BULK_SMS به API
- Parent Dependencies: lib/api/*, CorporateContractsHub, workspace
+ Description: ارکستراتور کلینیک — نشست پیش‌پذیرش Owner و مخفی‌سازی مسیر
+ Parent Dependencies: lib/api/*, CorporateContractsHub, workspace, owner-intake-gate
  */
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { AppInput } from "@/components/AppInput";
@@ -195,6 +195,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const [listQuery, setListQuery] = useState("");
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
   const [recordTip, setRecordTip] = useState<string | null>(null);
+  // فقط حافظهٔ نشست — رفرش/بستن دوباره خانهٔ مسیر را نشان می‌دهد
+  const [preAdmitOpen, setPreAdmitOpen] = useState(false);
   const hydrated = useRef(false);
   const lastRecordTipKey = useRef<string | null>(null);
   const snapshotRef = useRef(snapshot);
@@ -255,7 +257,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const suggestions = search.trim() ? snapshot.patients.filter((p) => matchesPatient(p, search)).slice(0, 5) : [];
   const date = new Intl.DateTimeFormat("fa-IR", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Tehran" }).format(new Date(snapshot.serverTime));
   const companionTab = current === "companion-intake" ? "intake" : current === "companion-map" ? "wayfinding" : "emr";
-  const lockNonIntakeTabs = ownerGated && isSelf;
+  // روی پیش‌پذیرش مسیر/هیرو نباشد؛ با preAdmitOpen تب‌های دیگر هم قفل می‌مانند
+  const lockNonIntakeTabs = isSelf && (preAdmitOpen || current === "companion-intake" || ownerGated);
 
   const navigate = useCallback(
     (next: AppPage, patientId?: number) => {
@@ -1284,12 +1287,40 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
       patientId: activePatient.id,
       serverPatientId: activePatient.serverId ?? null,
     });
+    setPreAdmitOpen(true);
+    navigate("companion-intake");
+  };
+
+  /** ورود به پیش‌پذیرش در همین نشست — مسیر خانه مخفی می‌شود تا رفرش. */
+  const enterPreAdmit = async () => {
+    if (activePatient && !activePatient.journeyIntroSeen) {
+      await act({
+        action: "DISMISS_JOURNEY_INTRO",
+        patientId: activePatient.id,
+        serverPatientId: activePatient.serverId ?? null,
+        silent: true,
+      });
+    }
+    setPreAdmitOpen(true);
     navigate("companion-intake");
   };
 
   const renderHome = () => {
     if (role === "patient" || role === "owner") {
-      return <CompanionHome snapshot={snapshot} selectedPatientId={activeId} onSelectPatient={setSelectedPatientId} onNavigate={navigate} onAction={act} busy={busy} isSelf={isSelf} canViewReports={isSelf || Boolean(activeLink?.visibility.reports)} userId={user.id} />;
+      return (
+        <CompanionHome
+          snapshot={snapshot}
+          selectedPatientId={activeId}
+          onSelectPatient={setSelectedPatientId}
+          onNavigate={navigate}
+          onEnterPreAdmit={() => void enterPreAdmit()}
+          onAction={act}
+          busy={busy}
+          isSelf={isSelf}
+          canViewReports={isSelf || Boolean(activeLink?.visibility.reports)}
+          userId={user.id}
+        />
+      );
     }
     if (role === "specialist") {
       return <SpecialistProfile key="home-waiting" snapshot={snapshot} initialPatientId={activeId || undefined} onSwitchToPatientMobile={openPatient} onAction={act} busy={busy} initialSection="waiting" embedded sessionUserId={user.id} />;

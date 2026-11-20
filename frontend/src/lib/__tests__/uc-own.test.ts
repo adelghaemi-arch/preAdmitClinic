@@ -132,7 +132,7 @@ describe("UC-OWN-02", () => {
 });
 
 describe("UC-OWN-03", () => {
-  it("resolveGatedPage: قبل از دیدن intro به journey-intro می‌رود", () => {
+  it("resolveGatedPage: با گیت فعال هم dashboard برای دیدن مسیر مجاز است", () => {
     const args = {
       role: "owner" as const,
       patient: minimalPatient({
@@ -142,13 +142,14 @@ describe("UC-OWN-03", () => {
       }),
       link: selfCompanionLink(),
     };
-    expect(resolveGatedPage("dashboard", args)).toBe("journey-intro");
+    expect(resolveGatedPage("dashboard", args)).toBe("dashboard");
+    expect(resolveGatedPage("journey-intro", args)).toBe("dashboard");
     expect(resolveGatedPage("companion-links", args)).toBe("companion-links");
   });
 });
 
 describe("UC-OWN-04", () => {
-  it("resolveGatedPage: پس از intro، صفحات مجاز یا companion-intake", () => {
+  it("resolveGatedPage: خانه مجاز؛ intake مجاز؛ صفحات دیگر به intake", () => {
     const args = {
       role: "owner" as const,
       patient: minimalPatient({
@@ -160,17 +161,18 @@ describe("UC-OWN-04", () => {
       link: selfCompanionLink(),
     };
     expect(resolveGatedPage("companion-intake", args)).toBe("companion-intake");
-    expect(resolveGatedPage("dashboard", args)).toBe("companion-intake");
+    expect(resolveGatedPage("dashboard", args)).toBe("dashboard");
     expect(resolveGatedPage("clinical", args as never)).toBe("companion-intake");
   });
 
-  it("filterNavPagesForGate: فقط GATED_OWNER بدون journey-intro", () => {
+  it("filterNavPagesForGate: dashboard و intake بدون clinical", () => {
     const all: AppPage[] = ["dashboard", "journey-intro", "companion-intake", "clinical"];
     const gated = filterNavPagesForGate(all, true);
+    expect(gated).toContain("dashboard");
     expect(gated).toContain("companion-intake");
     expect(gated).not.toContain("journey-intro");
     expect(gated).not.toContain("clinical");
-    expect(gated.every((p) => GATED_OWNER_PAGES.includes(p) && p !== "journey-intro")).toBe(true);
+    expect(gated.every((p) => GATED_OWNER_PAGES.includes(p))).toBe(true);
   });
 });
 
@@ -190,7 +192,7 @@ describe("UC-OWN-06", () => {
 });
 
 describe("UC-OWN-07", () => {
-  it("پروفایل/عکس ناقص + گیت فعال → resolve به companion-intake", () => {
+  it("پروفایل/عکس ناقص: خانه مجاز؛ صفحات غیرمرتبط → companion-intake", () => {
     const args = {
       role: "owner" as const,
       patient: minimalPatient({
@@ -201,6 +203,7 @@ describe("UC-OWN-07", () => {
       }),
       link: selfCompanionLink(),
     };
+    expect(resolveGatedPage("dashboard", args)).toBe("dashboard");
     expect(resolveGatedPage("companion-map", args)).toBe("companion-intake");
   });
 });

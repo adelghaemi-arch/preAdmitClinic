@@ -1,6 +1,6 @@
 ﻿/*
  File: frontend/src/components/CompanionHome.tsx
- Description: داشبورد همراه/مالک — فاصله بیمارستان + شواهد GPS و آدرس منزل
+ Description: خانه مینیمال Owner — فاصله بالای مسیر؛ ورود نشست‌محور به پیش‌پذیرش
  Parent Dependencies: ClinicReachCard, LocationPickerPopup, owner-gps-watch, osm-routing
  */
 
@@ -54,6 +54,8 @@ interface CompanionHomeProps {
   selectedPatientId: number;
   onSelectPatient: (id: number) => void;
   onNavigate: (page: AppPage, patientId?: number) => void;
+  /** ورود به پیش‌پذیرش در همین نشست — مسیر خانه مخفی می‌شود */
+  onEnterPreAdmit?: () => void;
   onAction: (payload: Record<string, unknown>) => Promise<unknown>;
   busy: boolean;
   isSelf?: boolean;
@@ -99,7 +101,17 @@ function stageDotClass(state: HealthRoadmapStage["state"]): string {
   return "border-slate-200 bg-slate-100 text-slate-400";
 }
 
-export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onAction, busy, isSelf = false, canViewReports = false, userId }: CompanionHomeProps) {
+export function CompanionHome({
+  snapshot,
+  selectedPatientId,
+  onNavigate,
+  onEnterPreAdmit,
+  onAction,
+  busy,
+  isSelf = false,
+  canViewReports = false,
+  userId,
+}: CompanionHomeProps) {
   const [notice, setNotice] = useState("");
   const [expandedStep, setExpandedStep] = useState<number | null>(null);
   const [showReport, setShowReport] = useState(false);
@@ -242,6 +254,17 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
   const activeStage = stages.find((s) => s.state === "active");
   const atStart = activeStage?.id === "pre";
   const preAdmissionDone = patient.intakeCompleted;
+  // Owner معمولاً contracts[] ندارد؛ نام بسته/سازمان از pathwayTitle اسنپ‌شات
+  const contractLabel = activeContract?.organizationName ?? (patient.pathwayTitle?.trim() || null);
+
+  const goActiveStage = () => {
+    // در ابتدای مسیر ورود نشست‌محور؛ مراحل بعدی ناوبری عادی
+    if (atStart && onEnterPreAdmit) {
+      onEnterPreAdmit();
+      return;
+    }
+    if (activeStage) onNavigate(activeStage.page);
+  };
 
   const run = async (payload: Record<string, unknown>, message: string) => {
     try {
@@ -254,7 +277,7 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {notice && <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-xs font-medium text-teal-800">{notice}</div>}
       {!isSelf && link && !link.visibility.journey && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-xs leading-7 text-amber-800">
@@ -262,113 +285,9 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
         </div>
       )}
 
-      {/* ================= HEALTH ROADMAP HERO + SPINE ================= */}
-      <section className="overflow-hidden rounded-[1.75rem] border border-[#cfe2d7] bg-white shadow-[0_12px_40px_-28px_rgba(32,116,92,0.45)]">
-        <div className="relative overflow-hidden border-b border-[#d7e8df] bg-[radial-gradient(circle_at_top_right,_#e8f5ee_0%,_#ffffff_55%,_#f4faf7_100%)] px-5 py-6 sm:px-7">
-          <div className="pointer-events-none absolute -left-10 top-0 h-40 w-40 rounded-full bg-[#20745c]/10 blur-2xl" />
-          <div className="relative flex flex-wrap items-end justify-between gap-4">
-            <div className="max-w-xl">
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-[#3f7b60] ring-1 ring-[#cfe2d7]">
-                <Route className="h-3.5 w-3.5" />
-                نقشه راه سلامتی شما
-              </div>
-              <h2 className="mt-3 text-xl font-extrabold tracking-tight text-[#1d3f32] sm:text-2xl">
-                {atStart
-                  ? "شما در ابتدای مسیر هستید"
-                  : activeStage
-                    ? `شما در مرحله «${activeStage.title}» هستید`
-                    : "تمام مراحل نقشه راه شما کامل شد"}
-              </h2>
-              <p className="mt-2 text-xs leading-7 text-slate-500">
-                {atStart
-                  ? "اول پیش‌پذیرش، بعد نوبت‌دهی، مراجعه به کلینیک‌ها، پرونده الکترونیک، تحلیل اطلاعات و پایش مستمر."
-                  : `${toFaDigits(doneStages)} از ${toFaDigits(stageTotal)} مرحله تکمیل شده · ${patient.fullName}`}
-                {activeContract && (
-                  <>
-                    {" "}
-                    · قرارداد فعال: <strong className="font-semibold text-[#2f6b52]">{activeContract.organizationName}</strong>
-                  </>
-                )}
-              </p>
-            </div>
-            <div className="rounded-2xl bg-white/90 px-4 py-3 text-center ring-1 ring-[#d7e8df]">
-              <div className="text-3xl font-extrabold text-[#20745c] tabular-fa">{toFaDigits(roadmapPct)}٪</div>
-              <div className="text-[10px] text-slate-400">پیشرفت کل مسیر</div>
-            </div>
-          </div>
-          <div className="relative mt-5 h-2.5 w-full overflow-hidden rounded-full bg-white/70 ring-1 ring-[#d7e8df]">
-            <div className="h-full rounded-full bg-gradient-to-l from-[#1f6f4f] via-[#20745c] to-[#4ca583] transition-all duration-700" style={{ width: `${roadmapPct}%` }} />
-          </div>
-          {activeStage && (
-            <div className="relative mt-5 flex flex-wrap items-center gap-3">
-              <button type="button" onClick={() => onNavigate(activeStage.page)} className="primary-button">
-                {atStart ? "ورود به پیش‌پذیرش" : activeStage.cta}
-                <ArrowLeft className="h-3.5 w-3.5" />
-              </button>
-              <p className="text-[11px] text-slate-500">{activeStage.desc}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="px-5 py-5 sm:px-7">
-          <div className="relative">
-            <div className="absolute top-5 bottom-5 right-[1.15rem] w-px bg-gradient-to-b from-emerald-400 via-teal-300 to-slate-200" />
-            <ol className="space-y-2">
-              {stages.map((stage, index) => {
-                const locked = stage.state === "locked";
-                return (
-                  <li key={stage.id}>
-                    <button
-                      type="button"
-                      disabled={locked}
-                      onClick={() => onNavigate(stage.page)}
-                      className={`group relative flex w-full items-start gap-3 rounded-2xl px-2 py-3 text-right transition ${
-                        stage.state === "active"
-                          ? "bg-[#edf7f2] ring-1 ring-[#b7dcc9]"
-                          : locked
-                            ? "opacity-60"
-                            : "hover:bg-slate-50"
-                      }`}
-                    >
-                      <span className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-xs font-extrabold transition ${stageDotClass(stage.state)}`}>
-                        {stage.state === "done" ? <CheckCircle2 className="h-4 w-4" /> : locked ? <Lock className="h-3.5 w-3.5" /> : stage.n}
-                      </span>
-                      <div className="min-w-0 flex-1 pt-0.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`text-sm font-bold ${stage.state === "active" ? "text-[#1d4f3c]" : stage.state === "done" ? "text-emerald-800" : "text-slate-500"}`}>
-                            {stage.title}
-                          </span>
-                          {stage.state === "active" && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-[#20745c] px-2 py-0.5 text-[9px] font-bold text-white">
-                              <Sparkles className="h-2.5 w-2.5" />
-                              شما اینجا هستید
-                            </span>
-                          )}
-                          {stage.state === "done" && (
-                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">انجام شد</span>
-                          )}
-                        </div>
-                        <p className="mt-1 text-[11px] leading-6 text-slate-500">{stage.desc}</p>
-                        <p className="mt-0.5 text-[10px] leading-5 text-slate-400">{stage.note}</p>
-                        {!locked && (
-                          <span className="mt-2 inline-flex text-[10px] font-bold text-[#20745c] opacity-80 transition group-hover:opacity-100">
-                            {stage.cta} ←
-                          </span>
-                        )}
-                        {index < stages.length - 1 && <span className="sr-only">مرحله بعد</span>}
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      {/* مسیریابی بیمارستان — بدون گیت قرارداد تا بعد از intro هم دیده شود */}
+      {/* فاصله تا بیمارستان — بالای مسیر برای موبایل مینیمال */}
       {clinic && patient && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <ClinicReachCard
             clinic={clinic}
             clinicName={snapshot.platform.clinics.find((c) => c.isCurrentTenant)?.name}
@@ -384,70 +303,172 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
               });
             }}
           />
-          {activeContract && (
+          {contractLabel && (
             <p className="px-1 text-[10px] text-teal-700">
-              قرارداد فعال «{activeContract.organizationName}»
+              قرارداد فعال «{contractLabel}»
               {contractMember?.scheduledLabel ? ` · نوبت: ${contractMember.scheduledLabel}` : ""}
             </p>
           )}
-          <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white">
-            <div className="space-y-3 p-5">
-              <label className="app-label text-[11px]">
-                آدرس محل زندگی شما
-                <div className="mt-1.5 flex flex-wrap gap-2">
-                  <AppInput
-                    value={addressDraft}
-                    onChange={(e) => setAddressDraft(e.target.value)}
-                    placeholder="مثلاً: تهران، سعادت‌آباد، بلوار دریا"
-                    className="app-input min-w-56 flex-1 text-xs"
-                  />
-                  <button type="button" disabled={routeLoading || locating} onClick={() => void searchAddress()} className="primary-button">
-                    {routeLoading ? <RefreshInline /> : <Compass className="h-4 w-4" />}
-                    محاسبه فاصله
-                  </button>
-                  <button
-                    type="button"
-                    disabled={routeLoading || locating}
-                    onClick={() => {
-                      setShowLocationPicker(true);
-                      beginOwnerEvidenceGps({
-                        enabled: snapshot.platform?.settings?.featureFlags?.gpsTracking !== false,
-                        patientId: patient.id,
-                        serverPatientId: patient.serverId,
-                        initialSource: "map_open",
-                        onAction,
-                      });
-                    }}
-                    className="secondary-button"
-                  >
-                    <Map className="h-3.5 w-3.5" />
-                    انتخاب روی نقشه
-                  </button>
-                  <button type="button" disabled={locating} onClick={useMyLocation} className="secondary-button">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {locating ? "در حال یافتن…" : "استفاده از موقعیت من"}
-                  </button>
-                </div>
-              </label>
-
-              {geoDeniedKind && (
-                <PermissionRetryPanel
-                  kind="geolocation"
-                  errorKind={geoDeniedKind}
-                  onRetry={useMyLocation}
-                  retryDisabled={locating}
-                  compact
-                />
-              )}
-              {geoError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-600">{geoError}</p>}
-              {route && <OsmRouteStrip route={route} />}
-            </div>
-          </section>
         </div>
       )}
 
-      {/* ================= TODAY'S VISIT TIMELINE (single) ================= */}
-      <section className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-gradient-to-b from-white to-[#f7faf8]">
+      {/* مسیر درمان — فشرده روی موبایل */}
+      <section className="overflow-hidden rounded-2xl border border-[#cfe2d7] bg-white shadow-[0_8px_28px_-24px_rgba(32,116,92,0.45)] sm:rounded-[1.75rem]">
+        <div className="relative overflow-hidden border-b border-[#d7e8df] bg-[radial-gradient(circle_at_top_right,_#e8f5ee_0%,_#ffffff_55%,_#f4faf7_100%)] px-4 py-4 sm:px-7 sm:py-6">
+          <div className="relative flex flex-wrap items-end justify-between gap-3">
+            <div className="min-w-0 max-w-xl flex-1">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-[#3f7b60] ring-1 ring-[#cfe2d7] sm:text-[11px]">
+                <Route className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                نقشه راه سلامتی شما
+              </div>
+              <h2 className="mt-2 text-base font-extrabold tracking-tight text-[#1d3f32] sm:mt-3 sm:text-2xl">
+                {atStart
+                  ? "شما در ابتدای مسیر هستید"
+                  : activeStage
+                    ? `شما در مرحله «${activeStage.title}» هستید`
+                    : "تمام مراحل نقشه راه شما کامل شد"}
+              </h2>
+              <p className="mt-1 hidden text-xs leading-7 text-slate-500 sm:mt-2 sm:block">
+                {atStart
+                  ? "اول پیش‌پذیرش، بعد نوبت‌دهی، مراجعه به کلینیک‌ها، پرونده الکترونیک، تحلیل اطلاعات و پایش مستمر."
+                  : `${toFaDigits(doneStages)} از ${toFaDigits(stageTotal)} مرحله تکمیل شده · ${patient.fullName}`}
+              </p>
+            </div>
+            <div className="rounded-xl bg-white/90 px-3 py-2 text-center ring-1 ring-[#d7e8df] sm:rounded-2xl sm:px-4 sm:py-3">
+              <div className="text-xl font-extrabold text-[#20745c] tabular-fa sm:text-3xl">{toFaDigits(roadmapPct)}٪</div>
+              <div className="text-[9px] text-slate-400 sm:text-[10px]">پیشرفت</div>
+            </div>
+          </div>
+          <div className="relative mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/70 ring-1 ring-[#d7e8df] sm:mt-5 sm:h-2.5">
+            <div className="h-full rounded-full bg-gradient-to-l from-[#1f6f4f] via-[#20745c] to-[#4ca583] transition-all duration-700" style={{ width: `${roadmapPct}%` }} />
+          </div>
+          {activeStage && (
+            <div className="relative mt-3 flex flex-col gap-2 sm:mt-5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+              <button type="button" onClick={goActiveStage} className="primary-button w-full sm:w-auto">
+                {atStart ? "ورود به پیش‌پذیرش" : activeStage.cta}
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </button>
+              <p className="hidden text-[11px] text-slate-500 sm:block">{activeStage.desc}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="px-3 py-3 sm:px-7 sm:py-5">
+          <div className="relative">
+            <div className="absolute top-4 bottom-4 right-[0.95rem] w-px bg-gradient-to-b from-emerald-400 via-teal-300 to-slate-200 sm:top-5 sm:bottom-5 sm:right-[1.15rem]" />
+            <ol className="space-y-1 sm:space-y-2">
+              {stages.map((stage, index) => {
+                const locked = stage.state === "locked";
+                return (
+                  <li key={stage.id}>
+                    <button
+                      type="button"
+                      disabled={locked}
+                      onClick={() => {
+                        if (stage.id === "pre" && onEnterPreAdmit) {
+                          onEnterPreAdmit();
+                          return;
+                        }
+                        onNavigate(stage.page);
+                      }}
+                      className={`group relative flex w-full items-start gap-2.5 rounded-xl px-1.5 py-2 text-right transition sm:gap-3 sm:rounded-2xl sm:px-2 sm:py-3 ${
+                        stage.state === "active"
+                          ? "bg-[#edf7f2] ring-1 ring-[#b7dcc9]"
+                          : locked
+                            ? "opacity-60"
+                            : "hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className={`relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-extrabold transition sm:h-9 sm:w-9 sm:text-xs ${stageDotClass(stage.state)}`}>
+                        {stage.state === "done" ? <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : locked ? <Lock className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : stage.n}
+                      </span>
+                      <div className="min-w-0 flex-1 pt-0.5">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <span className={`text-[13px] font-bold sm:text-sm ${stage.state === "active" ? "text-[#1d4f3c]" : stage.state === "done" ? "text-emerald-800" : "text-slate-500"}`}>
+                            {stage.title}
+                          </span>
+                          {stage.state === "active" && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#20745c] px-2 py-0.5 text-[9px] font-bold text-white">
+                              <Sparkles className="h-2.5 w-2.5" />
+                              شما اینجا هستید
+                            </span>
+                          )}
+                          {stage.state === "done" && (
+                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">انجام شد</span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 hidden text-[11px] leading-6 text-slate-500 sm:mt-1 sm:block">{stage.desc}</p>
+                        <p className="mt-0.5 hidden text-[10px] leading-5 text-slate-400 sm:block">{stage.note}</p>
+                        {index < stages.length - 1 && <span className="sr-only">مرحله بعد</span>}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      {/* آدرس منزل — فقط دسکتاپ تا موبایل مینیمال بماند */}
+      {clinic && patient && (
+        <section className="hidden overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white sm:block">
+          <div className="space-y-3 p-5">
+            <label className="app-label text-[11px]">
+              آدرس محل زندگی شما
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                <AppInput
+                  value={addressDraft}
+                  onChange={(e) => setAddressDraft(e.target.value)}
+                  placeholder="مثلاً: تهران، سعادت‌آباد، بلوار دریا"
+                  className="app-input min-w-56 flex-1 text-xs"
+                />
+                <button type="button" disabled={routeLoading || locating} onClick={() => void searchAddress()} className="primary-button">
+                  {routeLoading ? <RefreshInline /> : <Compass className="h-4 w-4" />}
+                  محاسبه فاصله
+                </button>
+                <button
+                  type="button"
+                  disabled={routeLoading || locating}
+                  onClick={() => {
+                    setShowLocationPicker(true);
+                    beginOwnerEvidenceGps({
+                      enabled: snapshot.platform?.settings?.featureFlags?.gpsTracking !== false,
+                      patientId: patient.id,
+                      serverPatientId: patient.serverId,
+                      initialSource: "map_open",
+                      onAction,
+                    });
+                  }}
+                  className="secondary-button"
+                >
+                  <Map className="h-3.5 w-3.5" />
+                  انتخاب روی نقشه
+                </button>
+                <button type="button" disabled={locating} onClick={useMyLocation} className="secondary-button">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {locating ? "در حال یافتن…" : "استفاده از موقعیت من"}
+                </button>
+              </div>
+            </label>
+
+            {geoDeniedKind && (
+              <PermissionRetryPanel
+                kind="geolocation"
+                errorKind={geoDeniedKind}
+                onRetry={useMyLocation}
+                retryDisabled={locating}
+                compact
+              />
+            )}
+            {geoError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-600">{geoError}</p>}
+            {route && <OsmRouteStrip route={route} />}
+          </div>
+        </section>
+      )}
+
+      {/* تایم‌لاین مراجعه — مخفی روی موبایل مینیمال */}
+      <section className="hidden overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-gradient-to-b from-white to-[#f7faf8] sm:block">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-4 sm:px-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-bl from-teal-600 to-emerald-600 text-white">
@@ -504,7 +525,11 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
               )}
               <div className="mt-3 flex flex-wrap gap-2">
                 {!preAdmissionDone && isSelf && (
-                  <button type="button" onClick={() => onNavigate("companion-intake")} className="primary-button py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => (onEnterPreAdmit ? onEnterPreAdmit() : onNavigate("companion-intake"))}
+                    className="primary-button py-2.5"
+                  >
                     <ClipboardList className="h-4 w-4" />
                     تکمیل پیش‌پذیرش
                   </button>
@@ -544,7 +569,11 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
             <div className="absolute top-4 bottom-4 right-4 w-1 rounded-full bg-gradient-to-b from-emerald-300 via-teal-200 to-slate-200 opacity-70" />
             <div className="space-y-1">
               <div className={`relative flex items-start gap-4 rounded-2xl p-3 ${preAdmissionDone ? "hover:bg-emerald-50/40" : "bg-amber-50/40"}`}>
-                <button type="button" onClick={() => onNavigate("companion-intake")} className="flex flex-1 items-start gap-4 text-right">
+                <button
+                  type="button"
+                  onClick={() => (onEnterPreAdmit ? onEnterPreAdmit() : onNavigate("companion-intake"))}
+                  className="flex flex-1 items-start gap-4 text-right"
+                >
                   <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-extrabold ${preAdmissionDone ? "border-emerald-500 bg-emerald-500 text-white" : "border-amber-400 bg-amber-400 text-white animate-pulse"}`}>
                     {preAdmissionDone ? <CheckCircle2 className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
                   </span>
@@ -654,7 +683,7 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
         </div>
       </section>
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div className="hidden items-start gap-4 sm:grid lg:grid-cols-2">
         <section className="rounded-2xl border border-slate-200 bg-white p-4">
           <h3 className="flex items-center gap-2 text-xs font-bold text-slate-700">
             <Bell className="h-4 w-4 text-teal-600" />

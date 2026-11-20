@@ -1,6 +1,6 @@
 /*
  File: frontend/src/components/ResidenceAddressField.tsx
- Description: فیلد آدرس سکونت دموگرافیک — نقشه/GPS + پلاک/واحد/کد پستی
+ Description: فیلد آدرس سکونت دموگرافیک — نقشه/GPS + پلاک؛ draft بدون پلاک مختصات را نگه می‌دارد
  Parent Dependencies: LocationPickerPopup, residence-address.ts, AppInput, owner-gps-watch
  */
 
@@ -10,7 +10,7 @@ import { AppInput } from "@/components/AppInput";
 import { IranDigitField } from "@/components/IranDigitField";
 import { LocationPickerPopup, type LocationPickResult } from "@/components/LocationPickerPopup";
 import {
-  parseResidenceAddress,
+  parseResidenceAddressDraft,
   residenceAddressValidationMessage,
   serializeResidenceAddress,
   type ResidenceAddressValue,
@@ -42,7 +42,8 @@ export function ResidenceAddressField({
   onEvidenceGpsStart,
 }: Props) {
   const [openMap, setOpenMap] = useState(false);
-  const parsed = useMemo(() => parseResidenceAddress(value), [value]);
+  // draft بدون اجباری بودن پلاک تا بعد از نقشه مختصات از دست نرود
+  const parsed = useMemo(() => parseResidenceAddressDraft(value), [value]);
   const draft: ResidenceAddressValue = parsed ?? {
     lat: NaN,
     lon: NaN,
@@ -53,6 +54,7 @@ export function ResidenceAddressField({
   };
   const validation = residenceAddressValidationMessage(value);
   const locked = disabled || readOnly;
+  const hasMapPoint = Number.isFinite(draft.lat) && Number.isFinite(draft.lon);
 
   const patch = (partial: Partial<ResidenceAddressValue>) => {
     const next: ResidenceAddressValue = {
@@ -63,7 +65,7 @@ export function ResidenceAddressField({
       unit: partial.unit ?? draft.unit,
       postalCode: partial.postalCode ?? draft.postalCode,
     };
-    // تا وقتی مختصات/آدرس/پلاک ناقص است JSON ننویس مگر فیلدها خالی شوند
+    // تا وقتی مختصات/آدرس ناقص است JSON جزئی بنویس؛ پلاک خالی مختصات را پاک نکند
     if (!Number.isFinite(next.lat) || !Number.isFinite(next.lon) || !next.address.trim()) {
       if (!next.plaque.trim() && !next.unit?.trim() && !next.postalCode?.trim() && !next.address.trim()) {
         onChange("");
@@ -93,12 +95,12 @@ export function ResidenceAddressField({
     <div className={`space-y-2 ${className}`} aria-label={ariaLabel}>
       <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
         <p className="text-[11px] font-medium text-slate-700">موقعیت روی نقشه</p>
-        {Number.isFinite(draft.lat) && Number.isFinite(draft.lon) && draft.address ? (
+        {hasMapPoint && draft.address ? (
           <p className="mt-1 text-[11px] leading-5 text-slate-600">{draft.address}</p>
         ) : (
           <p className="mt-1 text-[11px] leading-5 text-slate-400">هنوز موقعیتی انتخاب نشده است.</p>
         )}
-        {Number.isFinite(draft.lat) && Number.isFinite(draft.lon) && (
+        {hasMapPoint && (
           <p className="mt-1 text-[10px] text-slate-400">
             مختصات: {toFaDigits(draft.lat.toFixed(5))} ، {toFaDigits(draft.lon.toFixed(5))}
           </p>
@@ -114,7 +116,7 @@ export function ResidenceAddressField({
             className="secondary-button mt-2 inline-flex items-center gap-1.5"
           >
             <MapPin className="h-3.5 w-3.5" />
-            {Number.isFinite(draft.lat) ? "تغییر موقعیت روی نقشه" : "انتخاب موقعیت روی نقشه"}
+            {hasMapPoint ? "تغییر موقعیت روی نقشه" : "انتخاب موقعیت روی نقشه"}
           </button>
         )}
       </div>
@@ -174,9 +176,7 @@ export function ResidenceAddressField({
       {openMap && !locked && (
         <LocationPickerPopup
           initial={
-            Number.isFinite(draft.lat) && Number.isFinite(draft.lon)
-              ? { lat: draft.lat, lon: draft.lon, address: draft.address }
-              : null
+            hasMapPoint ? { lat: draft.lat, lon: draft.lon, address: draft.address } : null
           }
           fallbackCenter={fallbackCenter}
           onConfirm={onMapConfirm}

@@ -1,11 +1,12 @@
 /*
  File: backend/src/Nabz.Api/Controllers/FormsController.cs
- Description: فرم پیش‌پذیرش، ساختار، resolve، draft/submit؛ SaveResponse با ۴۰۳/۴۰۰ خوانا
+ Description: فرم پیش‌پذیرش، ساختار، resolve، draft/submit؛ SaveResponse با ۴۰۳/۴۰۹ خوانا
  Parent Dependencies: IFormService, CurrentUserExtensions
  */
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Nabz.Api.Auth;
 using Nabz.Application.Interfaces;
 using Nabz.Domain.Enums;
@@ -117,6 +118,15 @@ public sealed class FormsController(IFormService forms) : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { ok = false, error = ex.Message });
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // تداخل حذف/درج answers؛ بدنهٔ JSON تا پروکسی «CORS» خام نشان ندهد
+            return Conflict(new { ok = false, error = "ذخیره هم‌زمان تداخل داشت؛ دوباره تلاش کنید." });
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new { ok = false, error = "ذخیره پاسخ ناموفق بود؛ دوباره تلاش کنید." });
         }
     }
 
