@@ -1,7 +1,13 @@
+/*
+ File: frontend/src/lib/owner-intake-gate.ts
+ Description: گیت Owner — پروفایل/عکس اجباری؛ پیش‌پذیرش اختیاری
+ Parent Dependencies: types/clinic, workspace
+ */
+
 import type { CompanionLinkDto, PatientFullDto, WorkspaceRole } from "@/types/clinic";
 import type { AppPage } from "@/lib/workspace";
 
-/** Pages still reachable while the owner is gated on incomplete pre-admission. */
+/** صفحات مجاز وقتی گیت پروفایل/عکس فعال است. */
 export const GATED_OWNER_PAGES: AppPage[] = [
   "journey-intro",
   "companion-intake",
@@ -13,26 +19,29 @@ export function shouldGateOwner(args: {
   role: WorkspaceRole;
   link?: CompanionLinkDto | null;
   patient?: PatientFullDto | null;
+  /** از snapshot سرور: needs_form | already_complete — دیگر قفل اجباری نیست */
+  intakeGate?: "needs_form" | "already_complete" | null;
 }): boolean {
   const { role, link, patient } = args;
   if (role !== "owner") return false;
   if (!patient) return false;
-  if (patient.intakeCompleted) return false;
-  // Owner without a self-link yet (no record connected) — keep links page open, no force-intake.
   if (!link) return false;
   if (link.relationship !== "self") return false;
-  return true;
+  // پرسشنامه پیش‌پذیرش اختیاری است؛ قفل فقط برای هویت/دموگرافیک و عکس
+  const profileOk = patient.profileComplete !== false;
+  const photoOk = Boolean(patient.hasPortrait || patient.photoDataUrl);
+  return !profileOk || !photoOk;
 }
 
-/** Where the owner should land given gate + intro-seen state. */
-export function resolveGatedPage(
-  requested: AppPage,
-  args: {
-    role: WorkspaceRole;
-    link?: CompanionLinkDto | null;
-    patient?: PatientFullDto | null;
-  }
-): AppPage {
+type OwnerGateArgs = {
+  role: WorkspaceRole;
+  link?: CompanionLinkDto | null;
+  patient?: PatientFullDto | null;
+  intakeGate?: "needs_form" | "already_complete" | null;
+};
+
+/** مقصد Owner با توجه به intro و تکمیل پروفایل/عکس. */
+export function resolveGatedPage(requested: AppPage, args: OwnerGateArgs): AppPage {
   if (!shouldGateOwner(args)) return requested;
   const seen = Boolean(args.patient?.journeyIntroSeen);
   if (!seen) {

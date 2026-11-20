@@ -2,9 +2,9 @@ import { mockStore } from "@/lib/mock-store";
 import type { ClinicSnapshot, StationStatus } from "@/types/clinic";
 
 /**
- * Builds the clinic snapshot from the in-memory mock store.
- * Queue estimates are computed here (before any privacy scoping) so the numbers
- * stay consistent everywhere: kanban boards, patient dashboards and alerts.
+ * Snapshot از mock-store برای مسیر legacy QR/kiosk.
+ * Queue estimates اینجا محاسبه می‌شوند تا اعداد در همراه بیمار یکدست بمانند.
+ * workspace لاگین‌شده از API (`loadWorkspaceSnapshot`) می‌آید.
  */
 export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
   const rooms = mockStore.rooms;
@@ -85,6 +85,9 @@ export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
       homeLat: p.homeLat ?? null,
       homeLon: p.homeLon ?? null,
       homeAddress: p.homeAddress ?? null,
+      homePlaque: p.homePlaque ?? null,
+      homeUnit: p.homeUnit ?? null,
+      homePostalCode: p.homePostalCode ?? null,
       photoDataUrl: p.photoDataUrl ?? null,
       intakeDocuments: Array.isArray(p.intakeDocuments)
         ? p.intakeDocuments.filter(

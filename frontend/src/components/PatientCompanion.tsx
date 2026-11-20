@@ -51,9 +51,6 @@ export function PatientCompanion({ token, initialSnapshot }: { token: string; in
 
   const dismissIntro = async () => {
     if (!patient) return;
-    // #region agent log
-    fetch("http://127.0.0.1:7620/ingest/ce0a96e2-b4da-459f-954e-882ca556894d", { method: "POST", headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "5dfb38" }, body: JSON.stringify({ sessionId: "5dfb38", runId: "impl1", hypothesisId: "H-qr", location: "PatientCompanion.tsx:dismissIntro", message: "QR dismiss intro", data: { patientId: patient.id }, timestamp: Date.now() }) }).catch(() => {});
-    // #endregion
     setIntroDismissedLocally(true);
     await act({ action: "DISMISS_JOURNEY_INTRO", patientId: patient.id });
   };

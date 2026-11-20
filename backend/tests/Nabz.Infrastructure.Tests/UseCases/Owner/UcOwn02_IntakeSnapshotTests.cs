@@ -30,6 +30,8 @@ public sealed class UcOwn02_IntakeSnapshotTests
         Assert.False(snapshot.HasPortrait);
         Assert.Equal(0, snapshot.DocumentGroupCount);
         Assert.Equal(0, snapshot.GpsPointCount);
+        Assert.Equal("needs_form", snapshot.IntakeGate);
+        Assert.Null(snapshot.IntakeGateMessage);
     }
 
     /// <summary>Na: مالک بدون پرونده — snapshot تهی.</summary>

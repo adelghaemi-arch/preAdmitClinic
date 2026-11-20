@@ -10,6 +10,7 @@ public static class NabzClaimTypes
 {
     public const string SessionId = "nabz_session_id";
     public const string ContractId = "nabz_contract_id";
+    public const string PendingSelection = "nabz_pending_selection";
 }
 
 public record AuthSessionPrincipal(
@@ -17,4 +18,5 @@ public record AuthSessionPrincipal(
     Guid SessionId,
     IReadOnlyList<string> Roles,
     Guid? ContractId,
-    bool IsActive);
+    bool IsActive,
+    bool PendingSelection = false);

@@ -1,4 +1,9 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿/*
+ File: frontend/src/components/CorporateContractsHub.tsx
+ Description: هاب قرارداد سازمانی — افراد، قوانین بسته، نوبت‌دهی، قیف؛ پیامک دعوت فردی/گروهی قالبی
+ Parent Dependencies: types/clinic.ts, mock-contracts.ts, ClinicOrchestratorApp.tsx
+ */
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   BookOpen,
@@ -33,6 +38,7 @@ import {
 import type {
   ClinicSnapshot,
   ContractDayQuota,
+  ContractMember,
   ContractPackageRule,
   PackageLibraryRule,
 } from "@/types/clinic";
@@ -45,10 +51,25 @@ import {
   JOB_CATEGORIES,
   ONBOARDING_META,
   parseExcelOrCsvText,
+  type ImportPreviewRow,
 } from "@/lib/mock-contracts";
+import { fetchContractMembersAll, resolvePackageDisplayTitle } from "@/lib/api/contracts";
+import {
+  ageFromBirthIso,
+  birthIsoToFaLabel,
+  displayFullName,
+  exactNationalIdDigits,
+  isExactIranNationalId,
+  isValidIranMobile,
+  normalizeMobile,
+} from "@/lib/person-identity";
+import { IranDigitField } from "@/components/IranDigitField";
+import { ListPager, slicePage, type ListPageSize } from "@/components/ListPager";
+import { MARITAL_STATUS_OPTIONS } from "@/lib/marital-status";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
 import { normalizeText, stationLabel } from "@/lib/workspace";
-import { PersianDateField } from "@/components/PersianDateField";
+import { birthDateBounds, PersianDateField } from "@/components/PersianDateField";
+import { iranLocalDayOffset } from "@/lib/date-iso";
 
 export type ContractHubTab = "people" | "packages" | "schedule" | "funnel";
 
@@ -86,12 +107,51 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   const [tab, setTab] = useState<ContractHubTab>(initialTab);
   const [selectedContractId, setSelectedContractId] = useState<number>(contracts[0]?.id ?? 0);
   const [banner, setBanner] = useState("");
+  /** اعضا فقط برای قرارداد انتخاب‌شده — نه N+1 در bootstrap همهٔ قراردادها */
+  const [membersOverride, setMembersOverride] = useState<ContractMember[] | null>(null);
+  const [membersBusy, setMembersBusy] = useState(false);
+  const [funnelPage, setFunnelPage] = useState(1);
+  const [funnelPageSize, setFunnelPageSize] = useState<ListPageSize>(20);
+  const [schedulePage, setSchedulePage] = useState(1);
+  const [schedulePageSize, setSchedulePageSize] = useState<ListPageSize>(20);
   // بعد از hydrate seed، اگر id قبلی در لیست نبود اولین قرارداد را انتخاب کن
   useEffect(() => {
     if (!contracts.length) return;
     if (!contracts.some((c) => c.id === selectedContractId)) setSelectedContractId(contracts[0].id);
   }, [contracts, selectedContractId]);
-  const contract = contracts.find((c) => c.id === selectedContractId) ?? contracts[0];
+  const baseContract = contracts.find((c) => c.id === selectedContractId) ?? contracts[0];
+
+  useEffect(() => {
+    if (!baseContract?.serverId) {
+      setMembersOverride(null);
+      return;
+    }
+    let cancelled = false;
+    setMembersBusy(true);
+    void fetchContractMembersAll(baseContract.serverId)
+      .then((rows) => {
+        if (!cancelled) setMembersOverride(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setMembersOverride([]);
+      })
+      .finally(() => {
+        if (!cancelled) setMembersBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [baseContract?.serverId, snapshot.serverTime]);
+
+  const contract = useMemo(() => {
+    if (!baseContract) return undefined;
+    const members = membersOverride ?? [];
+    return {
+      ...baseContract,
+      members,
+      memberCount: membersOverride?.length ?? baseContract.memberCount ?? 0,
+    };
+  }, [baseContract, membersOverride]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -106,24 +166,43 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   const [fetchNowOnCreate, setFetchNowOnCreate] = useState(true);
   const [sendSmsOnImport, setSendSmsOnImport] = useState(true);
   const [pasteText, setPasteText] = useState("");
-  const [excelPreview, setExcelPreview] = useState<ReturnType<typeof parseExcelOrCsvText> | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [apiEditOpen, setApiEditOpen] = useState(false);
   const [editApiKey, setEditApiKey] = useState("");
   const [editEndpoint, setEditEndpoint] = useState("");
   const [supEditOpen, setSupEditOpen] = useState(false);
-  const [supName, setSupName] = useState("");
+  const [supFirstName, setSupFirstName] = useState("");
+  const [supLastName, setSupLastName] = useState("");
   const [supTitle, setSupTitle] = useState("");
   const [supPhone, setSupPhone] = useState("");
   const [supCanSms, setSupCanSms] = useState(true);
   const [manualOpen, setManualOpen] = useState(false);
-  const [mName, setMName] = useState("");
+  const [mFirstName, setMFirstName] = useState("");
+  const [mLastName, setMLastName] = useState("");
   const [mNid, setMNid] = useState("");
   const [mPhone, setMPhone] = useState("");
-  const [mAge, setMAge] = useState("42");
+  const [mBirthDate, setMBirthDate] = useState("");
   const [mGender, setMGender] = useState<"مرد" | "زن">("مرد");
-  const [mDept, setMDept] = useState("فنی و مهندسی");
-  const [mCat, setMCat] = useState("عملیات و فنی");
+  const [mMarital, setMMarital] = useState("");
+  const [mDept, setMDept] = useState("");
+  const [mCat, setMCat] = useState("");
+  const [excelPreview, setExcelPreview] = useState<{
+    rows: ImportPreviewRow[];
+    readyCount: number;
+    invalidCount: number;
+  } | null>(null);
+  const [importResults, setImportResults] = useState<ImportPreviewRow[] | null>(null);
+  const [editingMember, setEditingMember] = useState<ContractMember | null>(null);
+  const [eFirstName, setEFirstName] = useState("");
+  const [eLastName, setELastName] = useState("");
+  const [eNid, setENid] = useState("");
+  const [ePhone, setEPhone] = useState("");
+  const [eBirthDate, setEBirthDate] = useState("");
+  const [eGender, setEGender] = useState<"مرد" | "زن">("مرد");
+  const [eMarital, setEMarital] = useState("");
+  const [eDept, setEDept] = useState("");
+  const [eCat, setECat] = useState("");
+  const [ePersonnel, setEPersonnel] = useState("");
 
   const [ruleTitle, setRuleTitle] = useState("");
   const [ruleDesc, setRuleDesc] = useState("");
@@ -135,6 +214,9 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   const [saveToLibrary, setSaveToLibrary] = useState(true);
   const [editingLibRule, setEditingLibRule] = useState<PackageLibraryRule | null>(null);
   const [libQuery, setLibQuery] = useState("");
+  // مشاهده فقط‌خواندنی قانون فعال + افراد متصل (بدون mutate)
+  const [viewingRule, setViewingRule] = useState<ContractPackageRule | null>(null);
+  const [ruleMemberQuery, setRuleMemberQuery] = useState("");
 
   const [qDate, setQDate] = useState(today);
   const [qCap, setQCap] = useState("20");
@@ -150,12 +232,53 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   const [memberSearch, setMemberSearch] = useState("");
   const [checkedIds, setCheckedIds] = useState<number[]>([]);
   const [smsCampaign, setSmsCampaign] = useState("یادآوری تکمیل پروفایل سلامت");
-  const [smsText, setSmsText] = useState("همکار گرامی {نام}، پیش‌ثبت‌نام پایش سلامت {شرکت} برای بسته «{پکیج}» فعال است. لطفاً اطلاعات خود را در لینک {لینک} تکمیل فرمایید.");
 
   const flash = (msg: string) => { setBanner(msg); setTimeout(() => setBanner(""), 5500); };
-  type ActionResult = { added?: number; duplicates?: number; filledNow?: number; alreadyAssigned?: number; totalUnscheduled?: number; totalFilled?: number; stillUnscheduled?: number; libraryRuleId?: string; createdContractId?: number; createdPatientId?: number };
+  type ActionResult = {
+    ok?: boolean;
+    added?: number;
+    duplicates?: number;
+    rejected?: number;
+    results?: Array<{ firstName: string; lastName: string; nationalId: string; status: string; reason?: string | null }>;
+    filledNow?: number;
+    alreadyAssigned?: number;
+    totalUnscheduled?: number;
+    totalFilled?: number;
+    stillUnscheduled?: number;
+    libraryRuleId?: string;
+    createdContractId?: number;
+    createdPatientId?: string | number;
+    recalculated?: number;
+    needsManual?: number;
+  };
   const run = async (payload: Record<string, unknown>): Promise<ActionResult> => {
-    try { return ((await onAction(payload)) ?? {}) as ActionResult; } catch { return {}; }
+    return ((await onAction(payload)) ?? {}) as ActionResult;
+  };
+  const birthBounds = birthDateBounds(iranLocalDayOffset(0));
+
+  const openEditMember = (m: ContractMember) => {
+    setEditingMember(m);
+    setEFirstName(m.firstName);
+    setELastName(m.lastName);
+    setENid(m.nationalId);
+    setEPhone(m.phone);
+    setEBirthDate(m.birthDate ?? "");
+    setEGender(m.gender);
+    setEMarital(m.maritalStatus ?? "");
+    setEDept(m.department);
+    setECat(m.jobCategory);
+    setEPersonnel(m.personnelCode);
+  };
+
+  const deleteMember = async (m: ContractMember) => {
+    if (!m.serverId) {
+      flash("شناسه سرور عضو موجود نیست.");
+      return;
+    }
+    if (!window.confirm(`«${m.fullName}» از این قرارداد حذف شود؟ پرونده کلینیک (در صورت وجود) حذف نمی‌شود.`)) return;
+    await run({ action: "DELETE_CONTRACT_MEMBER", contractId: contract?.id, memberServerId: m.serverId });
+    flash(`«${m.fullName}» از قرارداد حذف شد.`);
+    setCheckedIds((prev) => prev.filter((id) => id !== m.id));
   };
 
   const stats = useMemo(() => {
@@ -204,6 +327,19 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
     });
   }, [contract, memberSearch, funnelFilter, apptFilter, today]);
 
+  // با تغییر فیلتر، صفحه به اول برگردد
+  useEffect(() => {
+    setFunnelPage(1);
+  }, [memberSearch, funnelFilter, apptFilter, selectedContractId]);
+  useEffect(() => {
+    setSchedulePage(1);
+  }, [scheduleSearch, scheduleFilter, selectedContractId]);
+
+  const pagedFunnelMembers = useMemo(
+    () => slicePage(filteredFunnelMembers, funnelPage, funnelPageSize),
+    [filteredFunnelMembers, funnelPage, funnelPageSize]
+  );
+
   const scheduleMembers = useMemo(() => {
     if (!contract) return [];
     const q = normalizeText(scheduleSearch.trim());
@@ -214,21 +350,49 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
     });
   }, [contract, scheduleSearch, scheduleFilter]);
 
+  const pagedScheduleMembers = useMemo(
+    () => slicePage(scheduleMembers, schedulePage, schedulePageSize),
+    [scheduleMembers, schedulePage, schedulePageSize]
+  );
+
   const attachedLibraryIds = useMemo(() => new Set((contract?.packageRules ?? []).map((r) => r.libraryRuleId).filter(Boolean) as string[]), [contract]);
   const visibleLibrary = useMemo(() => {
     const q = normalizeText(libQuery.trim());
-    return library.filter((r) => !q || normalizeText(`${r.title} ${r.description} ${r.jobCategory} ${r.gender}`).includes(q));
+    // code هم جستجو می‌شود تا LR-001 و مشابه در API mode کار کند
+    return library.filter(
+      (r) =>
+        !q ||
+        normalizeText(`${r.title} ${r.description} ${r.code} ${r.jobCategory} ${r.gender} ${r.pathwayCode}`).includes(q)
+    );
   }, [library, libQuery]);
+
+  // افراد متصل به قانون در حال مشاهده — پیوند منطقی همان matchedRuleTitle است
+  const viewingRuleMembers = useMemo(() => {
+    if (!viewingRule || !contract) return [];
+    const matched = contract.members.filter((m) => m.matchedRuleTitle === viewingRule.title);
+    const q = normalizeText(ruleMemberQuery.trim());
+    if (!q) return matched;
+    return matched.filter((m) =>
+      normalizeText(`${m.fullName} ${m.firstName} ${m.lastName} ${m.nationalId} ${m.personnelCode} ${m.department} ${m.jobCategory}`).includes(q)
+    );
+  }, [viewingRule, contract, ruleMemberQuery]);
+
+  const viewingRuleLib = viewingRule?.libraryRuleId
+    ? library.find((r) => r.id === viewingRule.libraryRuleId)
+    : undefined;
+  const viewingRulePkg = viewingRule
+    ? pathways.find((p) => p.code === viewingRule.pathwayCode)
+    : undefined;
 
   const createModal = createOpen && (
     <div className="fixed inset-0 z-[85] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" onClick={() => setCreateOpen(false)}>
       <div role="dialog" aria-modal="true" aria-label="تعریف قرارداد سازمانی جدید" onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">تعریف قرارداد سازمانی جدید</h2><button type="button" onClick={() => setCreateOpen(false)} aria-label="بستن"><X className="h-4 w-4 text-slate-400" /></button></div>
-        <form onSubmit={async (e) => { e.preventDefault(); const r = (await run({ action: "CREATE_CONTRACT", title: newTitle, organizationName: newOrg, apiEndpoint: newEndpoint, apiKey: newApiKey, defaultPathwayCode: newDefaultPkg, initialDailyCap: Number(newDailyCap) || 20, supervisorName: newSupName, supervisorTitle: newSupTitle, supervisorPhone: newSupPhone, fetchFromApiNow: fetchNowOnCreate })) as { createdContractId?: number }; if (r?.createdContractId) setSelectedContractId(Number(r.createdContractId)); setCreateOpen(false); setNewTitle(""); setNewOrg(""); setNewSupName(""); setNewSupPhone(""); flash(fetchNowOnCreate ? "قرارداد ساخته شد." : "قرارداد جدید ثبت شد."); }} className="space-y-3.5">
+        <form onSubmit={async (e) => { e.preventDefault(); const r = (await run({ action: "CREATE_CONTRACT", title: newTitle, organizationName: newOrg, apiEndpoint: newEndpoint, apiKey: newApiKey, defaultPathwayCode: newDefaultPkg, initialDailyCap: Number(newDailyCap) || 20, supervisorName: newSupName, supervisorTitle: newSupTitle, supervisorPhone: normalizeMobile(newSupPhone), fetchFromApiNow: fetchNowOnCreate })) as { createdContractId?: number }; if (r?.createdContractId) setSelectedContractId(Number(r.createdContractId)); setCreateOpen(false); setNewTitle(""); setNewOrg(""); setNewSupName(""); setNewSupPhone(""); flash(fetchNowOnCreate ? "قرارداد ساخته شد." : "قرارداد جدید ثبت شد."); }} className="space-y-3.5">
           <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">نام سازمان<AppInput required value={newOrg} onChange={(e) => setNewOrg(e.target.value)} placeholder="مثلاً: شرکت فولاد مبارکه" className="app-input mt-1 text-xs" /></label><label className="app-label">عنوان قرارداد<AppInput required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="پایش سلامت سالانه" className="app-input mt-1 text-xs" /></label></div>
           <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">آدرس API خارجی<AppInput dir="ltr" value={newEndpoint} onChange={(e) => setNewEndpoint(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label><label className="app-label">کلید API قرارداد<AppInput dir="ltr" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label></div>
           <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">بسته پایه پیش‌فرض{pathways.length > 0 ? <select value={newDefaultPkg} onChange={(e) => setNewDefaultPkg(e.target.value)} className="app-select mt-1 w-full text-xs">{pathways.map((p) => <option key={p.code} value={p.code}>{p.title}</option>)}</select> : <AppInput value={newDefaultPkg} onChange={(e) => setNewDefaultPkg(e.target.value)} className="app-input mt-1 text-xs" />}</label><label className="app-label">سقف پذیرش روزانه<AppInput type="number" min={1} value={newDailyCap} onChange={(e) => setNewDailyCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
-          <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5"><div className="text-xs font-semibold text-amber-900">ناظر خارجی شرکت</div><div className="grid gap-2 sm:grid-cols-3"><AppInput value={newSupName} onChange={(e) => setNewSupName(e.target.value)} placeholder="نام ناظر" className="app-input text-xs" /><AppInput value={newSupTitle} onChange={(e) => setNewSupTitle(e.target.value)} placeholder="سمت" className="app-input text-xs" /><AppInput dir="ltr" value={newSupPhone} onChange={(e) => setNewSupPhone(e.target.value)} placeholder="موبایل: 0912..." className="app-input font-mono text-left text-xs" /></div></div>
+          <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5"><div className="text-xs font-semibold text-amber-900">ناظر خارجی شرکت</div><div className="grid gap-2 sm:grid-cols-3"><AppInput value={newSupName} onChange={(e) => setNewSupName(e.target.value)} placeholder="نام ناظر" className="app-input text-xs" /><AppInput value={newSupTitle} onChange={(e) => setNewSupTitle(e.target.value)} placeholder="سمت" className="app-input text-xs" /><IranDigitField kind="mobile" value={newSupPhone} onValueChange={setNewSupPhone} placeholder="موبایل: 0912..." className="app-input font-mono text-left text-xs" /></div></div>
           <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={fetchNowOnCreate} onChange={(e) => setFetchNowOnCreate(e.target.checked)} className="accent-teal-700" />دریافت فوری لیست افراد از API و ارسال پیامک تکمیل پروفایل (در این موج پس از ایجاد نادیده گرفته می‌شود)</label>
           <button type="submit" disabled={busy} className="primary-button w-full justify-center py-3">ایجاد قرارداد</button>
         </form>
@@ -269,7 +433,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <select aria-label="انتخاب قرارداد" value={contract.id} onChange={(e) => { setSelectedContractId(Number(e.target.value)); setCheckedIds([]); setExcelPreview(null); }} className="app-select font-semibold text-slate-800">
-                  {contracts.map((c) => <option key={c.id} value={c.id}>{c.organizationName} — {c.title} ({toFaDigits(c.members.length)} نفر)</option>)}
+                  {contracts.map((c) => <option key={c.id} value={c.id}>{c.organizationName} — {c.title} ({toFaDigits(c.memberCount ?? c.members.length)} نفر)</option>)}
                 </select>
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[10px] text-slate-500" dir="ltr">{contract.code}</span>
               </div>
@@ -324,21 +488,112 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                 <button type="button" onClick={() => { setEditApiKey(contract.apiKey); setEditEndpoint(contract.apiEndpoint); setApiEditOpen(true); }} className="secondary-button mt-1"><KeyRound className="h-3.5 w-3.5" />ویرایش کلید</button>
               </div>
             )}
-            <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={sendSmsOnImport} onChange={(e) => setSendSmsOnImport(e.target.checked)} className="accent-teal-700" />برای افراد جدید پیامک لینک تکمیل پروفایل ارسال شود</label>
+            {/* SMS دعوت هنوز از قیف/گروهی است؛ ImportMembers پیامک نمی‌زند — چک‌باکس فقط برای SYNC آینده */}
+            <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={sendSmsOnImport} onChange={(e) => setSendSmsOnImport(e.target.checked)} className="accent-teal-700" />پس از دریافت از API سازمان، پیامک دعوت ارسال شود (ورود دستی/اکسل از قیف پیامک می‌گیرد)</label>
             <div className="flex flex-wrap gap-2">
               <button type="button" disabled={busy} onClick={async () => { const r = await run({ action: "SYNC_CONTRACT_FROM_API", contractId: contract.id, sendInviteSms: sendSmsOnImport }); flash(Number(r.added) > 0 ? `${toFaDigits(r.added)} نفر جدید دریافت شد و برایشان پیامک ارسال گردید.` : "همه افراد قبلاً در قرارداد ثبت شده‌اند."); }} className="primary-button flex-1 justify-center"><RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />دریافت افراد جدید از API</button>
               <button type="button" onClick={() => setManualOpen(!manualOpen)} className="secondary-button"><UserPlus className="h-3.5 w-3.5" />افزودن تکی</button>
             </div>
             {manualOpen && (
-              <form onSubmit={async (e) => { e.preventDefault(); await run({ action: "IMPORT_CONTRACT_MEMBERS", contractId: contract.id, source: "manual", sendInviteSms: sendSmsOnImport, members: [{ personnelCode: `MN-${Date.now().toString().slice(-4)}`, fullName: mName, nationalId: mNid, phone: mPhone, age: Number(mAge) || 35, gender: mGender, department: mDept, jobCategory: mCat }] }); setMName(""); setMNid(""); setMPhone(""); setManualOpen(false); flash("فرد جدید با بسته متناسب سن و جنسیت ثبت شد."); }} className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  // کدملی بدون pad مخفی؛ موبایل پس از نرمال (+98/۹…) به ۰۹ ذخیره می‌شود
+                  const nid = exactNationalIdDigits(mNid);
+                  const phone = normalizeMobile(mPhone);
+                  if (mFirstName.trim().length < 2 || mLastName.trim().length < 2) {
+                    flash("نام و نام‌خانوادگی الزامی است.");
+                    return;
+                  }
+                  if (!isExactIranNationalId(mNid)) {
+                    flash("کدملی را با صفر اول، دقیقاً ۱۰ رقم وارد کنید.");
+                    return;
+                  }
+                  if (!isValidIranMobile(mPhone)) {
+                    flash("موبایل را به‌صورت ۰۹… یا +۹۸ وارد کنید (۱۱ رقم استاندارد).");
+                    return;
+                  }
+                  if (!mBirthDate) {
+                    flash("تاریخ تولد الزامی است.");
+                    return;
+                  }
+                  if (!contract.serverId) {
+                    flash("شناسه سرور قرارداد موجود نیست.");
+                    return;
+                  }
+                  const r = await run({
+                    action: "IMPORT_CONTRACT_MEMBERS",
+                    contractId: contract.id,
+                    contractServerId: contract.serverId,
+                    source: "manual",
+                    members: [
+                      {
+                        firstName: mFirstName.trim(),
+                        lastName: mLastName.trim(),
+                        nationalId: nid,
+                        phone,
+                        birthDate: mBirthDate,
+                        gender: mGender,
+                        maritalStatus: mMarital || null,
+                        department: mDept || null,
+                        jobCategory: mCat || null,
+                        personnelCode: `MN-${Date.now().toString().slice(-4)}`,
+                      },
+                    ],
+                  });
+                  if (!r.added) {
+                    flash(r.results?.[0]?.reason || "ثبت انجام نشد.");
+                    return;
+                  }
+                  setMFirstName("");
+                  setMLastName("");
+                  setMNid("");
+                  setMPhone("");
+                  setMBirthDate("");
+                  setMMarital("");
+                  setManualOpen(false);
+                  const age = ageFromBirthIso(mBirthDate);
+                  flash(`«${displayFullName(mFirstName, mLastName)}» ثبت شد${age != null ? ` (${toFaDigits(age)} ساله)` : ""}.`);
+                }}
+                className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5"
+              >
                 <div className="text-xs font-semibold text-slate-700">ثبت دستی یک نفر</div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <AppInput required placeholder="نام و نام خانوادگی" value={mName} onChange={(e) => setMName(e.target.value)} className="app-input text-xs" />
-                  <AppInput required dir="ltr" placeholder="کد ملی ۱۰ رقمی" value={mNid} onChange={(e) => setMNid(e.target.value)} className="app-input text-left font-mono text-xs" />
-                  <AppInput required dir="ltr" placeholder="موبایل (0912...)" value={mPhone} onChange={(e) => setMPhone(e.target.value)} className="app-input text-left font-mono text-xs" />
-                  <div className="grid grid-cols-2 gap-2"><AppInput type="number" min={18} max={90} value={mAge} onChange={(e) => setMAge(e.target.value)} placeholder="سن" className="app-input text-xs" /><select value={mGender} onChange={(e) => setMGender(e.target.value as "مرد" | "زن")} className="app-select text-xs"><option value="مرد">مرد</option><option value="زن">زن</option></select></div>
-                  <AppInput placeholder="واحد سازمانی" value={mDept} onChange={(e) => setMDept(e.target.value)} className="app-input text-xs" />
-                  <select value={mCat} onChange={(e) => setMCat(e.target.value)} className="app-select text-xs">{JOB_CATEGORIES.filter((c) => c !== "همه").map((c) => <option key={c} value={c}>{c}</option>)}</select>
+                  <AppInput required placeholder="نام *" value={mFirstName} onChange={(e) => setMFirstName(e.target.value)} className="app-input text-xs" />
+                  <AppInput required placeholder="نام‌خانوادگی *" value={mLastName} onChange={(e) => setMLastName(e.target.value)} className="app-input text-xs" />
+                  <IranDigitField kind="nationalId" required placeholder="کد ملی ۱۰ رقمی *" value={mNid} onValueChange={setMNid} className="app-input text-left font-mono text-xs" />
+                  <IranDigitField kind="mobile" required placeholder="موبایل 09… *" value={mPhone} onValueChange={setMPhone} className="app-input text-left font-mono text-xs" />
+                  <label className="app-label text-[10px] sm:col-span-2">
+                    تاریخ تولد *
+                    <PersianDateField
+                      className="mt-1"
+                      value={mBirthDate}
+                      onChange={setMBirthDate}
+                      minDate={birthBounds.minDate}
+                      maxDate={birthBounds.maxDate}
+                      required
+                      aria-label="تاریخ تولد"
+                    />
+                  </label>
+                  <select value={mGender} onChange={(e) => setMGender(e.target.value as "مرد" | "زن")} className="app-select text-xs" required>
+                    <option value="مرد">مرد</option>
+                    <option value="زن">زن</option>
+                  </select>
+                  <select value={mMarital} onChange={(e) => setMMarital(e.target.value)} className="app-select text-xs">
+                    <option value="">تاهل (اختیاری)</option>
+                    {MARITAL_STATUS_OPTIONS.map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </select>
+                  <AppInput placeholder="واحد سازمانی (اختیاری)" value={mDept} onChange={(e) => setMDept(e.target.value)} className="app-input text-xs" />
+                  <select value={mCat} onChange={(e) => setMCat(e.target.value)} className="app-select text-xs">
+                    <option value="">رده شغلی (اختیاری)</option>
+                    {JOB_CATEGORIES.filter((c) => c !== "همه").map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
                 <button type="submit" disabled={busy} className="primary-button w-full justify-center">افزودن به قرارداد</button>
               </form>
@@ -346,20 +601,158 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
           </div>
 
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-6">
-            <div><span className="status-badge status-green">ورود گروهی با اکسل</span><h2 className="mt-1.5 text-sm font-bold text-slate-800">تمپلیت آماده اکسل و بارگذاری لیست</h2><p className="mt-1 text-xs text-slate-500">تمپلیت را دانلود کنید، سازمان پر کند، سپس فایل اکسل یا ردیف‌های کپی‌شده را بارگذاری کنید.</p></div>
+            <div>
+              <span className="status-badge status-green">ورود گروهی با اکسل</span>
+              <h2 className="mt-1.5 text-sm font-bold text-slate-800">تمپلیت آماده اکسل و بارگذاری لیست</h2>
+              <p className="mt-1 text-xs text-slate-500">ستون‌های ستاره‌دار اجباری‌اند؛ تاهل/واحد/رده اختیاری‌اند و مانع ثبت نمی‌شوند.</p>
+            </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => downloadContractExcelTemplate("xls")} className="secondary-button border-teal-200 bg-teal-50/60 text-teal-800"><FileSpreadsheet className="h-4 w-4 text-teal-700" />دانلود تمپلیت اکسل (.xls)</button>
               <button type="button" onClick={() => downloadContractExcelTemplate("csv")} className="secondary-button"><Download className="h-3.5 w-3.5" />دانلود CSV</button>
               <button type="button" onClick={() => fileInputRef.current?.click()} className="primary-button mr-auto"><Upload className="h-4 w-4" />بارگذاری فایل اکسل</button>
-              <input ref={fileInputRef} type="file" accept=".xls,.csv,.tsv,.txt" onChange={async (e) => { const file = e.target.files?.[0]; if (!file) return; setExcelPreview(parseExcelOrCsvText(await file.text())); e.target.value = ""; }} className="hidden" />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xls,.csv,.tsv,.txt"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setImportResults(null);
+                  setExcelPreview(parseExcelOrCsvText(await file.text()));
+                  e.target.value = "";
+                }}
+                className="hidden"
+              />
             </div>
-            <AppTextarea rows={3} value={pasteText} onChange={(e) => setPasteText(e.target.value)} placeholder={"نام، کد ملی، موبایل، سن، جنسیت، واحد، رده شغلی\nسامان نوری, 0074512369, 09123459876, 48, مرد, تعمیرات, عملیات و فنی"} className="app-input text-[11px] leading-6" />
-            {pasteText.trim() && <button type="button" onClick={() => setExcelPreview(parseExcelOrCsvText(pasteText))} className="secondary-button">بررسی ردیف‌ها</button>}
+            <AppTextarea
+              rows={3}
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              placeholder={"نام، نام‌خانوادگی، کدملی، موبایل، تاریخ‌تولد شمسی، جنسیت، تاهل، واحد، رده\nسامان, نوری, 0012345679, 09123459876, 1360/05/12, مرد, مجرد, تعمیرات, عملیات و فنی"}
+              className="app-input text-[11px] leading-6"
+            />
+            {pasteText.trim() && (
+              <button
+                type="button"
+                onClick={() => {
+                  setImportResults(null);
+                  setExcelPreview(parseExcelOrCsvText(pasteText));
+                }}
+                className="secondary-button"
+              >
+                بررسی ردیف‌ها
+              </button>
+            )}
             {excelPreview && (
               <div className="rounded-xl border border-teal-200 bg-teal-50/50 p-3.5 text-xs">
-                <strong className="text-teal-900">{toFaDigits(excelPreview.rows.length)} نفر معتبر{excelPreview.skipped > 0 && ` (${toFaDigits(excelPreview.skipped)} ردیف ناقص رد شد)`}</strong>
-                <div className="mt-2 max-h-32 space-y-1 overflow-y-auto">{excelPreview.rows.map((r, i) => <div key={`${r.nationalId}-${i}`} className="flex items-center justify-between rounded-lg bg-white px-2.5 py-1.5 text-[11px]"><span className="font-semibold text-slate-700">{r.fullName} ({r.gender} · {toFaDigits(r.age)} سال · {r.department})</span><span dir="ltr" className="font-mono text-[10px] text-slate-500">{r.nationalId}</span></div>)}</div>
-                <button type="button" disabled={busy} onClick={async () => { const r = await run({ action: "IMPORT_CONTRACT_MEMBERS", contractId: contract.id, members: excelPreview.rows, source: "excel", sendInviteSms: sendSmsOnImport }); setExcelPreview(null); setPasteText(""); flash(`${toFaDigits(r.added ?? 0)} نفر از اکسل اضافه شد${Number(r.duplicates) ? ` (${toFaDigits(r.duplicates)} تکراری رد شد)` : ""} و پیامک ارسال گردید.`); }} className="primary-button mt-3 w-full justify-center"><Check className="h-4 w-4" />تایید نهایی و افزودن به قرارداد</button>
+                <strong className="text-teal-900">
+                  {toFaDigits(excelPreview.readyCount)} آماده · {toFaDigits(excelPreview.invalidCount)} رد
+                </strong>
+                <div className="mt-2 max-h-56 overflow-auto rounded-lg border border-slate-200 bg-white">
+                  <table className="w-full min-w-[640px] text-right text-[10px]">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-2 py-1.5">#</th>
+                        <th className="px-2 py-1.5">نام</th>
+                        <th className="px-2 py-1.5">نام‌خانوادگی</th>
+                        <th className="px-2 py-1.5">کدملی</th>
+                        <th className="px-2 py-1.5">موبایل</th>
+                        <th className="px-2 py-1.5">تولد</th>
+                        <th className="px-2 py-1.5">جنسیت</th>
+                        <th className="px-2 py-1.5">وضعیت</th>
+                        <th className="px-2 py-1.5">دلیل</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {excelPreview.rows.filter((r) => r.status !== "header").map((r) => (
+                        <tr key={`${r.lineNo}-${r.nationalId}`} className={r.status === "ready" ? "bg-emerald-50/40" : "bg-rose-50/50"}>
+                          <td className="px-2 py-1 tabular-fa">{toFaDigits(r.lineNo)}</td>
+                          <td className="px-2 py-1">{r.firstName}</td>
+                          <td className="px-2 py-1">{r.lastName}</td>
+                          <td className="px-2 py-1 font-mono" dir="ltr">{r.nationalId}</td>
+                          <td className="px-2 py-1 font-mono" dir="ltr">{r.phone}</td>
+                          <td className="px-2 py-1">{r.birthDateIso ? birthIsoToFaLabel(r.birthDateIso) : r.birthDateRaw || "—"}</td>
+                          <td className="px-2 py-1">{r.gender || "—"}</td>
+                          <td className="px-2 py-1 font-semibold">{r.status === "ready" ? "آماده" : "رد"}</td>
+                          <td className="px-2 py-1 text-rose-700">{r.reason ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy || excelPreview.readyCount === 0 || !contract.serverId}
+                  onClick={async () => {
+                    const ready = excelPreview.rows.filter((r) => r.status === "ready");
+                    try {
+                      const r = await run({
+                        action: "IMPORT_CONTRACT_MEMBERS",
+                        contractId: contract.id,
+                        contractServerId: contract.serverId,
+                        source: "excel",
+                        members: ready.map((row) => ({
+                          firstName: row.firstName,
+                          lastName: row.lastName,
+                          nationalId: row.nationalId,
+                          phone: row.phone,
+                          birthDate: row.birthDateIso,
+                          gender: row.gender,
+                          maritalStatus: row.maritalStatus || null,
+                          department: row.department || null,
+                          jobCategory: row.jobCategory || null,
+                          personnelCode: row.personnelCode || null,
+                        })),
+                      });
+                      const byNid = new Map((r.results ?? []).map((x) => [x.nationalId, x]));
+                      setImportResults(
+                        ready.map((row) => {
+                          const hit = byNid.get(row.nationalId);
+                          const st = (hit?.status ?? "rejected") as ImportPreviewRow["status"];
+                          return {
+                            ...row,
+                            status:
+                              st === "imported" || st === "linked" || st === "duplicate" || st === "rejected"
+                                ? st
+                                : "rejected",
+                            reason: hit?.reason ?? row.reason,
+                          };
+                        }),
+                      );
+                      setExcelPreview(null);
+                      setPasteText("");
+                      flash(
+                        `${toFaDigits(r.added ?? 0)} نفر ثبت شد${Number(r.duplicates) ? ` · ${toFaDigits(r.duplicates)} تکراری` : ""}${Number(r.rejected) ? ` · ${toFaDigits(r.rejected)} رد` : ""}.`,
+                      );
+                    } catch (err) {
+                      flash(err instanceof Error ? err.message : "ثبت اکسل ناموفق بود.");
+                    }
+                  }}
+                  className="primary-button mt-3 w-full justify-center"
+                >
+                  <Check className="h-4 w-4" />
+                  تایید نهایی و افزودن به قرارداد
+                </button>
+              </div>
+            )}
+            {importResults && (
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5 text-xs">
+                <strong className="text-slate-800">نتیجه ثبت</strong>
+                <div className="mt-2 max-h-48 overflow-auto">
+                  <table className="w-full text-right text-[10px]">
+                    <thead className="bg-slate-50"><tr><th className="px-2 py-1">نام</th><th className="px-2 py-1">کدملی</th><th className="px-2 py-1">وضعیت</th><th className="px-2 py-1">دلیل</th></tr></thead>
+                    <tbody>
+                      {importResults.map((r) => (
+                        <tr key={`res-${r.nationalId}-${r.lineNo}`}>
+                          <td className="px-2 py-1">{displayFullName(r.firstName, r.lastName)}</td>
+                          <td className="px-2 py-1 font-mono" dir="ltr">{r.nationalId}</td>
+                          <td className="px-2 py-1">{r.status === "imported" ? "ثبت شد" : r.status === "linked" ? "وصل به پرونده" : r.status === "duplicate" ? "تکراری" : "ناموفق"}</td>
+                          <td className="px-2 py-1">{r.reason ?? "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
@@ -375,15 +768,42 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => { setSupName(contract.supervisor.isActive ? contract.supervisor.fullName : ""); setSupTitle(contract.supervisor.title || "مدیر HSE و رفاه کارکنان"); setSupPhone(contract.supervisor.phone || ""); setSupCanSms(contract.supervisor.canSendReminders); setSupEditOpen(!supEditOpen); }} className="secondary-button"><Pencil className="h-3.5 w-3.5" />{contract.supervisor.isActive ? "تغییر ناظر" : "تعریف ناظر"}</button>
+                <button type="button" onClick={() => {
+                  const parts = (contract.supervisor.isActive ? contract.supervisor.fullName : "").trim().split(/\s+/).filter(Boolean);
+                  setSupFirstName(parts[0] ?? "");
+                  setSupLastName(parts.slice(1).join(" "));
+                  setSupTitle(contract.supervisor.title || "مدیر HSE و رفاه کارکنان");
+                  setSupPhone(contract.supervisor.phone || "");
+                  setSupCanSms(contract.supervisor.canSendReminders);
+                  setSupEditOpen(!supEditOpen);
+                }} className="secondary-button"><Pencil className="h-3.5 w-3.5" />{contract.supervisor.isActive ? "تغییر ناظر" : "تعریف ناظر"}</button>
                 <button type="button" onClick={onSwitchToSupervisor} className="primary-button"><ExternalLink className="h-3.5 w-3.5" />مشاهده پنل ناظر</button>
               </div>
             </div>
             {supEditOpen && (
-              <form onSubmit={async (e) => { e.preventDefault(); await run({ action: "UPDATE_CONTRACT_SUPERVISOR", contractId: contract.id, fullName: supName, title: supTitle, phone: supPhone, canSendReminders: supCanSms, isActive: true }); setSupEditOpen(false); flash(`ناظر «${supName}» ثبت شد و ورود با شماره ${toFaDigits(supPhone)} فعال گردید.`); }} className="mt-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50/40 p-4 sm:grid-cols-4">
-                <label className="app-label">نام ناظر<AppInput required value={supName} onChange={(e) => setSupName(e.target.value)} placeholder="نام و نام خانوادگی" className="app-input mt-1 text-xs" /></label>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!contract.serverId) { flash("شناسه سرور قرارداد موجود نیست."); return; }
+                const displayName = `${supFirstName.trim()} ${supLastName.trim()}`.trim();
+                const phoneNorm = normalizeMobile(supPhone);
+                await run({
+                  action: "UPDATE_CONTRACT_SUPERVISOR",
+                  contractId: contract.id,
+                  contractServerId: contract.serverId,
+                  firstName: supFirstName.trim(),
+                  lastName: supLastName.trim(),
+                  title: supTitle,
+                  phone: phoneNorm,
+                  canSendReminders: supCanSms,
+                  isActive: true,
+                });
+                setSupEditOpen(false);
+                flash(`ناظر «${displayName}» ثبت شد و ورود با شماره ${toFaDigits(phoneNorm)} فعال گردید.`);
+              }} className="mt-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50/40 p-4 sm:grid-cols-5">
+                <label className="app-label">نام<AppInput required value={supFirstName} onChange={(e) => setSupFirstName(e.target.value)} placeholder="نام" className="app-input mt-1 text-xs" /></label>
+                <label className="app-label">نام‌خانوادگی<AppInput required value={supLastName} onChange={(e) => setSupLastName(e.target.value)} placeholder="نام‌خانوادگی" className="app-input mt-1 text-xs" /></label>
                 <label className="app-label">سمت<AppInput value={supTitle} onChange={(e) => setSupTitle(e.target.value)} placeholder="مدیر منابع انسانی" className="app-input mt-1 text-xs" /></label>
-                <label className="app-label">موبایل (نام کاربری ورود)<AppInput required dir="ltr" value={supPhone} onChange={(e) => setSupPhone(e.target.value)} placeholder="0912..." className="app-input mt-1 font-mono text-left text-xs" /></label>
+                <label className="app-label">موبایل (نام کاربری ورود)<IranDigitField kind="mobile" required value={supPhone} onValueChange={setSupPhone} placeholder="0912..." className="app-input mt-1 font-mono text-left text-xs" /></label>
                 <div className="flex flex-col justify-end gap-2"><label className="flex items-center gap-1.5 text-[11px] text-slate-600"><input type="checkbox" checked={supCanSms} onChange={(e) => setSupCanSms(e.target.checked)} className="accent-teal-700" />مجوز یادآوری پیامکی</label><button type="submit" disabled={busy} className="primary-button justify-center">ثبت ناظر</button></div>
               </form>
             )}
@@ -396,21 +816,64 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
         <div className="grid gap-5 lg:grid-cols-12">
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-7">
             <div><h2 className="text-sm font-bold text-slate-800">قوانین فعال در این قرارداد</h2><p className="mt-0.5 text-xs text-slate-500">هر فرد به اولین قانونی که با سن، جنسیت و رده شغلی او مطابقت داشته باشد می‌چسبد و ایستگاه‌های همان بسته برایش فعال می‌شود.</p></div>
+            {contract.packageRules.length === 0 && (() => {
+              const def = pathways.find((p) => p.code === contract.defaultPathwayCode) ?? pathways[0];
+              return (
+                <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-3.5 text-xs text-teal-900">
+                  <strong className="block font-bold">قانونی تعریف نشده — همه اعضا مسیر اصلی را می‌گیرند</strong>
+                  <span className="mt-1 block text-teal-800">{def?.title ?? contract.defaultPathwayCode}</span>
+                  {def?.stationCodes?.length ? (
+                    <span className="mt-1.5 block text-[11px] text-teal-700">
+                      ترتیب ایستگاه‌ها: {def.stationCodes.join(" ← ")}
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })()}
             <div className="space-y-2.5 pt-1">
               {contract.packageRules.map((rule, idx) => {
                 const pkg = pathways.find((p) => p.code === rule.pathwayCode);
                 const matchedCount = contract.members.filter((m) => m.matchedRuleTitle === rule.title).length;
                 return (
-                  <div key={rule.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-xs">
+                  <div
+                    key={rule.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => { setViewingRule(rule); setRuleMemberQuery(""); }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setViewingRule(rule);
+                        setRuleMemberQuery("");
+                      }
+                    }}
+                    className="cursor-pointer rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-xs transition hover:border-teal-300 hover:bg-teal-50/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600"
+                    aria-label={`جزئیات قانون ${rule.title}`}
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#20745c] text-[11px] font-bold text-white">{toFaDigits(idx + 1)}</span>
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#20745c] text-[11px] font-bold text-white">{toFaDigits(rule.priority || idx + 1)}</span>
                         <strong className="text-slate-800">{rule.title}</strong>
                         {rule.libraryRuleId && <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-1.5 py-0.5 text-[9px] font-semibold text-teal-700"><BookOpen className="h-2.5 w-2.5" />از کتابخانه</span>}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="status-badge status-teal">{toFaDigits(matchedCount)} نفر متصل</span>
-                        <button type="button" onClick={async () => { await run({ action: "DETACH_CONTRACT_RULE", contractId: contract.id, ruleId: rule.id }); flash("قانون از قرارداد جدا شد و بسته‌های افراد بازمحاسبه گردید."); }} aria-label="حذف از قرارداد" className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button>
+                        <button
+                          type="button"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!contract.serverId) { flash("شناسه سرور قرارداد موجود نیست."); return; }
+                            const r = await run({ action: "DETACH_CONTRACT_RULE", contractId: contract.id, contractServerId: contract.serverId, ruleId: rule.id });
+                            const bits = ["قانون جدا شد"];
+                            if (r.recalculated) bits.push(`${toFaDigits(r.recalculated)} نفر → بدون قانون / مسیر پیش‌فرض`);
+                            if (r.needsManual) bits.push(`${toFaDigits(r.needsManual)} نفر پذیرش‌شده را در نوبت‌دهی دستی عوض کنید`);
+                            flash(bits.join("؛ ") + ".");
+                          }}
+                          aria-label="حذف از قرارداد"
+                          className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600">
@@ -440,7 +903,10 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                   <div key={lib.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-xs">
                     <div className="flex items-start justify-between gap-2">
                       <div><div className="flex items-center gap-1.5"><strong className="text-slate-800">{lib.title}</strong><span className="font-mono text-[9px] text-slate-400" dir="ltr">{lib.code}</span></div><p className="mt-1 text-[10px] leading-5 text-slate-500">{lib.description}</p></div>
-                      <button type="button" disabled={attached || busy} onClick={async () => { await run({ action: "ATTACH_LIBRARY_RULES", contractId: contract.id, libraryRuleIds: [lib.id] }); flash(`قانون «${lib.title}» به قرارداد اضافه و بسته‌ها بازمحاسبه شد.`); }} className={`shrink-0 rounded-lg px-2.5 py-1 text-[10px] font-bold ${attached ? "bg-slate-100 text-slate-400" : "bg-teal-600 text-white hover:bg-teal-700"}`}>{attached ? "✓ متصل" : "افزودن"}</button>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <button type="button" disabled={attached || busy || !contract.serverId} onClick={async () => { await run({ action: "ATTACH_LIBRARY_RULES", contractId: contract.id, contractServerId: contract.serverId, libraryRuleIds: [lib.id] }); flash(`قانون «${lib.title}» به قرارداد اضافه و بسته‌ها بازمحاسبه شد.`); }} className={`rounded-lg px-2.5 py-1 text-[10px] font-bold ${attached ? "bg-slate-100 text-slate-400" : "bg-teal-600 text-white hover:bg-teal-700"}`}>{attached ? "✓ متصل" : "افزودن"}</button>
+                        <button type="button" disabled={busy} onClick={() => { setEditingLibRule(lib); setRuleTitle(lib.title); setRuleDesc(lib.description); setRuleGender(lib.gender); setRuleMinAge(lib.minAge != null ? String(lib.minAge) : ""); setRuleMaxAge(lib.maxAge != null ? String(lib.maxAge) : ""); setRuleJobCat(lib.jobCategory); setRulePathway(lib.pathwayCode); setSaveToLibrary(true); }} className="rounded-lg px-2 py-0.5 text-[10px] font-semibold text-teal-700 hover:bg-teal-50" aria-label="ویرایش قانون"><Pencil className="ml-0.5 inline h-3 w-3" />ویرایش</button>
+                      </div>
                     </div>
                     <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] text-slate-500"><span className="rounded bg-white px-1.5 py-0.5 border border-slate-100">{lib.gender}</span><span className="rounded bg-white px-1.5 py-0.5 border border-slate-100">{lib.minAge !== null ? `${toFaDigits(lib.minAge)}+` : "همه سنین"}</span><span className="rounded bg-white px-1.5 py-0.5 border border-slate-100">{lib.jobCategory}</span></div>
                   </div>
@@ -455,11 +921,15 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                 flash("قانون کتابخانه به‌روزرسانی شد و در همه قراردادهای متصل اعمال گردید.");
                 setEditingLibRule(null);
               } else if (saveToLibrary) {
+                if (!contract.serverId) { flash("شناسه سرور قرارداد موجود نیست."); return; }
                 const r = (await run({ action: "UPSERT_LIBRARY_RULE", rule: ruleData })) as { libraryRuleId?: string };
-                await run({ action: "ATTACH_LIBRARY_RULES", contractId: contract.id, libraryRuleIds: [r.libraryRuleId] });
+                if (r?.libraryRuleId) {
+                  await run({ action: "ATTACH_LIBRARY_RULES", contractId: contract.id, contractServerId: contract.serverId, libraryRuleIds: [r.libraryRuleId] });
+                }
                 flash("قانون جدید در کتابخانه سیستم ذخیره و به این قرارداد متصل شد.");
               } else {
-                await run({ action: "SAVE_CONTRACT_PACKAGE_RULES", contractId: contract.id, saveToLibrary: false, ruleDescription: ruleDesc, packageRules: [{ id: `rule-${Date.now()}`, title: ruleTitle, gender: ruleGender, minAge: ruleMinAge !== "" ? Number(ruleMinAge) : null, maxAge: ruleMaxAge !== "" ? Number(ruleMaxAge) : null, jobCategory: ruleJobCat, pathwayCode: rulePathway, priority: contract.packageRules.length + 1 } as ContractPackageRule, ...contract.packageRules] });
+                if (!contract.serverId) { flash("شناسه سرور قرارداد موجود نیست."); return; }
+                await run({ action: "SAVE_CONTRACT_PACKAGE_RULES", contractId: contract.id, contractServerId: contract.serverId, saveToLibrary: false, ruleDescription: ruleDesc, packageRules: [{ id: `rule-${Date.now()}`, title: ruleTitle, gender: ruleGender, minAge: ruleMinAge !== "" ? Number(ruleMinAge) : null, maxAge: ruleMaxAge !== "" ? Number(ruleMaxAge) : null, jobCategory: ruleJobCat, pathwayCode: rulePathway, priority: contract.packageRules.length + 1 } as ContractPackageRule, ...contract.packageRules] });
                 flash("قانون فقط برای همین قرارداد ثبت شد.");
               }
               setRuleTitle(""); setRuleDesc("");
@@ -538,8 +1008,9 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div><h3 className="text-sm font-bold text-slate-800">تعیین دستی نوبت اشخاص و ورود به کلینیک</h3><p className="text-xs text-slate-500">هر فردی را روی تاریخ انتخابی فیکس کنید تا از سقف همان روز کسر شود.</p></div>
+              <div><h3 className="text-sm font-bold text-slate-800">تعیین دستی نوبت اشخاص و ورود به کلینیک</h3><p className="text-xs text-slate-500">هر فردی را روی تاریخ انتخابی فیکس کنید تا از سقف همان روز کسر شود. بستهٔ افراد پذیرش‌شده را اینجا عوض کنید.</p></div>
               <div className="flex flex-wrap items-center gap-2">
+                <button type="button" onClick={() => exportContractReportExcel(contract)} className="secondary-button py-1 text-[10px]"><Download className="h-3.5 w-3.5" />خروجی اکسل</button>
                 <label className="flex items-center gap-1.5 text-xs text-slate-600">تاریخ پین<PersianDateField className="min-w-40" value={pinDateDraft} onChange={setPinDateDraft} showHolidays placeholder="تاریخ پین" aria-label="تاریخ پین" /></label>
                 <select value={scheduleFilter} onChange={(e) => setScheduleFilter(e.target.value as typeof scheduleFilter)} className="app-select text-xs"><option value="all">همه ({toFaDigits(contract.members.length)})</option><option value="unscheduled">فقط بدون نوبت ({toFaDigits(stats.unscheduled)})</option><option value="scheduled">دارای نوبت</option></select>
                 <AppInput value={scheduleSearch} onChange={(e) => setScheduleSearch(e.target.value)} placeholder="جست‌وجوی نام..." className="app-select text-xs" />
@@ -549,22 +1020,33 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
               <table className="w-full text-right text-xs">
                 <thead><tr className="border-b border-slate-100 text-[11px] text-slate-400"><th className="pb-2.5 pr-2">نام و واحد</th><th className="pb-2.5">سن / جنس</th><th className="pb-2.5">بسته سلامت</th><th className="pb-2.5">پیش‌ثبت‌نام</th><th className="pb-2.5">وضعیت نوبت</th><th className="pb-2.5">عملیات</th></tr></thead>
                 <tbody className="divide-y divide-slate-100">
-                  {scheduleMembers.map((m) => (
+                  {pagedScheduleMembers.map((m) => (
                     <tr key={m.id} className="hover:bg-slate-50/70">
                       <td className="py-2.5 pr-2"><div className="font-semibold text-slate-800">{m.fullName}</div><div className="text-[10px] text-slate-400">{m.department} · {toFaDigits(m.phone)}</div></td>
                       <td className="py-2.5 text-slate-600">{m.gender} · {toFaDigits(m.age)} سال</td>
-                      <td className="py-2.5"><select aria-label={`بسته ${m.fullName}`} value={m.assignedPathwayCode} onChange={(e) => run({ action: "OVERRIDE_MEMBER_PACKAGE", contractId: contract.id, memberId: m.id, pathwayCode: e.target.value })} className="app-select py-1 text-[11px]">{pathways.map((p) => <option key={p.code} value={p.code}>{p.title}</option>)}</select></td>
+                      <td className="py-2.5"><select aria-label={`بسته ${m.fullName}`} value={m.assignedPathwayCode || pathways[0]?.code || "FULL_CHECKUP"} onChange={(e) => { const code = e.target.value; const title = pathways.find((p) => p.code === code)?.title ?? resolvePackageDisplayTitle(code); void run({ action: "OVERRIDE_MEMBER_PACKAGE", contractId: contract.id, memberId: m.id, memberServerId: m.serverId, pathwayCode: code, pathwayTitle: title }); }} className="app-select py-1 text-[11px]">{pathways.map((p) => <option key={p.code} value={p.code}>{p.title}</option>)}</select></td>
                       <td className="py-2.5"><span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium ${ONBOARDING_META[m.onboardingStage].badgeClass}`}>{ONBOARDING_META[m.onboardingStage].short}</span></td>
                       <td className="py-2.5"><span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium ${APPOINTMENT_META[m.appointmentStatus].badgeClass}`}>{APPOINTMENT_META[m.appointmentStatus].short}</span>{m.scheduledLabel && <div className="mt-0.5 text-[10px] text-slate-500">{m.scheduledLabel}</div>}</td>
                       <td className="py-2.5"><div className="flex flex-wrap items-center gap-1.5">
+                        <button type="button" disabled={busy} onClick={() => openEditMember(m)} className="secondary-button py-1 text-[10px]" aria-label={`ویرایش ${m.fullName}`}><Pencil className="h-3 w-3 text-slate-600" />ویرایش</button>
+                        <button type="button" disabled={busy} onClick={() => void deleteMember(m)} className="secondary-button py-1 text-[10px] text-rose-700" aria-label={`حذف ${m.fullName}`}><Trash2 className="h-3 w-3" />حذف</button>
                         <button type="button" disabled={busy} onClick={async () => { await run({ action: "PIN_MEMBER_DATE", contractId: contract.id, memberId: m.id, date: pinDateDraft }); flash(`نوبت دستی «${m.fullName}» ثبت شد.`); }} className="secondary-button py-1 text-[10px]"><Pin className="h-3 w-3 text-purple-600" />فیکس در این تاریخ</button>
-                        {m.appointmentStatus !== "unscheduled" && m.appointmentStatus !== "visit_done" && !m.linkedPatientId && <button type="button" disabled={busy} onClick={async () => { const r = await run({ action: "ADMIT_CONTRACT_MEMBER_TO_CLINIC", contractId: contract.id, memberId: m.id }); flash(`«${m.fullName}» با بسته «${m.assignedPathwayTitle}» وارد جریان کلینیک شد.`); if (r?.createdPatientId) onOpenPatientRecord(Number(r.createdPatientId)); }} className="secondary-button border-teal-200 bg-teal-50 py-1 text-[10px] text-teal-800"><UserCheck className="h-3 w-3" />پذیرش به کلینیک</button>}
+                        {m.appointmentStatus !== "unscheduled" && m.appointmentStatus !== "visit_done" && !m.linkedPatientId && <button type="button" disabled={busy} onClick={async () => { const r = await run({ action: "ADMIT_CONTRACT_MEMBER_TO_CLINIC", contractId: contract.id, memberId: m.id, memberServerId: m.serverId }); const pkg = resolvePackageDisplayTitle(m.assignedPathwayCode, m.assignedPathwayTitle); flash(`«${m.fullName}» با بسته «${pkg}» وارد جریان کلینیک شد.`); const pid = String(r?.createdPatientId ?? ""); const local = snapshot.patients.find((p) => p.serverId === pid); if (local) onOpenPatientRecord(local.id); }} className="secondary-button border-teal-200 bg-teal-50 py-1 text-[10px] text-teal-800"><UserCheck className="h-3 w-3" />پذیرش به کلینیک</button>}
                         {m.linkedPatientId && <button type="button" onClick={() => onOpenPatientRecord(m.linkedPatientId!)} className="text-[10px] font-semibold text-teal-700 hover:underline">پرونده ←</button>}
                       </div></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              <ListPager
+                page={schedulePage}
+                pageSize={schedulePageSize}
+                totalCount={scheduleMembers.length}
+                onPageChange={setSchedulePage}
+                onPageSizeChange={setSchedulePageSize}
+                itemLabel="نفر"
+                disabled={membersBusy || busy}
+              />
             </div>
           </div>
         </div>
@@ -593,8 +1075,9 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
           <div className="grid gap-5 lg:grid-cols-12">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 lg:col-span-8">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-bold text-slate-800">جزئیات تک‌به‌تک افراد ({toFaDigits(filteredFunnelMembers.length)} نفر)</h2>
+                <h2 className="text-sm font-bold text-slate-800">جزئیات تک‌به‌تک افراد ({toFaDigits(filteredFunnelMembers.length)} نفر){membersBusy ? " · در حال بارگذاری…" : ""}</h2>
                 <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => exportContractReportExcel(contract)} className="secondary-button py-1 text-[10px]"><Download className="h-3.5 w-3.5" />خروجی اکسل</button>
                   <select value={funnelFilter} onChange={(e) => setFunnelFilter(e.target.value as FunnelFilter)} className="app-select text-xs"><option value="all">همه مراحل</option><option value="not_sent">پیامک‌نشده ({toFaDigits(stats.notSent)})</option><option value="sms_sent">بازنکرده لینک ({toFaDigits(stats.smsSentOnly)})</option><option value="opened_any">بازکنندگان لینک ({toFaDigits(stats.openedAny)})</option><option value="logged_any">لاگین‌کردگان ({toFaDigits(stats.loggedAny)})</option><option value="abandoned">رهاکردگان وسط کار ({toFaDigits(stats.abandoned)})</option><option value="completed">تکمیل‌شده ({toFaDigits(stats.completed)})</option></select>
                   <select value={apptFilter} onChange={(e) => setApptFilter(e.target.value as ApptFilter)} className="app-select text-xs"><option value="all">همه نوبت‌ها</option><option value="unscheduled">فراخوان‌نشده</option><option value="today">نوبت امروز</option><option value="pinned">دستی (پین)</option><option value="auto_scheduled">فراخوان خودکار</option><option value="visited">مراجعه‌کرده</option></select>
                   <label className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs"><Search className="h-3.5 w-3.5 text-slate-400" /><AppInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="نام، کد ملی..." className="w-28 bg-transparent outline-none" /></label>
@@ -602,34 +1085,78 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
               </div>
               <div className="mt-4 max-h-[520px] overflow-auto">
                 <table className="w-full text-right text-xs">
-                  <thead className="sticky top-0 bg-white"><tr className="border-b border-slate-100 text-[11px] text-slate-400"><th className="pb-2 pr-1"><input type="checkbox" aria-label="انتخاب همه" checked={filteredFunnelMembers.length > 0 && checkedIds.length === filteredFunnelMembers.length} onChange={(e) => setCheckedIds(e.target.checked ? filteredFunnelMembers.map((m) => m.id) : [])} className="accent-teal-700" /></th><th className="pb-2">فرد و موبایل</th><th className="pb-2">وضعیت پیش‌ثبت‌نام</th><th className="pb-2">بسته سلامت</th><th className="pb-2">نوبت</th><th className="pb-2">لینک</th></tr></thead>
+                  <thead className="sticky top-0 bg-white"><tr className="border-b border-slate-100 text-[11px] text-slate-400"><th className="pb-2 pr-1"><input type="checkbox" aria-label="انتخاب همه" checked={filteredFunnelMembers.length > 0 && checkedIds.length === filteredFunnelMembers.length} onChange={(e) => setCheckedIds(e.target.checked ? filteredFunnelMembers.map((m) => m.id) : [])} className="accent-teal-700" /></th><th className="pb-2">فرد و موبایل</th><th className="pb-2">وضعیت پیش‌ثبت‌نام</th><th className="pb-2">بسته سلامت</th><th className="pb-2">نوبت</th><th className="pb-2">لینک</th><th className="pb-2">عملیات</th></tr></thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredFunnelMembers.map((m) => (
+                    {pagedFunnelMembers.map((m) => (
                       <tr key={m.id} className="hover:bg-slate-50/70">
                         <td className="py-2.5 pr-1"><input type="checkbox" checked={checkedIds.includes(m.id)} onChange={(e) => setCheckedIds((prev) => e.target.checked ? [...prev, m.id] : prev.filter((id) => id !== m.id))} className="accent-teal-700" /></td>
-                        <td className="py-2.5"><div className="font-semibold text-slate-800">{m.fullName} <span className="text-[10px] font-normal text-slate-400">({m.gender} · {toFaDigits(m.age)})</span></div><div className="text-[10px] text-slate-400">{toFaDigits(m.phone)} · {m.department}</div></td>
+                        <td className="py-2.5"><div className="font-semibold text-slate-800">{m.fullName} <span className="text-[10px] font-normal text-slate-400">({m.gender} · {toFaDigits(m.age)})</span></div><div className="text-[10px] text-slate-400">{toFaDigits(m.phone)} · {m.department}</div><div className="text-[10px] text-slate-400">کدملی: {toFaDigits(m.nationalId)}</div></td>
                         <td className="py-2.5"><div className="flex flex-wrap items-center gap-1.5"><span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium ${ONBOARDING_META[m.onboardingStage].badgeClass}`}>{ONBOARDING_META[m.onboardingStage].label}</span><span className="text-[10px] text-slate-400">({toFaDigits(m.smsInviteCount)} پیامک)</span></div>{m.onboardingStage === "abandoned" && <div className="mt-1 flex items-center gap-2 text-[10px] text-amber-800"><span className="inline-block h-1.5 w-16 overflow-hidden rounded-full bg-amber-100"><span className="block h-full bg-amber-500" style={{ width: `${m.profileProgressPct}%` }} /></span><span>{toFaDigits(m.profileProgressPct)}٪ — توقف در {m.abandonedAtStep}</span></div>}{m.onboardingStage === "completed" && m.profileCompletedAt && <div className="mt-0.5 text-[10px] text-emerald-700">تکمیل در ساعت {formatFaTime(m.profileCompletedAt)}</div>}</td>
-                        <td className="py-2.5"><div className="text-[11px] font-medium text-slate-700">{m.assignedPathwayTitle}</div><div className="text-[9px] text-slate-400">{m.matchedRuleTitle}</div></td>
+                        <td className="py-2.5"><div className="text-[11px] font-medium text-slate-700">{resolvePackageDisplayTitle(m.assignedPathwayCode, m.assignedPathwayTitle)}</div><div className="text-[9px] text-slate-400">{m.matchedRuleTitle}</div></td>
                         <td className="py-2.5"><span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium ${APPOINTMENT_META[m.appointmentStatus].badgeClass}`}>{APPOINTMENT_META[m.appointmentStatus].short}</span>{m.scheduledLabel && <div className="mt-0.5 text-[10px] text-slate-500">{m.scheduledLabel}</div>}</td>
                         <td className="py-2.5"><button type="button" onClick={() => setBanner(`لینک اختصاصی ${m.fullName}: ${m.inviteToken}`)} className="secondary-button py-1 text-[10px]"><Link2 className="h-3 w-3 text-teal-700" />مشاهده</button></td>
+                        <td className="py-2.5"><div className="flex flex-wrap items-center gap-1">
+                          {/* دعوت قالبی کاوه‌نگار به شماره همین فرد */}
+                          <button type="button" disabled={busy || !m.serverId || !contract.serverId} onClick={async () => {
+                            if (!m.serverId || !contract.serverId) { flash("شناسه سرور عضو یا قرارداد موجود نیست."); return; }
+                            await run({
+                              action: "SEND_CONTRACT_BULK_SMS",
+                              contractId: contract.id,
+                              contractServerId: contract.serverId,
+                              memberServerIds: [m.serverId],
+                              campaignTitle: `دعوت فردی — ${m.fullName}`,
+                            });
+                            flash(`پیامک دعوت برای «${m.fullName}» ارسال شد.`);
+                          }} className="secondary-button py-1 text-[10px] text-teal-800" aria-label={`پیامک دعوت ${m.fullName}`}><Send className="h-3 w-3" />پیامک</button>
+                          <button type="button" disabled={busy} onClick={() => openEditMember(m)} className="secondary-button py-1 text-[10px]" aria-label={`ویرایش ${m.fullName}`}><Pencil className="h-3 w-3" /></button>
+                          <button type="button" disabled={busy} onClick={() => void deleteMember(m)} className="secondary-button py-1 text-[10px] text-rose-700" aria-label={`حذف ${m.fullName}`}><Trash2 className="h-3 w-3" /></button>
+                        </div></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              <ListPager
+                page={funnelPage}
+                pageSize={funnelPageSize}
+                totalCount={filteredFunnelMembers.length}
+                onPageChange={setFunnelPage}
+                onPageSizeChange={setFunnelPageSize}
+                itemLabel="نفر"
+                disabled={membersBusy || busy}
+              />
             </div>
 
             <div className="space-y-4 lg:col-span-4">
-              <form onSubmit={async (e) => { e.preventDefault(); const recipients = checkedIds.length > 0 ? contract.members.filter((m) => checkedIds.includes(m.id)) : filteredFunnelMembers; if (!recipients.length) return; await run({ action: "SEND_CONTRACT_BULK_SMS", contractId: contract.id, memberIds: recipients.map((m) => m.id), campaignTitle: smsCampaign, audienceLabel: checkedIds.length > 0 ? `${toFaDigits(checkedIds.length)} نفر انتخاب دستی` : "گروه فیلتر شده", messageTemplate: smsText }); setCheckedIds([]); flash(`پیامک گروهی برای ${toFaDigits(recipients.length)} نفر ارسال شد.`); }} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!contract.serverId) { flash("شناسه سرور قرارداد موجود نیست."); return; }
+                const recipients = checkedIds.length > 0
+                  ? contract.members.filter((m) => checkedIds.includes(m.id))
+                  : filteredFunnelMembers;
+                const memberServerIds = recipients.map((m) => m.serverId).filter((id): id is string => Boolean(id));
+                if (!memberServerIds.length) { flash("هیچ گیرنده‌ای با شناسه سرور یافت نشد."); return; }
+                await run({
+                  action: "SEND_CONTRACT_BULK_SMS",
+                  contractId: contract.id,
+                  contractServerId: contract.serverId,
+                  memberServerIds,
+                  campaignTitle: smsCampaign,
+                  audienceLabel: checkedIds.length > 0 ? `${toFaDigits(checkedIds.length)} نفر انتخاب دستی` : "گروه فیلتر شده",
+                });
+                setCheckedIds([]);
+                flash(`پیامک گروهی برای ${toFaDigits(memberServerIds.length)} نفر ارسال شد.`);
+              }} className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
                 <div className="flex items-center justify-between"><h3 className="text-sm font-bold text-slate-800">ارسال پیامک گروهی</h3><span className="status-badge status-teal">{toFaDigits(checkedIds.length > 0 ? checkedIds.length : filteredFunnelMembers.length)} گیرنده</span></div>
                 <div className="flex flex-wrap gap-1.5">
-                  <button type="button" onClick={() => { setFunnelFilter("abandoned"); setApptFilter("all"); setCheckedIds([]); setSmsCampaign("پیگیری رهاکردگان"); setSmsText("{نام} عزیز، فرم پیش‌ثبت‌نام شما نیمه‌تمام است. از همان‌جا ادامه دهید: {لینک}"); }} className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-800">رهاکردگان ({toFaDigits(stats.abandoned)})</button>
-                  <button type="button" onClick={() => { setFunnelFilter("sms_sent"); setApptFilter("all"); setCheckedIds([]); setSmsCampaign("یادآوری بازنکردگان"); setSmsText("{نام} عزیز، هنوز لینک چکاپ {شرکت} را باز نکرده‌اید: {لینک}"); }} className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-semibold text-sky-800">بازنکردگان ({toFaDigits(stats.smsSentOnly)})</button>
-                  <button type="button" onClick={() => { setFunnelFilter("all"); setApptFilter("today"); setCheckedIds([]); setSmsCampaign("یادآوری نوبت امروز"); setSmsText("{نام} گرامی، یادآوری نوبت معاینه امروز شما در کلینیک نبض."); }} className="rounded-lg border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-semibold text-teal-800">نوبت امروز ({toFaDigits(stats.scheduledToday)})</button>
+                  <button type="button" onClick={() => { setFunnelFilter("abandoned"); setApptFilter("all"); setCheckedIds([]); setSmsCampaign("پیگیری رهاکردگان"); }} className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-800">رهاکردگان ({toFaDigits(stats.abandoned)})</button>
+                  <button type="button" onClick={() => { setFunnelFilter("sms_sent"); setApptFilter("all"); setCheckedIds([]); setSmsCampaign("یادآوری بازنکردگان"); }} className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-semibold text-sky-800">بازنکردگان ({toFaDigits(stats.smsSentOnly)})</button>
+                  <button type="button" onClick={() => { setFunnelFilter("all"); setApptFilter("today"); setCheckedIds([]); setSmsCampaign("یادآوری نوبت امروز"); }} className="rounded-lg border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-semibold text-teal-800">نوبت امروز ({toFaDigits(stats.scheduledToday)})</button>
                 </div>
                 <label className="app-label">عنوان ارسال<AppInput required value={smsCampaign} onChange={(e) => setSmsCampaign(e.target.value)} className="app-input mt-1 text-xs" /></label>
-                <label className="app-label">متن پیامک<AppTextarea rows={3} required value={smsText} onChange={(e) => setSmsText(e.target.value)} className="app-input mt-1 text-xs leading-6" /></label>
-                <button type="submit" disabled={busy || (checkedIds.length === 0 && filteredFunnelMembers.length === 0)} className="primary-button w-full justify-center"><Send className="h-3.5 w-3.5" />ارسال پیامک گروهی</button>
+                {/* متن آزاد عمداً نیست — فقط قالب Invite کاوه‌نگار (نام + لینک دعوت) */}
+                <p className="rounded-xl border border-teal-100 bg-teal-50/70 px-3 py-2 text-[11px] leading-5 text-teal-900">ارسال با قالب کاوه‌نگار (نام + لینک دعوت). متن آزاد از این صفحه ارسال نمی‌شود.</p>
+                <button type="submit" disabled={busy || (checkedIds.length === 0 && filteredFunnelMembers.length === 0) || !contract.serverId} className="primary-button w-full justify-center"><Send className="h-3.5 w-3.5" />ارسال پیامک گروهی</button>
               </form>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -640,6 +1167,210 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {viewingRule && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`جزئیات قانون ${viewingRule.title}`}
+          onClick={() => setViewingRule(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#20745c] text-[11px] font-bold text-white">{toFaDigits(viewingRule.priority)}</span>
+                  <h3 className="text-sm font-bold text-slate-800">{viewingRule.title}</h3>
+                  {viewingRule.libraryRuleId && (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-1.5 py-0.5 text-[9px] font-semibold text-teal-700">
+                      <BookOpen className="h-2.5 w-2.5" />از کتابخانه{viewingRuleLib?.code ? ` · ${viewingRuleLib.code}` : ""}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">فقط نمایش — افراد متصل با عنوان قانون مطابقت داده شده‌اند.</p>
+              </div>
+              <button type="button" onClick={() => setViewingRule(null)} aria-label="بستن" className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto px-5 py-4">
+              <div className="flex flex-wrap gap-1.5 text-[11px] text-slate-600">
+                <span className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5">جنسیت: <strong>{viewingRule.gender}</strong></span>
+                <span className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5">سن: <strong>{viewingRule.minAge !== null ? `از ${toFaDigits(viewingRule.minAge)}` : "هر سنی"} {viewingRule.maxAge !== null ? `تا ${toFaDigits(viewingRule.maxAge)}` : "به بالا"}</strong></span>
+                <span className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5">رده شغلی: <strong>{viewingRule.jobCategory || "همه"}</strong></span>
+                <span className="rounded border border-teal-200 bg-teal-50 px-2 py-0.5 font-semibold text-teal-800">بسته: {viewingRulePkg?.title ?? viewingRule.pathwayCode}</span>
+              </div>
+
+              {viewingRuleLib?.description ? (
+                <p className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-600">{viewingRuleLib.description}</p>
+              ) : null}
+
+              {viewingRulePkg?.stationCodes?.length ? (
+                <div>
+                  <div className="mb-1.5 text-[11px] font-semibold text-slate-700">ترتیب ایستگاه‌ها</div>
+                  <div className="flex flex-wrap gap-1">
+                    {viewingRulePkg.stationCodes.map((code, sIdx) => (
+                      <span key={`${viewingRule.id}-detail-${code}`} className="rounded-md bg-teal-50 px-2 py-0.5 text-[10px] text-teal-800">
+                        {toFaDigits(sIdx + 1)}. {stationLabel(code)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-[11px] font-semibold text-slate-700">
+                    افراد متصل ({toFaDigits(contract.members.filter((m) => m.matchedRuleTitle === viewingRule.title).length)})
+                  </div>
+                  <label className="flex min-w-[12rem] flex-1 items-center gap-1.5 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] sm:max-w-xs">
+                    <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    <AppInput
+                      value={ruleMemberQuery}
+                      onChange={(e) => setRuleMemberQuery(e.target.value)}
+                      placeholder="جست‌وجوی نام یا کدملی..."
+                      className="w-full bg-transparent outline-none"
+                    />
+                  </label>
+                </div>
+
+                {viewingRuleMembers.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 py-6 text-center text-[11px] text-slate-500">
+                    {ruleMemberQuery.trim()
+                      ? "نتیجه‌ای برای این جست‌وجو نیست."
+                      : "هنوز کسی به این قانون وصل نشده."}
+                  </div>
+                ) : (
+                  <div className="max-h-64 overflow-auto rounded-xl border border-slate-200">
+                    <table className="w-full min-w-[32rem] text-right text-[11px]">
+                      <thead className="sticky top-0 bg-slate-50 text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2 font-semibold">نام</th>
+                          <th className="px-3 py-2 font-semibold">سن</th>
+                          <th className="px-3 py-2 font-semibold">جنسیت</th>
+                          <th className="px-3 py-2 font-semibold">بخش / شغل</th>
+                          <th className="px-3 py-2 font-semibold">پیش‌ثبت‌نام</th>
+                          <th className="px-3 py-2 font-semibold">بسته</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {viewingRuleMembers.map((m) => {
+                          const stage = ONBOARDING_META[m.onboardingStage];
+                          return (
+                            <tr key={m.id} className="border-t border-slate-100 text-slate-700">
+                              <td className="px-3 py-2 font-medium text-slate-800">{m.fullName || displayFullName(m.firstName, m.lastName)}</td>
+                              <td className="px-3 py-2">{toFaDigits(m.age)}</td>
+                              <td className="px-3 py-2">{m.gender}</td>
+                              <td className="px-3 py-2">{[m.department, m.jobCategory].filter(Boolean).join(" · ") || "—"}</td>
+                              <td className="px-3 py-2">
+                                <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${stage?.badgeClass ?? "bg-slate-100 text-slate-600"}`}>
+                                  {stage?.short ?? m.onboardingStage}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-teal-800">{m.assignedPathwayTitle || m.assignedPathwayCode || "—"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 px-5 py-3">
+              <button type="button" onClick={() => setViewingRule(null)} className="secondary-button w-full justify-center sm:w-auto">بستن</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" role="dialog" aria-modal="true" aria-label="ویرایش عضو قرارداد">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!editingMember.serverId) {
+                flash("شناسه سرور عضو موجود نیست.");
+                return;
+              }
+              const nid = exactNationalIdDigits(eNid);
+              const phone = normalizeMobile(ePhone);
+              if (eFirstName.trim().length < 2 || eLastName.trim().length < 2) {
+                flash("نام و نام‌خانوادگی الزامی است.");
+                return;
+              }
+              if (!isExactIranNationalId(eNid)) {
+                flash("کدملی را با صفر اول، دقیقاً ۱۰ رقم وارد کنید.");
+                return;
+              }
+              if (!isValidIranMobile(ePhone)) {
+                flash("موبایل نامعتبر است.");
+                return;
+              }
+              if (!eBirthDate) {
+                flash("تاریخ تولد الزامی است.");
+                return;
+              }
+              await run({
+                action: "UPDATE_CONTRACT_MEMBER",
+                contractId: contract.id,
+                memberServerId: editingMember.serverId,
+                firstName: eFirstName.trim(),
+                lastName: eLastName.trim(),
+                nationalId: nid,
+                phone,
+                birthDate: eBirthDate,
+                gender: eGender,
+                maritalStatus: eMarital || null,
+                department: eDept || null,
+                jobCategory: eCat || null,
+                personnelCode: ePersonnel || null,
+              });
+              flash(`«${displayFullName(eFirstName, eLastName)}» به‌روز شد.`);
+              setEditingMember(null);
+            }}
+            className="w-full max-w-lg space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-800">ویرایش عضو قرارداد</h3>
+              <button type="button" onClick={() => setEditingMember(null)} aria-label="بستن" className="rounded-lg p-1 text-slate-400 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="app-label">نام<AppInput required value={eFirstName} onChange={(ev) => setEFirstName(ev.target.value)} className="app-input mt-1 text-xs" /></label>
+              <label className="app-label">نام‌خانوادگی<AppInput required value={eLastName} onChange={(ev) => setELastName(ev.target.value)} className="app-input mt-1 text-xs" /></label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="app-label">کدملی<IranDigitField kind="nationalId" value={eNid} onValueChange={setENid} className="app-input mt-1 font-mono text-left text-xs" /></label>
+              <label className="app-label">موبایل<IranDigitField kind="mobile" value={ePhone} onValueChange={setEPhone} className="app-input mt-1 font-mono text-left text-xs" /></label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="app-label">تاریخ تولد<PersianDateField className="mt-1" value={eBirthDate} onChange={setEBirthDate} minDate={birthBounds.minDate} maxDate={birthBounds.maxDate} /></label>
+              <label className="app-label">جنسیت<select value={eGender} onChange={(ev) => setEGender(ev.target.value as "مرد" | "زن")} className="app-select mt-1 w-full text-xs"><option value="مرد">مرد</option><option value="زن">زن</option></select></label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="app-label">وضعیت تأهل<select value={eMarital} onChange={(ev) => setEMarital(ev.target.value)} className="app-select mt-1 w-full text-xs"><option value="">—</option>{MARITAL_STATUS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}</select></label>
+              <label className="app-label">کد پرسنلی<AppInput value={ePersonnel} onChange={(ev) => setEPersonnel(ev.target.value)} className="app-input mt-1 text-xs" /></label>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="app-label">واحد سازمانی<AppInput value={eDept} onChange={(ev) => setEDept(ev.target.value)} className="app-input mt-1 text-xs" /></label>
+              <label className="app-label">رده شغلی<select value={eCat} onChange={(ev) => setECat(ev.target.value)} className="app-select mt-1 w-full text-xs"><option value="">—</option>{JOB_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}</select></label>
+            </div>
+            {editingMember.linkedPatientId ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">این عضو پذیرش شده است؛ تغییر بسته فقط از تب نوبت‌دهی (تعیین دستی) انجام می‌شود.</p>
+            ) : null}
+            <div className="flex gap-2 pt-1">
+              <button type="submit" disabled={busy} className="primary-button flex-1 justify-center">ذخیره تغییرات</button>
+              <button type="button" onClick={() => setEditingMember(null)} className="secondary-button">انصراف</button>
+            </div>
+          </form>
         </div>
       )}
 

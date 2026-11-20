@@ -35,16 +35,16 @@
 | ادمین کل | `09133752696` | — | Platform |
 | ادمین کلینیک | `09120000001` | — | می‌بیند DEMO-ORG |
 | پزشک | `09120000002` | — | Specialist |
-| سلامتجو (مالک) | `09123458910` | `0012345678` | عضو قرارداد + بیمار لینک‌شده |
+| سلامتجو (مالک) | `09123458910` | `0012345679` | عضو قرارداد + بیمار لینک‌شده؛ هم‌شماره با علی `0012345687` |
 | ناظر | `09123409876` | — | Supervisor روی DEMO-ORG |
-| عضو آمادهٔ admit | `09121112233` | `0011223344` | در قرارداد |
+| عضو آمادهٔ admit | `09121112233` | `0011223340` | در قرارداد |
 | تست گیت بلاک | — | `0099887766` | **عضو نیست** → پیام بلاک پذیرش |
 
 ```mermaid
 flowchart LR
   auth[Auth_OTP]
-  register[Admin_Contract_Admit]
-  preadmit[Owner_PreAdmit]
+  register[Import_Or_OptionalAdmit]
+  preadmit[Owner_Profile_OptionalPreAdmit]
   doctor[Specialist_Chart]
   monitor[Admin_Supervisor_Monitor]
   platform[Platform_Evidence]
@@ -81,6 +81,7 @@ flowchart LR
 | TC-AUTH-06 | — | platform | seed ادمین کل | لاگین با `09133752696` + FixedOtp/کد واقعی | نقش Platform؛ پنل ادمین کل | |
 | TC-AUTH-07 | — | staging FixedOtp | `Auth__FixedOtp` پر | درخواست OTP + دعوت گروهی (در صورت اجرا) | کد = مقدار ثابت؛ لاگ/کاوه‌نگار صدا زده نمی‌شود | |
 | TC-AUTH-08 | — | staging Kavenegar | FixedOtp خالی + ApiKey | درخواست OTP روی موبایل واقعی تست | پیامک قالبی می‌رسد؛ verify با همان کد | |
+| TC-AUTH-09 | UC-ADM-16 / UC-PLT-04 | admin + platform | حساب چندنقشی Admin و Platform جدا | لاگین Admin: سوئیچر سایدبار بدون «ادمین کل»؛ منوی حساب بدون «تغییر نقش»؛ لاگین Platform: سوئیچ به ادمین کلینیک ممکن | Admin به `platform-dashboard` نمی‌رود؛ Platform می‌تواند workspace admin را باز کند | |
 
 ---
 
@@ -99,7 +100,7 @@ flowchart LR
 | TC-OWN-07 | UC-OWN-07 | owner | گروه موجود | آپلود فایل به گروه | فایل در persist و UI | |
 | TC-OWN-08 | UC-OWN-08 | owner | گروه/فایل موجود | حذف فایل یا گروه | از UI و ذخیره حذف می‌شود | |
 | TC-OWN-09 | UC-OWN-09 | owner | مجوز دوربین | شروع/ثبت فریم/پایان نشست ضدتقلب | نشست و فریم برای پلتفرم قابل بازبینی | |
-| TC-OWN-10 | UC-OWN-10 | owner | مجوز موقعیت | ثبت GPS | مختصات ذخیره؛ در پنل پلتفرم دیده می‌شود | |
+| TC-OWN-10 | UC-OWN-10 | owner | مجوز موقعیت؛ `gpsTracking` روشن | (A) دکمه فاصله در intro → نقطه `distance_btn` (دسکتاپ و موبایل)؛ (B) نقشه دموگرافیک → `map_open` بدون duplicate اگر A قبلاً زده شده؛ (C) رد مجوز → بدون ذخیره + پنل retry؛ سپس روی موبایل جابه‌جایی ≥۱۰۰م پس از ۱۰ دقیقه → `watch` | مختصات در پنل پلتفرم؛ دسکتاپ: نقطهٔ اول ثبت، بدون watch | |
 | TC-OWN-11 | UC-OWN-11 | owner | نشست فعال | قطع نشست خود / سایر دستگاه‌ها | نیاز به لاگین مجدد | |
 
 ---
@@ -132,7 +133,7 @@ flowchart LR
 | TC-ADM-05 | UC-ADM-05 | admin | قرارداد | ذخیره قوانین بسته سلامت | قوانین ذخیره و قابل خواندن | |
 | TC-ADM-06 | UC-ADM-06 | admin | اعضا + SMS config | پیامک دعوت گروهی | FixedOtp: بدون SMS واقعی؛ وگرنه قالب Invite | |
 | TC-ADM-07 | UC-ADM-07 | admin | عضو | به‌روزرسانی قیف onboarding | وضعیت عضو عوض می‌شود | |
-| TC-ADM-08 | UC-ADM-08 | admin | عضو قرارداد | admit به کلینیک | بیمار سیستم ساخته/لینک؛ آمادهٔ OTP owner | |
+| TC-ADM-08 | UC-ADM-08 | admin | عضو قرارداد | admit اختیاری یا OTP owner با soft-admit | بیمار سیستم ساخته/لینک؛ OTP بدون admit اجباری | |
 | TC-ADM-09 | UC-ADM-09 | admin | — | ایجاد/ویرایش فرم پیش‌پذیرش | فرم draft ذخیره | |
 | TC-ADM-10 | UC-ADM-10 | admin | فرم draft | انتشار فرم | فرم published برای owner | |
 | TC-ADM-11 | UC-ADM-11 | admin | فرم با چند آیتم | مرتب‌سازی آیتم‌ها | ترتیب جدید پایدار | |
@@ -141,7 +142,7 @@ flowchart LR
 | TC-ADM-FORM-PKG | UC-ADM-18 | admin | فرم‌های seeded | خروجی JSON و Excel → ورود مجدد | round-trip بدون خطا؛ تعداد فرم‌ها پایدار؛ قوانین visibility حفظ | |
 | TC-ADM-12 | UC-ADM-12 | admin | دادهٔ مانیتور | داشبورد کلیات/قیف | اعداد و وضعیت‌ها منطقی | |
 | TC-ADM-13 | UC-ADM-13 | admin | پرونده موجود | مشاهده پرونده از مانیتور | وضعیت پیش‌پذیرش درست | |
-| TC-ADM-14 | UC-ADM-14 | admin | env دمو | ریست داده دمو (اگر فعال) | فقط در غیر-prod؛ داده به حالت seed | |
+| TC-ADM-14 | UC-ADM-14 | platform | env غیر-prod | ریست فکتوری پلتفرم با OTP (یا re-seed سرور) | قفل در production؛ DB+آپلود به حالت seed؛ UI ادمین کلینیک دکمهٔ ریست mock ندارد | |
 | TC-ADM-15 | UC-ADM-15 | admin | کاربران seed | فهرست کاربران کلینیک | کاربران Platform در لیست **نیستند** | |
 | TC-ADM-16 | UC-ADM-16 | admin | — | ایجاد کاربر specialist/admin | نقش Platform قابل انتصاب نیست | |
 | TC-ADM-17 | UC-ADM-17 | admin | کاربر غیر-platform | فعال/غیرفعال | وضعیت عوض؛ لاگین کاربر غیرفعال شکست | |
@@ -180,6 +181,7 @@ flowchart LR
 | TC-PLT-10 | UC-PLT-10 | platform | کاربر با نشست | قطع نشست‌های کاربر | کاربر هدف باید دوباره لاگین کند | |
 | TC-PLT-11 | UC-PLT-11 | platform | — | ثبت و مشاهده ممیزی | رویداد در لیست audit | |
 | TC-PLT-12 | UC-PLT-12 | platform | — | سلامت فنی UI | صفحه بدون خطا لود می‌شود | |
+| TC-PLT-13 | UC-PLT-13 | platform | `09133752696` + OTP | ریست فکتوری از تنظیمات | DB+uploads پاک؛ seed؛ ادمین کل دوباره لاگین؛ یک‌بار DROP قبل از اولین بیلد اسکواش | |
 
 ---
 

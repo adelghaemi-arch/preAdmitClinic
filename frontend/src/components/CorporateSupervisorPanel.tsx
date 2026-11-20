@@ -1,4 +1,9 @@
-﻿import React, { useMemo, useState } from "react";
+﻿/*
+ File: frontend/src/components/CorporateSupervisorPanel.tsx
+ Description: پنل ناظر سازمان — رستر و یادآوری SMS قالبی از طریق SEND_CONTRACT_BULK_SMS
+ Parent Dependencies: types/clinic.ts, ClinicOrchestratorApp.tsx
+ */
+import React, { useMemo, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   Building2,
@@ -155,13 +160,23 @@ export function CorporateSupervisorPanel({
     e.preventDefault();
     const pendingTargets = filtered.filter((m) => m.onboardingStage !== "completed");
     if (!pendingTargets.length) return;
+    if (!contract.serverId) {
+      setSmsNote("شناسه سرور قرارداد موجود نیست.");
+      return;
+    }
+    const memberServerIds = pendingTargets.map((m) => m.serverId).filter((id): id is string => Boolean(id));
+    if (!memberServerIds.length) {
+      setSmsNote("هیچ گیرنده‌ای با شناسه سرور یافت نشد.");
+      return;
+    }
+    // فقط قالب Invite سمت سرور؛ متن UI صرفاً یادداشت محلی است
     await onAction({
       action: "SEND_CONTRACT_BULK_SMS",
       contractId: contract.id,
-      memberIds: pendingTargets.map((m) => m.id),
+      contractServerId: contract.serverId,
+      memberServerIds,
       campaignTitle: `یادآوری ناظر سازمان (${contract.organizationName})`,
       audienceLabel: `${toFaDigits(pendingTargets.length)} همکار تکمیل‌نکرده`,
-      messageTemplate: smsBody,
     });
     setSmsNote(`پیامک یادآوری برای ${toFaDigits(pendingTargets.length)} نفر از همکاران سازمان ارسال شد.`);
     setTimeout(() => setSmsNote(""), 4500);

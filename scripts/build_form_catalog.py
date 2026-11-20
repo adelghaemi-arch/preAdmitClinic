@@ -213,12 +213,14 @@ def demographic_items(prefix: str, form_id: str, section_id: str):
         ("waistCm", "دور کمر (سانتی‌متر)", "number", False, False),
         ("phone", "شماره تماس", "text", True, True),
         ("city", "شهر محل سکونت", "province_city", False, False),
+        # آدرس ژئوکد + پلاک؛ جدا از province_city اداری
+        ("residence", "آدرس محل سکونت (نقشه، پلاک، واحد، کد پستی)", "residence_address", True, False),
         ("maritalStatus", "وضعیت تاهل", "select", False, False),
     ]
     items = []
     for i, (code, label, itype, prefill, readonly) in enumerate(specs, start=1):
         item = {
-            "id": f"{prefix}_BASE_{i}",
+            "id": f"{prefix}_BASE_{i}" if code != "residence" else f"{prefix}_BASE_9b",
             "sectionId": section_id,
             "code": f"{prefix}_BASE_{code}",
             "labelFa": label,
@@ -226,9 +228,13 @@ def demographic_items(prefix: str, form_id: str, section_id: str):
             "required": True,
             "sortOrder": i,
             "visibilityRules": [],
-            "helpText": "",
+            "helpText": (
+                "موقعیت را روی نقشه انتخاب کنید؛ پلاک الزامی است. کد پستی برای ارسال جواب/نمونه آزمایش مفید است."
+                if code == "residence"
+                else ""
+            ),
             "notesPolicy": "never",
-            "prefillFromPatient": code if prefill else None,
+            "prefillFromPatient": ("residence" if code == "residence" else code) if prefill else None,
             "readOnlyIfPrefill": readonly,
             "selectOptions": ["مجرد", "متأهل", "ازدواج‌کرده", "سایر"] if code == "maritalStatus" else None,
             "coding": {

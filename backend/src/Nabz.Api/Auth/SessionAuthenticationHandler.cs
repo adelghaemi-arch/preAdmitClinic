@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Api/Auth/SessionAuthenticationHandler.cs
- Description: اعتبارسنجی Bearer توکن opaque از روی AuthSession
+ Description: اعتبارسنجی Bearer توکن opaque؛ claim انتخاب هویت pending
  Parent Dependencies: IAuthService
  */
 
@@ -40,9 +40,12 @@ public sealed class SessionAuthenticationHandler(
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, principal.UserId.ToString()),
             new(NabzClaimTypes.SessionId, principal.SessionId.ToString())
         };
+        if (principal.UserId != Guid.Empty)
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, principal.UserId.ToString()));
+        if (principal.PendingSelection)
+            claims.Add(new Claim(NabzClaimTypes.PendingSelection, "true"));
         foreach (var role in principal.Roles)
             claims.Add(new Claim(ClaimTypes.Role, role));
         if (principal.ContractId is Guid cid)

@@ -1,5 +1,16 @@
+/*
+ File: frontend/src/components/PatientPhotoCapture.tsx
+ Description: عکس پرونده + فریم ضدتقلب دوره‌ای از باز شدن دوربین (بازه از تنظیمات؛ GPS غیرمسدود)
+ Parent Dependencies: portrait-face.ts, PermissionRetryPanel, media-permission.ts
+ */
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
+import { Camera, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
+import { PermissionRetryPanel } from "@/components/PermissionRetryPanel";
+import {
+  classifyMediaError,
+  type PermissionErrorKind,
+} from "@/lib/media-permission";
 import {
   checkLiveFaceInOval,
   OVAL,
@@ -12,7 +23,7 @@ type Phase = "live" | "preview";
 export interface FraudCaptureHooks {
   patientId: number;
   userId?: number | null;
-  /** Seconds between auto frames while the fraud camera session is open (live + preview). Default 3. */
+  /** Seconds between auto frames while the fraud camera session is open (live + preview). Default 7. */
   intervalSeconds?: number;
   onStartSession: (patientId: number) => Promise<string | null>;
   onAutoFrame: (payload: {
@@ -102,10 +113,12 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
   const streamRef = useRef<MediaStream | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const gpsRef = useRef<{ lat: number; lon: number; accuracy: number } | null>(null);
+  const fraudInFlightRef = useRef(false);
   const liveCheckBusyRef = useRef(false);
   const [phase, setPhase] = useState<Phase>("live");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState("");
+  const [cameraErrorKind, setCameraErrorKind] = useState<PermissionErrorKind | null>(null);
   const [faceError, setFaceError] = useState("");
   const [faceInOval, setFaceInOval] = useState(false);
   const [starting, setStarting] = useState(true);
@@ -127,13 +140,17 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
   const startCamera = useCallback(async () => {
     setStarting(true);
     setCameraError("");
+    setCameraErrorKind(null);
     setFaceError("");
     setFaceInOval(false);
     stopStream(streamRef.current);
     streamRef.current = null;
     try {
+      if (!window.isSecureContext) {
+        throw Object.assign(new Error("insecure"), { name: "SecurityError" });
+      }
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error("unsupported");
+        throw Object.assign(new Error("unsupported"), { name: "NotSupportedError" });
       }
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
@@ -151,14 +168,46 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
       }
       setPhase("live");
       setPreviewUrl(null);
+      // GPS نباید روشن شدن تایمر ضدتقلب را عقب بیندازد
+      setStarting(false);
 
+      // نشست ضدتقلب جدا از مجوز دوربین — خطایش نباید پیام بلاک دوربین شود
       if (fraudWatch) {
-        const sid = await fraudWatch.onStartSession(fraudWatch.patientId);
-        sessionIdRef.current = sid;
-        gpsRef.current = await readGps();
+        const tryStart = async () => {
+          const sid = await fraudWatch.onStartSession(fraudWatch.patientId);
+          sessionIdRef.current = sid;
+          return sid;
+        };
+        try {
+          let sid = await tryStart();
+          if (!sid) {
+            await new Promise((r) => window.setTimeout(r, 400));
+            sid = await tryStart();
+          }
+          if (!sid) {
+            console.warn("[fraud] session start returned null");
+          }
+        } catch (e) {
+          sessionIdRef.current = null;
+          console.warn("[fraud] session start failed", e);
+        }
+        void readGps().then((gps) => {
+          if (gps) gpsRef.current = gps;
+        });
       }
-    } catch {
-      setCameraError("دسترسی به دوربین ممکن نشد. می‌توانید از گالری یا دوربین گوشی عکس انتخاب کنید.");
+      return;
+    } catch (err) {
+      const kind = classifyMediaError(err, "camera");
+      setCameraErrorKind(kind);
+      setCameraError(
+        kind === "denied" || kind === "unknown"
+          ? "دسترسی به دوربین داده نشد."
+          : kind === "insecure"
+            ? "این صفحه برای دسترسی امن به دوربین نیست."
+            : kind === "unavailable"
+              ? "دوربین پیدا نشد."
+              : "دوربین در این مرورگر پشتیبانی نمی‌شود."
+      );
     } finally {
       setStarting(false);
     }
@@ -173,33 +222,44 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
     };
   }, [startCamera, endFraudSession]);
 
-  // Auto-capture fraud frames every N seconds while the camera session is open
-  // (live preview AND after the user takes a photo, until confirm).
+  // فریم ضدتقلب از باز شدن دوربین؛ تأیید پرتره الزامی نیست (live + preview)
   useEffect(() => {
     if (!fraudWatch || cameraError || starting) return;
     if (phase !== "live" && phase !== "preview") return;
-    const intervalMs = Math.max(2, fraudWatch.intervalSeconds ?? 3) * 1000;
+    const intervalMs = Math.max(2, fraudWatch.intervalSeconds ?? 7) * 1000;
     const tick = async () => {
+      if (fraudInFlightRef.current) return;
       const video = videoRef.current;
       const sid = sessionIdRef.current;
       if (!video || !sid || video.videoWidth < 2) return;
       if (!streamRef.current) return;
       const dataUrl = frameToJpeg(video, video.videoWidth, video.videoHeight, true, FRAUD_JPEG_QUALITY);
       if (!dataUrl) return;
-      const gps = gpsRef.current ?? (await readGps());
-      if (gps) gpsRef.current = gps;
-      await fraudWatch.onAutoFrame({
-        sessionId: sid,
-        photoDataUrl: dataUrl,
-        lat: gps?.lat,
-        lon: gps?.lon,
-        accuracy: gps?.accuracy,
-      });
+      // GPS اختیاری — await نکن تا فریم عقب نیفتد
+      const gps = gpsRef.current;
+      if (!gps) {
+        void readGps().then((g) => {
+          if (g) gpsRef.current = g;
+        });
+      }
+      fraudInFlightRef.current = true;
+      try {
+        await fraudWatch.onAutoFrame({
+          sessionId: sid,
+          photoDataUrl: dataUrl,
+          lat: gps?.lat,
+          lon: gps?.lon,
+          accuracy: gps?.accuracy,
+        });
+      } catch (e) {
+        console.warn("[fraud] auto frame upload failed", e);
+      } finally {
+        fraudInFlightRef.current = false;
+      }
     };
     const id = window.setInterval(() => {
       void tick();
     }, intervalMs);
-    // First frame shortly after camera is ready.
     const first = window.setTimeout(() => {
       void tick();
     }, 800);
@@ -308,6 +368,7 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
             if (videoRef.current) videoRef.current.srcObject = null;
           }
           setCameraError("");
+          setCameraErrorKind(null);
         })();
       };
       img.src = reader.result;
@@ -362,8 +423,8 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
         {fraudWatch && !cameraError && (
           <p className="mt-1 text-[10px] leading-5 text-amber-700">
             {phase === "preview"
-              ? `ضدتقلب تا تأیید ادامه دارد؛ هر ${fraudWatch.intervalSeconds ?? 3} ثانیه یک فریم امنیتی ثبت می‌شود.`
-              : `تا روشن بودن دوربین، هر ${fraudWatch.intervalSeconds ?? 3} ثانیه یک فریم امنیتی ثبت می‌شود.`}
+              ? `ضدتقلب تا تأیید ادامه دارد؛ هر ${fraudWatch.intervalSeconds ?? 7} ثانیه یک فریم امنیتی ثبت می‌شود.`
+              : `تا روشن بودن دوربین، هر ${fraudWatch.intervalSeconds ?? 7} ثانیه یک فریم امنیتی ثبت می‌شود.`}
           </p>
         )}
       </div>
@@ -392,23 +453,31 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
           </div>
         )}
         {cameraError && phase === "live" && (
-          <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center gap-2 bg-slate-100 px-4 text-center">
-            <ShieldAlert className="h-7 w-7 text-amber-600" />
-            <p className="text-[11px] leading-5 text-slate-600">{cameraError}</p>
+          <div className="absolute inset-0 z-[2] bg-slate-100" aria-hidden />
+        )}
+        {!cameraError && (
+          <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center">
+            {/* کمی بالاتر از مرکز تا مو و گردن در کادر بیفتد */}
+            <div
+              className={`rounded-[50%] border shadow-[inset_0_0_0_9999px_rgba(15,40,30,0.12)] transition-colors duration-200 ${ovalBorderClass}`}
+              style={{
+                width: `${OVAL.widthRatio * 100}%`,
+                height: `${OVAL.heightRatio * 100}%`,
+                transform: `translateY(${OVAL.translateYRatio * 100}%)`,
+              }}
+            />
           </div>
         )}
-        <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center">
-          {/* Slightly above center so hair + neck fit; taller oval, not a circle. */}
-          <div
-            className={`rounded-[50%] border shadow-[inset_0_0_0_9999px_rgba(15,40,30,0.12)] transition-colors duration-200 ${ovalBorderClass}`}
-            style={{
-              width: `${OVAL.widthRatio * 100}%`,
-              height: `${OVAL.heightRatio * 100}%`,
-              transform: `translateY(${OVAL.translateYRatio * 100}%)`,
-            }}
-          />
-        </div>
       </div>
+
+      {cameraError && phase === "live" && cameraErrorKind && (
+        <PermissionRetryPanel
+          kind="camera"
+          errorKind={cameraErrorKind}
+          onRetry={() => void startCamera()}
+          retryDisabled={starting || busy || validating}
+        />
+      )}
 
       {faceError && (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-[11px] leading-5 text-amber-900" role="alert">

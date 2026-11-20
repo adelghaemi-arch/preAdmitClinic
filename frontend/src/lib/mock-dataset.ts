@@ -1,4 +1,4 @@
-/* Auto-generated mock dataset. No database or secrets involved. */
+/* Auto-generated static seed/catalog asset. دامنهٔ اصلی API+DB؛ این فایل فقط fallback/legacy است. */
 import type {
   MockAlertRow,
   MockLinkRow,

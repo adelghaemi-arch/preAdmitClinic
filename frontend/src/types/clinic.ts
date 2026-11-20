@@ -106,7 +106,15 @@ export type PatientIntakeDocument = PatientIntakeDocumentGroup;
 
 /* ---------- configurable pre-admit forms (docs-driven) ---------- */
 
-export type FormInputType = "yn_unk" | "text" | "number" | "date" | "select" | "signature" | "province_city";
+export type FormInputType =
+  | "yn_unk"
+  | "text"
+  | "number"
+  | "date"
+  | "select"
+  | "signature"
+  | "province_city"
+  | "residence_address";
 export type FormNotesPolicy = "never" | "optional" | "required_if_yes";
 export type FormPublishStatus = "draft" | "published" | "archived";
 export type FormResponseStatus = "draft" | "submitted";
@@ -285,7 +293,7 @@ export interface GpsPoint {
   lon: number;
   accuracy: number;
   capturedAt: string;
-  source: "camera_session" | "checkin" | "manual" | "seed";
+  source: "camera_session" | "checkin" | "manual" | "seed" | "map_open" | "distance_btn" | "watch";
   /** Evidence package this point belongs to (session / burst / day). */
   packageId?: string | null;
 }
@@ -297,7 +305,10 @@ export interface UserPhotoRecord {
   patientId: number;
   userId: number | null;
   kind: UserPhotoKind;
+  /** blob/data URL — فقط بعد از لود تنبل یا ثبت محلی پر می‌شود */
   dataUrl: string;
+  /** کلید ذخیره‌سازی سرور؛ تامنیل فقط وقتی UI واقعاً نشان می‌دهد دانلود می‌شود */
+  storageKey?: string | null;
   capturedAt: string;
   sessionId: string | null;
   gps: GpsPoint | null;
@@ -335,6 +346,13 @@ export interface FraudCaptureSession {
   reviewedBy: string | null;
   /** Linked evidence package for this camera session. */
   packageId?: string | null;
+  /** Guid پرونده روی سرور — برای لینک GPS/کاربر بدون hash. */
+  patientServerId?: string | null;
+  /** Guid کاربر ثبت‌کننده نشست. */
+  userServerId?: string | null;
+  /** نام Person برای نمایش در پنل پلتفرم. */
+  patientDisplayName?: string | null;
+  patientNationalId?: string | null;
 }
 
 export type AuthAppSurface = "clinic_web" | "patient_kiosk";
@@ -373,10 +391,21 @@ export type PlatformUserPrimaryRole =
   | "patient"
   | "supervisor";
 
+/** قرارداد مرتبط با کاربر در فهرست ادمین (عضو یا ناظر). */
+export interface PlatformUserContractLink {
+  contractId: string;
+  title: string;
+  relation: "member" | "supervisor" | string;
+  /** Active | Draft | Completed — از API */
+  status?: string;
+}
+
 export interface PlatformUserProfile {
   id: string;
   userId: number | null;
   patientId: number | null;
+  /** Guid پرونده Owner روی سرور (OwnerUserId). */
+  linkedPatientId?: string | null;
   fullName: string;
   phone: string;
   nationalId: string;
@@ -392,6 +421,10 @@ export interface PlatformUserProfile {
   lastGps: GpsPoint | null;
   gpsHistory: GpsPoint[];
   isActive: boolean;
+  /** قراردادهای مرتبط از API (عضویت کدملی یا نقش ناظر). */
+  contracts?: PlatformUserContractLink[];
+  /** هنگام ایجاد/ویرایش ناظر — شناسه قرارداد انتخابی برای ارسال به API. */
+  assignedContractId?: string | null;
 }
 
 export interface PlatformHealthMetric {
@@ -600,13 +633,30 @@ export interface PatientAlertDto {
 
 export interface PatientFullDto {
   id: number;
+  /** شناسه Guid سرور برای API (وقتی از بک پر شود) */
+  serverId?: string;
   qrToken: string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   nationalId: string;
   age: number;
+  /** ISO yyyy-MM-dd از سرور */
+  birthDate?: string | null;
   gender: string;
+  maritalStatus?: string | null;
   phone: string;
   pathwayTitle: string;
+  /** needs_form | already_complete از snapshot Owner */
+  intakeGate?: "needs_form" | "already_complete" | null;
+  hasPortrait?: boolean;
+  portraitStorageKey?: string | null;
+  /** introduced | not_introduced | mobile_mismatch */
+  hospitalIntroStatus?: "introduced" | "not_introduced" | "mobile_mismatch" | null;
+  hospitalName?: string | null;
+  introducedMobileMasked?: string | null;
+  /** هویت/دموگرافیک حداقل از سرور */
+  profileComplete?: boolean;
   checkInTime: string;
   completedAt: string | null;
   intakeCompleted: boolean;
@@ -625,6 +675,9 @@ export interface PatientFullDto {
   homeLat?: number | null;
   homeLon?: number | null;
   homeAddress?: string | null;
+  homePlaque?: string | null;
+  homeUnit?: string | null;
+  homePostalCode?: string | null;
   /** Pre-admit portrait as a compressed JPEG data URL. */
   photoDataUrl?: string | null;
   /** Patient-supplied prior labs/imaging uploaded during pre-admit (grouped by type entry). */
@@ -694,6 +747,12 @@ export interface PackageLibraryRule {
   jobCategory: string;
   pathwayCode: string;
   createdAt: string;
+  /** اعضا match‌شده و هنوز Completed نشده‌اند */
+  activeMatchedCount?: number;
+  /** اعضا با OnboardingStage=Completed که به این قانون match شده‌اند */
+  previouslyUsedCount?: number;
+  /** تعداد قراردادهایی که این قانون را attach کرده‌اند */
+  attachedContractCount?: number;
 }
 
 export interface ContractPackageRule {
@@ -754,11 +813,18 @@ export interface ContractMember {
   contractId: number;
   inviteToken: string;
   personnelCode: string;
+  firstName: string;
+  lastName: string;
+  /** نمایش یکپارچه — از first+last */
   fullName: string;
   nationalId: string;
   phone: string;
+  /** ISO yyyy-MM-dd میلادی */
+  birthDate: string | null;
+  /** سن محاسبه‌شده برای نمایش/قوانین */
   age: number;
   gender: "مرد" | "زن";
+  maritalStatus?: string | null;
   department: string;
   jobCategory: string;
   source: "api" | "excel" | "manual";
@@ -809,6 +875,8 @@ export interface CorporateContract {
   supervisor: ContractSupervisor;
   smsLogs: ContractSmsLog[];
   members: ContractMember[];
+  /** تعداد اعضا از API لیست — بدون لود کامل members */
+  memberCount?: number;
   createdAt: string;
 }
 
@@ -901,6 +969,9 @@ export interface MockPatientRow {
   homeLat?: number | null;
   homeLon?: number | null;
   homeAddress?: string | null;
+  homePlaque?: string | null;
+  homeUnit?: string | null;
+  homePostalCode?: string | null;
   /** Pre-admit portrait as a compressed JPEG data URL. */
   photoDataUrl?: string | null;
   /** Patient-supplied prior labs/imaging uploaded during pre-admit (grouped by type entry). */

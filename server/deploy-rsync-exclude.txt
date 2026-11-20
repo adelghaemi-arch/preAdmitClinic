@@ -3,7 +3,7 @@
 # Parent Dependencies: docs/shared/server-deploy.md, init-server-structure.bat
 #
 # نمونه:
-#   rsync -av --exclude-from=deploy-rsync-exclude.txt ./ user@host:/path/to/server/
+#   rsync -avu --exclude-from=deploy-rsync-exclude.txt ./ user@host:/path/to/server/
 # هرگز --delete را روی کل درخت با persist روشن نکنید.
 
 # سکرت‌های پرشده روی سرور

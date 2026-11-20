@@ -34,10 +34,9 @@ public class ContractSupervisor : EntityBase
 {
     public Guid ContractId { get; set; }
     public CorporateContract Contract { get; set; } = null!;
-    public string FullName { get; set; } = string.Empty;
+    public Guid PersonId { get; set; }
+    public Person Person { get; set; } = null!;
     public string? Title { get; set; }
-    public string Phone { get; set; } = string.Empty;
-    public string? NationalId { get; set; }
     public bool IsActive { get; set; } = true;
     public bool CanSendReminders { get; set; } = true;
     public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
@@ -48,13 +47,11 @@ public class ContractMember : EntityBase
 {
     public Guid ContractId { get; set; }
     public CorporateContract Contract { get; set; } = null!;
+    public Guid PersonId { get; set; }
+    public Person Person { get; set; } = null!;
     public string InviteToken { get; set; } = string.Empty;
     public string? PersonnelCode { get; set; }
-    public string FullName { get; set; } = string.Empty;
-    public string NationalId { get; set; } = string.Empty;
-    public string Phone { get; set; } = string.Empty;
-    public int? Age { get; set; }
-    public string? Gender { get; set; }
+    public string? MaritalStatus { get; set; }
     public string? Department { get; set; }
     public string? JobCategory { get; set; }
     public string Source { get; set; } = "manual";
@@ -73,6 +70,8 @@ public class ContractMember : EntityBase
     public DateTime? LastActivityAt { get; set; }
     public DateTime? ProfileCompletedAt { get; set; }
     public Guid? LinkedPatientId { get; set; }
+    /// <summary>موبایل معرفی در رستر قرارداد — با تغییر بعدی Person.Mobile قاطی نمی‌شود.</summary>
+    public string? IntroducedMobile { get; set; }
 }
 
 public class ContractPackageRule : EntityBase

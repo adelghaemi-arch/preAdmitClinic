@@ -13,7 +13,7 @@ import {
   V1_ROLES,
 } from "@/lib/workspace";
 
-const ADMIN_EXPECTED = ["contracts", "contract-packages", "contract-funnel", "forms", "clinic-users"] as const;
+const ADMIN_EXPECTED = ["contracts", "contract-packages", "contract-funnel", "rule-library", "forms", "clinic-users"] as const;
 
 describe("UC-ADM-01", () => {
   it("خانه ادمین contracts است", () => {
@@ -89,10 +89,18 @@ describe("UC-ADM-11", () => {
 });
 
 describe("UC-ADM-12", () => {
-  it("ROLE_NAV.admin پیکربندی clinic-users و forms", () => {
+  it("ROLE_NAV.admin پیکربندی rule-library و clinic-users و forms", () => {
     const config = ROLE_NAV.admin.groups.find((g) => g.title.includes("پیکربندی"));
+    expect(config?.pages).toContain("rule-library");
     expect(config?.pages).toContain("clinic-users");
     expect(config?.pages).toContain("forms");
+  });
+});
+
+describe("UC-ADM-05b", () => {
+  it("صفحه rule-library در ناوبری ادمین است", () => {
+    expect(allowedPagesFor("admin")).toContain("rule-library");
+    expect(ROLE_NAV.admin.labels?.["rule-library"]).toBe("کتابخانه قوانین");
   });
 });
 

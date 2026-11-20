@@ -5,11 +5,8 @@ import { dumpMockStore, hydrateMockStore, mockStore, resetMockStore, type MockSt
 import type { ClinicSnapshot } from "@/types/clinic";
 
 /**
- * Browser-local "database".
- *
- * The complete mock dataset ships inside the app bundle. On first run it is written
- * into localStorage; every later read/write happens in the browser, so the project
- * can be opened in StackBlitz / CodeSandbox with no server or database at all.
+ * Legacy QR/kiosk client DB (`nabz_clinic_db_v8`).
+ * دامنهٔ اصلی کلینیک از API+DB می‌آید؛ این لایه فقط مسیر `/patient?token=` را تغذیه می‌کند.
  */
 
 const DB_KEY = "nabz_clinic_db_v8";

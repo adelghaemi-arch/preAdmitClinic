@@ -1,11 +1,30 @@
 /*
  File: frontend/src/lib/api/roles.ts
- Description: نگاشت نقش API به WorkspaceRole فرانت
- Parent Dependencies: types/clinic
+ Description: نگاشت نقش API به WorkspaceRole؛ گارد JWT از nabz_api_roles
+ Parent Dependencies: types/clinic, api/auth
  */
 
 import type { ApiAppRole } from "@/lib/api/auth";
 import type { WorkspaceRole } from "@/types/clinic";
+
+const API_ROLES_KEY = "nabz_api_roles";
+
+/** نقش‌های واقعی JWT ذخیره‌شده بعد از login — نه سوئیچ UI */
+export function getStoredApiRoles(): string[] {
+  try {
+    if (typeof window === "undefined") return [];
+    const raw = window.localStorage.getItem(API_ROLES_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** آیا توکن فعلی حداقل یکی از نقش‌های خواسته‌شده را دارد */
+export function hasApiRole(...roles: string[]): boolean {
+  const mine = getStoredApiRoles();
+  return roles.some((r) => mine.includes(r));
+}
 
 export function apiRoleToWorkspace(role: ApiAppRole): WorkspaceRole {
   switch (role) {

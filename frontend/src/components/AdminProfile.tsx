@@ -729,21 +729,6 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                 فهرست پزشکان، اپراتورهای پاراکلینیک و پرسنل پذیرش
               </h2>
 
-              <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[11px] text-slate-500">
-                <span>همه اطلاعات این نسخه نمایشی است و در حافظه برنامه نگهداری می‌شود.</span>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={async () => {
-                    await onAction({ action: "RESET_MOCK_DATA" });
-                    setSavedNotice("داده‌های نمایشی به حالت اولیه بازگردانده شد.");
-                    setTimeout(() => setSavedNotice(""), 4000);
-                  }}
-                  className="secondary-button"
-                >
-                  بازگردانی داده نمایشی
-                </button>
-              </div>
               <div className="space-y-2.5">
                 {snapshot.staff.map((st) => (
                   <div

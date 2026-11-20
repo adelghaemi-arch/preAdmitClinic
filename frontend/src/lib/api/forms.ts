@@ -194,3 +194,35 @@ export async function uploadFormPackageExcel(clinicId: string, file: File): Prom
   }
   return (await res.json()) as { importedForms: number };
 }
+
+export interface SaveFormAnswerPayload {
+  itemCode: string;
+  valueCode?: string | null;
+  valueRaw?: string | null;
+  notes?: string | null;
+  skippedByRule?: boolean;
+}
+
+/** draft/submit پاسخ پرسشنامه — مالک پرونده */
+export async function saveFormResponse(body: {
+  patientId: string;
+  formId: string;
+  submit: boolean;
+  answers: SaveFormAnswerPayload[];
+}) {
+  return apiFetch(`/api/forms/responses`, {
+    method: "POST",
+    body: {
+      patientId: body.patientId,
+      formId: body.formId,
+      submit: body.submit,
+      answers: body.answers.map((a) => ({
+        itemCode: a.itemCode,
+        valueCode: a.valueCode ?? null,
+        valueRaw: a.valueRaw ?? null,
+        notes: a.notes ?? null,
+        skippedByRule: Boolean(a.skippedByRule),
+      })),
+    },
+  });
+}

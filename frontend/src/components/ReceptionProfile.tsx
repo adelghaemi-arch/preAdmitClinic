@@ -25,6 +25,8 @@ import { formatFaTime, toFaDigits, toLatinDigits } from "@/lib/persian";
 import { QrCodeVisual } from "./QrCodeVisual";
 import { RoomQueueBoard, sortRoomQueue, type RoomQueueEntry } from "./RoomQueueBoard";
 import { PatientDirectoryDialog, type DirectoryResult } from "./PatientDirectoryDialog";
+import { IranDigitField } from "@/components/IranDigitField";
+import { normalizeMobile } from "@/lib/person-identity";
 import { normalizeNationalId, normalizeText, roomStaffDisplay } from "@/lib/workspace";
 import { apiFetch } from "@/lib/api/http";
 import { guidToNumericId } from "@/lib/api/roles";
@@ -302,7 +304,7 @@ export function ReceptionProfile({
       nationalId: nationalId.trim(),
       age: numericAge,
       gender,
-      phone: phone.trim(),
+      phone: normalizeMobile(phone),
       pathwayTitle: pkg ? pkg.title : "مسیر اختصاصی روزانه",
       stationCodes:
         customStations.length > 0
@@ -754,7 +756,7 @@ export function ReceptionProfile({
                 <div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">۱</span><h1 className="text-base font-extrabold text-slate-900">کد ملی سلامتجو را وارد کنید</h1></div>
                 <p className="mt-1 text-xs text-slate-500">ابتدا سوابق جست‌وجو می‌شود؛ اگر سلامتجو قبلاً مراجعه داشته، اطلاعات و سوابق او به‌صورت خودکار بارگذاری می‌شود.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <div><AppInput dir="ltr" inputMode="numeric" autoFocus aria-label="کد ملی سلامتجو" value={lookupId} onChange={(e) => { lookupVersion.current++; setLookupId(e.target.value); setLookup(null); setLookupError(""); setNationalId(""); }} placeholder="0012345678" className="app-input max-w-xs font-mono text-left" /><div className="mt-1 text-left text-[10px] text-slate-400" dir="ltr">{toFaDigits(normalizeNationalId(lookupId).length)} / {toFaDigits(10)}</div></div>
+                  <div><IranDigitField kind="nationalId" autoFocus aria-label="کد ملی سلامتجو" value={lookupId} onValueChange={(v) => { lookupVersion.current++; setLookupId(v); setLookup(null); setLookupError(""); setNationalId(""); }} placeholder="0012345678" className="app-input max-w-xs font-mono text-left" /><div className="mt-1 text-left text-[10px] text-slate-400" dir="ltr">{toFaDigits(normalizeNationalId(lookupId).length)} / {toFaDigits(10)}</div></div>
                   <button type="submit" disabled={lookupBusy || normalizeNationalId(lookupId).length !== 10} className="primary-button"><Search className="h-4 w-4" />{lookupBusy ? "در حال جست‌وجو..." : "جست‌وجو در سوابق"}</button>
                   {lookup && <button type="button" onClick={resetAdmission} className="secondary-button">کد ملی دیگر</button>}
                 </div>
@@ -809,7 +811,7 @@ export function ReceptionProfile({
                     <div><label htmlFor="admission-age" className="mb-1 block text-xs font-bold text-slate-700">سن</label><AppInput id="admission-age" name="age" type="text" value={age} onChange={(e) => setAge(e.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs" /></div>
                     <div><label htmlFor="admission-gender" className="mb-1 block text-xs font-bold text-slate-700">جنسیت</label><select id="admission-gender" name="gender" value={gender} onChange={(e) => setGender(e.target.value)} required className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs"><option value="">انتخاب کنید</option><option value="مرد">مرد</option><option value="زن">زن</option></select></div>
                   </div>
-                  <div><label htmlFor="admission-phone" className="mb-1 block text-xs font-bold text-slate-700">شماره تلفن همراه</label><AppInput id="admission-phone" name="phone" type="text" required inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="۰۹۱۲۳۴۵۶۷۸۹" className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs" /></div>
+                  <div><label htmlFor="admission-phone" className="mb-1 block text-xs font-bold text-slate-700">شماره تلفن همراه</label><IranDigitField id="admission-phone" name="phone" kind="mobile" required value={phone} onValueChange={setPhone} placeholder="۰۹۱۲۳۴۵۶۷۸۹" className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-mono text-left" /></div>
                 </div>
                 <div className="pt-1">
                   <label className="mb-2 block text-xs font-extrabold text-slate-800">بسته خدمات درمانی امروز:</label>

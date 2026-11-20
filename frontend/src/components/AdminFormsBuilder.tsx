@@ -689,6 +689,7 @@ export function AdminFormsBuilder({ snapshot, onAction, busy }: AdminFormsBuilde
                       <option value="date">تاریخ</option>
                       <option value="select">انتخابی</option>
                       <option value="province_city">استان / شهر</option>
+                      <option value="residence_address">آدرس سکونت (نقشه + پلاک)</option>
                     </select>
                   </label>
                   <label className="text-[10px] text-slate-500">

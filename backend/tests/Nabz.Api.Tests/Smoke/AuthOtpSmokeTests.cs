@@ -1,6 +1,6 @@
 /*
  File: backend/tests/Nabz.Api.Tests/Smoke/AuthOtpSmokeTests.cs
- Description: API smoke برای UC-OWN-01 / UC-OWN-02 — OTP FixedOtp و snapshot
+ Description: API smoke برای UC-OWN-01 / UC-OWN-02 — OTP FixedOtp، انتخاب کدملی، snapshot
  Parent Dependencies: NabzApiFactory
  */
 
@@ -25,9 +25,9 @@ public sealed class AuthOtpSmokeTests : IClassFixture<NabzApiFactory>
     [Fact]
     [Trait("UC", "UC-OWN-01")]
     [Trait("SMK", "SMK-API-OWN-01")]
-    public async Task RequestAndVerify_FixedOtp_ReturnsTokenWithoutSms()
+    public async Task RequestAndVerify_SharedMobile_NeedsSelectionThenSelect()
     {
-        // موبایل seed شدهٔ owner در Program.SeedAsync
+        // موبایل seed شده با دو کدملی
         var req = await _client.PostAsJsonAsync("/api/auth/otp/request", new { mobile = "09123458910" });
         Assert.Equal(HttpStatusCode.OK, req.StatusCode);
         var reqBody = await req.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
@@ -44,7 +44,16 @@ public sealed class AuthOtpSmokeTests : IClassFixture<NabzApiFactory>
         Assert.Equal(HttpStatusCode.OK, verify.StatusCode);
         var verifyBody = await verify.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
         Assert.True(verifyBody.GetProperty("ok").GetBoolean());
-        Assert.False(string.IsNullOrWhiteSpace(verifyBody.GetProperty("token").GetString()));
+        Assert.True(verifyBody.GetProperty("needsSelection").GetBoolean());
+        var token = verifyBody.GetProperty("token").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(token));
+
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var select = await _client.PostAsJsonAsync("/api/auth/otp/select", new { nationalId = "0012345679" });
+        Assert.Equal(HttpStatusCode.OK, select.StatusCode);
+        var selectBody = await select.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        Assert.True(selectBody.GetProperty("ok").GetBoolean());
+        Assert.Contains("Owner", selectBody.GetProperty("roles").EnumerateArray().Select(x => x.GetString()));
     }
 
     [Fact]
@@ -61,7 +70,7 @@ public sealed class AuthOtpSmokeTests : IClassFixture<NabzApiFactory>
     [Trait("SMK", "SMK-API-OWN-02")]
     public async Task MeAndIntakeSnapshot_AfterLogin_Succeed()
     {
-        var token = await LoginAsync("09123458910");
+        var token = await LoginAsync("09123458910", "0012345679");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var me = await _client.GetAsync("/api/auth/me");
@@ -78,7 +87,7 @@ public sealed class AuthOtpSmokeTests : IClassFixture<NabzApiFactory>
     [Trait("SMK", "SMK-API-PLT-AUTH")]
     public async Task PlatformAdmin_Login_HasPlatformRole()
     {
-        // موبایل ثابت ادمین کل
+        // موبایل ثابت ادمین کل — تک‌کاندیدا
         var token = await LoginAsync("09133752696");
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var me = await _client.GetAsync("/api/auth/me");
@@ -88,7 +97,7 @@ public sealed class AuthOtpSmokeTests : IClassFixture<NabzApiFactory>
         Assert.Contains("Platform", roles);
     }
 
-    private async Task<string> LoginAsync(string mobile)
+    private async Task<string> LoginAsync(string mobile, string? nationalId = null)
     {
         var req = await _client.PostAsJsonAsync("/api/auth/otp/request", new { mobile });
         req.EnsureSuccessStatusCode();
@@ -101,6 +110,16 @@ public sealed class AuthOtpSmokeTests : IClassFixture<NabzApiFactory>
         });
         verify.EnsureSuccessStatusCode();
         var body = await verify.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        return body.GetProperty("token").GetString()!;
+        var token = body.GetProperty("token").GetString()!;
+        var needsSelection = body.TryGetProperty("needsSelection", out var ns) && ns.GetBoolean();
+        if (!needsSelection)
+            return token;
+
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var nid = nationalId
+                  ?? body.GetProperty("candidates").EnumerateArray().First().GetProperty("nationalId").GetString()!;
+        var select = await _client.PostAsJsonAsync("/api/auth/otp/select", new { nationalId = nid });
+        select.EnsureSuccessStatusCode();
+        return token;
     }
 }

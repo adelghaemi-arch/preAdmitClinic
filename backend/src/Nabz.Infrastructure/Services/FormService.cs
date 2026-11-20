@@ -1,13 +1,16 @@
 /*
  File: backend/src/Nabz.Infrastructure/Services/FormService.cs
- Description: تعریف/انتشار/ساختار فرم؛ resolve مخاطب؛ draft/submit؛ import/export بسته
- Parent Dependencies: IFormRepository, FormAudienceEvaluator, FormPackageExcel
+ Description: تعریف/انتشار/ساختار فرم؛ resolve مخاطب؛ draft/submit با گارد مالکیت نشست؛ import/export بسته
+ Parent Dependencies: IFormRepository, FormAudienceEvaluator, FormPackageExcel, PersonIdentity
  */
 
+using System.Globalization;
 using System.Text.Json;
 using Nabz.Application.Abstractions;
+using Nabz.Application.Identity;
 using Nabz.Application.Interfaces;
 using Nabz.Application.Interfaces.Repositories;
+using Nabz.Application.Patients;
 using Nabz.Domain.Entities;
 using Nabz.Domain.Enums;
 using Nabz.Infrastructure.Forms;
@@ -17,6 +20,8 @@ namespace Nabz.Infrastructure.Services;
 public sealed class FormService(
     IFormRepository forms,
     IPatientRepository patients,
+    IPatientProfileRevisionRepository profileRevisions,
+    IUserRepository users,
     IUnitOfWork uow) : IFormService
 {
     public async Task<FormSummaryDto> UpsertFormAsync(Guid clinicId, Guid? formId, string code, string title, string? warningText, string targetAudienceJson, CancellationToken ct = default)
@@ -77,7 +82,7 @@ public sealed class FormService(
         var form = await forms.GetByIdAsync(formId, includeStructure: true, ct)
             ?? throw new InvalidOperationException("فرم یافت نشد.");
 
-        // Guid سمت کلاینت است — یک SaveChanges کافی است؛ save میانی + reload روی SQLite concurrency می‌دهد
+        // Guid سمت کلاینت است — یک SaveChanges کافی است؛ save میانی + reload باعث concurrency می‌شود
         var sectionByCode = form.Sections.ToDictionary(s => s.Code, StringComparer.OrdinalIgnoreCase);
         foreach (var s in sections.OrderBy(x => x.SortOrder))
         {
@@ -196,7 +201,7 @@ public sealed class FormService(
             FormDefinition form;
             if (existing is null)
             {
-                // گراف کامل در یک SaveChanges — جلوگیری از concurrency روی SQLite پس از insert تهی
+                // گراف کامل در یک SaveChanges — جلوگیری از concurrency پس از insert تهی
                 form = new FormDefinition
                 {
                     ClinicId = clinicId,
@@ -410,11 +415,17 @@ public sealed class FormService(
 
     public async Task<FormResponseDto> SaveResponseAsync(Guid patientId, Guid formId, FormResponseStatus status, IReadOnlyList<FormAnswerInput> answers, Guid actingUserId, CancellationToken ct = default)
     {
+        answers ??= Array.Empty<FormAnswerInput>();
         var patient = await patients.GetByIdAsync(patientId, ct)
             ?? throw new InvalidOperationException("بیمار یافت نشد.");
         // فقط مالک مستقیم پرونده می‌تواند پاسخ بنویسد
         if (patient.OwnerUserId != actingUserId)
             throw new UnauthorizedAccessException("فقط خود سلامتجو مجاز به ذخیره پرسشنامه است.");
+
+        // پروندهٔ نشست Owner باید همان patientId باشد — جلوگیری از ذخیره روی Guid اشتباه کلاینت
+        var owned = await patients.GetByOwnerUserIdAsync(actingUserId, ct);
+        if (owned is not null && owned.Id != patientId)
+            throw new UnauthorizedAccessException("شناسه پرونده با مالک نشست هم‌خوان نیست؛ صفحه را تازه کنید.");
 
         var form = await forms.GetByIdAsync(formId, includeStructure: true, ct)
             ?? throw new InvalidOperationException("فرم یافت نشد.");
@@ -433,6 +444,10 @@ public sealed class FormService(
                 if (!item.Required) continue;
                 if (!answerMap.TryGetValue(item.Code, out var val) || string.IsNullOrWhiteSpace(val))
                     throw new InvalidOperationException($"پاسخ الزامی برای «{item.LabelFa}» تکمیل نشده است.");
+                // JSON آدرس سکونت نباید فقط با trim قبول شود
+                if (string.Equals(item.InputType, "residence_address", StringComparison.OrdinalIgnoreCase) &&
+                    !ResidenceAddressParser.TryParse(val, out _, out var residenceErr))
+                    throw new InvalidOperationException(residenceErr ?? $"پاسخ الزامی برای «{item.LabelFa}» تکمیل نشده است.");
             }
         }
 
@@ -447,13 +462,17 @@ public sealed class FormService(
                 Status = FormResponseStatus.Draft
             };
             await forms.AddResponseAsync(response, ct);
-            await uow.SaveChangesAsync(ct);
-            response = await forms.GetResponseAsync(patientId, formId, ct)
-                ?? throw new InvalidOperationException("پاسخ ایجاد نشد.");
         }
-
-        if (response.Answers.Count > 0)
-            forms.RemoveAnswers(response.Answers.ToList());
+        else
+        {
+            // RemoveRange بدون Clear → موجودیت‌های Deleted داخل navigation می‌مانند و SaveChanges به DbUpdateConcurrencyException می‌خورد
+            var oldAnswers = response.Answers.ToList();
+            if (oldAnswers.Count > 0)
+            {
+                forms.RemoveAnswers(oldAnswers);
+                response.Answers.Clear();
+            }
+        }
 
         foreach (var a in answers)
         {
@@ -473,13 +492,86 @@ public sealed class FormService(
         if (status == FormResponseStatus.Submitted)
         {
             response.SubmittedAt = DateTime.UtcNow;
-            patient.IntakeCompleted = true;
-            patient.IntakeCompletedAt = DateTime.UtcNow;
+            // یک منبع حقیقت: پاسخ BASE تولد/تاهل روی Patient نوشته می‌شود + سوابق از→به
+            var before = PatientProfileDiff.SnapshotDemographics(patient);
+            ApplyDemographicsFromAnswers(patient, answers);
+            var after = PatientProfileDiff.SnapshotDemographics(patient);
+            var revs = PatientProfileDiff.Build(patient.Id, actingUserId, "form_submit", before, after);
+            if (revs.Count > 0)
+                await profileRevisions.AddRangeAsync(revs, ct);
             patient.UpdatedAt = DateTime.UtcNow;
+            if (patient.OwnerUserId is Guid ownerId && patient.Person.BirthDate is not null)
+            {
+                var owner = await users.GetByIdAsync(ownerId, ct);
+                // تولد روی Person مشترک است؛ فقط زمان به‌روزرسانی User
+                if (owner is not null && owner.PersonId == patient.PersonId)
+                    owner.UpdatedAt = DateTime.UtcNow;
+            }
+
+            // Intake کامل فقط وقتی همهٔ فرم‌های Published مخاطب Submitted باشند (اجازهٔ سوالات جدید بعداً)
+            await uow.SaveChangesAsync(ct);
+            var allForms = await forms.ListByClinicAsync(patient.ClinicId, ct);
+            var pendingOther = false;
+            foreach (var f in allForms.Where(x => x.Status == FormPublishStatus.Published))
+            {
+                if (!FormAudienceEvaluator.MatchesFormAudience(f, patient, out _)) continue;
+                if (f.Id == formId) continue;
+                var other = await forms.GetResponseAsync(patientId, f.Id, ct);
+                if (other is null || other.Status != FormResponseStatus.Submitted)
+                {
+                    pendingOther = true;
+                    break;
+                }
+            }
+            if (!pendingOther)
+            {
+                patient.IntakeCompleted = true;
+                patient.IntakeCompletedAt = DateTime.UtcNow;
+                // هم‌ترازی با mock: submit نهایی intro را هم دیده‌شده می‌کند
+                patient.JourneyIntroSeen = true;
+            }
+            else
+            {
+                patient.IntakeCompleted = false;
+                patient.IntakeCompletedAt = null;
+            }
         }
 
         await uow.SaveChangesAsync(ct);
         return Map(response);
+    }
+
+    /// <summary>از کدهای BASE تولد/تاهل/آدرس سکونت روی موجودیت بیمار می‌نویسد.</summary>
+    private static void ApplyDemographicsFromAnswers(Patient patient, IReadOnlyList<FormAnswerInput> answers)
+    {
+        var birth = answers.FirstOrDefault(a =>
+            a.ItemCode.EndsWith("_BASE_birthDate", StringComparison.OrdinalIgnoreCase));
+        if (birth is not null)
+        {
+            var raw = (birth.ValueRaw ?? birth.ValueCode ?? "").Trim();
+            if (DateOnly.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var iso))
+                patient.Person.BirthDate = iso;
+            else if (ShamsiBirthDateParser.TryParse(raw, out var shamsi, out _))
+                patient.Person.BirthDate = shamsi;
+        }
+
+        var marital = answers.FirstOrDefault(a =>
+            a.ItemCode.EndsWith("_BASE_maritalStatus", StringComparison.OrdinalIgnoreCase));
+        if (marital is not null)
+        {
+            var val = (marital.ValueCode ?? marital.ValueRaw ?? "").Trim();
+            if (val.Length > 0)
+                patient.MaritalStatus = MaritalStatusNormalizer.Normalize(val) ?? val;
+        }
+
+        var residence = answers.FirstOrDefault(a =>
+            a.ItemCode.EndsWith("_BASE_residence", StringComparison.OrdinalIgnoreCase));
+        if (residence is not null &&
+            ResidenceAddressParser.TryParse(residence.ValueRaw ?? residence.ValueCode, out var home, out _) &&
+            home is not null)
+        {
+            ResidenceAddressParser.ApplyToPatient(patient, home);
+        }
     }
 
     public async Task<FormResponseDto?> GetResponseForSpecialistAsync(Guid patientId, Guid formId, CancellationToken ct = default)

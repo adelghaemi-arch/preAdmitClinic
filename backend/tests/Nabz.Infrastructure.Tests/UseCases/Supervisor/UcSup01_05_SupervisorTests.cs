@@ -25,7 +25,7 @@ public sealed class UcSup01_05_SupervisorTests
         var contracts = h.CreateContractService(FixedOtp);
         var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", "SUP-1"));
         await contracts.UpdateSupervisorAsync(created.Id,
-            new UpdateSupervisorRequest("ناظر", SupervisorPhone, null, null, true));
+            new UpdateSupervisorRequest("ناظر", "ناظر", SupervisorPhone, null, null, true));
 
         var auth = h.CreateAuthService(FixedOtp);
         await auth.RequestOtpAsync(SupervisorPhone);
@@ -60,7 +60,7 @@ public sealed class UcSup01_05_SupervisorTests
         var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
         await contracts.ImportMembersAsync(created.Id,
         [
-            new ImportMemberRequest("عضو", "6677889900", "09120002001", 40, "مرد", null, null)
+            new ImportMemberRequest("عضو", "تست", "0010000003", "09120002001", new DateOnly(1986, 1, 1), "مرد", null, null, null, null)
         ]);
 
         var members = await contracts.ListMembersAsync(created.Id);
@@ -77,10 +77,10 @@ public sealed class UcSup01_05_SupervisorTests
         var contracts = h.CreateContractService(FixedOtp);
         var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
         await contracts.UpdateSupervisorAsync(created.Id,
-            new UpdateSupervisorRequest("ناظر", SupervisorPhone, null, null, true));
+            new UpdateSupervisorRequest("ناظر", "ناظر", SupervisorPhone, null, null, true));
         await contracts.ImportMembersAsync(created.Id,
         [
-            new ImportMemberRequest("عضو", "7788990011", "09120002002", 41, "زن", null, null)
+            new ImportMemberRequest("عضو", "تست", "0013542419", "09120002002", new DateOnly(1985, 1, 1), "زن", null, null, null, null)
         ]);
 
         var sent = await contracts.SendBulkSmsAsync(created.Id, "یادآوری", null, Guid.NewGuid(), asSupervisor: true);

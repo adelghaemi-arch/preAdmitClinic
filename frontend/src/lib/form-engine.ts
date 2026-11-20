@@ -1,5 +1,7 @@
 import catalogSeed from "@/lib/form-catalog.seed.json";
 import { iranLocalDayOffset } from "@/lib/date-iso";
+import { normalizeMaritalStatus } from "@/lib/marital-status";
+import { buildResidenceFromPatient, isResidenceAddressComplete } from "@/lib/residence-address";
 import type {
   FormAnswer,
   FormAnswerValue,
@@ -206,13 +208,18 @@ export function deriveMaritalStatus(answers: FormAnswer[], form: FormDefinition)
   );
   if (!maritalItem) return "";
   const direct = getAnswer(answers, maritalItem.code).valueRaw.trim();
-  if (direct) return direct;
-  // Legacy answers keyed with _DEMO_ while catalog now uses _BASE_
-  const legacyCode = maritalItem.code.replace("_BASE_", "_DEMO_");
-  if (legacyCode !== maritalItem.code) {
-    return getAnswer(answers, legacyCode).valueRaw.trim();
-  }
-  return "";
+  const raw = direct
+    ? direct
+    : (() => {
+        // Legacy answers keyed with _DEMO_ while catalog now uses _BASE_
+        const legacyCode = maritalItem.code.replace("_BASE_", "_DEMO_");
+        if (legacyCode !== maritalItem.code) {
+          return getAnswer(answers, legacyCode).valueRaw.trim();
+        }
+        return "";
+      })();
+  // مطلقه/بیوه و املای رایج → کانونیکال کاتالوگ
+  return normalizeMaritalStatus(raw) ?? raw;
 }
 
 /** Rewrite legacy demographic item codes DEMO → BASE on persisted answers. */
@@ -224,14 +231,17 @@ export function migrateDemoItemCodesInAnswers(answers: FormAnswer[]): FormAnswer
 }
 
 export function buildContext(
-  patient: Pick<PatientFullDto, "gender" | "age">,
+  patient: Pick<PatientFullDto, "gender" | "age" | "maritalStatus">,
   answers: FormAnswer[],
   form: FormDefinition
 ): AudienceContext {
+  const fromForm = deriveMaritalStatus(answers, form);
+  const fromPatient = normalizeMaritalStatus(patient.maritalStatus) ?? patient.maritalStatus?.trim() ?? "";
   return {
     gender: patient.gender,
     age: patient.age,
-    maritalStatus: deriveMaritalStatus(answers, form),
+    // پاسخ فرم اولویت دارد؛ وگرنه پروفایل نرمال‌شده
+    maritalStatus: fromForm || fromPatient || "",
   };
 }
 
@@ -241,14 +251,34 @@ export function isFormDateItem(item: FormItemDefinition): boolean {
 
 export function prefillValue(
   item: FormItemDefinition,
-  patient: Pick<PatientFullDto, "fullName" | "nationalId" | "phone" | "age" | "gender">
+  patient: Pick<
+    PatientFullDto,
+    | "fullName"
+    | "nationalId"
+    | "phone"
+    | "age"
+    | "gender"
+    | "homeLat"
+    | "homeLon"
+    | "homeAddress"
+    | "homePlaque"
+    | "homeUnit"
+    | "homePostalCode"
+  >
 ): string {
   if (isFormDateItem(item)) return iranLocalDayOffset(0);
+  // آدرس سکونت از ستون‌های Patient — حتی بدون prefillFromPatient صریح
+  if (item.inputType === "residence_address") {
+    return buildResidenceFromPatient(patient);
+  }
   const key = item.prefillFromPatient;
   if (!key) return "";
   if (key === "fullName") return patient.fullName ?? "";
   if (key === "nationalId") return patient.nationalId ?? "";
   if (key === "phone") return patient.phone ?? "";
+  if (key === "homeAddress" || key === "residence") {
+    return buildResidenceFromPatient(patient);
+  }
   return "";
 }
 
@@ -259,6 +289,9 @@ export function isItemComplete(item: FormItemDefinition, answer: FormAnswer, vis
     if (!answer.valueCode) return false;
     if (item.notesPolicy === "required_if_yes" && answer.valueCode === "yes" && !answer.notes.trim()) return false;
     return true;
+  }
+  if (item.inputType === "residence_address") {
+    return isResidenceAddressComplete(answer.valueRaw);
   }
   return Boolean(answer.valueRaw.trim());
 }

@@ -1,0 +1,53 @@
+﻿=== Nabz Clinic pre-publish tests ===
+Log: C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server\test-reports\pre-publish-20261120-153736.log
+Mode: quiet (PRE_PUBLISH_VERBOSE=1 for full output)
+---
+  [skip] Nabz.Api.exe not running
+  [skip] testhost.exe not running
+  [skip] Nabz.Api.Tests.exe not running
+  [skip] testhost.net48.exe not running
+  [skip] testhost.netcoreapp.exe not running
+  [skip] vstest.console.exe not running
+[0/3] Stop locks — killed: 0, skipped: 6
+[1/3 Backend unit] RUNNING (details in log)…
+CMD: dotnet.exe test C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Nabz.Infrastructure.Tests.csproj -v q --nologo
+  … still running (5s)
+----- suite output: 1/3 Backend unit -----
+Test run for C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\bin\Debug\net10.0\Nabz.Infrastructure.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   106, Skipped:     0, Total:   106, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0)
+
+----- end suite: 1/3 Backend unit (exit=, 10.0s) -----
+[PASS] 1/3 Backend unit — Passed!  - Failed:     0, Passed:   106, Skipped:     0, Total:   106, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0) (10s)
+[2/3 API smoke] RUNNING (details in log)…
+CMD: dotnet.exe test C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj -v q --nologo
+  … still running (5s)
+  … still running (10s)
+----- suite output: 2/3 API smoke -----
+Test run for C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\bin\Debug\net10.0\Nabz.Api.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     6, Skipped:     0, Total:     6, Duration: 5 s - Nabz.Api.Tests.dll (net10.0)
+
+----- end suite: 2/3 API smoke (exit=, 15.0s) -----
+[PASS] 2/3 API smoke — Passed!  - Failed:     0, Passed:     6, Skipped:     0, Total:     6, Duration: 5 s - Nabz.Api.Tests.dll (net10.0) (15s)
+[3/3 Frontend unit] RUNNING (details on console / log note)…
+Frontend via _run-frontend-tests.ps1 (no file redirect — Vitest globals)
+  … still running (5s)
+Frontend finished exit=0 elapsed=10.0s
+[PASS] 3/3 Frontend unit — exit code 0 (10s)
+---
+========================================
+  PRE-PUBLISH TEST REPORT
+========================================
+Started:  2026-11-20T15:37:36.6005301+03:30
+Finished: 2026-11-20T15:38:11.9237429+03:30
+Duration: 35s
+---
+1 Backend Infrastructure.Tests  PASS   0    Passed!  - Failed:     0, Passed:   106, Skipped:     0, Total:   106, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0)
+2 API smoke Nabz.Api.Tests      PASS   0    Passed!  - Failed:     0, Passed:     6, Skipped:     0, Total:     6, Duration: 5 s - Nabz.Api.Tests.dll (net10.0)
+3 Frontend Vitest test:run      PASS   0    exit code 0
+---
+Full log: C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server\test-reports\pre-publish-20261120-153736.log
+PRE-PUBLISH TESTS: PASS

@@ -27,9 +27,8 @@ import {
 } from "@/types/clinic";
 
 /**
- * In-memory mock data store. There is no database and no secret involved:
- * every dataset is bundled with the application and lives in the Node process.
- * Restarting the server restores the seeded demo state.
+ * In-memory store برای مسیر legacy QR/kiosk و helperهای seed کلاینت.
+ * دامنهٔ اصلی روی API+SQL Server است؛ این store جایگزین دیتابیس محصول نیست.
  */
 
 export interface MockStore {
@@ -222,7 +221,17 @@ export const mockStore = {
   get users() { return store().appUsers; },
   get clinicLocation() { return store().clinicLocation; },
   updateClinicLocation(patch: Partial<MockStore["clinicLocation"]>) { Object.assign(store().clinicLocation, patch); },
-  updatePatientHome(patientId: number, patch: { homeLat?: number | null; homeLon?: number | null; homeAddress?: string | null }) {
+  updatePatientHome(
+    patientId: number,
+    patch: {
+      homeLat?: number | null;
+      homeLon?: number | null;
+      homeAddress?: string | null;
+      homePlaque?: string | null;
+      homeUnit?: string | null;
+      homePostalCode?: string | null;
+    }
+  ) {
     const p = store().patients.find((x) => x.id === patientId);
     if (p) Object.assign(p, patch);
   },

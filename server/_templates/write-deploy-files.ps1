@@ -76,6 +76,7 @@ services:
       - "${myPort}:80"
     volumes:
       - ./dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
 "@
         $envExample = @"
 # فرانت کلینیک (my) — بیلد از frontend/؛ runtime nginx فقط dist را سرو می‌کند
@@ -89,6 +90,31 @@ VITE_API_BASE_URL=$apiUrl
 "@
         Write-Utf8NoBom (Join-Path $dest 'docker-compose.yml') $compose
         Write-Utf8NoBom (Join-Path $dest '.env.example') $envExample
+
+        # بدون try_files، مسیرهای کلاینت مثل /login با رفرش مستقیم 404 می‌دهند
+        $nginxConf = @'
+# File: server/my/nginx.conf
+# Description: سرو استاتیک SPA کلینیک با fallback به index.html
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+events { worker_connections 1024; }
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    sendfile on;
+    keepalive_timeout 65;
+    server_tokens off;
+    server {
+        listen 80;
+        server_name _;
+        root /usr/share/nginx/html;
+        index index.html;
+        location / { try_files $uri $uri/ /index.html; }
+    }
+}
+'@
+        Write-Utf8NoBom (Join-Path $dest 'nginx.conf') $nginxConf
 
         $gitignore = @"
 # File: server/my/.gitignore
@@ -224,6 +250,8 @@ services:
       - .env
     environment:
       ASPNETCORE_URLS: "http://+:${apiContainerPort}"
+      # قفل روی bind mount حتی اگر .env قدیمی بدون Storage__Root باشد
+      Storage__Root: "/app/wwwroot/uploads"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -250,8 +278,10 @@ Kavenegar__OtpTemplate=
 Kavenegar__InviteTemplate=
 
 # آپلود پایدار روی هاست: server/persist/uploads → /app/wwwroot/uploads
+# الزامی: هم‌تراز bind mount تا فایل‌ها داخل image نروند
+Storage__Root=/app/wwwroot/uploads
 # ویترین آینده روی هاست: server/persist/news-data → /app/news-vitrine
-# URLهای فرانت (مستندسازی / CORS آینده)
+# URLهای فرانت — وارد سیاست CORS در Program.cs می‌شوند (WithOrigins)
 FrontendUrls__My=$myUrl
 FrontendUrls__News=$newsUrl
 "@

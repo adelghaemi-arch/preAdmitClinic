@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Api/Controllers/EvidenceController.cs
- Description: مدارک، عکس، GPS، نشست ضدتقلب — actingUser از claim
+ Description: مدارک، عکس، GPS، نشست ضدتقلب و fraud/config عمومی — actingUser از claim
  Parent Dependencies: IEvidenceService, CurrentUserExtensions
  */
 
@@ -47,7 +47,8 @@ public sealed class EvidenceController(IEvidenceService evidence) : ControllerBa
         return Ok(new { ok = true });
     }
 
-    [Authorize(Roles = "Owner,Specialist,Admin,Platform")]
+    // مسیر GPS پرونده: پزشک/مالک؛ ممیزی پلتفرم جدا از fraud
+    [Authorize(Roles = "Owner,Specialist,Platform")]
     [HttpGet("gps")]
     public async Task<IActionResult> ListGps([FromQuery] Guid patientId, [FromQuery] int take = 50, CancellationToken ct = default)
         => Ok(await evidence.ListGpsByPatientAsync(patientId, take, ct));
@@ -60,6 +61,11 @@ public sealed class EvidenceController(IEvidenceService evidence) : ControllerBa
         return Ok(new { ok = true });
     }
 
+    // برش عمومی برای Owner و سایر نقش‌های لاگین — بدون نیاز به Role=Platform
+    [HttpGet("fraud/config")]
+    public async Task<IActionResult> FraudConfig(CancellationToken ct)
+        => Ok(await evidence.GetFraudCaptureConfigAsync(ct));
+
     [Authorize(Roles = "Owner")]
     [HttpPost("fraud/start")]
     public async Task<IActionResult> StartFraud([FromBody] FraudStartBody body, CancellationToken ct)
@@ -69,7 +75,8 @@ public sealed class EvidenceController(IEvidenceService evidence) : ControllerBa
     [HttpPost("fraud/capture")]
     public async Task<IActionResult> Capture([FromBody] FraudCaptureBody body, CancellationToken ct)
     {
-        await evidence.CaptureFraudFrameAsync(body.SessionId, User.GetUserId(), body.StorageKey, body.Lat, body.Lon, body.Accuracy, ct);
+        var kind = ParseFraudKind(body.Kind);
+        await evidence.CaptureFraudFrameAsync(body.SessionId, User.GetUserId(), body.StorageKey, body.Lat, body.Lon, body.Accuracy, kind, ct);
         return Ok(new { ok = true });
     }
 
@@ -110,12 +117,13 @@ public sealed class EvidenceController(IEvidenceService evidence) : ControllerBa
         return s is null ? NotFound() : Ok(s);
     }
 
-    [Authorize(Roles = "Specialist,Admin,Owner,Platform")]
+    // مدارک پزشکی: پزشک + مالک پرونده؛ ادمین فقط شمارش از intake-status
+    [Authorize(Roles = "Specialist,Owner")]
     [HttpGet("documents")]
     public async Task<IActionResult> ListDocuments([FromQuery] Guid patientId, CancellationToken ct)
         => Ok(await evidence.ListDocumentsByPatientAsync(patientId, ct));
 
-    [Authorize(Roles = "Specialist,Admin,Owner,Platform")]
+    [Authorize(Roles = "Specialist,Owner")]
     [HttpGet("photos/portrait")]
     public async Task<IActionResult> Portrait([FromQuery] Guid patientId, CancellationToken ct)
     {
@@ -123,18 +131,50 @@ public sealed class EvidenceController(IEvidenceService evidence) : ControllerBa
         return p is null ? NotFound() : Ok(p);
     }
 
-    [Authorize(Roles = "Specialist,Admin,Platform")]
+    // عکس شواهد بالینی برای پزشک؛ ادمین کلینیک دسترسی ندارد — خزانه جدا فقط Platform
+    [Authorize(Roles = "Specialist")]
     [HttpGet("photos")]
     public async Task<IActionResult> ListPhotos([FromQuery] Guid patientId, CancellationToken ct)
         => Ok(await evidence.ListPhotosByPatientAsync(patientId, ct));
 
+    [Authorize(Roles = "Platform")]
+    [HttpGet("vault")]
+    public async Task<IActionResult> ListVault([FromQuery] bool trash = false, [FromQuery] int take = 100, CancellationToken ct = default)
+        => Ok(await evidence.ListVaultFilesAsync(trash, take, ct));
+
+    [Authorize(Roles = "Platform")]
+    [HttpPost("vault/soft-delete")]
+    public async Task<IActionResult> SoftDeleteVault([FromBody] VaultBulkBody body, CancellationToken ct)
+    {
+        await evidence.SoftDeleteVaultFilesAsync(body.DocumentFileIds ?? [], body.PhotoIds ?? [], ct);
+        return Ok(new { ok = true });
+    }
+
+    [Authorize(Roles = "Platform")]
+    [HttpPost("vault/hard-delete")]
+    public async Task<IActionResult> HardDeleteVault([FromBody] VaultBulkBody body, CancellationToken ct)
+    {
+        await evidence.HardDeleteVaultFilesAsync(body.DocumentFileIds ?? [], body.PhotoIds ?? [], ct);
+        return Ok(new { ok = true });
+    }
+
+    public record VaultBulkBody(List<Guid>? DocumentFileIds, List<Guid>? PhotoIds);
     public record AddGroupBody(Guid PatientId, string DocumentType, string TypeLabelFa, string? Note, string? DocumentDate);
     public record FileBody(string FileName, string MimeType, string StorageKey, long SizeBytes, string? DocumentDate);
     public record AddFilesBody(Guid GroupId, List<FileBody> Files);
     public record PhotoBody(Guid PatientId, string StorageKey);
     public record FraudStartBody(Guid PatientId);
-    public record FraudCaptureBody(Guid SessionId, string StorageKey, double? Lat, double? Lon, double? Accuracy);
+    public record FraudCaptureBody(Guid SessionId, string StorageKey, double? Lat, double? Lon, double? Accuracy, string? Kind);
     public record FraudEndBody(Guid SessionId);
     public record GpsBody(Guid PatientId, double Lat, double Lon, double Accuracy, string? Source);
     public record ReviewBody(Guid SessionId, FraudReviewStatus Status, string? Note, string Reviewer);
+
+    private static UserPhotoKind ParseFraudKind(string? kind)
+    {
+        if (string.IsNullOrWhiteSpace(kind) || kind.Equals("fraud_auto", StringComparison.OrdinalIgnoreCase) || kind.Equals("FraudAuto", StringComparison.OrdinalIgnoreCase))
+            return UserPhotoKind.FraudAuto;
+        if (kind.Equals("fraud_confirm", StringComparison.OrdinalIgnoreCase) || kind.Equals("FraudConfirm", StringComparison.OrdinalIgnoreCase))
+            return UserPhotoKind.FraudConfirm;
+        throw new InvalidOperationException("نوع فریم ضدتقلب نامعتبر است.");
+    }
 }

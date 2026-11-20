@@ -1,3 +1,9 @@
+/*
+ File: frontend/src/components/PreAdmitFormRenderer.tsx
+ Description: رندر پرسشنامه پیش‌پذیرش؛ autosave سریال draft؛ submit نهایی
+ Parent Dependencies: form-engine, clinic types, ApiError
+ */
+
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -10,6 +16,7 @@ import {
   Shield,
 } from "lucide-react";
 import type {
+  ClinicLocation,
   ClinicSnapshot,
   FormAnswer,
   FormAnswerValue,
@@ -19,6 +26,8 @@ import type {
   IntakeDocumentType,
   PatientFullDto,
 } from "@/types/clinic";
+import { ApiError } from "@/lib/api/http";
+import { beginOwnerEvidenceGps, stopOwnerGpsWatch } from "@/lib/owner-gps-watch";
 import {
   buildContext,
   getAnswer,
@@ -36,10 +45,12 @@ import {
   validateForm,
   visibleSections,
 } from "@/lib/form-engine";
+import { normalizeMaritalStatus } from "@/lib/marital-status";
 import { toFaDigits } from "@/lib/persian";
 import { iranLocalDayOffset } from "@/lib/date-iso";
 import { birthDateBounds, PersianDateField } from "@/components/PersianDateField";
 import { ProvinceCityField } from "@/components/ProvinceCityField";
+import { ResidenceAddressField } from "@/components/ResidenceAddressField";
 import { PatientPhotoCapture } from "@/components/PatientPhotoCapture";
 import { PreAdmitDocumentsPanel } from "@/components/PreAdmitDocumentsPanel";
 import { ContextualIntakeUpload } from "@/components/ContextualIntakeUpload";
@@ -56,6 +67,11 @@ interface PreAdmitFormRendererProps {
   readOnly?: boolean;
   userId?: number | null;
   fraudIntervalSeconds?: number;
+  clinicLocation?: ClinicLocation | null;
+  /** هم‌تراز featureFlags.fraudWatch — خاموش یعنی بدون نشست ضدتقلب */
+  enableFraudWatch?: boolean;
+  /** هم‌تراز featureFlags.gpsTracking */
+  enableGpsTracking?: boolean;
 }
 
 function YnButtons({
@@ -217,12 +233,16 @@ function ItemField({
   disabled,
   readOnlyPrefill,
   onChange,
+  fallbackCenter,
+  onEvidenceGpsStart,
 }: {
   item: FormItemDefinition;
   answer: FormAnswer;
   disabled?: boolean;
   readOnlyPrefill?: boolean;
   onChange: (next: FormAnswer) => void;
+  fallbackCenter?: { lat: number; lon: number } | null;
+  onEvidenceGpsStart?: () => void;
 }) {
   const [focusNotes, setFocusNotes] = useState(false);
 
@@ -329,6 +349,24 @@ function ItemField({
     );
   }
 
+  if (item.inputType === "residence_address") {
+    return (
+      <ResidenceAddressField
+        className="mt-1"
+        value={answer.valueRaw}
+        disabled={disabled}
+        readOnly={readOnlyPrefill}
+        required={item.required}
+        aria-label={item.labelFa}
+        fallbackCenter={fallbackCenter}
+        onEvidenceGpsStart={onEvidenceGpsStart}
+        onChange={(valueRaw) =>
+          onChange({ ...answer, itemCode: item.code, valueRaw, valueCode: null, skippedByRule: false })
+        }
+      />
+    );
+  }
+
   return (
     <AppInput
       type={item.inputType === "number" ? "number" : "text"}
@@ -351,7 +389,10 @@ export function PreAdmitFormRenderer({
   busy,
   readOnly = false,
   userId = null,
-  fraudIntervalSeconds = 3,
+  fraudIntervalSeconds = 7,
+  clinicLocation = null,
+  enableFraudWatch = true,
+  enableGpsTracking = true,
 }: PreAdmitFormRendererProps) {
   const form = useMemo(
     () => resolveFormForPatient(forms, patient.gender, patient.age),
@@ -374,6 +415,9 @@ export function PreAdmitFormRenderer({
   const navScrollReady = useRef(false);
   const hydratedKey = useRef("");
   const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // جلوگیری از POST موازی autosave که طوفان ۵۰۰/CORS می‌سازد
+  const draftInFlight = useRef(false);
+  const draftQueued = useRef<FormAnswer[] | null>(null);
 
   useEffect(() => {
     answersRef.current = answers;
@@ -441,7 +485,14 @@ export function PreAdmitFormRenderer({
   }, [sectionIndex, onScreeningPhase, onDocumentsPhase]);
 
   const ctx = useMemo(
-    () => (form ? buildContext(patient, answers, form) : { gender: patient.gender, age: patient.age, maritalStatus: "" }),
+    () =>
+      form
+        ? buildContext(patient, answers, form)
+        : {
+            gender: patient.gender,
+            age: patient.age,
+            maritalStatus: normalizeMaritalStatus(patient.maritalStatus) ?? patient.maritalStatus ?? "",
+          },
     [form, patient, answers]
   );
 
@@ -492,13 +543,20 @@ export function PreAdmitFormRenderer({
 
   const persistDraft = async (nextAnswers: FormAnswer[], quiet = true) => {
     if (!form || readOnly || submitted) return;
+    if (draftInFlight.current) {
+      draftQueued.current = nextAnswers;
+      return;
+    }
+    draftInFlight.current = true;
     setSaving(true);
     if (!quiet) setError("");
     try {
       await onAction({
         action: "SAVE_FORM_RESPONSE",
         patientId: patient.id,
+        serverPatientId: patient.serverId ?? null,
         formId: form.id,
+        serverFormId: form.id,
         mode: "draft",
         answers: nextAnswers,
         silent: true,
@@ -506,10 +564,20 @@ export function PreAdmitFormRenderer({
       // Keep a subtle inline hint only; never toast on autosave.
       setSaveHint("");
       if (!quiet) setMessage("پیش‌نویس ذخیره شد.");
-    } catch {
-      setSaveHint("ذخیره موقت ناموفق بود");
+    } catch (e) {
+      const msg =
+        e instanceof ApiError && e.message
+          ? e.message
+          : e instanceof Error && e.message
+            ? e.message
+            : "ذخیره موقت ناموفق بود";
+      setSaveHint(msg);
     } finally {
+      draftInFlight.current = false;
       setSaving(false);
+      const queued = draftQueued.current;
+      draftQueued.current = null;
+      if (queued) void persistDraft(queued, true);
     }
   };
 
@@ -732,7 +800,9 @@ export function PreAdmitFormRenderer({
       await onAction({
         action: "SAVE_FORM_RESPONSE",
         patientId: patient.id,
+        serverPatientId: patient.serverId ?? null,
         formId: form.id,
+        serverFormId: form.id,
         mode: "submit",
         answers,
       });
@@ -745,15 +815,19 @@ export function PreAdmitFormRenderer({
     }
   };
 
-  const fraudWatch = useMemo(
-    () => ({
+  const fraudWatch = useMemo(() => {
+    // فلگ پلتفرم خاموش ⇒ بدون نشست/فریم ضدتقلب
+    if (!enableFraudWatch) return null;
+    return {
       patientId: patient.id,
       userId,
       intervalSeconds: fraudIntervalSeconds,
       onStartSession: async (patientId: number) => {
+        // serverPatientId برای API Guid؛ patientId عددی فقط برای سازگاری UI
         const res = (await onAction({
           action: "START_FRAUD_CAMERA_SESSION",
           patientId,
+          serverPatientId: patient.serverId ?? undefined,
           userId,
           silent: true,
         })) as { sessionId?: string } | null;
@@ -775,6 +849,7 @@ export function PreAdmitFormRenderer({
         await onAction({
           action: "CAPTURE_FRAUD_FRAME",
           patientId: patient.id,
+          serverPatientId: patient.serverId ?? undefined,
           userId,
           sessionId,
           kind: "fraud_auto",
@@ -788,9 +863,12 @@ export function PreAdmitFormRenderer({
       onEndSession: async (sessionId: string) => {
         await onAction({ action: "END_FRAUD_CAMERA_SESSION", sessionId, silent: true });
       },
-    }),
-    [patient.id, userId, fraudIntervalSeconds, onAction]
-  );
+    };
+  }, [enableFraudWatch, patient.id, patient.serverId, userId, fraudIntervalSeconds, onAction]);
+
+  useEffect(() => {
+    return () => stopOwnerGpsWatch();
+  }, []);
 
   if (!patient.gender || (patient.gender !== "مرد" && patient.gender !== "زن")) {
     return (
@@ -822,7 +900,13 @@ export function PreAdmitFormRenderer({
   }
 
   const resolvedPhoto = localPhotoUrl || patient.photoDataUrl || null;
-  const needsPhotoGate = !readOnly && !submitted && !resolvedPhoto && Boolean(patient.journeyIntroSeen);
+  // hasPortrait سرور هم کافی است تا بعد از رفرش دوباره گیت عکس باز نشود
+  const needsPhotoGate =
+    !readOnly &&
+    !submitted &&
+    !resolvedPhoto &&
+    !patient.hasPortrait &&
+    Boolean(patient.journeyIntroSeen);
 
   if (needsPhotoGate) {
     return (
@@ -831,9 +915,22 @@ export function PreAdmitFormRenderer({
         busy={busy}
         fraudWatch={fraudWatch}
         onConfirm={async (photoDataUrl, meta) => {
+          let serverPatientId = patient.serverId ?? null;
+          // اگر hydrate ناقص بود، یک‌بار از سرور resolve کن
+          if (!serverPatientId) {
+            const ensured = (await onAction({
+              action: "ENSURE_OWNER_PATIENT",
+              silent: true,
+            })) as { patient?: { serverId?: string } } | undefined;
+            serverPatientId = ensured?.patient?.serverId ?? null;
+          }
+          if (!serverPatientId) {
+            throw new Error("شناسه سرور پرونده یافت نشد؛ صفحه را تازه کنید.");
+          }
           await onAction({
             action: "UPDATE_PATIENT_PHOTO",
             patientId: patient.id,
+            serverPatientId,
             photoDataUrl,
             fraudSessionId: meta?.fraudSessionId,
             lat: meta?.lat,
@@ -1054,6 +1151,24 @@ export function PreAdmitFormRenderer({
                         answer={answer}
                         disabled={readOnly || submitted || busy}
                         readOnlyPrefill={locked}
+                        fallbackCenter={
+                          clinicLocation
+                            ? { lat: clinicLocation.lat, lon: clinicLocation.lon }
+                            : null
+                        }
+                        onEvidenceGpsStart={
+                          enableGpsTracking
+                            ? () => {
+                                beginOwnerEvidenceGps({
+                                  enabled: true,
+                                  patientId: patient.id,
+                                  serverPatientId: patient.serverId,
+                                  initialSource: "map_open",
+                                  onAction,
+                                });
+                              }
+                            : undefined
+                        }
                         onChange={(next) => updateItem(item, next)}
                       />
                       {docPrompts.map((prompt) => (

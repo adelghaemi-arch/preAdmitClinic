@@ -27,13 +27,30 @@ public sealed class AuthServiceFactory
     {
         var authOptions = Options.Create(new AuthOptions { FixedOtp = fixedOtp });
         var kavenegarOptions = Options.Create(new KavenegarOptions());
+        var users = new FakeUserRepository(Store);
+        var persons = new FakePersonRepository(Store);
+        var contracts = new FakeContractRepository(Store);
+        var patients = new FakePatientRepository(Store);
+        var clinics = new FakeClinicRepository(Store);
+        var patientService = new PatientService(
+            patients,
+            new FakePatientProfileRevisionRepository(Store),
+            contracts,
+            users,
+            persons,
+            new FakeFormRepository(Store),
+            new FakeEvidenceRepository(Store),
+            clinics,
+            UnitOfWork);
 
         return new AuthService(
-            new FakeUserRepository(Store),
+            users,
+            persons,
             new FakeAuthRepository(Store),
-            new FakeContractRepository(Store),
-            new FakePatientRepository(Store),
-            new FakeClinicRepository(Store),
+            contracts,
+            patients,
+            clinics,
+            patientService,
             UnitOfWork,
             Sms,
             authOptions,

@@ -1,8 +1,19 @@
+/*
+ File: frontend/src/components/LocationPickerPopup.tsx
+ Description: پاپاپ انتخاب موقعیت روی نقشه OSM؛ bottom-sheet موبایل با بدنه اسکرول و فوتر ثابت
+ Parent Dependencies: osm-routing.ts, PermissionRetryPanel, media-permission.ts
+ */
+
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Check, Compass, Loader2, MapPin, Search, X } from "lucide-react";
 import { AppInput } from "@/components/AppInput";
+import { PermissionRetryPanel } from "@/components/PermissionRetryPanel";
+import {
+  classifyMediaError,
+  type PermissionErrorKind,
+} from "@/lib/media-permission";
 import {
   getOsmEndpoints,
   reverseGeocode,
@@ -58,9 +69,12 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
   const [busy, setBusy] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState("");
+  const [geoDeniedKind, setGeoDeniedKind] = useState<PermissionErrorKind | null>(null);
 
   const applyPoint = (next: GeoPoint, opts?: { address?: string; pan?: boolean }) => {
     setPoint(next);
+    // انتخاب دستی روی نقشه/جستجو جایگزین GPS است
+    setGeoDeniedKind(null);
     markerRef.current?.setLatLng([next.lat, next.lon]);
     if (opts?.pan !== false) {
       mapRef.current?.panTo([next.lat, next.lon], { animate: true });
@@ -125,8 +139,9 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
     mapRef.current = map;
     markerRef.current = marker;
 
-    // Invalidate size after modal layout settles.
-    const t = window.setTimeout(() => map.invalidateSize(), 80);
+    // پس از settle شدن bottom-sheet موبایل، اندازهٔ کانتینر عوض می‌شود
+    const t1 = window.setTimeout(() => map.invalidateSize(), 80);
+    const t2 = window.setTimeout(() => map.invalidateSize(), 320);
 
     // Seed reverse geocode when opening without a typed address.
     if (!initial?.address?.trim()) {
@@ -139,7 +154,8 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
     }
 
     return () => {
-      window.clearTimeout(t);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
       if (reverseTimerRef.current) window.clearTimeout(reverseTimerRef.current);
       map.remove();
       mapRef.current = null;
@@ -166,8 +182,15 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
   };
 
   const useMyLocation = () => {
+    setGeoDeniedKind(null);
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setGeoDeniedKind("insecure");
+      setError("");
+      return;
+    }
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setError("مرورگر شما موقعیت مکانی را پشتیبانی نمی‌کند.");
+      setGeoDeniedKind("unsupported");
+      setError("");
       return;
     }
     setLocating(true);
@@ -175,13 +198,15 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setLocating(false);
+        setGeoDeniedKind(null);
         const next = { lat: pos.coords.latitude, lon: pos.coords.longitude };
         applyPoint(next);
         mapRef.current?.setView([next.lat, next.lon], 17);
       },
-      () => {
+      (err) => {
         setLocating(false);
-        setError("دسترسی به موقعیت مکانی داده نشد.");
+        setGeoDeniedKind(classifyMediaError(err, "geolocation"));
+        setError("");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -198,7 +223,7 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onClose}
       role="presentation"
     >
@@ -207,103 +232,128 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
         aria-modal="true"
         aria-label="انتخاب موقعیت روی نقشه"
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className="flex max-h-[92vh] max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl sm:rounded-2xl"
       >
-        <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3">
-          <div>
+        {/* هدر ثابت؛ روی ارتفاع کم متن راهنما کوتاه می‌ماند */}
+        <div className="flex shrink-0 items-start justify-between gap-2 border-b border-slate-100 px-3 py-2 sm:gap-3 sm:px-4 sm:py-3">
+          <div className="min-w-0">
             <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-800">
-              <MapPin className="h-3.5 w-3.5 text-teal-700" />
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-teal-700" />
               انتخاب موقعیت روی نقشه
             </p>
-            <p className="mt-1 text-[11px] leading-5 text-slate-500">
-              روی نقشه کلیک کنید یا مارکر را جابه‌جا کنید؛ آدرس از OpenStreetMap تکمیل می‌شود.
+            <p className="mt-0.5 truncate text-[10px] leading-4 text-slate-500 sm:mt-1 sm:whitespace-normal sm:text-[11px] sm:leading-5">
+              روی نقشه بزنید یا مارکر را جابه‌جا کنید؛ آدرس از OSM تکمیل می‌شود.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="بستن"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-700"
+            className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-700"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="space-y-2 border-b border-slate-100 px-4 py-3">
-          <div className="flex flex-wrap gap-2">
-            <AppInput
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void runSearch();
-                }
-              }}
-              placeholder="جستجوی آدرس، محله یا خیابان…"
-              className="app-input min-w-48 flex-1 text-xs"
-            />
-            <button type="button" disabled={busy} onClick={() => void runSearch()} className="primary-button">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              جستجو
-            </button>
-            <button type="button" disabled={locating} onClick={useMyLocation} className="secondary-button">
-              <Compass className="h-3.5 w-3.5" />
-              {locating ? "در حال یافتن…" : "موقعیت من"}
-            </button>
-          </div>
-          {hits.length > 1 && (
-            <ul className="max-h-28 space-y-1 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/80 p-1.5">
-              {hits.map((hit) => (
-                <li key={`${hit.lat}-${hit.lon}-${hit.displayName}`}>
-                  <button
-                    type="button"
-                    className="w-full rounded-lg px-2.5 py-2 text-right text-[11px] leading-5 text-slate-700 hover:bg-white"
-                    onClick={() => {
-                      applyPoint({ lat: hit.lat, lon: hit.lon }, { address: hit.displayName });
-                      mapRef.current?.setView([hit.lat, hit.lon], 16);
-                      setHits([]);
-                    }}
-                  >
-                    {hit.displayName}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="relative h-64 w-full shrink-0 bg-slate-100 sm:h-72">
-          <div ref={mapHostRef} className="h-full w-full" />
-          {busy && (
-            <div className="pointer-events-none absolute start-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/95 px-2.5 py-1.5 text-[10px] text-teal-800 shadow-sm">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              دریافت آدرس از OSM…
+        {/* بدنه اسکرول‌پذیر؛ فوتر بیرون می‌ماند تا تأیید همیشه دیده شود */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="space-y-2 border-b border-slate-100 px-3 py-2 sm:px-4 sm:py-3">
+            <div className="flex gap-1.5 sm:gap-2">
+              <AppInput
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void runSearch();
+                  }
+                }}
+                placeholder="جستجوی آدرس، محله یا خیابان…"
+                className="app-input min-w-0 flex-1 text-xs"
+              />
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void runSearch()}
+                className="primary-button shrink-0 px-2.5 sm:px-3"
+                aria-label="جستجو"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                <span className="hidden sm:inline">جستجو</span>
+              </button>
+              <button
+                type="button"
+                disabled={locating}
+                onClick={useMyLocation}
+                className="secondary-button shrink-0 px-2.5 sm:px-3"
+                aria-label={locating ? "در حال یافتن موقعیت" : "موقعیت من"}
+              >
+                <Compass className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{locating ? "در حال یافتن…" : "موقعیت من"}</span>
+              </button>
             </div>
-          )}
-        </div>
+            {hits.length > 1 && (
+              <ul className="max-h-20 space-y-1 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/80 p-1.5 sm:max-h-28">
+                {hits.map((hit) => (
+                  <li key={`${hit.lat}-${hit.lon}-${hit.displayName}`}>
+                    <button
+                      type="button"
+                      className="w-full rounded-lg px-2.5 py-2 text-right text-[11px] leading-5 text-slate-700 hover:bg-white"
+                      onClick={() => {
+                        applyPoint({ lat: hit.lat, lon: hit.lon }, { address: hit.displayName });
+                        mapRef.current?.setView([hit.lat, hit.lon], 16);
+                        setHits([]);
+                      }}
+                    >
+                      {hit.displayName}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-        <div className="space-y-2 border-t border-slate-100 px-4 py-3">
-          <label className="app-label text-[11px]">
-            آدرس تکمیل‌شده (قابل ویرایش)
-            <AppInput
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="app-input mt-1.5 text-xs"
-              placeholder="آدرس از OSM اینجا می‌آید…"
-            />
-          </label>
-          <p className="text-[10px] text-slate-400">
-            مختصات: {toFaDigits(point.lat.toFixed(5))} ، {toFaDigits(point.lon.toFixed(5))}
-          </p>
-          {error && (
-            <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-[11px] text-rose-600">
-              {error}
+          <div className="relative h-44 w-full shrink-0 bg-slate-100 sm:h-64 md:h-72">
+            <div ref={mapHostRef} className="h-full w-full" />
+            {busy && (
+              <div className="pointer-events-none absolute start-3 top-3 inline-flex items-center gap-1.5 rounded-lg bg-white/95 px-2.5 py-1.5 text-[10px] text-teal-800 shadow-sm">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                دریافت آدرس از OSM…
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1.5 border-t border-slate-100 px-3 py-2 sm:space-y-2 sm:px-4 sm:py-3">
+            <label className="app-label text-[11px]">
+              آدرس تکمیل‌شده (قابل ویرایش)
+              <AppInput
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="app-input mt-1 text-xs sm:mt-1.5"
+                placeholder="آدرس از OSM اینجا می‌آید…"
+              />
+            </label>
+            <p className="text-[10px] text-slate-400">
+              مختصات: {toFaDigits(point.lat.toFixed(5))} ، {toFaDigits(point.lon.toFixed(5))}
             </p>
-          )}
+            {geoDeniedKind && (
+              <PermissionRetryPanel
+                kind="geolocation"
+                errorKind={geoDeniedKind}
+                onRetry={useMyLocation}
+                retryDisabled={locating}
+                compact
+              />
+            )}
+            {error && (
+              <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-[11px] text-rose-600">
+                {error}
+              </p>
+            )}
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-t border-slate-100 p-3">
+        <div className="flex shrink-0 flex-wrap gap-2 border-t border-slate-100 bg-white p-2.5 sm:p-3">
           <button type="button" onClick={confirm} disabled={busy} className="primary-button flex-1 justify-center">
             <Check className="h-4 w-4" />
             تأیید موقعیت

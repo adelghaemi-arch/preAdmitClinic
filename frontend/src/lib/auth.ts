@@ -1,6 +1,6 @@
 /*
  File: frontend/src/lib/auth.ts
- Description: ورود OTP از Nabz.Api؛ بدون mock-store
+ Description: ورود OTP با انتخاب کدملی وقتی موبایل چندنفره است
  Parent Dependencies: api/auth, api/http, api/roles
  */
 
@@ -8,11 +8,14 @@ import {
   apiGetMe,
   apiRequestOtp,
   apiRevokeSession,
+  apiSelectIdentity,
   apiVerifyOtp,
   type AuthMeDto,
+  type OtpIdentityCandidate,
 } from "@/lib/api/auth";
-import { clearApiSession, readApiToken } from "@/lib/api/http";
+import { ApiError, clearApiSession, readApiToken } from "@/lib/api/http";
 import { guidToNumericId, primaryWorkspaceRole } from "@/lib/api/roles";
+import { normalizeMobile } from "@/lib/person-identity";
 import { toLatinDigits } from "@/lib/persian";
 import type { AppUserDto, WorkspaceRole } from "@/types/clinic";
 
@@ -25,11 +28,9 @@ export interface SessionResult {
   me?: AuthMeDto;
 }
 
+/** هم‌خروجی با normalizeMobile — ذخیره/OTP همیشه ۰۹… */
 export function normalizePhone(value: string): string {
-  let digits = toLatinDigits(value).replace(/\D/g, "");
-  if (digits.startsWith("0098")) digits = `0${digits.slice(4)}`;
-  else if (digits.startsWith("98") && digits.length === 12) digits = `0${digits.slice(2)}`;
-  return digits;
+  return normalizeMobile(value);
 }
 
 function meToUser(me: AuthMeDto): AppUserDto {
@@ -66,7 +67,9 @@ export async function getCurrentUser(): Promise<SessionResult | null> {
       /* ignore */
     }
     return { user, isDemoSession: false, me };
-  } catch {
+  } catch (e) {
+    // 409 = نشست pending انتخاب کدملی؛ توکن را پاک نکن
+    if (e instanceof ApiError && e.status === 409) return null;
     clearApiSession();
     return null;
   }
@@ -105,6 +108,19 @@ export interface OtpVerifyResult {
   error?: string;
   user?: AppUserDto;
   role?: WorkspaceRole;
+  needsSelection?: boolean;
+  candidates?: OtpIdentityCandidate[];
+}
+
+async function finishLoginFromMe(): Promise<OtpVerifyResult> {
+  const me = await apiGetMe();
+  const user = meToUser(me);
+  try {
+    window.localStorage.setItem(SESSION_KEY, user.username);
+  } catch {
+    /* ignore */
+  }
+  return { ok: true, user, role: primaryWorkspaceRole(me.roles) };
 }
 
 export async function verifyOtp(phoneRaw: string, codeRaw: string): Promise<OtpVerifyResult> {
@@ -112,17 +128,24 @@ export async function verifyOtp(phoneRaw: string, codeRaw: string): Promise<OtpV
   const code = toLatinDigits(codeRaw).replace(/\D/g, "");
   try {
     const r = await apiVerifyOtp(phone, code);
-    if (!r.ok || !r.token) return { ok: false, error: r.error ?? "ورود انجام نشد." };
-    const me = await apiGetMe();
-    const user = meToUser(me);
-    try {
-      window.localStorage.setItem(SESSION_KEY, user.username);
-    } catch {
-      /* ignore */
+    if (!r.ok) return { ok: false, error: r.error ?? "ورود انجام نشد." };
+    if (r.needsSelection && r.candidates && r.candidates.length > 0) {
+      return { ok: true, needsSelection: true, candidates: r.candidates };
     }
-    return { ok: true, user, role: primaryWorkspaceRole(me.roles) };
+    if (!r.token) return { ok: false, error: r.error ?? "ورود انجام نشد." };
+    return await finishLoginFromMe();
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "ورود انجام نشد." };
+  }
+}
+
+export async function selectOtpIdentity(nationalId: string): Promise<OtpVerifyResult> {
+  try {
+    const r = await apiSelectIdentity(toLatinDigits(nationalId).replace(/\D/g, ""));
+    if (!r.ok) return { ok: false, error: r.error ?? "انتخاب هویت انجام نشد." };
+    return await finishLoginFromMe();
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "انتخاب هویت انجام نشد." };
   }
 }
 
@@ -131,7 +154,7 @@ export function listOtpDemoLogins(): Array<{ name: string; phone: string; hint: 
   return [
     { name: "ادمین کلینیک", phone: "09120000001", hint: "نقش Admin", kind: "supervisor" },
     { name: "پزشک نمونه", phone: "09120000002", hint: "نقش Specialist", kind: "supervisor" },
-    { name: "مریم‌السادات تابش", phone: "09123458910", hint: "سلامتجو / Owner", kind: "patient" },
+    { name: "موبایل مشترک (انتخاب کدملی)", phone: "09123458910", hint: "دو سلامتجو روی یک شماره", kind: "patient" },
     { name: "ناظر سازمانی نمونه", phone: "09123409876", hint: "نقش Supervisor", kind: "supervisor" },
   ];
 }

@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Api/Controllers/AuthController.cs
- Description: OTP عمومی؛ revoke با نشست احرازشده
+ Description: OTP عمومی؛ انتخاب هویت؛ revoke با نشست احرازشده
  Parent Dependencies: IAuthService, CurrentUserExtensions
  */
 
@@ -17,6 +17,7 @@ public sealed class AuthController(IAuthService auth) : ControllerBase
 {
     public record RequestOtpBody(string Mobile);
     public record VerifyOtpBody(string Mobile, string Code, string? DeviceLabel, string? AppSurface);
+    public record SelectIdentityBody(string NationalId);
 
     [AllowAnonymous]
     [HttpPost("otp/request")]
@@ -33,13 +34,45 @@ public sealed class AuthController(IAuthService auth) : ControllerBase
     {
         var r = await auth.VerifyOtpAsync(body.Mobile, body.Code, body.DeviceLabel, body.AppSurface, ct);
         if (!r.Ok) return BadRequest(new { ok = false, error = r.Error });
-        return Ok(new { ok = true, userId = r.UserId, sessionId = r.SessionId, token = r.Token, roles = r.Roles });
+        return Ok(new
+        {
+            ok = true,
+            userId = r.UserId,
+            sessionId = r.SessionId,
+            token = r.Token,
+            roles = r.Roles,
+            needsSelection = r.NeedsSelection,
+            candidates = r.Candidates
+        });
+    }
+
+    /// <summary>بعد از OTP چندنفره؛ فقط با claim pending_selection.</summary>
+    [Authorize]
+    [HttpPost("otp/select")]
+    public async Task<IActionResult> SelectIdentity([FromBody] SelectIdentityBody body, CancellationToken ct)
+    {
+        if (!User.IsPendingSelection())
+            return Forbid();
+        var r = await auth.SelectIdentityAsync(User.GetSessionId(), body.NationalId, ct);
+        if (!r.Ok) return BadRequest(new { ok = false, error = r.Error });
+        return Ok(new
+        {
+            ok = true,
+            userId = r.UserId,
+            sessionId = r.SessionId,
+            token = r.Token,
+            roles = r.Roles,
+            needsSelection = false
+        });
     }
 
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> Me(CancellationToken ct)
     {
+        // نشست pending هنوز هویت نهایی ندارد
+        if (User.IsPendingSelection())
+            return Conflict(new { ok = false, error = "ابتدا هویت (کد ملی) را انتخاب کنید." });
         var me = await auth.GetMeAsync(User.GetUserId(), ct);
         return me is null ? NotFound() : Ok(me);
     }
@@ -48,7 +81,7 @@ public sealed class AuthController(IAuthService auth) : ControllerBase
     [HttpPost("sessions/revoke")]
     public async Task<IActionResult> Revoke(CancellationToken ct)
     {
-        var ok = await auth.RevokeSessionAsync(User.GetSessionId(), User.GetUserId(), allowOtherUsers: false, ct);
+        var ok = await auth.RevokeSessionAsync(User.GetSessionId(), User.TryGetUserId() ?? Guid.Empty, allowOtherUsers: false, ct);
         return ok ? Ok(new { ok = true }) : NotFound(new { ok = false });
     }
 
@@ -56,6 +89,8 @@ public sealed class AuthController(IAuthService auth) : ControllerBase
     [HttpPost("sessions/revoke-others")]
     public async Task<IActionResult> RevokeOthers(CancellationToken ct)
     {
+        if (User.IsPendingSelection())
+            return Conflict(new { ok = false, error = "ابتدا هویت را انتخاب کنید." });
         var n = await auth.RevokeOtherSessionsAsync(User.GetUserId(), User.GetSessionId(), ct);
         return Ok(new { ok = true, revoked = n });
     }

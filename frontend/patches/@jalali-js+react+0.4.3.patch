@@ -1,0 +1,26 @@
+diff --git a/node_modules/@jalali-js/react/dist/index.cjs b/node_modules/@jalali-js/react/dist/index.cjs
+index 0d98cff..bb168e1 100644
+--- a/node_modules/@jalali-js/react/dist/index.cjs
++++ b/node_modules/@jalali-js/react/dist/index.cjs
+@@ -27,7 +27,7 @@ function useCalendar(options = {}) {
+     locale: localePack
+   };
+ }
+-var YEARS_PER_PAGE = 12;
++var YEARS_PER_PAGE = 24;
+ function yearPageStart(year) {
+   return year - (year % YEARS_PER_PAGE + YEARS_PER_PAGE) % YEARS_PER_PAGE;
+ }
+diff --git a/node_modules/@jalali-js/react/dist/index.js b/node_modules/@jalali-js/react/dist/index.js
+index c304309..f06b521 100644
+--- a/node_modules/@jalali-js/react/dist/index.js
++++ b/node_modules/@jalali-js/react/dist/index.js
+@@ -27,7 +27,7 @@ function useCalendar(options = {}) {
+     locale: localePack
+   };
+ }
+-var YEARS_PER_PAGE = 12;
++var YEARS_PER_PAGE = 24;
+ function yearPageStart(year) {
+   return year - (year % YEARS_PER_PAGE + YEARS_PER_PAGE) % YEARS_PER_PAGE;
+ }

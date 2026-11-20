@@ -10,6 +10,7 @@ namespace Nabz.Infrastructure.Tests.Fakes;
 
 public sealed class InMemoryStore
 {
+    public List<Person> Persons { get; } = [];
     public List<User> Users { get; } = [];
     public List<UserRoleAssignment> Roles { get; } = [];
     public List<OtpChallenge> Otps { get; } = [];
@@ -20,8 +21,10 @@ public sealed class InMemoryStore
     public List<ContractMember> Members { get; } = [];
     public List<ContractSupervisor> Supervisors { get; } = [];
     public List<ContractPackageRule> PackageRules { get; } = [];
+    public List<PackageLibraryRule> PackageLibraryRules { get; } = [];
     public List<ContractSmsLog> ContractSmsLogs { get; } = [];
     public List<Patient> Patients { get; } = [];
+    public List<PatientProfileRevision> ProfileRevisions { get; } = [];
     public List<FormDefinition> Forms { get; } = [];
     public List<FormSection> FormSections { get; } = [];
     public List<FormItem> FormItems { get; } = [];
@@ -85,6 +88,18 @@ public sealed class InMemoryStore
         }
 
         foreach (var u in Users)
+        {
             u.Roles = Roles.Where(x => x.UserId == u.Id).ToList();
+            u.Person = Persons.FirstOrDefault(p => p.Id == u.PersonId) ?? u.Person;
+        }
+
+        foreach (var p in Patients)
+            p.Person = Persons.FirstOrDefault(x => x.Id == p.PersonId) ?? p.Person;
+
+        foreach (var m in Members)
+            m.Person = Persons.FirstOrDefault(x => x.Id == m.PersonId) ?? m.Person;
+
+        foreach (var s in Supervisors)
+            s.Person = Persons.FirstOrDefault(x => x.Id == s.PersonId) ?? s.Person;
     }
 }

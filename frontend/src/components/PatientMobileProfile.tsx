@@ -285,6 +285,25 @@ export function PatientMobileProfile({
           )}
         </header>
 
+        {/* بنر معرفی به بیمارستان — مستقل از مجوز اکشن‌های پنل */}
+        {patient.hospitalIntroStatus === "not_introduced" && (
+          <div className="border-b border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-amber-950">
+            هنوز در فهرستی به بیمارستان{" "}
+            <span className="font-bold">{patient.hospitalName || "کلینیک"}</span> معرفی نشده‌اید.
+            در صورت نیاز با سازمان یا ادمین کلینیک هماهنگ کنید.
+          </div>
+        )}
+        {patient.hospitalIntroStatus === "mobile_mismatch" && (
+          <div className="border-b border-amber-200 bg-amber-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-amber-950">
+            شما با شمارهٔ دیگری
+            {patient.introducedMobileMasked ? ` (${toFaDigits(patient.introducedMobileMasked)})` : ""} به
+            بیمارستان{" "}
+            <span className="font-bold">{patient.hospitalName || "کلینیک"}</span> معرفی شده‌اید. با همان
+            شماره وارد شوید؛ یا در پنل موبایل خود را تغییر دهید، یا از ادمین کلینیک بخواهید شماره را اصلاح
+            کند.
+          </div>
+        )}
+
         {/* Desktop / embedded compact roadmap bar — hidden while intake is locked */}
         {desktop && !hideGlobalRoadmap && (
           <div className="mb-3 rounded-2xl border border-[#cfe2d7] bg-[linear-gradient(120deg,#edf7f2,#ffffff)] px-4 py-3">
@@ -456,7 +475,15 @@ export function PatientMobileProfile({
                     شروع پرسشنامه پیش‌پذیرش
                   </button>
                 </div>
-              ) : activeStation && activeRoom ? (
+              ) : (
+                <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3.5 text-xs text-emerald-900">
+                  <strong className="block font-bold">پیش‌پذیرش تکمیل شده</strong>
+                  <span className="mt-1 block leading-6">
+                    شما قبلاً پیش‌پذیرش را تکمیل کرده‌اید؛ نیازی به تکرار این مرحله نیست. اگر پرسشنامهٔ جدیدی برای شما منتشر شود، اینجا نمایش داده می‌شود.
+                  </span>
+                </div>
+              )}
+              {patient.intakeCompleted && activeStation && activeRoom ? (
                 <div className="rounded-2xl border-2 border-sky-500 bg-white p-4 shadow-xs">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-extrabold text-sky-800">
@@ -684,7 +711,10 @@ export function PatientMobileProfile({
                 busy={busy}
                 readOnly={readOnly}
                 userId={userId}
-                fraudIntervalSeconds={snapshot.platform?.settings?.fraudAutoCaptureSeconds ?? 3}
+                fraudIntervalSeconds={snapshot.platform?.settings?.fraudAutoCaptureSeconds ?? 7}
+                clinicLocation={snapshot.clinicLocation}
+                enableFraudWatch={snapshot.platform?.settings?.featureFlags?.fraudWatch !== false}
+                enableGpsTracking={snapshot.platform?.settings?.featureFlags?.gpsTracking !== false}
               />
             </div>
           )}

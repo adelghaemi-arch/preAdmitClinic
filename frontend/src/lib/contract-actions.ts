@@ -34,7 +34,7 @@ function nextMemberId(): number {
 }
 
 function cleanDigits(value: unknown): string {
-  return toLatinDigits(value).replace(/\D/g, "");
+  return toLatinDigits(value == null ? "" : String(value)).replace(/\D/g, "");
 }
 
 function addMembersToContract(
@@ -63,15 +63,22 @@ function addMembersToContract(
       contract.defaultPathwayCode,
       mockStore.pathways
     );
+    const nameParts = normalizePersianLetters(person.fullName.trim()).split(/\s+/);
+    const firstName = nameParts[0] ?? person.fullName;
+    const lastName = nameParts.slice(1).join(" ") || "—";
+    const age = Number(person.age) || 35;
     const member: ContractMember = {
       id,
       contractId: contract.id,
       inviteToken: `CNT-${contract.id}-${1000 + id}`,
       personnelCode: person.personnelCode || `P-${1000 + id}`,
+      firstName,
+      lastName,
       fullName: normalizePersianLetters(person.fullName.trim()),
       nationalId: nid,
       phone: cleanDigits(person.phone) || person.phone,
-      age: Number(person.age) || 35,
+      birthDate: `${new Date().getFullYear() - age}-01-01`,
+      age,
       gender: person.gender === "زن" ? "زن" : "مرد",
       department: normalizePersianLetters(person.department || "عمومی"),
       jobCategory: normalizePersianLetters(person.jobCategory || "اداری و مالی"),

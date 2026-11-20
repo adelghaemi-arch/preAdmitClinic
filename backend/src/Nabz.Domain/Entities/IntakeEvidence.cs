@@ -31,6 +31,8 @@ public class IntakeDocumentFile : EntityBase
     public string StorageKey { get; set; } = string.Empty;
     public long SizeBytes { get; set; }
     public string? DocumentDate { get; set; }
+    /// <summary>حذف منطقی — فایل روی دیسک می‌ماند تا hard delete.</summary>
+    public DateTime? DeletedAt { get; set; }
 }
 
 public class PatientPhoto : EntityBase
@@ -46,6 +48,8 @@ public class PatientPhoto : EntityBase
     public double? GpsLat { get; set; }
     public double? GpsLon { get; set; }
     public double? GpsAccuracy { get; set; }
+    /// <summary>حذف منطقی — فایل روی دیسک می‌ماند تا hard delete.</summary>
+    public DateTime? DeletedAt { get; set; }
 }
 
 public class GpsPoint : EntityBase
@@ -82,7 +86,8 @@ public class EvidencePackage : EntityBase
     public Guid? UserId { get; set; }
     public EvidencePackageKind Kind { get; set; }
     public DateTime StartedAt { get; set; } = DateTime.UtcNow;
-    public DateTime EndedAt { get; set; } = DateTime.UtcNow;
+    // null یعنی بسته هنوز باز است؛ فقط در EndFraud ست می‌شود
+    public DateTime? EndedAt { get; set; }
     public Guid? SessionId { get; set; }
     public string Label { get; set; } = string.Empty;
     public string DayKey { get; set; } = string.Empty;

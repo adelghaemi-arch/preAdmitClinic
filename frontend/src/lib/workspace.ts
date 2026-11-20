@@ -31,6 +31,8 @@ export type AppPage =
   | "contract-packages"
   | "contract-schedule"
   | "contract-funnel"
+  | "rule-library"
+  | "clinic-settings"
   | "supervisor-roster"
   | "reports"
   | "pathways"
@@ -70,6 +72,8 @@ export const PAGE_TITLES: Record<AppPage, string> = {
   "contract-packages": "بسته‌های سلامت و قوانین تخصیص",
   "contract-schedule": "زمان‌بندی و فرمول سقفی قرارداد",
   "contract-funnel": "رصد پیش‌ثبت‌نام و پیامک گروهی",
+  "rule-library": "کتابخانه قوانین",
+  "clinic-settings": "تنظیمات بیمارستان",
   "supervisor-roster": "پیگیری کارمندان قرارداد",
   reports: "گزارش‌های عملکرد",
   pathways: "مسیرهای درمانی",
@@ -306,13 +310,15 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
     groups: [
       { title: "قراردادهای سازمانی", pages: ["contracts", "contract-packages", "contract-funnel"] },
       { title: "نمای کلی", pages: ["dashboard", "patients", "records"] },
-      { title: "پیکربندی کلینیک", pages: ["clinic-users", "forms"] },
+      { title: "پیکربندی کلینیک", pages: ["clinic-settings", "rule-library", "clinic-users", "forms"] },
     ],
-    mobile: ["contracts", "contract-funnel", "dashboard", "clinic-users", "forms"],
+    mobile: ["contracts", "contract-funnel", "clinic-settings", "rule-library", "clinic-users", "forms"],
     labels: {
       contracts: "افراد قرارداد و منابع ورود",
-      "contract-packages": "بسته‌ها و کتابخانه قوانین",
+      "contract-packages": "بسته‌ها و قوانین قرارداد",
       "contract-funnel": "قیف ثبت‌نام و پیامک گروهی",
+      "clinic-settings": "تنظیمات بیمارستان",
+      "rule-library": "کتابخانه قوانین",
       dashboard: "داشبورد کلینیک",
       patients: "سلامتجویان حاضر",
       records: "پرونده سلامتجو",
@@ -323,6 +329,8 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       contracts: "افراد",
       "contract-packages": "بسته‌ها",
       "contract-funnel": "قیف و پیامک",
+      "clinic-settings": "بیمارستان",
+      "rule-library": "قوانین",
       dashboard: "کلینیک",
       "clinic-users": "کاربران",
     },
@@ -332,16 +340,17 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
     groups: [
       { title: "نمای پلتفرم", pages: ["platform-dashboard"] },
       { title: "کاربران و نظارت", pages: ["platform-users", "platform-fraud"] },
-      { title: "فنی و پیکربندی", pages: ["platform-health", "platform-settings", "platform-integrations", "platform-audit"] },
+      { title: "فنی و پیکربندی", pages: ["platform-health", "platform-settings", "clinic-settings", "platform-integrations", "platform-audit"] },
       { title: "پرونده‌ها", pages: ["patients", "records"] },
     ],
-    mobile: ["platform-dashboard", "platform-users", "platform-fraud", "platform-settings"],
+    mobile: ["platform-dashboard", "platform-users", "platform-fraud", "clinic-settings", "platform-settings"],
     labels: {
       "platform-dashboard": "داشبورد پلتفرم",
       "platform-users": "مدیریت کاربران",
       "platform-fraud": "ضدتقلب",
       "platform-health": "سلامت فنی",
       "platform-settings": "تنظیمات پایه",
+      "clinic-settings": "تنظیمات بیمارستان",
       "platform-integrations": "یکپارچه‌سازی",
       "platform-audit": "ممیزی",
       patients: "فهرست سلامتجویان",
@@ -351,6 +360,7 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       "platform-dashboard": "پلتفرم",
       "platform-users": "کاربران",
       "platform-fraud": "ضدتقلب",
+      "clinic-settings": "بیمارستان",
       "platform-settings": "تنظیمات",
     },
   },

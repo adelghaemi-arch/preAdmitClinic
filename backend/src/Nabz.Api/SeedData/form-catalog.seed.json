@@ -414,13 +414,47 @@
           }
         },
         {
+          "id": "CA_M_BASE_9b",
+          "sectionId": "CA_M_SEC_1",
+          "code": "CA_M_BASE_residence",
+          "labelFa": "آدرس محل سکونت (نقشه، پلاک، واحد، کد پستی)",
+          "inputType": "residence_address",
+          "required": true,
+          "sortOrder": 10,
+          "visibilityRules": [],
+          "helpText": "موقعیت را روی نقشه انتخاب کنید؛ پلاک الزامی است. کد پستی برای ارسال جواب/نمونه آزمایش مفید است.",
+          "notesPolicy": "never",
+          "prefillFromPatient": "residence",
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "184097001"
+            ],
+            "loinc": [
+              "56799-0"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0017446"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "address",
+              "residence"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
           "id": "CA_M_BASE_10",
           "sectionId": "CA_M_SEC_1",
           "code": "CA_M_BASE_maritalStatus",
           "labelFa": "وضعیت تاهل",
           "inputType": "select",
           "required": true,
-          "sortOrder": 10,
+          "sortOrder": 11,
           "visibilityRules": [],
           "helpText": "",
           "notesPolicy": "never",
@@ -3421,13 +3455,47 @@
           }
         },
         {
+          "id": "CA_F_BASE_9b",
+          "sectionId": "CA_F_SEC_1",
+          "code": "CA_F_BASE_residence",
+          "labelFa": "آدرس محل سکونت (نقشه، پلاک، واحد، کد پستی)",
+          "inputType": "residence_address",
+          "required": true,
+          "sortOrder": 10,
+          "visibilityRules": [],
+          "helpText": "موقعیت را روی نقشه انتخاب کنید؛ پلاک الزامی است. کد پستی برای ارسال جواب/نمونه آزمایش مفید است.",
+          "notesPolicy": "never",
+          "prefillFromPatient": "residence",
+          "readOnlyIfPrefill": false,
+          "selectOptions": null,
+          "coding": {
+            "snomed": [
+              "184097001"
+            ],
+            "loinc": [
+              "56799-0"
+            ],
+            "icd10": [],
+            "umls": [
+              "C0017446"
+            ],
+            "conceptKind": "demographics",
+            "aiTags": [
+              "demographics",
+              "address",
+              "residence"
+            ],
+            "redFlagOnYes": false
+          }
+        },
+        {
           "id": "CA_F_BASE_10",
           "sectionId": "CA_F_SEC_1",
           "code": "CA_F_BASE_maritalStatus",
           "labelFa": "وضعیت تاهل",
           "inputType": "select",
           "required": true,
-          "sortOrder": 10,
+          "sortOrder": 11,
           "visibilityRules": [],
           "helpText": "",
           "notesPolicy": "never",

@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Api/Controllers/FormsController.cs
- Description: فرم پیش‌پذیرش، ساختار، resolve، draft/submit
+ Description: فرم پیش‌پذیرش، ساختار، resolve، draft/submit؛ SaveResponse با ۴۰۳/۴۰۰ خوانا
  Parent Dependencies: IFormService, CurrentUserExtensions
  */
 
@@ -63,17 +63,17 @@ public sealed class FormsController(IFormService forms) : ControllerBase
         return f is null ? NotFound() : Ok(f);
     }
 
-    [Authorize(Roles = "Owner,Admin,Specialist")]
+    [Authorize(Roles = "Owner,Admin,Specialist,Platform")]
     [HttpGet("{id:guid}/resolve")]
     public async Task<IActionResult> Resolve(Guid id, [FromQuery] Guid patientId, CancellationToken ct)
         => Ok(await forms.ResolveForPatientAsync(id, patientId, ct));
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Platform")]
     [HttpPost]
     public async Task<IActionResult> Upsert([FromQuery] Guid clinicId, [FromBody] UpsertFormBody body, CancellationToken ct)
         => Ok(await forms.UpsertFormAsync(clinicId, body.FormId, body.Code, body.Title, body.WarningText, body.TargetAudienceJson ?? "{}", ct));
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Platform")]
     [HttpPut("{id:guid}/structure")]
     public async Task<IActionResult> UpsertStructure(Guid id, [FromBody] StructureBody body, CancellationToken ct)
     {
@@ -81,7 +81,7 @@ public sealed class FormsController(IFormService forms) : ControllerBase
         return Ok(new { ok = true });
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Platform")]
     [HttpPost("{id:guid}/publish")]
     public async Task<IActionResult> Publish(Guid id, CancellationToken ct)
     {
@@ -89,7 +89,7 @@ public sealed class FormsController(IFormService forms) : ControllerBase
         return Ok(new { ok = true });
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Platform")]
     [HttpPost("{id:guid}/reorder-items")]
     public async Task<IActionResult> Reorder(Guid id, [FromBody] List<ReorderItem> body, CancellationToken ct)
     {
@@ -101,12 +101,27 @@ public sealed class FormsController(IFormService forms) : ControllerBase
     [HttpPost("responses")]
     public async Task<IActionResult> SaveResponse([FromBody] SaveResponseBody body, CancellationToken ct)
     {
-        var status = body.Submit ? FormResponseStatus.Submitted : FormResponseStatus.Draft;
-        var r = await forms.SaveResponseAsync(body.PatientId, body.FormId, status, body.Answers, User.GetUserId(), ct);
-        return Ok(r);
+        // answers null → ۴۰۰ خوانا؛ استثنای دامنه نباید ۵۰۰ بدون CORS شود
+        if (body.Answers is null)
+            return BadRequest(new { ok = false, error = "فهرست پاسخ‌ها الزامی است." });
+        try
+        {
+            var status = body.Submit ? FormResponseStatus.Submitted : FormResponseStatus.Draft;
+            var r = await forms.SaveResponseAsync(body.PatientId, body.FormId, status, body.Answers, User.GetUserId(), ct);
+            return Ok(r);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { ok = false, error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { ok = false, error = ex.Message });
+        }
     }
 
-    [Authorize(Roles = "Specialist,Admin")]
+    // فقط پزشک جزئیات پاسخ پزشکی را می‌بیند
+    [Authorize(Roles = "Specialist")]
     [HttpGet("responses")]
     public async Task<IActionResult> GetResponseSpecialist([FromQuery] Guid patientId, [FromQuery] Guid formId, CancellationToken ct)
     {
@@ -118,8 +133,19 @@ public sealed class FormsController(IFormService forms) : ControllerBase
     [HttpGet("responses/mine")]
     public async Task<IActionResult> GetResponseOwner([FromQuery] Guid patientId, [FromQuery] Guid formId, CancellationToken ct)
     {
-        var r = await forms.GetResponseForOwnerAsync(patientId, formId, User.GetUserId(), ct);
-        return r is null ? NotFound() : Ok(r);
+        try
+        {
+            var r = await forms.GetResponseForOwnerAsync(patientId, formId, User.GetUserId(), ct);
+            return r is null ? NotFound() : Ok(r);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { ok = false, error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { ok = false, error = ex.Message });
+        }
     }
 
     public record UpsertFormBody(Guid? FormId, string Code, string Title, string? WarningText, string? TargetAudienceJson);

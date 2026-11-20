@@ -15,7 +15,8 @@ public class PlatformSettings : EntityBase
     public int OtpLength { get; set; } = 5;
     public int OtpTtlSeconds { get; set; } = 120;
     public string? SmsSenderId { get; set; }
-    public int FraudAutoCaptureSeconds { get; set; } = 3;
+    // پیش‌فرض عملیاتی ضدتقلب؛ ادمین کل در تنظیمات ۲–۱۵ را ست می‌کند
+    public int FraudAutoCaptureSeconds { get; set; } = 7;
     public int IntakeDocumentMaxGroups { get; set; } = 20;
     public int IntakeDocumentMaxFilesPerGroup { get; set; } = 20;
     public long IntakeDocumentMaxBytes { get; set; } = 5 * 1024 * 1024;

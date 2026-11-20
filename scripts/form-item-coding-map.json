@@ -107,6 +107,18 @@
       "C0013916"
     ]
   },
+  "CA_M_BASE_residence": {
+    "snomed": [
+      "184097001"
+    ],
+    "loinc": [
+      "56799-0"
+    ],
+    "icd10": [],
+    "umls": [
+      "C0017446"
+    ]
+  },
   "CA_M_BASE_maritalStatus": {
     "snomed": [
       "125680007"
@@ -1163,6 +1175,18 @@
     "icd10": [],
     "umls": [
       "C0013916"
+    ]
+  },
+  "CA_F_BASE_residence": {
+    "snomed": [
+      "184097001"
+    ],
+    "loinc": [
+      "56799-0"
+    ],
+    "icd10": [],
+    "umls": [
+      "C0017446"
     ]
   },
   "CA_F_BASE_maritalStatus": {

@@ -21,8 +21,8 @@ public sealed class UcAdm12_14_MonitorAndResetTests
         var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد مانیتور", "سازمان", null));
         await contracts.ImportMembersAsync(created.Id,
         [
-            new ImportMemberRequest("عضو۱", "1122334455", "09120002001", 30, "زن", null, null),
-            new ImportMemberRequest("عضو۲", "2233445566", "09120002002", 40, "مرد", null, null)
+            new ImportMemberRequest("عضو۱", "تست", "0499370899", "09120002001", new DateOnly(1996, 1, 1), "زن", null, null, null, null),
+            new ImportMemberRequest("عضو۲", "تست", "0011223340", "09120002002", new DateOnly(1986, 1, 1), "مرد", null, null, null, null)
         ]);
 
         var funnel = await contracts.GetFunnelStatsAsync(created.Id);
@@ -38,12 +38,35 @@ public sealed class UcAdm12_14_MonitorAndResetTests
         var clinicId = h.SeedClinic();
         var (patient, _) = h.SeedPatient(clinicId, phone: "09120003001");
         patient.IntakeCompleted = false;
+        patient.Description = "شرح کوتاه ادمین";
         var patients = h.CreatePatientService();
 
-        var dto = await patients.GetAsync(patient.Id);
+        // ادمین وضعیت + شرح می‌بیند؛ نه متن پاسخ پزشکی
+        var dto = await patients.GetIntakeStatusAsync(patient.Id);
 
         Assert.NotNull(dto);
-        Assert.False(dto!.IntakeCompleted);
+        Assert.False(dto!.Patient.IntakeCompleted);
+        Assert.Equal("شرح کوتاه ادمین", dto.Description);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-ADM-20")]
+    public async Task UC_ADM_20_UpdatePatientPhone_SyncsOwnerAndMember()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var (patient, owner) = h.SeedPatient(clinicId, phone: "09120003001");
+        h.Store.SyncNavigation();
+        var member = TestIdentityHelper.AddMember(h.Store, Guid.NewGuid(), patient.Person, inviteToken: "TOK20");
+        patient.LinkedContractMemberId = member.Id;
+        var patients = h.CreatePatientService();
+
+        var updated = await patients.UpdatePhoneAsync(patient.Id, "09121112233");
+
+        Assert.Equal("09121112233", updated.Phone);
+        h.Store.SyncNavigation();
+        Assert.Equal("09121112233", owner.Person.Mobile);
+        Assert.Equal("09121112233", member.Person.Mobile);
     }
 
     /// <summary>

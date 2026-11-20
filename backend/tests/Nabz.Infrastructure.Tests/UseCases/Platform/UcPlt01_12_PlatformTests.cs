@@ -36,12 +36,38 @@ public sealed class UcPlt01_12_PlatformTests
         var platform = h.CreatePlatformService();
 
         var current = await platform.GetSettingsAsync();
+        Assert.Equal(7, current.FraudAutoCaptureSeconds);
+        Assert.True(current.FeatureFlags?.FraudWatch ?? false);
+
         await platform.UpdateSettingsAsync(
-            new PlatformSettingsDto("برند جدید", 5, 120, 10, 5), "platform-admin");
+            new PlatformSettingsDto(
+                "برند جدید", 5, 120, 10, 5,
+                SupportPhone: "02191000000",
+                SmsSenderId: "NABZ",
+                FraudAutoCaptureSeconds: 7,
+                FeatureFlags: new FeatureFlagsDto(FraudWatch: true, GpsTracking: false)),
+            "platform-admin");
 
         var updated = await platform.GetSettingsAsync();
         Assert.Equal("برند جدید", updated.BrandName);
         Assert.Equal(10, updated.IntakeDocumentMaxGroups);
+        Assert.Equal(7, updated.FraudAutoCaptureSeconds);
+        Assert.Equal("02191000000", updated.SupportPhone);
+        Assert.False(updated.FeatureFlags?.GpsTracking ?? true);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-PLT-02")]
+    public async Task UC_PLT_02_Nx_FraudIntervalOutOfRange_Throws()
+    {
+        var h = new ServiceHarness();
+        h.SeedPlatformSettings();
+        var platform = h.CreatePlatformService();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            platform.UpdateSettingsAsync(
+                new PlatformSettingsDto("ب", 5, 120, 10, 5, FraudAutoCaptureSeconds: 1),
+                "platform-admin"));
     }
 
     [Fact]
@@ -52,7 +78,7 @@ public sealed class UcPlt01_12_PlatformTests
         var clinicId = h.SeedClinic();
         var platform = h.CreatePlatformService();
 
-        var dto = await platform.UpsertUserAsync(null, "کاربر پلتفرم", "09135556677", null, AppRole.Platform, clinicId, null);
+        var dto = await platform.UpsertUserAsync(null, "کاربر", "پلتفرم", "09135556677", null, AppRole.Platform, clinicId, null);
 
         Assert.Contains("Platform", dto.Roles);
     }
@@ -62,8 +88,7 @@ public sealed class UcPlt01_12_PlatformTests
     public async Task UC_PLT_05_HappyPath_SetUserActive()
     {
         var h = new ServiceHarness();
-        var user = new User { Mobile = "09136667788", FullName = "فعال", IsActive = true };
-        h.Store.Users.Add(user);
+        var user = TestIdentityHelper.AddUser(h.Store, "09136667788", "فعال", "تست");
         var platform = h.CreatePlatformService();
 
         await platform.SetUserActiveAsync(user.Id, false, "platform-admin");
@@ -76,8 +101,7 @@ public sealed class UcPlt01_12_PlatformTests
     public async Task UC_PLT_06_HappyPath_ResetUserAccess_RevokesSessions()
     {
         var h = new ServiceHarness();
-        var user = new User { Mobile = "09137778899", FullName = "کاربر", IsActive = false };
-        h.Store.Users.Add(user);
+        var user = TestIdentityHelper.AddUser(h.Store, "09137778899", "کاربر", "تست", isActive: false);
         h.Store.Sessions.Add(new AuthSession { UserId = user.Id, TokenHash = "t1" });
         h.Store.Sessions.Add(new AuthSession { UserId = user.Id, TokenHash = "t2" });
         var platform = h.CreatePlatformService();
@@ -102,6 +126,24 @@ public sealed class UcPlt01_12_PlatformTests
         await evidence.ReviewFraudSessionAsync(sessionId, FraudReviewStatus.Cleared, "ok", "reviewer");
 
         Assert.Equal(FraudReviewStatus.Cleared, h.Store.FraudSessions[0].ReviewStatus);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-PLT-07")]
+    public async Task UC_PLT_07_ListFraudSessions_IncludesPersonDisplayName()
+    {
+        var h = new ServiceHarness();
+        h.SeedPlatformSettings();
+        var clinicId = h.SeedClinic();
+        var (patient, owner) = h.SeedPatient(clinicId);
+        var evidence = h.CreateEvidenceService();
+        await evidence.StartFraudSessionAsync(patient.Id, owner.Id);
+
+        var list = await evidence.ListFraudSessionsAsync(null);
+        var dto = Assert.Single(list);
+        Assert.Equal(owner.Id, dto.UserId);
+        Assert.False(string.IsNullOrWhiteSpace(dto.PatientFullName));
+        Assert.DoesNotContain("بیمار بدون نام", dto.PatientFullName);
     }
 
     [Fact]
@@ -132,7 +174,9 @@ public sealed class UcPlt01_12_PlatformTests
 
         var points = await evidence.ListGpsByPatientAsync(patient.Id);
 
-        Assert.Single(points);
+        var point = Assert.Single(points);
+        Assert.Equal(owner.Id, point.UserId);
+        Assert.False(string.IsNullOrWhiteSpace(point.PatientFullName));
     }
 
     /// <summary>Na: بیمار بدون GPS — لیست خالی.</summary>

@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
-import { ArrowUpLeft, ChevronLeft, ChevronRight, Inbox, ShieldAlert } from "lucide-react";
+import { ArrowUpLeft, Inbox, ShieldAlert } from "lucide-react";
+import { ListPager, slicePage, type ListPageSize } from "@/components/ListPager";
 import type { PatientFullDto, RoomDto } from "@/types/clinic";
 import { toFaDigits } from "@/lib/persian";
 import { currentStation, initials, patientStatus, stationLabel } from "@/lib/workspace";
@@ -21,41 +22,19 @@ const avatarTones = [
 ];
 
 export function PatientTable({ patients, rooms, onOpen, onClinical, compact }: Props) {
-  const [page, setPage] = useState(0);
-  const pageSize = compact ? 5 : 8;
-  const pages = Math.max(1, Math.ceil(patients.length / pageSize));
-  const safePage = Math.min(page, pages - 1);
-  const displayed = patients.slice(safePage * pageSize, safePage * pageSize + pageSize);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<ListPageSize>(compact ? 10 : 20);
+  const displayed = slicePage(patients, page, pageSize);
 
   const pagination = (
-    <div className="flex items-center justify-between border-t border-slate-100 px-3.5 py-3 sm:px-5">
-      <span className="text-[10px] text-slate-400">
-        نمایش {toFaDigits(displayed.length)} از {toFaDigits(patients.length)} سلامتجو
-      </span>
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          aria-label="صفحه قبل"
-          disabled={safePage === 0}
-          onClick={() => setPage(safePage - 1)}
-          className="rounded-md border border-slate-200 p-1 text-slate-400 hover:bg-slate-50 disabled:opacity-35"
-        >
-          <ChevronRight className="h-3 w-3" />
-        </button>
-        <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-teal-50 px-1 text-[10px] font-semibold text-teal-700">
-          {toFaDigits(safePage + 1)}
-        </span>
-        <button
-          type="button"
-          aria-label="صفحه بعد"
-          disabled={safePage >= pages - 1}
-          onClick={() => setPage(safePage + 1)}
-          className="rounded-md border border-slate-200 p-1 text-slate-400 hover:bg-slate-50 disabled:opacity-35"
-        >
-          <ChevronLeft className="h-3 w-3" />
-        </button>
-      </div>
-    </div>
+    <ListPager
+      page={page}
+      pageSize={pageSize}
+      totalCount={patients.length}
+      onPageChange={setPage}
+      onPageSizeChange={setPageSize}
+      itemLabel="سلامتجو"
+    />
   );
 
   const empty = (
@@ -169,7 +148,7 @@ export function PatientTable({ patients, rooms, onOpen, onClinical, compact }: P
               return (
                 <tr key={p.id} className="group transition-colors hover:bg-[#f9fbfb]">
                   <td className="py-4 pr-5 text-[10px] text-slate-400">
-                    {toFaDigits(safePage * pageSize + index + 1)}
+                    {toFaDigits((page - 1) * pageSize + index + 1)}
                   </td>
                   <td className="px-3 py-4">
                     <button

@@ -9,6 +9,8 @@ services:
       - .env
     environment:
       ASPNETCORE_URLS: "http://+:8080"
+      # قفل روی bind mount حتی اگر .env قدیمی بدون Storage__Root باشد
+      Storage__Root: "/app/wwwroot/uploads"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

@@ -50,7 +50,7 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   otpLength: 5,
   otpTtlSeconds: 120,
   smsSenderId: "NABZCLINIC",
-  fraudAutoCaptureSeconds: 3,
+  fraudAutoCaptureSeconds: 7,
   maxPortraitDataUrlChars: 350_000,
   maxFraudFrameDataUrlChars: 120_000,
   featureFlags: {
@@ -134,7 +134,8 @@ export function buildSeedPlatformState(): PlatformState {
       patientId: 1,
       fullName: "مریم‌السادات تابش",
       phone: "09123458910",
-      nationalId: "0012345678",
+      nationalId: "0012345679",
+      contracts: [{ contractId: "contract-demo-1", title: "قرارداد نمونه سازمانی", relation: "member", status: "Active" }],
       email: "maryam.tabesh@example.com",
       clinicId: "clinic-nabz-tehran",
       roleLabel: "سلامتجو",
@@ -193,7 +194,7 @@ export function buildSeedPlatformState(): PlatformState {
       patientId: 2,
       fullName: "الهام شریفی‌نژاد",
       phone: "09123458911",
-      nationalId: "0012345679",
+      nationalId: "0012345687",
       email: "elham.sharifi@example.com",
       clinicId: "clinic-nabz-tehran",
       roleLabel: "سلامتجو",
@@ -377,7 +378,7 @@ export function buildSeedPlatformState(): PlatformState {
     { id: "error-rate", label: "نرخ خطای موتور", value: 0.4, unit: "%", status: "ok", sparkline: [0.6, 0.5, 0.3, 0.4, 0.5, 0.4, 0.4] },
     { id: "sms-queue", label: "صف پیامک", value: 12, unit: "پیام", status: "warn", sparkline: [3, 5, 8, 14, 11, 13, 12] },
     { id: "otp-success", label: "موفقیت OTP", value: 97.2, unit: "%", status: "ok", sparkline: [96, 97, 98, 97, 96, 97, 97.2] },
-    { id: "storage", label: "مصرف حافظه مرورگر", value: 68, unit: "%", status: "warn", sparkline: [40, 48, 55, 60, 64, 66, 68] },
+    { id: "storage", label: "مصرف دیسک سرور", value: 68, unit: "%", status: "warn", sparkline: [40, 48, 55, 60, 64, 66, 68] },
   ];
 
   const integrations: PlatformIntegration[] = [

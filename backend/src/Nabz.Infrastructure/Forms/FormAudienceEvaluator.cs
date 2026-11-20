@@ -5,6 +5,7 @@
  */
 
 using System.Text.Json;
+using Nabz.Application.Identity;
 using Nabz.Domain.Entities;
 
 namespace Nabz.Infrastructure.Forms;
@@ -18,9 +19,10 @@ public static class FormAudienceEvaluator
         {
             using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(form.TargetAudienceJson) ? "{}" : form.TargetAudienceJson);
             var root = doc.RootElement;
+            var age = AgeCalculator.FromBirthDate(patient.Person.BirthDate);
             if (root.TryGetProperty("ageMin", out var ageMinEl) && ageMinEl.ValueKind != JsonValueKind.Null && ageMinEl.TryGetInt32(out var ageMin))
             {
-                if (patient.Age is null || patient.Age < ageMin)
+                if (age is null || age < ageMin)
                 {
                     rejectReason = $"پرسشنامه پیش‌پذیرش برای افراد {ageMin} سال به بالا است.";
                     return false;
@@ -28,7 +30,7 @@ public static class FormAudienceEvaluator
             }
             if (root.TryGetProperty("ageMax", out var ageMaxEl) && ageMaxEl.ValueKind != JsonValueKind.Null && ageMaxEl.TryGetInt32(out var ageMax))
             {
-                if (patient.Age is null || patient.Age > ageMax)
+                if (age is null || age > ageMax)
                 {
                     rejectReason = "سن بیمار خارج از محدوده مخاطب فرم است.";
                     return false;
@@ -40,7 +42,7 @@ public static class FormAudienceEvaluator
                 // «همه» wildcard — مثل resolveFormForPatient فرانت
                 if (!string.IsNullOrWhiteSpace(g) &&
                     !string.Equals(g, "همه", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(g, patient.Gender, StringComparison.OrdinalIgnoreCase))
+                    !string.Equals(g, patient.Person.Gender, StringComparison.OrdinalIgnoreCase))
                 {
                     rejectReason = "این فرم برای جنسیت بیمار تعریف نشده است.";
                     return false;
@@ -63,8 +65,8 @@ public static class FormAudienceEvaluator
                 return true;
 
             var marital = ResolveMarital(patient, answersByCode);
-            var age = patient.Age;
-            var gender = patient.Gender ?? "";
+            var age = AgeCalculator.FromBirthDate(patient.Person.BirthDate);
+            var gender = patient.Person.Gender ?? "";
 
             foreach (var rule in doc.RootElement.EnumerateArray())
             {
@@ -100,11 +102,13 @@ public static class FormAudienceEvaluator
 
     private static string? ResolveMarital(Patient patient, IReadOnlyDictionary<string, string?> answersByCode)
     {
+        // نرمال legacy (مطلقه/بیوه→ازدواج‌کرده) تا visibility با کاتالوگ یکی بماند
         if (!string.IsNullOrWhiteSpace(patient.MaritalStatus))
-            return patient.MaritalStatus;
-        return answersByCode
+            return MaritalStatusNormalizer.Normalize(patient.MaritalStatus) ?? patient.MaritalStatus.Trim();
+        var fromAnswer = answersByCode
             .FirstOrDefault(kv => kv.Key.EndsWith("_BASE_maritalStatus", StringComparison.OrdinalIgnoreCase))
             .Value;
+        return MaritalStatusNormalizer.Normalize(fromAnswer) ?? fromAnswer;
     }
 
     private static bool EvalFieldOpRule(JsonElement rule, string? field, string? marital, int? age, string gender)

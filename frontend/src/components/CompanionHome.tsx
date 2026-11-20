@@ -1,18 +1,26 @@
-﻿import { AppInput, AppTextarea } from "@/components/AppInput";
+﻿/*
+ File: frontend/src/components/CompanionHome.tsx
+ Description: داشبورد همراه/مالک — فاصله بیمارستان + شواهد GPS و آدرس منزل
+ Parent Dependencies: ClinicReachCard, LocationPickerPopup, owner-gps-watch, osm-routing
+ */
+
+import { AppInput } from "@/components/AppInput";
+import { ClinicReachCard } from "@/components/ClinicReachCard";
 import { LocationPickerPopup } from "@/components/LocationPickerPopup";
+import { PermissionRetryPanel } from "@/components/PermissionRetryPanel";
 import { useEffect, useMemo, useState } from "react";
+import { classifyMediaError, type PermissionErrorKind } from "@/lib/media-permission";
+import { beginOwnerEvidenceGps } from "@/lib/owner-gps-watch";
 import {
   Activity,
   AlertTriangle,
   ArrowLeft,
   Bell,
-  Car,
   CheckCircle2,
   ClipboardList,
   Clock3,
   Compass,
   FileText,
-  Footprints,
   Link2,
   Lock,
   Map,
@@ -28,10 +36,7 @@ import { formatFaTime, toFaDigits } from "@/lib/persian";
 import {
   calculateRoute,
   configureOsmFromSettings,
-  estimateTravelModes,
   geocodeAddress,
-  openHospitalNavigators,
-  openOsmMap,
   osmTileUrlsForRoute,
   reverseGeocode,
   type RouteInfo,
@@ -105,6 +110,7 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
   const [routeLoading, setRouteLoading] = useState(false);
   const [addressDraft, setAddressDraft] = useState("");
   const [geoError, setGeoError] = useState("");
+  const [geoDeniedKind, setGeoDeniedKind] = useState<PermissionErrorKind | null>(null);
   const [locating, setLocating] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
@@ -125,13 +131,11 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
     }
   }, [patient?.id, patient?.homeLat, patient?.homeLon, patient?.homeAddress, clinic?.lat, clinic?.lon]);
 
-  const travel = useMemo(
-    () => (route ? estimateTravelModes(route.drivingMinutes, route.distanceKm) : null),
-    [route]
-  );
-
   const saveHomeLocation = async (from: { lat: number; lon: number }, address: string) => {
     if (!clinic || !patient) return;
+    // مسیر جایگزین (نقشه/جستجو) موفق شد — پنل بلاک GPS را بردار
+    setGeoDeniedKind(null);
+    setGeoError("");
     setAddressDraft(address);
     setRouteLoading(true);
     const computed = await calculateRoute(from, { lat: clinic.lat, lon: clinic.lon });
@@ -140,15 +144,26 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
     await onAction({
       action: "UPDATE_PATIENT_HOME",
       patientId: patient.id,
+      serverPatientId: patient.serverId ?? null,
       homeLat: from.lat,
       homeLon: from.lon,
       homeAddress: address,
+      homePlaque: patient.homePlaque ?? null,
+      homeUnit: patient.homeUnit ?? null,
+      homePostalCode: patient.homePostalCode ?? null,
     });
   };
 
   const useMyLocation = () => {
+    setGeoDeniedKind(null);
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setGeoDeniedKind("insecure");
+      setGeoError("");
+      return;
+    }
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setGeoError("مرورگر شما موقعیت مکانی را پشتیبانی نمی‌کند.");
+      setGeoDeniedKind("unsupported");
+      setGeoError("");
       return;
     }
     setLocating(true);
@@ -159,11 +174,13 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
         const resolved = await reverseGeocode(from);
         const address = resolved?.displayName?.trim() || "موقعیت فعلی من";
         setLocating(false);
+        setGeoDeniedKind(null);
         await saveHomeLocation(from, address);
       },
-      () => {
+      (err) => {
         setLocating(false);
-        setGeoError("دسترسی به موقعیت مکانی داده نشد. آدرس خود را دستی وارد کنید یا روی نقشه انتخاب کنید.");
+        setGeoDeniedKind(classifyMediaError(err, "geolocation"));
+        setGeoError("");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -349,31 +366,34 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
         </div>
       </section>
 
-      {/* ================= HOSPITAL NAV (active contract only) ================= */}
-      {clinic && activeContract && (
-        <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white">
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <div>
-              <h3 className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                <Navigation className="h-4 w-4 text-teal-700" />
-                مسیریابی تا بیمارستان
-              </h3>
-              <p className="mt-1 text-[11px] text-slate-500">{clinic.address}</p>
-              <p className="mt-1 text-[10px] text-teal-700">
-                قرارداد فعال «{activeContract.organizationName}»
-                {contractMember?.scheduledLabel ? ` · نوبت: ${contractMember.scheduledLabel}` : ""}
-              </p>
-            </div>
-            <button type="button" onClick={() => openOsmMap({ lat: clinic.lat, lon: clinic.lon })} className="secondary-button">
-              <MapPin className="h-3.5 w-3.5" />
-              مشاهده روی نقشه
-            </button>
-          </div>
-
-          <div className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_260px]">
-            <div className="space-y-3">
+      {/* مسیریابی بیمارستان — بدون گیت قرارداد تا بعد از intro هم دیده شود */}
+      {clinic && patient && (
+        <div className="space-y-3">
+          <ClinicReachCard
+            clinic={clinic}
+            clinicName={snapshot.platform.clinics.find((c) => c.isCurrentTenant)?.name}
+            onStartEvidenceGps={(coords) => {
+              // همان مختصات فاصله؛ نقطهٔ اول روی هر دستگاه، watch فقط موبایل
+              beginOwnerEvidenceGps({
+                enabled: snapshot.platform?.settings?.featureFlags?.gpsTracking !== false,
+                patientId: patient.id,
+                serverPatientId: patient.serverId,
+                initialSource: "distance_btn",
+                seed: coords,
+                onAction,
+              });
+            }}
+          />
+          {activeContract && (
+            <p className="px-1 text-[10px] text-teal-700">
+              قرارداد فعال «{activeContract.organizationName}»
+              {contractMember?.scheduledLabel ? ` · نوبت: ${contractMember.scheduledLabel}` : ""}
+            </p>
+          )}
+          <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white">
+            <div className="space-y-3 p-5">
               <label className="app-label text-[11px]">
-                آدرس محل زندگی شما (فاصله با OpenStreetMap محاسبه می‌شود)
+                آدرس محل زندگی شما
                 <div className="mt-1.5 flex flex-wrap gap-2">
                   <AppInput
                     value={addressDraft}
@@ -388,7 +408,16 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
                   <button
                     type="button"
                     disabled={routeLoading || locating}
-                    onClick={() => setShowLocationPicker(true)}
+                    onClick={() => {
+                      setShowLocationPicker(true);
+                      beginOwnerEvidenceGps({
+                        enabled: snapshot.platform?.settings?.featureFlags?.gpsTracking !== false,
+                        patientId: patient.id,
+                        serverPatientId: patient.serverId,
+                        initialSource: "map_open",
+                        onAction,
+                      });
+                    }}
                     className="secondary-button"
                   >
                     <Map className="h-3.5 w-3.5" />
@@ -401,48 +430,20 @@ export function CompanionHome({ snapshot, selectedPatientId, onNavigate, onActio
                 </div>
               </label>
 
-              {geoError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-600">{geoError}</p>}
-
-              {route && (
-                <div className="grid gap-2.5 sm:grid-cols-3">
-                  <div className="rounded-xl border border-teal-200 bg-teal-50/60 p-3.5 text-center">
-                    <div className="text-[10px] text-teal-700">فاصله تا بیمارستان</div>
-                    <div className="mt-1 text-2xl font-extrabold text-teal-900 tabular-fa">{toFaDigits(route.distanceKm)}</div>
-                    <div className="text-[10px] text-teal-700">کیلومتر {route.source === "osrm" ? "(مسیر واقعی)" : "(مستقیم)"}</div>
-                  </div>
-                  <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-3.5 text-center">
-                    <div className="text-[10px] text-sky-700">با خودرو</div>
-                    <div className="mt-1 flex items-center justify-center gap-1 text-2xl font-extrabold text-sky-900 tabular-fa">
-                      <Car className="h-4 w-4" />
-                      {toFaDigits(travel?.carMinutes ?? 0)}
-                    </div>
-                    <div className="text-[10px] text-sky-700">دقیقه</div>
-                  </div>
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5 text-center">
-                    <div className="text-[10px] text-amber-700">پیاده</div>
-                    <div className="mt-1 flex items-center justify-center gap-1 text-lg font-extrabold text-amber-900 tabular-fa">
-                      <Footprints className="h-4 w-4" />
-                      {toFaDigits(travel?.walkMinutes ?? 0)}
-                    </div>
-                    <div className="text-[10px] text-amber-700">دقیقه</div>
-                  </div>
-                  <div className="sm:col-span-3">
-                    <button
-                      type="button"
-                      onClick={() => openHospitalNavigators(route.from, route.to)}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#20745c] px-4 py-3.5 text-white transition hover:bg-[#1a634e]"
-                    >
-                      <Navigation className="h-5 w-5" />
-                      <span className="text-sm font-bold">باز کردن مسیریاب‌ها</span>
-                      <span className="text-[10px] text-white/70">نشان + گوگل‌مپس</span>
-                    </button>
-                  </div>
-                </div>
+              {geoDeniedKind && (
+                <PermissionRetryPanel
+                  kind="geolocation"
+                  errorKind={geoDeniedKind}
+                  onRetry={useMyLocation}
+                  retryDisabled={locating}
+                  compact
+                />
               )}
+              {geoError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-600">{geoError}</p>}
+              {route && <OsmRouteStrip route={route} />}
             </div>
-            {route && <OsmRouteStrip route={route} />}
-          </div>
-        </section>
+          </section>
+        </div>
       )}
 
       {/* ================= TODAY'S VISIT TIMELINE (single) ================= */}

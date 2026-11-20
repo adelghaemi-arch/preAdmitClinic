@@ -74,6 +74,42 @@ Controller → I*Service → *Service → I*Repository → *Repository → SQL
 - در seed اولیهٔ API این کاربر با نقش پلتفرم باید اتوماتیک ایجاد یا نقشش تضمین شود.
 - لاگین OTP / پنل پلتفرم / دمو و README باید با همان شناسه هم‌تراز باشند (نه placeholder ساختگی).
 
+## 0.2 Cross-origin / CORS triage (غیرقابل نقض)
+
+گزارش مرورگر «blocked by CORS» / «No Access-Control-Allow-Origin» را **هرگز** بلافاصله با تغییر `AddCors` درمان نکن — اغلب پاسخ edge/CDN (۵۰۲/۵۰۳/۵۰۴) بدون هدر CORS است، نه سیاست origin.
+
+### triage اجباری قبل از هر پچ CORS
+
+1. همان URL را با `OPTIONS` و هدر `Origin` فرانت پروب کن.
+2. اگر پاسخ **502 / 503 / 504 / 521** یا HTML از CDN/پروکسی است → ریشه دسترس‌پذیری/upstream است؛ پچ CORS ممنوع.
+3. فقط اگر پاسخ از خود API است و `Access-Control-Allow-Origin` غایب یا اشتباه است → پچ سیاست CORS.
+
+### قرارداد دائمی API
+
+- `UseCors` قبل از Authentication/Authorization؛ preflight نباید به 401/403 بخورد.
+- `FrontendUrls__My` / `FrontendUrls__News` (و localhostهای Dev) **باید** واقعاً به policy وصل باشند — برچسب «CORS آینده» / کلید مرده ممنوع.
+- اگر origins از config پر باشند → `WithOrigins` + `AllowAnyHeader` + `AllowAnyMethod`؛ اگر خالی → `AllowAnyOrigin` فقط برای dev بدون env.
+- کلاینت Bearer است؛ `AllowCredentials` با `AllowAnyOrigin` ممنوع و لازم نیست مگر cookie cross-site صریح.
+- تغییر دامنهٔ عمومی / `API_PUBLIC_URL` / `VITE_API_*` بدون هم‌ترازی `FrontendUrls` + bake فرانت ممنوع.
+- حداقل یک smoke `OPTIONS` با Origin فرانت در API tests / مسیر pre-publish الزامی است.
+- نام originهای محصول در `.cursor/rules/project-context.mdc` — اینجا hard-code نکن.
+
+## 0.3 Role↔API matrix (غیرقابل نقض)
+
+سوئیچ نقش در UI **JWT را عوض نمی‌کند**. ادمین کل (Platform) می‌تواند workspace ادمین کلینیک را باز کند؛ توکن همان `Platform` می‌ماند.
+
+### سیاست
+
+- **Platform ⊇ Admin** برای عملیات دامنهٔ کلینیک جاری (قرارداد، اعضا، قوانین بستهٔ قرارداد، بیمار ادمینی، فرم‌ساز Admin، funnel/SMS سطح ادمین).
+- هر `[Authorize(Roles = "Admin…")]` روی این دامنه باید `Platform` هم داشته باشد مگر UC صریحاً «فقط ادمین کلینیک بدون ادمین کل» بگوید (پیش‌فرض: ندارد → Platform هم).
+- Owner / Specialist / Supervisor خالص دامنهٔ خودشان؛ Platform جایگزین evidence نوشتنی Owner یا chart Specialist نمی‌شود.
+- Supervisor خالص فقط قرارداد claim خودش؛ Admin و Platform از گارد `ContractId` مستثنی‌اند.
+- اندپوینت/اکشن جدید بدون هم‌ترازی این ماتریس و جدول overlay ممنوع.
+- قبل از `apiFetch` نوشتنی در فرانت: `hasApiRole` از `nabz_api_roles`؛ اگر نقش JWT نباشد → پیام واضح، نه 403 خام.
+- smoke: Platform یک mutate قرارداد نمونه را بدون 403 بزند؛ Owner روی همان مسیر 403 بماند.
+
+جزئیات جدول نقش در `.cursor/rules/project-context.mdc`.
+
 ## 1. File Header Standard
 
 - Every newly created or modified file MUST include a top header comment in the following format:
@@ -178,11 +214,13 @@ Create UC  →  Document UC  →  Full Tests (BE + FE [+ API smoke])
 |------|-------|--------|
 | Unit بک‌اند | روی `*Service` با fake/mock `I*Repository` (بدون EF) | مسیر اصلی + همهٔ `Na`/`Nx` مستندشده |
 | Unit فرانت | Vitest (+ Testing Library برای گیت UI نقش) | منطق خالص / گیت‌ها / mapping نقش↔صفحه |
-| API smoke | `WebApplicationFactory` (یا معادل) وقتی UC مسیر HTTP بحرانی دارد | حداقل Auth/OTP و مسیرهای حیاتی مرتبط |
+| API smoke | `WebApplicationFactory` روی **MSSQL لوکال** + `MigrateAsync` (همان migrations پروداکشن) | حداقل Auth/OTP و مسیرهای حیاتی مرتبط |
 
 - نام‌گذاری: بک و فرانت باید به `UC-xxx` ارجاع دهند؛ قرارداد دقیق در overlay و `.cursor/rules/testing-unit.mdc`
 - جزئیات اسکلت و ممنوعیت‌ها: [`.cursor/rules/testing-unit.mdc`](.cursor/rules/testing-unit.mdc)
 - **اجرای عملیاتی قبل‌از‌انتشار:** [`server/pre-publish-tests.bat`](server/pre-publish-tests.bat) (از طریق `publish.bat` یا جداگانه) — §5
+- **API smoke — غیرقابل نقض:** فقط SQL Server لوکال؛ دیتابیس ephemeral جدا از `NabzClinic` dev؛ **SQLite / EnsureCreated برای smoke ممنوع** (ایندکس، FK، فیلتر ایندکس و تفاوت تایپ باید دیده شود). پیش‌نیاز: SQL Server لوکال برای `pre-publish-tests`.
+- با حذف مسیر تست/کد، `PackageReference` / `ProjectReference` / npm dependency بلااستفاده هم‌زمان حذف شود (مثلاً provider ساختگی مثل Sqlite).
 
 ### ممنوع
 
@@ -190,6 +228,8 @@ Create UC  →  Document UC  →  Full Tests (BE + FE [+ API smoke])
 - UC بدون سند در `docs/processes/use-cases/` (یا مسیر معادل overlay)
 - سند بدون تست هم‌نام در کاتالوگ و کد
 - تست بدون ارجاع `UC-xxx`
+- API smoke روی SQLite یا بدون migration واقعی SQL Server
+- رفرنس پکیج/پروژهٔ مرده پس از حذف مسیر مصرف
 - ادعای «تمام» وقتی فقط کد یا فقط سند یا فقط تست آماده است
 - اتمام جریان نهایی‌شدهٔ کاربر بدون بستن کامل **پکیج توسعه** (UC + changelog/ماتریس + تست‌ها + دروازهٔ pre-publish)
 
@@ -202,7 +242,23 @@ Create UC  →  Document UC  →  Full Tests (BE + FE [+ API smoke])
 درخت استاندارد و جزئیات عملیاتی: سند deploy پروژه (معمولاً [`docs/shared/server-deploy.md`](docs/shared/server-deploy.md)). نام سرویس‌های اجرا و مسیرهای persist خاص در overlay.
 
 **نقطهٔ ورود واحد از ویندوز:** فقط `server/publish.bat` (یا معادل اعلام‌شده در overlay).  
-ترتیب داخلی اجباری: بارگذاری config → **`pre-publish-tests`** → اسکلت → بیلد/پابلیش → rsync در صورت `DEPLOY_REMOTE` → چاپ دستورهای `docker compose` روی لینوکس.
+ترتیب داخلی اجباری: بارگذاری config → **`pre-publish-tests`** → اسکلت → بیلد/پابلیش → rsync در صورت `DEPLOY_REMOTE` → چاپ خلاصه + دستورهای `docker compose` روی لینوکس.
+
+### پایان کنسول `publish.bat` (غیرقابل نقض — همهٔ پروژه‌ها)
+
+وقتی اپراتور `publish.bat` را از Explorer یا کنسول ویندوز اجرا می‌کند:
+
+| نتیجه | رفتار اجباری |
+|--------|----------------|
+| خطا / تست ناموفق / هر `exit` شکست | پنجره **بسته نشود**؛ پیام واضح + `pause` تا اپراتور بخواند و کلید بزند |
+| موفقیت کامل | **خلاصهٔ نهایی** (OK، URLهای عمومی، دستورهای compose لینوکس) سپس انتظار ۲۰ثانیه با تشخیص کلید |
+| موفقیت + بدون کلید | پس از ۲۰ثانیه بسته شود |
+| موفقیت + کلید غیر از Esc | بستن زودتر |
+| موفقیت + **Esc** | **بسته نشود**؛ اپراتور هنوز با نتیجه کار دارد → `pause` تا خودش ببندد |
+
+- همهٔ مسیرهای شکست داخل `publish.bat` باید به یک برچسب مشترک (مثلاً `:fail`) بروند؛ `exit /b 1` خام بدون `pause` ممنوع است (وگرنه پنجرهٔ دوبل‌کلیک فوری بسته می‌شود).
+- در موفقیت، خلاصه قبل از انتظار چاپ شود؛ تشخیص Esc در برابر بقیهٔ کلیدها با PowerShell/`Console.ReadKey` (نه `timeout` خام — چون Esc را از کلید دیگر جدا نمی‌کند).
+- همین قرارداد برای هر اسکریپت نقطهٔ ورود انتشار معادل در overlay هم اعمال می‌شود.
 
 ```
 server/
@@ -239,5 +295,6 @@ server/
 - قالب‌های `docker-compose.yml` / `Dockerfile` / `.env.example` فقط از `_templates` تولید شوند؛ ویرایش دستی خارج از قالب ممنوع
 - هر `server/{app}/.env.example` باید **نمونهٔ واقعی `KEY=value`** داشته باشد (نه فقط کامنت). placeholder برای سکرت مجاز است؛ کلیدهای runtime در overlay
 - مسیر اصلی انتشار: `publish.bat` — نه اجرای جداگانهٔ helpers به‌عنوان جریان رسمی
+- **کپی فقط‌تازه‌تر:** هنگام همگام‌سازی آرتیفکت بیلد به `server/{api,my,news}` (robocopy `/XO` بدون wipe) و rsync ویندوز→لینوکس (`-avu`) فقط فایل‌هایی که **منبعشان از مقصد تازه‌تر** است بازنویسی شوند؛ مقصدِ هم‌سن/جدیدتر و فایل‌های اضافی dest دست نخورده بمانند؛ wipe کامل پوشهٔ dest ممنوع مگر درخواست صریح اپراتور. استثنا: refresh قالب از `_templates`؛ و ممنوعیت همیشگی overwrite روی `.env` و `persist/`
 - کپی ویندوز→لینوکس با exclude؛ overwrite روی `persist/**` و `{api}/.env` ممنوع
 - path داخل کانتینر ثابت می‌ماند؛ فقط مسیر هاست به `persist/` است

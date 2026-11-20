@@ -4,8 +4,8 @@ import { readSessionId, revokeAuthSession, revokeOtherAuthSessions } from "@/lib
 import { ensureProfilePhotoFromRecord, PLATFORM_ACTION_NAMES, runPlatformAction } from "@/lib/platform-actions";
 
 /**
- * Pure browser-side clinic engine. This module performs every mutation directly on
- * the in-memory mock store, so the application needs no server and no database.
+ * Legacy clinic action engine روی mock-store (QR/kiosk و مسیرهای باقی‌مانده).
+ * دامنهٔ اصلی workspace از ClinicOrchestratorApp → API است؛ نه این ماژول.
  */
 
 class EngineResponse {
@@ -61,6 +61,7 @@ import {
   validateForm,
   validateFormDefinitionCoding,
 } from "@/lib/form-engine";
+import { parseResidenceAddress } from "@/lib/residence-address";
 import {
   INTAKE_DOCUMENT_MAX_FILES_PER_GROUP,
   INTAKE_DOCUMENT_MAX_GROUPS,
@@ -620,6 +621,9 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         homeLat: lat,
         homeLon: lon,
         homeAddress: String(body.homeAddress ?? "") || null,
+        homePlaque: body.homePlaque != null ? String(body.homePlaque) || null : undefined,
+        homeUnit: body.homeUnit != null ? String(body.homeUnit) || null : undefined,
+        homePostalCode: body.homePostalCode != null ? String(body.homePostalCode) || null : undefined,
       });
       return NextResponse.json({ ok: true, snapshot: await getClinicSnapshot() });
     }
@@ -887,10 +891,23 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         response.status = "submitted";
         response.completedAt = nowIso;
         response.updatedAt = nowIso;
+        // هم‌تراز بک‌اند: *_BASE_residence روی ستون‌های منزل بیمار
+        const residenceAns = answers.find((a) => /_BASE_residence$/i.test(a.itemCode));
+        const home = residenceAns?.valueRaw ? parseResidenceAddress(residenceAns.valueRaw) : null;
         mockMutations.updatePatient(patientId, {
           formResponses: existing.map((r) => (r.id === response!.id ? response! : r)),
           intakeCompleted: true,
           journeyIntroSeen: true,
+          ...(home
+            ? {
+                homeLat: home.lat,
+                homeLon: home.lon,
+                homeAddress: home.address,
+                homePlaque: home.plaque,
+                homeUnit: home.unit ?? null,
+                homePostalCode: home.postalCode ?? null,
+              }
+            : {}),
         });
       } else {
         mockMutations.updatePatient(patientId, {

@@ -9,31 +9,30 @@ using Microsoft.Extensions.DependencyInjection;
 using Nabz.Application.Abstractions;
 using Nabz.Application.Interfaces.Repositories;
 using Nabz.Database.EF.Sql.Repositories;
+// IDatabaseFactoryReset در Abstractions؛ پیاده‌سازی همین اسمبلی
 
 namespace Nabz.Database.EF.Sql;
 
 public static class DependencyInjection
 {
-    /// <param name="useSqlite">فقط برای محیط Testing / smoke — یک provider در DI</param>
-    public static IServiceCollection AddNabzDatabase(this IServiceCollection services, string connectionString, bool useSqlite = false)
+    public static IServiceCollection AddNabzDatabase(this IServiceCollection services, string connectionString)
     {
         services.AddDbContext<NabzDbContext>(opt =>
-        {
-            if (useSqlite)
-                opt.UseSqlite(connectionString);
-            else
-                opt.UseSqlServer(connectionString, sql => sql.MigrationsAssembly(typeof(NabzDbContext).Assembly.FullName));
-        });
+            opt.UseSqlServer(connectionString, sql => sql.MigrationsAssembly(typeof(NabzDbContext).Assembly.FullName)));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAsyncQuery, EfAsyncQuery>();
+        services.AddScoped<IPersonRepository, PersonRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IClinicRepository, ClinicRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
+        services.AddScoped<IPackageLibraryRuleRepository, PackageLibraryRuleRepository>();
         services.AddScoped<IPatientRepository, PatientRepository>();
+        services.AddScoped<IPatientProfileRevisionRepository, PatientProfileRevisionRepository>();
         services.AddScoped<IFormRepository, FormRepository>();
         services.AddScoped<IEvidenceRepository, EvidenceRepository>();
         services.AddScoped<IPlatformRepository, PlatformRepository>();
+        services.AddScoped<IDatabaseFactoryReset, DatabaseFactoryReset>();
         return services;
     }
 }

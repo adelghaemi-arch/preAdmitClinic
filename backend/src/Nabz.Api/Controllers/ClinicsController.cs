@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Api/Controllers/ClinicsController.cs
- Description: خواندن کلینیک جاری برای کلاینت احرازشده
+ Description: خواندن کلینیک جاری و به‌روزرسانی نام/لوکیشن توسط ادمین
  Parent Dependencies: IClinicService
  */
 
@@ -21,4 +21,9 @@ public sealed class ClinicsController(IClinicService clinics) : ControllerBase
         var c = await clinics.GetCurrentAsync(ct);
         return c is null ? NotFound() : Ok(c);
     }
+
+    [Authorize(Roles = "Admin,Platform")]
+    [HttpPut("current")]
+    public async Task<IActionResult> UpdateCurrent([FromBody] UpdateClinicRequest body, CancellationToken ct)
+        => Ok(await clinics.UpdateCurrentAsync(body, ct));
 }

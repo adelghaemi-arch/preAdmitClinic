@@ -1,4 +1,10 @@
-﻿using System;
+﻿/*
+ File: backend/src/Nabz.Database.EF.Sql/Migrations/20261120112604_Initial.cs
+ Description: تنها مایگریشن schema — Persons + کل ساختار دامنه
+ Parent Dependencies: NabzDbContext
+ */
+
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Nabz.Database.EF.Sql.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialV1 : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -57,6 +63,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Mobile = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Purpose = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
                     CodeHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DemoCodePlain = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -88,6 +95,26 @@ namespace Nabz.Database.EF.Sql.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_PackageLibraryRules", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Persons",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Mobile = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    NationalId = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    FirstName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    LastName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Gender = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BirthDate = table.Column<DateOnly>(type: "date", nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Persons", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -130,27 +157,6 @@ namespace Nabz.Database.EF.Sql.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_PlatformSettings", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Users",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Mobile = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    NationalId = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Gender = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    BirthDate = table.Column<DateOnly>(type: "date", nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    LastLoginAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Users", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -209,118 +215,25 @@ namespace Nabz.Database.EF.Sql.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AuthSessions",
+                name: "Users",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TokenHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DeviceLabel = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AppSurface = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IpHint = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LastSeenAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    RevokedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    PersonId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    LastLoginAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AuthSessions", x => x.Id);
+                    table.PrimaryKey("PK_Users", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_AuthSessions_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
+                        name: "FK_Users_Persons_PersonId",
+                        column: x => x.PersonId,
+                        principalTable: "Persons",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "MultiSessionAlerts",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ActiveSessionCount = table.Column<int>(type: "int", nullable: false),
-                    ReviewStatus = table.Column<int>(type: "int", nullable: false),
-                    ReviewNote = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ReviewedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ReviewedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MultiSessionAlerts", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_MultiSessionAlerts_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Patients",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ClinicId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    OwnerUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LinkedContractMemberId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    NationalId = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Age = table.Column<int>(type: "int", nullable: true),
-                    Gender = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    MaritalStatus = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IntakeCompleted = table.Column<bool>(type: "bit", nullable: false),
-                    IntakeCompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    AssignedPackageCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AssignedPackageTitle = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    QrToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    HomeLat = table.Column<double>(type: "float", nullable: true),
-                    HomeLon = table.Column<double>(type: "float", nullable: true),
-                    HomeAddress = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Patients", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Patients_Clinics_ClinicId",
-                        column: x => x.ClinicId,
-                        principalTable: "Clinics",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Patients_Users_OwnerUserId",
-                        column: x => x.OwnerUserId,
-                        principalTable: "Users",
-                        principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "UserRoleAssignments",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Role = table.Column<int>(type: "int", nullable: false),
-                    ContractId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    ClinicId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserRoleAssignments", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_UserRoleAssignments_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -329,13 +242,10 @@ namespace Nabz.Database.EF.Sql.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ContractId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PersonId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     InviteToken = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     PersonnelCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    NationalId = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Phone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Age = table.Column<int>(type: "int", nullable: true),
-                    Gender = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    MaritalStatus = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Department = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     JobCategory = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Source = table.Column<string>(type: "nvarchar(max)", nullable: false),
@@ -365,6 +275,12 @@ namespace Nabz.Database.EF.Sql.Migrations
                         principalTable: "CorporateContracts",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ContractMembers_Persons_PersonId",
+                        column: x => x.PersonId,
+                        principalTable: "Persons",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -426,10 +342,8 @@ namespace Nabz.Database.EF.Sql.Migrations
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ContractId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PersonId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Phone = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    NationalId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CanSendReminders = table.Column<bool>(type: "bit", nullable: false),
                     AssignedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -446,6 +360,12 @@ namespace Nabz.Database.EF.Sql.Migrations
                         principalTable: "CorporateContracts",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ContractSupervisors_Persons_PersonId",
+                        column: x => x.PersonId,
+                        principalTable: "Persons",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -485,6 +405,129 @@ namespace Nabz.Database.EF.Sql.Migrations
                         principalTable: "FormSections",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AuthSessions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    TokenHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DeviceLabel = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AppSurface = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IpHint = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LastSeenAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    RevokedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    PendingSelection = table.Column<bool>(type: "bit", nullable: false),
+                    PendingMobile = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AuthSessions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AuthSessions_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MultiSessionAlerts",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ActiveSessionCount = table.Column<int>(type: "int", nullable: false),
+                    ReviewStatus = table.Column<int>(type: "int", nullable: false),
+                    ReviewNote = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ReviewedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ReviewedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MultiSessionAlerts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MultiSessionAlerts_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Patients",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ClinicId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PersonId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    OwnerUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    LinkedContractMemberId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    MaritalStatus = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    IntakeCompleted = table.Column<bool>(type: "bit", nullable: false),
+                    IntakeCompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    JourneyIntroSeen = table.Column<bool>(type: "bit", nullable: false),
+                    AssignedPackageCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    AssignedPackageTitle = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    QrToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    HomeLat = table.Column<double>(type: "float", nullable: true),
+                    HomeLon = table.Column<double>(type: "float", nullable: true),
+                    HomeAddress = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    HomePlaque = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    HomeUnit = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    HomePostalCode = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Patients", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Patients_Clinics_ClinicId",
+                        column: x => x.ClinicId,
+                        principalTable: "Clinics",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Patients_Persons_PersonId",
+                        column: x => x.PersonId,
+                        principalTable: "Persons",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Patients_Users_OwnerUserId",
+                        column: x => x.OwnerUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserRoleAssignments",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Role = table.Column<int>(type: "int", nullable: false),
+                    ContractId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ClinicId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserRoleAssignments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_UserRoleAssignments_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -654,6 +697,38 @@ namespace Nabz.Database.EF.Sql.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PatientProfileRevisions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PatientId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Field = table.Column<string>(type: "nvarchar(64)", maxLength: 64, nullable: false),
+                    OldValue = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    NewValue = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    ChangedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Source = table.Column<string>(type: "nvarchar(32)", maxLength: 32, nullable: false),
+                    At = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PatientProfileRevisions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PatientProfileRevisions_Patients_PatientId",
+                        column: x => x.PatientId,
+                        principalTable: "Patients",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PatientProfileRevisions_Users_ChangedByUserId",
+                        column: x => x.ChangedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "FormAnswers",
                 columns: table => new
                 {
@@ -709,15 +784,21 @@ namespace Nabz.Database.EF.Sql.Migrations
                 columns: new[] { "UserId", "RevokedAt" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_ContractMembers_ContractId_NationalId",
+                name: "IX_ContractMembers_ContractId_PersonId",
                 table: "ContractMembers",
-                columns: new[] { "ContractId", "NationalId" });
+                columns: new[] { "ContractId", "PersonId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ContractMembers_InviteToken",
                 table: "ContractMembers",
                 column: "InviteToken",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ContractMembers_PersonId",
+                table: "ContractMembers",
+                column: "PersonId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ContractPackageRules_ContractId",
@@ -734,6 +815,11 @@ namespace Nabz.Database.EF.Sql.Migrations
                 table: "ContractSupervisors",
                 column: "ContractId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ContractSupervisors_PersonId",
+                table: "ContractSupervisors",
+                column: "PersonId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CorporateContracts_ClinicId",
@@ -811,9 +897,9 @@ namespace Nabz.Database.EF.Sql.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OtpChallenges_Mobile_ExpiresAt",
+                name: "IX_OtpChallenges_Mobile_Purpose_ExpiresAt",
                 table: "OtpChallenges",
-                columns: new[] { "Mobile", "ExpiresAt" });
+                columns: new[] { "Mobile", "Purpose", "ExpiresAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_PatientPhotos_PatientId",
@@ -821,14 +907,44 @@ namespace Nabz.Database.EF.Sql.Migrations
                 column: "PatientId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Patients_ClinicId_NationalId",
+                name: "IX_PatientProfileRevisions_ChangedByUserId",
+                table: "PatientProfileRevisions",
+                column: "ChangedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PatientProfileRevisions_PatientId_At",
+                table: "PatientProfileRevisions",
+                columns: new[] { "PatientId", "At" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Patients_ClinicId_PersonId",
                 table: "Patients",
-                columns: new[] { "ClinicId", "NationalId" });
+                columns: new[] { "ClinicId", "PersonId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Patients_OwnerUserId",
                 table: "Patients",
-                column: "OwnerUserId");
+                column: "OwnerUserId",
+                unique: true,
+                filter: "OwnerUserId IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Patients_PersonId",
+                table: "Patients",
+                column: "PersonId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Persons_Mobile",
+                table: "Persons",
+                column: "Mobile");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Persons_NationalId",
+                table: "Persons",
+                column: "NationalId",
+                unique: true,
+                filter: "NationalId IS NOT NULL AND NationalId <> ''");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserRoleAssignments_UserId_Role_ContractId",
@@ -836,9 +952,9 @@ namespace Nabz.Database.EF.Sql.Migrations
                 columns: new[] { "UserId", "Role", "ContractId" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_Mobile",
+                name: "IX_Users_PersonId",
                 table: "Users",
-                column: "Mobile",
+                column: "PersonId",
                 unique: true);
         }
 
@@ -891,6 +1007,9 @@ namespace Nabz.Database.EF.Sql.Migrations
                 name: "PatientPhotos");
 
             migrationBuilder.DropTable(
+                name: "PatientProfileRevisions");
+
+            migrationBuilder.DropTable(
                 name: "PlatformAuditEntries");
 
             migrationBuilder.DropTable(
@@ -922,6 +1041,9 @@ namespace Nabz.Database.EF.Sql.Migrations
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "Persons");
         }
     }
 }

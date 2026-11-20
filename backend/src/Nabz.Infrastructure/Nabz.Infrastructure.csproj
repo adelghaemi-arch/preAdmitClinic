@@ -1,4 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<!--
+ File: backend/src/Nabz.Infrastructure/Nabz.Infrastructure.csproj
+ Description: پیاده‌سازی سرویس‌ها؛ Extensions هم‌تراز 10.0.15
+ Parent Dependencies: Nabz.Application
+-->
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Nabz.Application\Nabz.Application.csproj" />
@@ -6,10 +11,10 @@
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.104.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.15" />
   </ItemGroup>
 
   <PropertyGroup>

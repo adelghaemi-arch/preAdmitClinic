@@ -13,7 +13,7 @@ export function LoginPage() {
               </span>
               <div>
                 <strong className="block text-lg font-bold">نبض کلینیک</strong>
-                <span className="mt-1 block text-[10px] text-white/40">نسخه نمایشی — تمام‌کلاینت</span>
+                <span className="mt-1 block text-[10px] text-white/40">پیش‌پذیرش کلینیک</span>
               </div>
             </div>
             <h1 className="mt-14 text-[28px] leading-[1.8] font-bold">
@@ -23,11 +23,11 @@ export function LoginPage() {
             </h1>
             <p className="mt-4 text-xs leading-8 text-white/50">
               ورود فقط با شماره موبایل و کد تأیید پیامکی (OTP پنج‌رقمی) انجام می‌شود؛ بدون نام کاربری و بدون گذرواژه.
-              داده‌ها به‌صورت کامل در مرورگر شما ذخیره می‌شوند و هیچ سرور یا دیتابیسی لازم نیست.
             </p>
           </div>
           <div className="relative z-10 mt-12 space-y-3">
-            {["ورود با کد تأیید پیامکی (OTP پنج‌رقمی)", "پرونده مشترک در تمام مراحل درمان", "داده نمایشی ذخیره‌شده در مرورگر"].map(
+            {["ورود با کد تأیید پیامکی (OTP پنج‌رقمی)", "پرونده مشترک در تمام مراحل درمان", "پایداری داده روی سرور و فایل‌های آپلود"].map(
+
               (t) => (
                 <div key={t} className="flex items-center gap-2 text-[11px] text-white/70">
                   <Check className="h-3.5 w-3.5 text-[#a7d5b3]" />

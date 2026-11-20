@@ -31,15 +31,50 @@ public sealed class PlatformController(IPlatformService platform, IAuthService a
     [HttpPut("settings")]
     public async Task<IActionResult> UpdateSettings([FromBody] SettingsBody body, CancellationToken ct)
     {
-        await platform.UpdateSettingsAsync(new PlatformSettingsDto(
-            body.BrandName, body.OtpLength, body.OtpTtlSeconds,
-            body.IntakeDocumentMaxGroups, body.IntakeDocumentMaxFilesPerGroup), ActorName(), ct);
-        return Ok(new { ok = true });
+        try
+        {
+            await platform.UpdateSettingsAsync(new PlatformSettingsDto(
+                body.BrandName,
+                body.OtpLength,
+                body.OtpTtlSeconds,
+                body.IntakeDocumentMaxGroups,
+                body.IntakeDocumentMaxFilesPerGroup,
+                body.SupportPhone,
+                body.SmsSenderId,
+                body.FraudAutoCaptureSeconds,
+                body.FeatureFlags), ActorName(), ct);
+            return Ok(new { ok = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { ok = false, error = ex.Message });
+        }
     }
 
     [HttpPost("users")]
     public async Task<IActionResult> UpsertUser([FromBody] UpsertUserBody body, CancellationToken ct)
-        => Ok(await platform.UpsertUserAsync(body.UserId, body.FullName, body.Mobile, body.NationalId, body.PrimaryRole, body.ClinicId, body.ContractId, ct));
+    {
+        try
+        {
+            var dto = await platform.UpsertUserAsync(
+                body.UserId, body.FirstName, body.LastName, body.Mobile, body.NationalId,
+                body.PrimaryRole, body.ClinicId, body.ContractId, ct);
+            return Ok(dto);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("یافت نشد"))
+        {
+            return NotFound(new { ok = false, error = ex.Message });
+        }
+        catch (InvalidOperationException ex) when (
+            ex.Message.Contains("کد ملی")
+            || ex.Message.Contains("موبایل")
+            || ex.Message.Contains("نام")
+            || ex.Message.Contains("قرارداد")
+            || ex.Message.Contains("کلینیک"))
+        {
+            return Conflict(new { ok = false, error = ex.Message });
+        }
+    }
 
     [HttpPost("users/{userId:guid}/active")]
     public async Task<IActionResult> SetActive(Guid userId, [FromBody] ActiveBody body, CancellationToken ct)
@@ -81,12 +116,45 @@ public sealed class PlatformController(IPlatformService platform, IAuthService a
         return Ok(new { ok = true });
     }
 
+    [HttpPost("factory-reset/request-otp")]
+    public async Task<IActionResult> FactoryResetRequestOtp(CancellationToken ct)
+    {
+        var result = await platform.RequestFactoryResetOtpAsync(User.GetUserId(), ct);
+        if (!result.Ok)
+            return BadRequest(new { ok = false, error = result.Error });
+        return Ok(new { ok = true, demoCode = result.DemoCode });
+    }
+
+    [HttpPost("factory-reset/confirm")]
+    public async Task<IActionResult> FactoryResetConfirm([FromBody] FactoryResetConfirmBody body, CancellationToken ct)
+    {
+        try
+        {
+            await platform.ConfirmFactoryResetAsync(User.GetUserId(), body.Code ?? "", ct);
+            return Ok(new { ok = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { ok = false, error = ex.Message });
+        }
+    }
+
     private string ActorName() => User.GetUserId().ToString();
 
     public record ClinicStatusBody(Guid ClinicId, ClinicStatus Status);
     public record MultiReviewBody(Guid AlertId, FraudReviewStatus Status, string? Note);
-    public record SettingsBody(string BrandName, int OtpLength, int OtpTtlSeconds, int IntakeDocumentMaxGroups, int IntakeDocumentMaxFilesPerGroup);
-    public record UpsertUserBody(Guid? UserId, string FullName, string Mobile, string? NationalId, AppRole PrimaryRole, Guid? ClinicId, Guid? ContractId);
+    public record SettingsBody(
+        string BrandName,
+        int OtpLength,
+        int OtpTtlSeconds,
+        int IntakeDocumentMaxGroups,
+        int IntakeDocumentMaxFilesPerGroup,
+        string? SupportPhone,
+        string? SmsSenderId,
+        int FraudAutoCaptureSeconds = 7,
+        FeatureFlagsDto? FeatureFlags = null);
+    public record UpsertUserBody(Guid? UserId, string FirstName, string LastName, string Mobile, string? NationalId, AppRole PrimaryRole, Guid? ClinicId, Guid? ContractId);
     public record ActiveBody(bool IsActive);
     public record AuditBody(string Action, string Target, string? Detail);
+    public record FactoryResetConfirmBody(string? Code);
 }

@@ -1,6 +1,6 @@
 /*
  File: .cursor/rules/project-context.mdc
- Description: Overlay اختصاصی Nabz / clinicPreAdmit — نام‌ها، نقش‌ها، Auth/SMS، docs و deploy
+ Description: Overlay اختصاصی Nabz / clinicPreAdmit — نام‌ها، نقش‌ها، Auth/SMS، docs، deploy و CORS origins
  Parent Dependencies: .cursorrules
  */
 
@@ -74,6 +74,17 @@ Deploy: [`docs/shared/server-deploy.md`](../../docs/shared/server-deploy.md)
 | supervisor | `04-supervisor.md` | Auth / Contract | supervisor panel |
 | platform | `05-platform.md` | Platform / Evidence / Auth | platform panel |
 
+### ماتریس دسترسی کلینیک (JWT)
+
+| نقش JWT | قرارداد mutate / members / package-rules | funnel/SMS | بیمار search/phone / فرم Admin | evidence Owner / chart Specialist |
+|---------|------------------------------------------|------------|--------------------------------|-------------------------------------|
+| Platform | بله (⊇ Admin) | بله | بله | خیر |
+| Admin | بله | بله | بله | خیر |
+| Supervisor | خیر (خواندن + SMS قرارداد خود) | قرارداد خود | خیر | خیر |
+| Owner / Specialist | خیر | خیر | دامنهٔ خود | دامنهٔ خود |
+
+سوئیچ UI به `admin` با JWT فقط-Platform مجاز است؛ API باید Platform را روی اکشن‌های Admin کلینیک بپذیرد (`.cursorrules` §0.3).
+
 ## Server deploy (این ریپو)
 
 نقطهٔ ورود: `server/publish.bat`  
@@ -87,3 +98,14 @@ Persist نمونه: `persist/uploads/` · `persist/news-data/`
 - `api`: `ConnectionStrings__*`، `Auth__*`، `Kavenegar__*`، `FrontendUrls__*` با نمونهٔ قابل‌کپی
 
 Path داخل کانتینر: `wwwroot/uploads`، `/app/news-vitrine`، URL `/data/`.
+
+### Originهای زنده و CORS
+
+| نقش | URL |
+|-----|-----|
+| my (فرانت کلینیک) | `https://my.liveteb.ir` |
+| news (ویترین) | `https://liveteb.ir` |
+| api | `https://api.liveteb.ir` |
+
+- `FrontendUrls__My` / `FrontendUrls__News` هم‌تراز `MY_PUBLIC_URL` / `NEWS_PUBLIC_URL` در [`server/sync.config.bat`](../../server/sync.config.bat) — این کلیدها policy CORS را در `Program.cs` می‌سازند.
+- Edge عمومی: **ArvanCloud**. پاسخ 502/503 بدون `Access-Control-Allow-Origin` یعنی upstream/API down است، نه باگ سیاست CORS — triage طبق `.cursorrules` §0.2.

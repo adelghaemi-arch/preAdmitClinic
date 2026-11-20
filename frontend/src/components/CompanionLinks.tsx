@@ -1,7 +1,13 @@
-﻿import { useState, type FormEvent } from "react";
+﻿/*
+ File: frontend/src/components/CompanionLinks.tsx
+ Description: اتصال پرونده سلامتجو با QR و کدملی (حداکثر ۱۰ رقم)
+ Parent Dependencies: AppInput, person-identity, workspace
+ */
+import { useState, type FormEvent } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import { ArrowLeft, Link2, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import type { ClinicSnapshot } from "@/types/clinic";
+import { IranDigitField } from "@/components/IranDigitField";
 import { COMPANION_RELATIONS, currentStation, permissionLabel, relationLabel, stationLabel, type AppPage } from "@/lib/workspace";
 import { toFaDigits } from "@/lib/persian";
 
@@ -111,7 +117,7 @@ export function CompanionLinks({ snapshot, userId, onNavigate, onAction, busy }:
 
         <label className="app-label">
           کد ملی سلامتجو
-          <AppInput required inputMode="numeric" dir="ltr" value={nationalId} onChange={(e) => setNationalId(e.target.value)} placeholder="۰۰۱۸۹۴۳۲۱۰" className="app-input mt-2 font-mono" />
+          <IranDigitField kind="nationalId" required value={nationalId} onValueChange={setNationalId} placeholder="۰۰۱۸۹۴۳۲۱۰" className="app-input mt-2 font-mono" />
         </label>
 
         <label className="app-label">

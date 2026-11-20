@@ -19,12 +19,18 @@ public sealed class ServiceHarness
     public InMemoryStore Store { get; } = new();
     public FakeSmsSender Sms { get; } = new();
     public FakeUnitOfWork UnitOfWork { get; }
+    public FakeFileStorage Files { get; } = new();
+    public FakeDatabaseFactoryReset DatabaseReset { get; }
+    public FakeAppDataSeeder Seeder { get; }
 
+    public FakePersonRepository Persons { get; }
     public FakeUserRepository Users { get; }
     public FakeAuthRepository Auth { get; }
     public FakeClinicRepository Clinics { get; }
     public FakeContractRepository Contracts { get; }
+    public FakePackageLibraryRuleRepository LibraryRules { get; }
     public FakePatientRepository Patients { get; }
+    public FakePatientProfileRevisionRepository ProfileRevisions { get; }
     public FakeFormRepository Forms { get; }
     public FakeEvidenceRepository Evidence { get; }
     public FakePlatformRepository Platform { get; }
@@ -32,14 +38,19 @@ public sealed class ServiceHarness
     public ServiceHarness()
     {
         UnitOfWork = new FakeUnitOfWork(Store);
+        Persons = new FakePersonRepository(Store);
         Users = new FakeUserRepository(Store);
         Auth = new FakeAuthRepository(Store);
         Clinics = new FakeClinicRepository(Store);
         Contracts = new FakeContractRepository(Store);
+        LibraryRules = new FakePackageLibraryRuleRepository(Store);
         Patients = new FakePatientRepository(Store);
+        ProfileRevisions = new FakePatientProfileRevisionRepository(Store);
         Forms = new FakeFormRepository(Store);
         Evidence = new FakeEvidenceRepository(Store);
         Platform = new FakePlatformRepository(Store);
+        DatabaseReset = new FakeDatabaseFactoryReset(Store);
+        Seeder = new FakeAppDataSeeder(Store);
     }
 
     public AuthService CreateAuthService(string fixedOtp = "12345")
@@ -47,29 +58,35 @@ public sealed class ServiceHarness
         var authOptions = Options.Create(new AuthOptions { FixedOtp = fixedOtp });
         var kavenegarOptions = Options.Create(new KavenegarOptions { InviteTemplate = "invite", OtpTemplate = "otp" });
         return new AuthService(
-            Users, Auth, Contracts, Patients, Clinics, UnitOfWork, Sms,
+            Users, Persons, Auth, Contracts, Patients, Clinics, CreatePatientService(), UnitOfWork, Sms,
             authOptions, kavenegarOptions, NullLogger<AuthService>.Instance);
     }
 
-    public FormService CreateFormService() => new(Forms, Patients, UnitOfWork);
+    public FormService CreateFormService() => new(Forms, Patients, ProfileRevisions, Users, UnitOfWork);
 
-    public EvidenceService CreateEvidenceService() => new(Evidence, Patients, Platform, UnitOfWork);
+    public EvidenceService CreateEvidenceService() => new(Evidence, Patients, ProfileRevisions, Platform, Files, UnitOfWork);
 
     public PatientService CreatePatientService() =>
-        new(Patients, Contracts, Users, Forms, Evidence, Clinics, UnitOfWork);
+        new(Patients, ProfileRevisions, Contracts, Users, Persons, Forms, Evidence, Clinics, UnitOfWork);
 
     public ContractService CreateContractService(string fixedOtp = "12345")
     {
         var authOptions = Options.Create(new AuthOptions { FixedOtp = fixedOtp });
         var kavenegarOptions = Options.Create(new KavenegarOptions { InviteTemplate = "invite" });
         return new ContractService(
-            Contracts, UnitOfWork, Sms, authOptions, kavenegarOptions, NullLogger<ContractService>.Instance);
+            Contracts, LibraryRules, Patients, Users, Persons, UnitOfWork, Sms, authOptions, kavenegarOptions, NullLogger<ContractService>.Instance);
     }
 
-    public UserAdminService CreateUserAdminService() => new(Users, Platform, UnitOfWork);
+    public PackageLibraryRuleService CreatePackageLibraryRuleService()
+        => new(LibraryRules, Contracts, UnitOfWork);
 
-    public PlatformService CreatePlatformService() =>
-        new(Platform, Clinics, Users, Auth, CreateUserAdminService(), UnitOfWork);
+    public UserAdminService CreateUserAdminService() => new(Users, Persons, Patients, Contracts, Clinics, Platform, UnitOfWork);
+
+    public PlatformService CreatePlatformService(string fixedOtp = "12345") =>
+        new(
+            Platform, Clinics, Users, Auth, CreateUserAdminService(),
+            CreateAuthService(fixedOtp), DatabaseReset, Files, Seeder, UnitOfWork,
+            NullLogger<PlatformService>.Instance);
 
     public Guid SeedClinic(string name = "کلینیک تست")
     {
@@ -88,28 +105,12 @@ public sealed class ServiceHarness
     {
         var ownerId = ownerUserId ?? Guid.NewGuid();
         var mobile = phone ?? "09133751001";
-        var owner = new User
-        {
-            Id = ownerId,
-            Mobile = mobile,
-            FullName = "بیمار تست",
-            NationalId = "0012345678",
-            IsActive = true
-        };
-        Store.Users.Add(owner);
+        var person = TestIdentityHelper.AddPerson(
+            Store, mobile, "بیمار", "تست", "0012345679", new DateOnly(1996, 1, 1), "مرد");
+        var owner = TestIdentityHelper.AddUser(Store, person, isActive: true, id: ownerId);
         Store.Roles.Add(new UserRoleAssignment { UserId = ownerId, Role = AppRole.Owner, ClinicId = clinicId });
 
-        var patient = new Patient
-        {
-            ClinicId = clinicId,
-            OwnerUserId = ownerId,
-            Phone = mobile,
-            FullName = owner.FullName,
-            NationalId = owner.NationalId ?? "0012345678",
-            Age = 30,
-            Gender = "مرد"
-        };
-        Store.Patients.Add(patient);
+        var patient = TestIdentityHelper.AddPatient(Store, clinicId, person, ownerId);
         Store.SyncNavigation();
         return (patient, owner);
     }
@@ -161,9 +162,11 @@ public sealed class ServiceHarness
             BrandName = "نبض تست",
             OtpLength = 5,
             OtpTtlSeconds = 120,
+            FraudAutoCaptureSeconds = 7,
             IntakeDocumentMaxGroups = maxGroups,
             IntakeDocumentMaxFilesPerGroup = maxFilesPerGroup,
-            IntakeDocumentMaxBytes = maxBytes
+            IntakeDocumentMaxBytes = maxBytes,
+            FeatureFlagsJson = "{}"
         });
     }
 }

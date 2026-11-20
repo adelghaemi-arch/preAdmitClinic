@@ -8,12 +8,22 @@ import type {
   OnboardingStage,
 } from "@/types/clinic";
 import { iranLocalDayOffset } from "@/lib/date-iso";
+import {
+  ageFromBirthIso,
+  displayFullName,
+  isValidIranMobile,
+  isValidIranNationalId,
+  looksLikeScientificNotation,
+  normalizeMobileForImport,
+  normalizeNationalIdForImport,
+  parseShamsiBirthToIso,
+} from "@/lib/person-identity";
+import { normalizeMaritalStatus } from "@/lib/marital-status";
 import { formatFaDateRelative, normalizePersianLetters, toLatinDigits } from "@/lib/persian";
 
 /**
- * Pure client-side corporate contract seed data, demographic package matcher,
- * simulated external HR API registry, and Excel template/parser helpers.
- * 100% Persian mock data — zero backend or database required.
+ * Seed/helper قرارداد سازمانی سمت کلاینت (کاتالوگ، Excel، matcher جمعیتی).
+ * دادهٔ زندهٔ قرارداد از API می‌آید؛ این ماژول جایگزین دیتابیس نیست.
  */
 
 /** Central, system-wide package rules — reusable across any number of contracts. */
@@ -248,7 +258,7 @@ interface RawPerson {
   symptoms?: string;
 }
 
-/** Simulated external HR/Insurance API directory keyed by contract API key (100% in-browser mock). */
+/** رجیستری شبیه‌سازی HR/بیمه برای import دمو — کلید API قرارداد؛ دادهٔ زنده از سرور است. */
 export interface ExternalApiPerson {
   personnelCode: string;
   fullName: string;
@@ -261,26 +271,27 @@ export interface ExternalApiPerson {
 }
 
 export const EXTERNAL_HR_API_POOLS: Record<string, ExternalApiPerson[]> = {
+  // NIDها با checksum ایران هم‌تراز validation ورود اکسل/API
   "PARS-HR-LIVE-9841-K2": [
-    { personnelCode: "PN-1429", fullName: "فرشید بهرامی‌نیا", nationalId: "0071248593", phone: "09124418520", age: 49, gender: "مرد", department: "بهره‌برداری پالایشگاه", jobCategory: "عملیات و فنی" },
-    { personnelCode: "PN-1430", fullName: "مهسا شجاعی", nationalId: "0082359614", phone: "09126587412", age: 33, gender: "زن", department: "آزمایشگاه کنترل کیفیت", jobCategory: "فناوری و مهندسی" },
-    { personnelCode: "PN-1431", fullName: "کیوان سلطانی", nationalId: "0063417825", phone: "09133258964", age: 54, gender: "مرد", department: "تعمیرات اساسی", jobCategory: "عملیات و فنی" },
-    { personnelCode: "PN-1432", fullName: "پیمان درخشان", nationalId: "0054829136", phone: "09128741236", age: 38, gender: "مرد", department: "ایمنی و آتش‌نشانی", jobCategory: "عملیات و فنی" },
-    { personnelCode: "PN-1433", fullName: "آزاده توکلی", nationalId: "0079153248", phone: "09352147896", age: 46, gender: "زن", department: "مدیریت قراردادها", jobCategory: "مدیریت" },
+    { personnelCode: "PN-1429", fullName: "فرشید بهرامی‌نیا", nationalId: "0071248595", phone: "09124418520", age: 49, gender: "مرد", department: "بهره‌برداری پالایشگاه", jobCategory: "عملیات و فنی" },
+    { personnelCode: "PN-1430", fullName: "مهسا شجاعی", nationalId: "0082359611", phone: "09126587412", age: 33, gender: "زن", department: "آزمایشگاه کنترل کیفیت", jobCategory: "فناوری و مهندسی" },
+    { personnelCode: "PN-1431", fullName: "کیوان سلطانی", nationalId: "0063417820", phone: "09133258964", age: 54, gender: "مرد", department: "تعمیرات اساسی", jobCategory: "عملیات و فنی" },
+    { personnelCode: "PN-1432", fullName: "پیمان درخشان", nationalId: "0054829135", phone: "09128741236", age: 38, gender: "مرد", department: "ایمنی و آتش‌نشانی", jobCategory: "عملیات و فنی" },
+    { personnelCode: "PN-1433", fullName: "آزاده توکلی", nationalId: "0079153240", phone: "09352147896", age: 46, gender: "زن", department: "مدیریت قراردادها", jobCategory: "مدیریت" },
   ],
   "NOVIN-BANK-API-4420-X9": [
-    { personnelCode: "NB-2211", fullName: "حمیدرضا ملکی", nationalId: "0068412579", phone: "09123365478", age: 51, gender: "مرد", department: "مدیریت اعتبارات کلان", jobCategory: "مدیریت" },
+    { personnelCode: "NB-2211", fullName: "حمیدرضا ملکی", nationalId: "0068412576", phone: "09123365478", age: 51, gender: "مرد", department: "مدیریت اعتبارات کلان", jobCategory: "مدیریت" },
     { personnelCode: "NB-2212", fullName: "شقایق فرزانه", nationalId: "0084512369", phone: "09125478963", age: 31, gender: "زن", department: "شعبه ونک", jobCategory: "اداری و مالی" },
-    { personnelCode: "NB-2213", fullName: "یاسر خدادادی", nationalId: "0073698521", phone: "09196541238", age: 44, gender: "مرد", department: "امنیت اطلاعات بانکی", jobCategory: "فناوری و مهندسی" },
-    { personnelCode: "NB-2214", fullName: "نسرین پناهی", nationalId: "0059874123", phone: "09127894561", age: 47, gender: "زن", department: "خزانه‌داری مرکزی", jobCategory: "اداری و مالی" },
+    { personnelCode: "NB-2213", fullName: "یاسر خدادادی", nationalId: "0073698520", phone: "09196541238", age: 44, gender: "مرد", department: "امنیت اطلاعات بانکی", jobCategory: "فناوری و مهندسی" },
+    { personnelCode: "NB-2214", fullName: "نسرین پناهی", nationalId: "0059874120", phone: "09127894561", age: 47, gender: "زن", department: "خزانه‌داری مرکزی", jobCategory: "اداری و مالی" },
   ],
   DEFAULT: [
-    { personnelCode: "EMP-301", fullName: "سهیل کاظمی‌فرد", nationalId: "0074125896", phone: "09123147852", age: 48, gender: "مرد", department: "مدیریت فنی", jobCategory: "مدیریت" },
-    { personnelCode: "EMP-302", fullName: "مرجان احمدزاده", nationalId: "0081472583", phone: "09126325874", age: 32, gender: "زن", department: "منابع انسانی", jobCategory: "اداری و مالی" },
-    { personnelCode: "EMP-303", fullName: "رامین گودرزی", nationalId: "0062583691", phone: "09357418529", age: 53, gender: "مرد", department: "تولید و عملیات", jobCategory: "عملیات و فنی" },
+    { personnelCode: "EMP-301", fullName: "سهیل کاظمی‌فرد", nationalId: "0074125893", phone: "09123147852", age: 48, gender: "مرد", department: "مدیریت فنی", jobCategory: "مدیریت" },
+    { personnelCode: "EMP-302", fullName: "مرجان احمدزاده", nationalId: "0081472587", phone: "09126325874", age: 32, gender: "زن", department: "منابع انسانی", jobCategory: "اداری و مالی" },
+    { personnelCode: "EMP-303", fullName: "رامین گودرزی", nationalId: "0062583697", phone: "09357418529", age: 53, gender: "مرد", department: "تولید و عملیات", jobCategory: "عملیات و فنی" },
     { personnelCode: "EMP-304", fullName: "الناز حیدری", nationalId: "0076543218", phone: "09129517532", age: 29, gender: "زن", department: "توسعه محصول", jobCategory: "فناوری و مهندسی" },
-    { personnelCode: "EMP-305", fullName: "مرتضی یوسفی", nationalId: "0053216549", phone: "09138529631", age: 42, gender: "مرد", department: "پشتیبانی و تدارکات", jobCategory: "خدمات و پشتیبانی" },
-    { personnelCode: "EMP-306", fullName: "بهنوش صادقیان", nationalId: "0067891234", phone: "09124569871", age: 46, gender: "زن", department: "امور مالی", jobCategory: "اداری و مالی" },
+    { personnelCode: "EMP-305", fullName: "مرتضی یوسفی", nationalId: "0053216547", phone: "09138529631", age: 42, gender: "مرد", department: "پشتیبانی و تدارکات", jobCategory: "خدمات و پشتیبانی" },
+    { personnelCode: "EMP-306", fullName: "بهنوش صادقیان", nationalId: "0067891233", phone: "09124569871", age: 46, gender: "زن", department: "امور مالی", jobCategory: "اداری و مالی" },
   ],
 };
 
@@ -304,14 +315,21 @@ function makeMember(
   const done = raw.stage === "completed";
   const scheduledIso = raw.dayOffset !== undefined ? isoDayOffset(raw.dayOffset) : null;
 
+  const nameParts = raw.name.trim().split(/\s+/);
+  const firstName = nameParts[0] ?? raw.name;
+  const lastName = nameParts.slice(1).join(" ") || "—";
+  const birthYear = new Date().getFullYear() - raw.age;
   return {
     id,
     contractId,
     inviteToken: `CNT-${contractId}-${1000 + id}`,
     personnelCode: raw.code,
+    firstName,
+    lastName,
     fullName: raw.name,
     nationalId: raw.nid,
     phone: raw.phone,
+    birthDate: `${birthYear}-01-01`,
     age: raw.age,
     gender: raw.gender,
     department: raw.dept,
@@ -526,7 +544,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
       fullName: "مهندس کامران بهشتی",
       title: "مدیر HSE و سلامت شغلی هلدینگ",
       phone: "09123409876",
-      nationalId: "0061122334",
+      nationalId: "0061122335",
       isActive: true,
       canSendReminders: true,
       assignedAt: hoursAgo(48),
@@ -588,7 +606,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
       fullName: "سمانه کاوه",
       title: "مدیر رفاه و سرمایه انسانی بانک",
       phone: "09127754310",
-      nationalId: "0075544332",
+      nationalId: "0075544334",
       isActive: true,
       canSendReminders: true,
       assignedAt: hoursAgo(96),
@@ -616,20 +634,22 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
 /* ---------------- Excel Template Generator & Parser (100% client-side) ---------------- */
 
 const TEMPLATE_HEADERS = [
-  "نام و نام خانوادگی",
-  "کد ملی",
-  "شماره موبایل",
-  "سن",
-  "جنسیت",
+  "نام*",
+  "نام‌خانوادگی*",
+  "کد ملی*",
+  "شماره موبایل*",
+  "تاریخ تولد* (شمسی)",
+  "جنسیت*",
+  "تاهل",
   "واحد سازمانی",
   "رده شغلی",
   "کد پرسنلی",
 ];
 
 const TEMPLATE_SAMPLE_ROWS = [
-  ["امیرحسین رستگار", "0074561238", "09123456781", "48", "مرد", "بهره‌برداری", "عملیات و فنی", "PR-2001"],
-  ["نازنین شریفی", "0081236547", "09129876542", "34", "زن", "امور مالی", "اداری و مالی", "PR-2002"],
-  ["مسعود طباطبایی", "0063214589", "09351122334", "52", "مرد", "مدیریت مهندسی", "مدیریت", "PR-2003"],
+  ["امیرحسین", "رستگار", "0012345679", "09123456781", "1355/02/15", "مرد", "متأهل", "بهره‌برداری", "عملیات و فنی", "PR-2001"],
+  ["نازنین", "شریفی", "0011223340", "09129876542", "1369/08/03", "زن", "مجرد", "امور مالی", "اداری و مالی", "PR-2002"],
+  ["مسعود", "طباطبایی", "0499370899", "09351122334", "1351/11/20", "مرد", "", "مدیریت مهندسی", "مدیریت", "PR-2003"],
 ];
 
 /** Downloads a real Excel-ready RTL `.xls` template (opens natively in Microsoft Excel & LibreOffice). */
@@ -655,7 +675,8 @@ export function downloadContractExcelTemplate(format: "xls" | "csv" = "xls"): vo
         .map(
           (cell, i) =>
             `<td style="padding:6px 10px;border:1px solid #e2e8f0;${
-              i === 1 || i === 2 ? "mso-number-format:'\\@';" : ""
+              // ستون ۲=کدملی، ۳=موبایل — جلوگیری از حذف صفر پیشوند در Excel
+              i === 2 || i === 3 ? "mso-number-format:'\\@';" : ""
             }">${cell}</td>`
         )
         .join("")}</tr>`
@@ -691,7 +712,12 @@ export function exportContractReportExcel(contract: CorporateContract): void {
     String(m.age),
     m.gender,
     m.department,
-    m.assignedPathwayTitle,
+    // عنوان فارسی؛ اگر عنوان = کد انگلیسی بود جایگزین می‌شود
+    m.assignedPathwayTitle === m.assignedPathwayCode || !m.assignedPathwayTitle
+      ? m.assignedPathwayCode === "FULL_CHECKUP" || !m.assignedPathwayCode
+        ? "چکاپ جامع"
+        : m.assignedPathwayTitle || m.assignedPathwayCode
+      : m.assignedPathwayTitle,
     ONBOARDING_META[m.onboardingStage].label,
     `${m.profileProgressPct}%`,
     APPOINTMENT_META[m.appointmentStatus].label,
@@ -745,13 +771,41 @@ function splitCsvLine(line: string, delimiter: string): string[] {
   return out;
 }
 
-/** Parses uploaded `.xls` (HTML spreadsheet), `.csv`, `.tsv` or pasted Excel rows into validated members. */
+export type ImportPreviewStatus =
+  | "ready"
+  | "invalid"
+  | "header"
+  | "imported"
+  | "linked"
+  | "duplicate"
+  | "rejected";
+
+export interface ImportPreviewRow {
+  lineNo: number;
+  firstName: string;
+  lastName: string;
+  nationalId: string;
+  phone: string;
+  birthDateIso: string | null;
+  birthDateRaw: string;
+  gender: string;
+  maritalStatus: string;
+  department: string;
+  jobCategory: string;
+  personnelCode: string;
+  status: ImportPreviewStatus;
+  reason: string | null;
+}
+
+/** Parses uploaded `.xls`/`.csv`/paste into per-row status for the preview table. */
 export function parseExcelOrCsvText(rawText: string): {
-  rows: ExternalApiPerson[];
+  rows: ImportPreviewRow[];
+  readyCount: number;
+  invalidCount: number;
   skipped: number;
 } {
   const cleaned = rawText.replace(/^\uFEFF/, "").trim();
-  if (!cleaned) return { rows: [], skipped: 0 };
+  if (!cleaned) return { rows: [], readyCount: 0, invalidCount: 0, skipped: 0 };
 
   let rawRows: string[][] = [];
 
@@ -768,46 +822,151 @@ export function parseExcelOrCsvText(rawText: string): {
     rawRows = lines.map((line) => splitCsvLine(line, delimiter));
   }
 
-  const rows: ExternalApiPerson[] = [];
-  let skipped = 0;
-
+  const rows: ImportPreviewRow[] = [];
   rawRows.forEach((cols, index) => {
-    const fullName = normalizePersianLetters((cols[0] ?? "").trim());
-    const nid = toAsciiDigits(cols[1] ?? "").replace(/\D/g, "");
-    const phone = toAsciiDigits(cols[2] ?? "").replace(/\D/g, "");
-    // Skip header row automatically
-    if (index === 0 && (fullName.includes("نام") || (cols[1] ?? "").includes("ملی"))) return;
-    if (fullName.length < 3 || nid.length < 8 || phone.length < 10) {
-      skipped++;
+    const lineNo = index + 1;
+    const c0 = normalizePersianLetters((cols[0] ?? "").trim());
+    const c1 = normalizePersianLetters((cols[1] ?? "").trim());
+    // هدر تمپلیت جدید یا قدیمی
+    if (
+      index === 0 &&
+      (c0.includes("نام") || c1.includes("نام") || (cols[2] ?? "").includes("ملی") || (cols[1] ?? "").includes("ملی"))
+    ) {
+      rows.push({
+        lineNo,
+        firstName: c0,
+        lastName: c1,
+        nationalId: "",
+        phone: "",
+        birthDateIso: null,
+        birthDateRaw: "",
+        gender: "",
+        maritalStatus: "",
+        department: "",
+        jobCategory: "",
+        personnelCode: "",
+        status: "header",
+        reason: "ردیف عنوان",
+      });
       return;
     }
-    const normalizedNid = nid.padStart(10, "0").slice(0, 10);
-    const normalizedPhone = phone.startsWith("0") ? phone.slice(0, 11) : `0${phone}`.slice(0, 11);
-    const parsedAge = Number(toAsciiDigits(cols[3] ?? "").replace(/\D/g, ""));
-    const age = Number.isFinite(parsedAge) && parsedAge >= 18 && parsedAge <= 95 ? parsedAge : 38;
-    const rawGender = normalizePersianLetters((cols[4] ?? "").trim());
-    const gender: "مرد" | "زن" =
-      rawGender.includes("زن") || rawGender.includes("خانم") || rawGender.toLowerCase() === "f"
-        ? "زن"
-        : "مرد";
-    const department = normalizePersianLetters((cols[5] ?? "").trim() || "عمومی سازمان");
-    const rawCat = normalizePersianLetters((cols[6] ?? "").trim());
+
+    // سازگاری با تمپلیت قدیمی: یک ستون نام کامل
+    const legacySingleName = cols.length >= 8 && !String(cols[4] ?? "").match(/\d{3,}/);
+    let firstName = c0;
+    let lastName = c1;
+    let nidRaw = cols[2] ?? "";
+    let phoneRaw = cols[3] ?? "";
+    let birthRaw = cols[4] ?? "";
+    let genderRaw = cols[5] ?? "";
+    let maritalRaw = cols[6] ?? "";
+    let deptRaw = cols[7] ?? "";
+    let catRaw = cols[8] ?? "";
+    let codeRaw = cols[9] ?? "";
+
+    if (legacySingleName && (cols[3] ?? "").replace(/\D/g, "").length <= 3) {
+      // نام کامل | کدملی | موبایل | سن | جنسیت | واحد | رده | کد
+      const parts = c0.split(/\s+/);
+      firstName = parts[0] ?? "";
+      lastName = parts.slice(1).join(" ");
+      nidRaw = cols[1] ?? "";
+      phoneRaw = cols[2] ?? "";
+      birthRaw = ""; // سن قدیمی — بدون تاریخ معتبر
+      genderRaw = cols[4] ?? "";
+      maritalRaw = "";
+      deptRaw = cols[5] ?? "";
+      catRaw = cols[6] ?? "";
+      codeRaw = cols[7] ?? "";
+    }
+
+    const nidDigitsRaw = String(nidRaw ?? "").replace(/\D/g, "");
+    const phoneDigitsRaw = String(phoneRaw ?? "").replace(/\D/g, "");
+    if (looksLikeScientificNotation(nidRaw) || looksLikeScientificNotation(phoneRaw)) {
+      rows.push({
+        lineNo,
+        firstName,
+        lastName,
+        nationalId: String(nidRaw ?? ""),
+        phone: String(phoneRaw ?? ""),
+        birthDateIso: null,
+        birthDateRaw: birthRaw.trim(),
+        gender: "",
+        maritalStatus: "",
+        department: "",
+        jobCategory: "",
+        personnelCode: "",
+        status: "invalid",
+        reason: "کدملی/موبایل شبیه نماد علمی اکسل است",
+      });
+      return;
+    }
+    const nationalId = normalizeNationalIdForImport(nidRaw);
+    const phone = normalizeMobileForImport(phoneRaw);
+    const birthParsed = birthRaw.trim() ? parseShamsiBirthToIso(birthRaw) : { ok: false as const, reason: "تاریخ تولد خالی است." };
+    const rawGender = normalizePersianLetters(genderRaw.trim());
+    let gender = "";
+    if (rawGender.includes("زن") || rawGender.includes("خانم") || rawGender.toLowerCase() === "f") gender = "زن";
+    else if (rawGender.includes("مرد") || rawGender.includes("آقا") || rawGender.toLowerCase() === "m") gender = "مرد";
+
+    // هم‌تراز کاتالوگ؛ مطلقه/بیوه → ازدواج‌کرده؛ ناشناخته خالی می‌ماند
+    const maritalStatus = normalizeMaritalStatus(maritalRaw) ?? "";
+    const department = normalizePersianLetters(deptRaw.trim());
+    const rawCat = normalizePersianLetters(catRaw.trim());
     const jobCategory =
       JOB_CATEGORIES.find((c) => c !== "همه" && (c === rawCat || c.includes(rawCat))) ||
-      (rawCat.length > 1 ? rawCat : "اداری و مالی");
-    const personnelCode = toAsciiDigits(cols[7] ?? "").trim() || `EX-${100 + index}`;
+      (rawCat.length > 1 ? rawCat : "");
+    const personnelCode = toAsciiDigits(codeRaw).trim();
 
+    const reasons: string[] = [];
+    const notes: string[] = [];
+    // یادداشت ترمیم صفر پیشوند برای ادمین
+    if (nidDigitsRaw.length > 0 && nidDigitsRaw.length < 10 && nationalId.length === 10) {
+      notes.push("صفر پیشوند کدملی ترمیم شد");
+    }
+    if (phoneDigitsRaw.length === 10 && phoneDigitsRaw.startsWith("9") && phone.startsWith("09")) {
+      notes.push("صفر پیشوند موبایل ترمیم شد");
+    }
+    if (firstName.length < 2) reasons.push("نام الزامی است");
+    if (lastName.length < 2) reasons.push("نام‌خانوادگی الزامی است");
+    if (!isValidIranNationalId(nationalId)) reasons.push("کدملی نامعتبر است");
+    if (!isValidIranMobile(phone)) reasons.push("موبایل نامعتبر است");
+    if (!birthParsed.ok) reasons.push(birthParsed.reason);
+    if (gender !== "مرد" && gender !== "زن") reasons.push("جنسیت باید مرد یا زن باشد");
+
+    const birthDateIso = birthParsed.ok ? birthParsed.iso : null;
     rows.push({
-      personnelCode,
-      fullName,
-      nationalId: normalizedNid,
-      phone: normalizedPhone,
-      age,
+      lineNo,
+      firstName,
+      lastName,
+      nationalId,
+      phone,
+      birthDateIso,
+      birthDateRaw: birthRaw.trim(),
       gender,
+      maritalStatus,
       department,
       jobCategory,
+      personnelCode,
+      status: reasons.length ? "invalid" : "ready",
+      reason: reasons.length ? reasons.join("؛ ") : notes.length ? notes.join("؛ ") : null,
     });
   });
 
-  return { rows, skipped };
+  const readyCount = rows.filter((r) => r.status === "ready").length;
+  const invalidCount = rows.filter((r) => r.status === "invalid").length;
+  return { rows, readyCount, invalidCount, skipped: invalidCount };
+}
+
+/** نگاشت ردیف آماده به شکل قدیمی ExternalApiPerson برای مسیرهای mock باقی‌مانده */
+export function previewRowToExternalPerson(r: ImportPreviewRow): ExternalApiPerson {
+  return {
+    personnelCode: r.personnelCode || `EX-${r.lineNo}`,
+    fullName: displayFullName(r.firstName, r.lastName),
+    nationalId: r.nationalId,
+    phone: r.phone,
+    age: ageFromBirthIso(r.birthDateIso) ?? 0,
+    gender: r.gender === "زن" ? "زن" : "مرد",
+    department: r.department || "عمومی سازمان",
+    jobCategory: r.jobCategory || "اداری و مالی",
+  };
 }

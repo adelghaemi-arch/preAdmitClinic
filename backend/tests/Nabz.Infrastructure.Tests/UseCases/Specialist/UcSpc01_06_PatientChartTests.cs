@@ -35,7 +35,7 @@ public sealed class UcSpc01_06_PatientChartTests
         var (patient, _) = h.SeedPatient(clinicId, "09121112222");
         var patients = h.CreatePatientService();
 
-        var list = await patients.SearchAsync(clinicId, patient.FullName[..3]);
+        var list = await patients.SearchAsync(clinicId, patient.Person.FirstName[..3]);
 
         Assert.Contains(list, p => p.Id == patient.Id);
     }

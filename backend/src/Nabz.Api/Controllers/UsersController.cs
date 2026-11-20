@@ -7,6 +7,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nabz.Api.Auth;
+using Nabz.Application.Common;
 using Nabz.Application.Interfaces;
 using Nabz.Domain.Enums;
 
@@ -22,8 +23,19 @@ public sealed class UsersController(IUserAdminService userAdmin) : ControllerBas
         => Ok(userAdmin.ListAssignableRoles(IsPlatformAdmin()).Select(r => r.ToString()).ToList());
 
     [HttpGet]
-    public async Task<IActionResult> List(CancellationToken ct)
-        => Ok(await userAdmin.ListUsersAsync(IsPlatformAdmin(), ct));
+    public async Task<IActionResult> List(
+        [FromQuery] bool includeInactiveContracts = false,
+        [FromQuery] int? page = null,
+        [FromQuery] int pageSize = Paging.DefaultPageSize,
+        [FromQuery] string? q = null,
+        CancellationToken ct = default)
+    {
+        // بدون page → لیست کامل (سازگاری bootstrap قدیمی workspace تا سقف سرویس)
+        if (page is null)
+            return Ok(await userAdmin.ListUsersAsync(IsPlatformAdmin(), includeInactiveContracts, ct));
+        return Ok(await userAdmin.ListUsersPagedAsync(
+            IsPlatformAdmin(), page.Value, pageSize, q, includeInactiveContracts, ct));
+    }
 
     [HttpPost]
     public async Task<IActionResult> Upsert([FromBody] UpsertUserBody body, CancellationToken ct)
@@ -33,7 +45,8 @@ public sealed class UsersController(IUserAdminService userAdmin) : ControllerBas
             var dto = await userAdmin.UpsertUserAsync(
                 IsPlatformAdmin(),
                 body.UserId,
-                body.FullName,
+                body.FirstName,
+                body.LastName,
                 body.Mobile,
                 body.NationalId,
                 body.PrimaryRole,
@@ -50,6 +63,16 @@ public sealed class UsersController(IUserAdminService userAdmin) : ControllerBas
         catch (InvalidOperationException ex) when (ex.Message.Contains("یافت نشد"))
         {
             return NotFound(new { ok = false, error = ex.Message });
+        }
+        catch (InvalidOperationException ex) when (
+            ex.Message.Contains("کد ملی")
+            || ex.Message.Contains("موبایل")
+            || ex.Message.Contains("نام")
+            || ex.Message.Contains("قرارداد")
+            || ex.Message.Contains("کلینیک"))
+        {
+            // تکراری / نامعتبر — نه 500
+            return Conflict(new { ok = false, error = ex.Message });
         }
     }
 
@@ -70,6 +93,6 @@ public sealed class UsersController(IUserAdminService userAdmin) : ControllerBas
     private bool IsPlatformAdmin() => User.IsInRole(nameof(AppRole.Platform));
     private string ActorName() => User.GetUserId().ToString();
 
-    public record UpsertUserBody(Guid? UserId, string FullName, string Mobile, string? NationalId, AppRole PrimaryRole, Guid? ClinicId, Guid? ContractId);
+    public record UpsertUserBody(Guid? UserId, string FirstName, string LastName, string Mobile, string? NationalId, AppRole PrimaryRole, Guid? ClinicId, Guid? ContractId);
     public record ActiveBody(bool IsActive);
 }

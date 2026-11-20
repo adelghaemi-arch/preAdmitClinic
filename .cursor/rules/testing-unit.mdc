@@ -35,6 +35,8 @@ alwaysApply: false
 ## API smoke
 
 - `WebApplicationFactory` + `Auth:FixedOtp`؛ بدون وابستگی به SMS واقعی
+- **فقط MSSQL لوکال** با `MigrateAsync` (همان migrations پروداکشن) — SQLite / `EnsureCreated` ممنوع
+- هر factory یک دیتابیس ephemeral (`NabzClinic_ApiSmoke_{guid}`) جدا از `NabzClinic` dev؛ در `Dispose` drop شود
 - حداقل: request/verify OTP و `GET` snapshot/me مرتبط با owner
 
 ## دروازهٔ قبل‌از‌انتشار (عملیاتی)

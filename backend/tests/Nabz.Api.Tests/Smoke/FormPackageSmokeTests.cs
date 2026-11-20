@@ -64,7 +64,7 @@ public sealed class FormPackageSmokeTests : IClassFixture<NabzApiFactory>
         Assert.Equal(HttpStatusCode.Forbidden, export.StatusCode);
     }
 
-    private async Task<string> LoginAsync(string mobile)
+    private async Task<string> LoginAsync(string mobile, string? nationalId = null)
     {
         var req = await _client.PostAsJsonAsync("/api/auth/otp/request", new { mobile });
         req.EnsureSuccessStatusCode();
@@ -77,6 +77,17 @@ public sealed class FormPackageSmokeTests : IClassFixture<NabzApiFactory>
         });
         verify.EnsureSuccessStatusCode();
         var body = await verify.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
-        return body.GetProperty("token").GetString()!;
+        var token = body.GetProperty("token").GetString()!;
+        var needsSelection = body.TryGetProperty("needsSelection", out var ns) && ns.GetBoolean();
+        if (!needsSelection)
+            return token;
+
+        // موبایل مشترک seed — بدون select نقش Owner صادر نمی‌شود و 403 گمراه‌کننده است
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var nid = nationalId
+                  ?? body.GetProperty("candidates").EnumerateArray().First().GetProperty("nationalId").GetString()!;
+        var select = await _client.PostAsJsonAsync("/api/auth/otp/select", new { nationalId = nid });
+        select.EnsureSuccessStatusCode();
+        return token;
     }
 }

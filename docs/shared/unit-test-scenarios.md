@@ -48,10 +48,10 @@
 | UC-OWN-07 | UT-BE-OWN-07 | UT-FE-OWN-07 | — | اصلی؛ **1x** سقف فایل | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn07_IntakeDocFilesTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
 | UC-OWN-08 | UT-BE-OWN-08 | UT-FE-OWN-08 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn08_RemoveIntakeDocTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
 | UC-OWN-09 | UT-BE-OWN-09 | UT-FE-OWN-09 | — | اصلی (start/capture/end نشست ضدتقلب) | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn09_FraudCameraTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
-| UC-OWN-10 | UT-BE-OWN-10 | UT-FE-OWN-10 | — | اصلی؛ **2x** رد مجوز GPS | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn10_RecordGpsTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
+| UC-OWN-10 | UT-BE-OWN-10 | UT-FE-OWN-10 | — | اصلی RecordGps؛ آستانه/دو تریگر/idempotent در FE | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn05_11_EvidenceAndSessionTests.cs` (`UC_OWN_10_*`) | `frontend/src/lib/__tests__/owner-gps-watch.test.ts` |
 | UC-OWN-11 | UT-BE-OWN-11 | UT-FE-OWN-11 | — | اصلی (revoke خود / سایر نشست‌ها) | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn11_RevokeSessionTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
 
-**Smoke مشترک Owner/SUP:** `backend/tests/Nabz.Api.Tests/Smoke/AuthOtpSmokeTests.cs` (FixedOtp؛ بدون SMS)
+**Smoke مشترک Owner/SUP:** `backend/tests/Nabz.Api.Tests/Smoke/AuthOtpSmokeTests.cs` (MSSQL لوکال + Migrate + FixedOtp؛ بدون SMS)
 
 ---
 
@@ -79,7 +79,7 @@
 | UC-ADM-01 | UT-BE-ADM-01 | UT-FE-ADM-01 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm01_CreateContractTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-02 | UT-BE-ADM-02 | UT-FE-ADM-02 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm02_ContractSupervisorTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-03 | UT-BE-ADM-03 | UT-FE-ADM-03 | — | اصلی؛ **2x** خطای منبع sync | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm03_ContractApiSyncTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
-| UC-ADM-04 | UT-BE-ADM-04 | UT-FE-ADM-04 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm04_ImportMembersTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
+| UC-ADM-04 | UT-BE-ADM-04 | UT-FE-ADM-04 | — | اصلی؛ **2a** کدملی تکراری در همان قرارداد | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm01_08_ContractTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-05 | UT-BE-ADM-05 | UT-FE-ADM-05 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm05_PackageRulesTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-06 | UT-BE-ADM-06 | UT-FE-ADM-06 | — | اصلی (دعوت گروهی؛ FixedOtp بدون SMS) | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm06_BulkInviteSmsTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-07 | UT-BE-ADM-07 | UT-FE-ADM-07 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm07_OnboardingFunnelTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
@@ -89,9 +89,9 @@
 | UC-ADM-11 | UT-BE-ADM-11 | UT-FE-ADM-11 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm11_ReorderFormItemsTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-12 | UT-BE-ADM-12 | UT-FE-ADM-12 | — | اصلی | `…/Admin/UcAdm12_14_MonitorAndResetTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-13 | UT-BE-ADM-13 | UT-FE-ADM-13 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm13_ChartStatusTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
-| UC-ADM-14 | UT-BE-ADM-14 | UT-FE-ADM-14 | — | اصلی (ریست دمو؛ قفل prod) | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm14_ResetMockDataTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
+| UC-ADM-14 | UT-BE-ADM-14 | UT-FE-ADM-14 | — | اصلی (ریست فکتوری سرور؛ قفل prod؛ نه ریست مرورگر) | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm14_ResetMockDataTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-15 | UT-BE-ADM-15 | UT-FE-ADM-15 | — | اصلی؛ **2x** پنهان‌سازی کاربر platform | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm15_ListClinicUsersTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
-| UC-ADM-16 | UT-BE-ADM-16 | UT-FE-ADM-16 | — | اصلی؛ **1x** انتصاب platform رد؛ **1y** ویرایش platform یافت‌نشد | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm16_UpsertClinicUserTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
+| UC-ADM-16 | UT-BE-ADM-16 | UT-FE-ADM-16 | — | اصلی؛ **1x** انتصاب platform رد؛ **1y** ویرایش platform یافت‌نشد؛ سوئیچ workspace به platform برای Admin ممنوع | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm16_UpsertClinicUserTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` · `uc-role-switch.test.ts` |
 | UC-ADM-17 | UT-BE-ADM-17 | UT-FE-ADM-17 | — | اصلی؛ **1x** هدف platform | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm17_SetUserActiveTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-18 | UT-BE-ADM-18 | UT-FE-ADM-18 | SMK-API-ADM-18 | اصلی round-trip؛ **1x** بسته خالی؛ **3x** gender نامعتبر | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm18_FormPackageIoTests.cs` | `frontend/src/lib/__tests__/uc-adm-18.form-package.test.ts` |
 | UC-ADM-19 | UT-BE-ADM-19 | UT-FE-ADM-19 | — | اصلی import کاتالوگ CA؛ evaluator gender همه / marital / age | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm19_FormMatrixCatalogTests.cs` | `frontend/src/lib/__tests__/uc-form-engine.test.ts` |
@@ -123,7 +123,7 @@
 | UC-PLT-01 | UT-BE-PLT-01 | UT-FE-PLT-01 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt01_ClinicStatusTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
 | UC-PLT-02 | UT-BE-PLT-02 | UT-FE-PLT-02 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt02_PlatformSettingsTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
 | UC-PLT-03 | UT-BE-PLT-03 | UT-FE-PLT-03 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt03_OsmLocalTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
-| UC-PLT-04 | UT-BE-PLT-04 | UT-FE-PLT-04 | SMK-API-PLT-04 | اصلی؛ **1x** نقش نامعتبر | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt04_UpsertUserTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
+| UC-PLT-04 | UT-BE-PLT-04 | UT-FE-PLT-04 | SMK-API-PLT-04 | اصلی؛ **1x** نقش نامعتبر؛ سوئیچ workspace به admin برای Platform مجاز | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt04_UpsertUserTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` · `uc-role-switch.test.ts` |
 | UC-PLT-05 | UT-BE-PLT-05 | UT-FE-PLT-05 | SMK-API-PLT-05 | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt05_SetUserActiveTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
 | UC-PLT-06 | UT-BE-PLT-06 | UT-FE-PLT-06 | SMK-API-PLT-06 | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt06_ResetUserAccessTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
 | UC-PLT-07 | UT-BE-PLT-07 | UT-FE-PLT-07 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt07_ReviewFraudSessionTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
@@ -132,6 +132,7 @@
 | UC-PLT-10 | UT-BE-PLT-10 | UT-FE-PLT-10 | SMK-API-PLT-10 | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt10_RevokeSessionsTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
 | UC-PLT-11 | UT-BE-PLT-11 | UT-FE-PLT-11 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt11_AuditTrailTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
 | UC-PLT-12 | UT-BE-PLT-12 | UT-FE-PLT-12 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt12_TechHealthTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
+| UC-PLT-13 | UT-BE-PLT-13 | — | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt13_FactoryResetTests.cs` | — |
 
 **Smoke مشترک Platform:** `backend/tests/Nabz.Api.Tests/Smoke/AuthPlatformSmokeTests.cs` (ورود `09133752696` + `GET /api/auth/me`؛ هم‌تراز TC-AUTH-06)
 

@@ -1,6 +1,6 @@
 ﻿/*
  File: frontend/src/components/LoginForm.tsx
- Description: فرم ورود OTP؛ normalizePhone فقط برای نمایش موبایل
+ Description: فرم ورود OTP با گام انتخاب کدملی وقتی موبایل چندنفره است
  Parent Dependencies: lib/auth.ts, lib/persian.ts, lib/viewer.ts
  */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,13 +14,22 @@ import {
   Phone,
   RotateCcw,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
-import { listOtpDemoLogins, normalizePhone, requestOtp, verifyOtp } from "@/lib/auth";
+import {
+  listOtpDemoLogins,
+  normalizePhone,
+  requestOtp,
+  selectOtpIdentity,
+  verifyOtp,
+} from "@/lib/auth";
+import type { OtpIdentityCandidate } from "@/lib/api/auth";
+import { IranDigitField } from "@/components/IranDigitField";
 import { writeStoredRole } from "@/lib/viewer";
 import { toFaDigits, toLatinDigits } from "@/lib/persian";
 import type { WorkspaceRole } from "@/types/clinic";
 
-type Step = "phone" | "code";
+type Step = "phone" | "code" | "select";
 
 export function LoginForm() {
   const navigate = useNavigate();
@@ -29,6 +38,7 @@ export function LoginForm() {
   const [code, setCode] = useState("");
   const [demoCode, setDemoCode] = useState("");
   const [targetName, setTargetName] = useState("");
+  const [candidates, setCandidates] = useState<OtpIdentityCandidate[]>([]);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -71,15 +81,45 @@ export function LoginForm() {
     }
   };
 
-  const handleVerify = async (value: string) => {
-    const result = await verifyOtp(phone, value);
-    if (!result.ok || !result.user) {
-      setError(result.error ?? "ورود انجام نشد.");
-      return;
-    }
+  const completeLogin = (result: { user?: { primaryRole: WorkspaceRole }; role?: WorkspaceRole }) => {
+    if (!result.user) return;
     const role = (result.role ?? (result.user.primaryRole as WorkspaceRole)) || "owner";
     writeStoredRole(role);
     navigate("/", { replace: true });
+  };
+
+  const handleVerify = async (value: string) => {
+    const result = await verifyOtp(phone, value);
+    if (!result.ok) {
+      setError(result.error ?? "ورود انجام نشد.");
+      return;
+    }
+    // چند کدملی روی یک شماره — انتخاب قبل از داشبورد
+    if (result.needsSelection && result.candidates?.length) {
+      setCandidates(result.candidates);
+      setStep("select");
+      return;
+    }
+    if (!result.user) {
+      setError(result.error ?? "ورود انجام نشد.");
+      return;
+    }
+    completeLogin(result);
+  };
+
+  const handleSelect = async (nationalId: string) => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await selectOtpIdentity(nationalId);
+      if (!result.ok || !result.user) {
+        setError(result.error ?? "انتخاب هویت انجام نشد.");
+        return;
+      }
+      completeLogin(result);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifySubmit = async (e: React.FormEvent) => {
@@ -108,29 +148,73 @@ export function LoginForm() {
         شماره موبایل خود را وارد کنید تا کد تأیید برایتان ارسال شود؛ بدون نام کاربری و بدون گذرواژه.
       </p>
 
-      {step === "phone" ? (
+      {step === "select" ? (
+        <div className="mt-6 space-y-4">
+          <p className="text-xs leading-7 text-slate-500">
+            چند نفر با این شماره ثبت شده‌اند. کدملی و نام خود را انتخاب کنید.
+          </p>
+          <div className="space-y-2">
+            {candidates.map((c) => (
+              <button
+                key={c.nationalId}
+                type="button"
+                disabled={loading}
+                onClick={() => void handleSelect(c.nationalId)}
+                className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-right transition hover:border-teal-300 hover:bg-teal-50/40 disabled:opacity-50"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#edf6f0] text-[#287957]">
+                  <UserRound className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-slate-700">
+                    {c.firstName} {c.lastName}
+                  </span>
+                  <span dir="ltr" className="mt-0.5 block font-mono text-[11px] text-slate-400">
+                    {toFaDigits(c.nationalId)}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {error && (
+            <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-600">
+              {error}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setStep("phone");
+              setError("");
+              setCandidates([]);
+            }}
+            className="flex w-full items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-teal-700"
+          >
+            <ArrowRight className="h-3.5 w-3.5" />
+            تغییر شماره موبایل
+          </button>
+        </div>
+      ) : step === "phone" ? (
         <form onSubmit={handleSend} className="mt-6 space-y-4">
           <label htmlFor="otp-phone" className="app-label">
             شماره موبایل
           </label>
           <div className="relative !mt-2">
             <Phone className="absolute top-3 right-3 h-4 w-4 text-slate-400" />
-            <AppInput
+            <IranDigitField
               id="otp-phone"
               name="phone"
-              type="tel"
-              inputMode="numeric"
+              kind="mobile"
               autoComplete="tel"
               required
-              dir="ltr"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onValueChange={setPhone}
               placeholder="09123456789"
               className="app-input !pr-10 text-left font-mono tracking-wider"
             />
           </div>
           <p className="-mt-2 text-[10px] leading-5 text-slate-400">
-            کد تأیید برای سلامتجویانی که شماره‌شان در فهرست کلینیک ثبت است (و ناظران سازمانی) صادر می‌شود.
+            کد تأیید برای افراد معرفی‌شده در قرارداد سازمانی، پروندهٔ کلینیک، یا ناظران صادر می‌شود.
           </p>
           {error && (
             <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-600">

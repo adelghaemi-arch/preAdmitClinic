@@ -12,15 +12,15 @@ using Nabz.Database.EF.Sql;
 namespace Nabz.Database.EF.Sql.Migrations
 {
     [DbContext(typeof(NabzDbContext))]
-    [Migration("20261119130126_InitialV1")]
-    partial class InitialV1
+    [Migration("20261120150303_ContractMemberIntroducedMobileAndAuthLoginMobile")]
+    partial class ContractMemberIntroducedMobileAndAuthLoginMobile
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -48,6 +48,17 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<DateTime>("LastSeenAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("LoginMobile")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("PendingMobile")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("PendingSelection")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("RevokedAt")
                         .HasColumnType("datetime2");
 
@@ -58,7 +69,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
@@ -74,6 +85,9 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("AdminContact")
                         .HasColumnType("nvarchar(max)");
 
@@ -88,6 +102,12 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.Property<bool>("IsCurrentTenant")
                         .HasColumnType("bit");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -114,9 +134,6 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<string>("AbandonedAtStep")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("Age")
-                        .HasColumnType("int");
-
                     b.Property<string>("AssignedPackageCode")
                         .HasColumnType("nvarchar(max)");
 
@@ -132,12 +149,9 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<string>("Department")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Gender")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("IntroducedMobile")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("InviteToken")
                         .IsRequired()
@@ -164,24 +178,20 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<bool>("ManualPackageOverride")
                         .HasColumnType("bit");
 
-                    b.Property<string>("MatchedRuleTitle")
+                    b.Property<string>("MaritalStatus")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("NationalId")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<string>("MatchedRuleTitle")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("OnboardingStage")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("PersonnelCode")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<DateTime?>("ProfileCompletedAt")
                         .HasColumnType("datetime2");
@@ -204,7 +214,10 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.HasIndex("InviteToken")
                         .IsUnique();
 
-                    b.HasIndex("ContractId", "NationalId");
+                    b.HasIndex("PersonId");
+
+                    b.HasIndex("ContractId", "PersonId")
+                        .IsUnique();
 
                     b.ToTable("ContractMembers");
                 });
@@ -318,22 +331,14 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastSeenAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("NationalId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");
@@ -345,6 +350,8 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.HasIndex("ContractId")
                         .IsUnique();
+
+                    b.HasIndex("PersonId");
 
                     b.ToTable("ContractSupervisors");
                 });
@@ -419,7 +426,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime>("EndedAt")
+                    b.Property<DateTime?>("EndedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Kind")
@@ -492,7 +499,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.FormDefinition", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("ClinicId")
@@ -538,7 +544,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.FormItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Code")
@@ -644,7 +649,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.FormSection", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Code")
@@ -777,6 +781,9 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("DocumentDate")
@@ -913,12 +920,17 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Mobile", "ExpiresAt");
+                    b.HasIndex("Mobile", "Purpose", "ExpiresAt");
 
                     b.ToTable("OtpChallenges");
                 });
@@ -975,9 +987,6 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int?>("Age")
-                        .HasColumnType("int");
-
                     b.Property<string>("AssignedPackageCode")
                         .HasColumnType("nvarchar(max)");
 
@@ -990,12 +999,9 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Gender")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("HomeAddress")
                         .HasColumnType("nvarchar(max)");
@@ -1006,11 +1012,24 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<double?>("HomeLon")
                         .HasColumnType("float");
 
+                    b.Property<string>("HomePlaque")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HomePostalCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("HomeUnit")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IntakeCompleted")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("IntakeCompletedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("JourneyIntroSeen")
+                        .HasColumnType("bit");
 
                     b.Property<Guid?>("LinkedContractMemberId")
                         .HasColumnType("uniqueidentifier");
@@ -1018,18 +1037,11 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<string>("MaritalStatus")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("NationalId")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.Property<Guid?>("OwnerUserId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("QrToken")
                         .HasColumnType("nvarchar(max)");
@@ -1039,9 +1051,14 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerUserId");
+                    b.HasIndex("OwnerUserId")
+                        .IsUnique()
+                        .HasFilter("OwnerUserId IS NOT NULL");
 
-                    b.HasIndex("ClinicId", "NationalId");
+                    b.HasIndex("PersonId");
+
+                    b.HasIndex("ClinicId", "PersonId")
+                        .IsUnique();
 
                     b.ToTable("Patients");
                 });
@@ -1056,6 +1073,9 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<double?>("GpsAccuracy")
@@ -1094,6 +1114,105 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.HasIndex("PatientId");
 
                     b.ToTable("PatientPhotos");
+                });
+
+            modelBuilder.Entity("Nabz.Domain.Entities.PatientProfileRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ChangedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedByUserId");
+
+                    b.HasIndex("PatientId", "At");
+
+                    b.ToTable("PatientProfileRevisions");
+                });
+
+            modelBuilder.Entity("Nabz.Domain.Entities.Person", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly?>("BirthDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Gender")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Mobile")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("NationalId")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Mobile");
+
+                    b.HasIndex("NationalId")
+                        .IsUnique()
+                        .HasFilter("NationalId IS NOT NULL AND NationalId <> ''");
+
+                    b.ToTable("Persons");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.PlatformAuditEntry", b =>
@@ -1190,22 +1309,8 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateOnly?>("BirthDate")
-                        .HasColumnType("date");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Gender")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -1213,21 +1318,15 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Mobile")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("NationalId")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                    b.Property<Guid>("PersonId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Mobile")
+                    b.HasIndex("PersonId")
                         .IsUnique();
 
                     b.ToTable("Users");
@@ -1268,9 +1367,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                 {
                     b.HasOne("Nabz.Domain.Entities.User", "User")
                         .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("UserId");
 
                     b.Navigation("User");
                 });
@@ -1283,7 +1380,15 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Nabz.Domain.Entities.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Contract");
+
+                    b.Navigation("Person");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.ContractPackageRule", b =>
@@ -1316,7 +1421,15 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Nabz.Domain.Entities.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Contract");
+
+                    b.Navigation("Person");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.CorporateContract", b =>
@@ -1468,9 +1581,17 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .WithMany()
                         .HasForeignKey("OwnerUserId");
 
+                    b.HasOne("Nabz.Domain.Entities.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Clinic");
 
                     b.Navigation("OwnerUser");
+
+                    b.Navigation("Person");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.PatientPhoto", b =>
@@ -1482,6 +1603,36 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("Nabz.Domain.Entities.PatientProfileRevision", b =>
+                {
+                    b.HasOne("Nabz.Domain.Entities.User", "ChangedByUser")
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Nabz.Domain.Entities.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChangedByUser");
+
+                    b.Navigation("Patient");
+                });
+
+            modelBuilder.Entity("Nabz.Domain.Entities.User", b =>
+                {
+                    b.HasOne("Nabz.Domain.Entities.Person", "Person")
+                        .WithMany()
+                        .HasForeignKey("PersonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Person");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.UserRoleAssignment", b =>

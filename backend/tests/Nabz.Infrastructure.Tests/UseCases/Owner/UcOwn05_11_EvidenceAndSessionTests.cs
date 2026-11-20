@@ -111,13 +111,35 @@ public sealed class UcOwn05_11_EvidenceAndSessionTests
         var (patient, owner) = h.SeedPatient(clinicId);
         var evidence = h.CreateEvidenceService();
 
+        var config = await evidence.GetFraudCaptureConfigAsync();
+        Assert.Equal(7, config.FraudAutoCaptureSeconds);
+        Assert.True(config.FraudWatchEnabled);
+
         var sessionId = await evidence.StartFraudSessionAsync(patient.Id, owner.Id);
         await evidence.CaptureFraudFrameAsync(sessionId, owner.Id, "frames/1.jpg", 35.7, 51.4, 5);
+        await evidence.CaptureFraudFrameAsync(sessionId, owner.Id, "frames/2.jpg", null, null, null);
         await evidence.EndFraudSessionAsync(sessionId, owner.Id);
 
         var session = h.Store.FraudSessions.Single(s => s.Id == sessionId);
         Assert.NotNull(session.EndedAt);
-        Assert.Equal(1, h.Store.Photos.Count(p => p.SessionId == sessionId));
+        Assert.Equal(2, h.Store.Photos.Count(p => p.SessionId == sessionId));
+    }
+
+    /// <summary>Nx: فلگ fraudWatch خاموش ⇒ شروع نشست ممنوع.</summary>
+    [Fact]
+    [Trait("UC", "UC-OWN-09")]
+    public async Task UC_OWN_09_Nx_FraudWatchDisabled_Throws()
+    {
+        var h = new ServiceHarness();
+        h.SeedPlatformSettings();
+        h.Store.PlatformSettings[0].FeatureFlagsJson =
+            """{"fraudWatch":false,"gpsTracking":true,"multiClinicRegistry":false,"corporateContracts":true,"multiSessionWatch":true}""";
+        var clinicId = h.SeedClinic();
+        var (patient, owner) = h.SeedPatient(clinicId);
+        var evidence = h.CreateEvidenceService();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            evidence.StartFraudSessionAsync(patient.Id, owner.Id));
     }
 
     [Fact]

@@ -70,7 +70,7 @@ public sealed class UcAdm19_FormMatrixCatalogTests
         {
             TargetAudienceJson = """{"gender":"همه","ageMin":18}"""
         };
-        var patient = new Patient { Age = 25, Gender = "زن" };
+        var patient = TestIdentityHelper.EvalPatient(new DateOnly(2001, 1, 1), "زن");
         Assert.True(FormAudienceEvaluator.MatchesFormAudience(form, patient, out var reason));
         Assert.Null(reason);
     }
@@ -84,7 +84,7 @@ public sealed class UcAdm19_FormMatrixCatalogTests
         {
             TargetAudienceJson = """{"gender":"مرد","ageMin":18}"""
         };
-        var patient = new Patient { Age = 15, Gender = "مرد" };
+        var patient = TestIdentityHelper.EvalPatient(new DateOnly(2011, 1, 1), "مرد");
         Assert.False(FormAudienceEvaluator.MatchesFormAudience(form, patient, out var reason));
         Assert.Contains("18", reason!);
     }
@@ -104,14 +104,18 @@ public sealed class UcAdm19_FormMatrixCatalogTests
         };
         var answers = new Dictionary<string, string?>();
 
-        var married = new Patient { Age = 40, Gender = "زن", MaritalStatus = "متأهل" };
+        var married = TestIdentityHelper.EvalPatient(new DateOnly(1986, 1, 1), "زن", "متأهل");
         Assert.True(FormAudienceEvaluator.IsItemVisible(marriedItem, married, answers));
         Assert.False(FormAudienceEvaluator.IsItemVisible(ageItem, married, answers));
 
-        var singleYoung = new Patient { Age = 22, Gender = "زن", MaritalStatus = "مجرد" };
+        // legacy مطلقه → ازدواج‌کرده برای مسیریابی سوالات متأهل
+        var legacyDivorced = TestIdentityHelper.EvalPatient(new DateOnly(1986, 1, 1), "زن", "مطلقه");
+        Assert.True(FormAudienceEvaluator.IsItemVisible(marriedItem, legacyDivorced, answers));
+
+        var singleYoung = TestIdentityHelper.EvalPatient(new DateOnly(2004, 1, 1), "زن", "مجرد");
         Assert.False(FormAudienceEvaluator.IsItemVisible(marriedItem, singleYoung, answers));
 
-        var older = new Patient { Age = 55, Gender = "مرد", MaritalStatus = "مجرد" };
+        var older = TestIdentityHelper.EvalPatient(new DateOnly(1971, 1, 1), "مرد", "مجرد");
         Assert.True(FormAudienceEvaluator.IsItemVisible(ageItem, older, answers));
     }
 
@@ -125,8 +129,8 @@ public sealed class UcAdm19_FormMatrixCatalogTests
         await forms.ImportPackageAsync(clinicId, MiniCaCatalog());
 
         var (patient, _) = h.SeedPatient(clinicId);
-        patient.Age = 16;
-        patient.Gender = "مرد";
+        patient.Person.BirthDate = new DateOnly(2026 - 16, 1, 1);
+        patient.Person.Gender = "مرد";
 
         var male = h.Store.Forms.Single(f => f.Code == "cancer_screening_male_v02");
         var resolved = await forms.ResolveForPatientAsync(male.Id, patient.Id);

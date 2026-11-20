@@ -6,6 +6,7 @@
 
 const TOKEN_KEY = "nabz_api_token";
 const SESSION_ID_KEY = "nabz_api_session_id";
+const ROLES_KEY = "nabz_api_roles";
 
 export function getApiBaseUrl(): string {
   const raw = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
@@ -30,10 +31,11 @@ export function readApiSessionId(): string | null {
   }
 }
 
-export function writeApiSession(token: string, sessionId: string): void {
+export function writeApiSession(token: string, sessionId: string, roles?: string[]): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(TOKEN_KEY, token);
   window.localStorage.setItem(SESSION_ID_KEY, sessionId);
+  if (roles) window.localStorage.setItem(ROLES_KEY, JSON.stringify(roles));
 }
 
 export function clearApiSession(): void {
@@ -41,6 +43,7 @@ export function clearApiSession(): void {
   try {
     window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(SESSION_ID_KEY);
+    window.localStorage.removeItem(ROLES_KEY);
   } catch {
     /* ignore */
   }

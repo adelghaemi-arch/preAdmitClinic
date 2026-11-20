@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal EnableExtensions EnableDelayedExpansion
 REM /*
 REM  File: server/sync-deploy.bat
-REM  Description: بیلد/پابلیش و همگام‌سازی به server/{my,news,api}؛ دادهٔ پایدار در persist/ دست نخورده می‌ماند
+REM  Description: بیلد/پابلیش و همگام‌سازی افزایشی به server/{my,news,api}؛ فقط منبع تازه‌تر overwrite؛ persist دست نخورده
 REM  Parent Dependencies: publish.bat, sync.config.bat, frontend, backend, _templates/write-deploy-files.ps1
 REM */
 
@@ -130,10 +130,8 @@ if exist "%SERVER_ROOT%\api\dist" (
   rmdir /s /q "%SERVER_ROOT%\api\dist"
 )
 
-if exist "%SERVER_ROOT%\api\publish" (
-  rmdir /s /q "%SERVER_ROOT%\api\publish"
-)
-mkdir "%SERVER_ROOT%\api\publish" >nul 2>&1
+REM پوشهٔ publish را wipe نکن؛ dotnet فایل‌های تازه‌تر را به‌روز می‌کند و قدیمی‌های اضافی می‌مانند
+if not exist "%SERVER_ROOT%\api\publish" mkdir "%SERVER_ROOT%\api\publish" >nul 2>&1
 
 echo Publishing Nabz.Api ...
 pushd "%REPO_ROOT%\backend"
@@ -175,7 +173,7 @@ echo.
 if exist "%SERVER_ROOT%\api\uploads" echo [WARN] legacy server\api\uploads - migrate to persist\uploads
 if exist "%SERVER_ROOT%\news\data" echo [WARN] legacy server\news\data - migrate to persist\news-data
 echo On Linux ^(per folder^): sudo docker compose up -d --build
-echo Copy with: rsync -av --exclude-from=deploy-rsync-exclude.txt
+echo Copy with: rsync -avu --exclude-from=deploy-rsync-exclude.txt
 echo API: never overwrite a filled .env; copy from .env.example once and set User Id/Password.
 exit /b 0
 
@@ -229,15 +227,15 @@ popd
 exit /b 0
 
 :mirror_dir
+REM فقط منبع تازه‌تر از مقصد overwrite می‌شود (/XO)؛ مقصد جدیدتر و فایل‌های اضافی dest دست نخورده
 set "SRC=%~1"
 set "DST=%~2"
 if not exist "%SRC%\" (
   echo [ERROR] build output missing: %SRC%
   exit /b 1
 )
-if exist "%DST%" rmdir /s /q "%DST%"
-mkdir "%DST%" >nul 2>&1
-robocopy "%SRC%" "%DST%" /E /NFL /NDL /NJH /NJS /nc /ns /np >nul
+if not exist "%DST%" mkdir "%DST%" >nul 2>&1
+robocopy "%SRC%" "%DST%" /E /XO /NFL /NDL /NJH /NJS /nc /ns /np >nul
 set "RC=!errorlevel!"
 if !RC! GEQ 8 (
   echo [ERROR] robocopy failed %SRC% -^> %DST% ^(code !RC!^)

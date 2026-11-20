@@ -1,7 +1,7 @@
 /*
  File: frontend/src/components/PlatformAdminPanel.tsx
- Description: پنل ادمین کل و مدیریت کاربران با userScope کلینیک/کامل
- Parent Dependencies: types/clinic, platform-actions via onAction
+ Description: پنل ادمین کل و مدیریت کاربران؛ تب خزانه فایل با تامنیل (Platform-only)
+ Parent Dependencies: types/clinic, VaultFileThumbGrid, api/evidence vault, platform-actions via onAction
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -19,11 +19,22 @@ import {
   Settings2,
   ShieldAlert,
   Smartphone,
+  Trash2,
   Users,
 } from "lucide-react";
 import { AppInput } from "@/components/AppInput";
 import { GpsMapPopup, type GpsMapPoint } from "@/components/GpsMapPopup";
+import { ListPager, slicePage, type ListPageSize } from "@/components/ListPager";
+import { VaultFileThumbGrid } from "@/components/VaultFileThumbGrid";
 import { gpsInPackage, photosInPackage, tehranDayKey } from "@/lib/evidence-packages";
+import {
+  hardDeleteVaultFiles,
+  listVaultFiles,
+  softDeleteVaultFiles,
+  type ApiVaultFileDto,
+} from "@/lib/api/evidence";
+import { fetchPlatformUsers, loadFraudSessionPhotoMeta } from "@/lib/api/workspace";
+import { useStorageObjectUrl } from "@/hooks/useStorageObjectUrl";
 import { DEFAULT_OSM_LOCAL } from "@/lib/mock-platform";
 import { probeOsmLocal } from "@/lib/osm-routing";
 import type {
@@ -38,6 +49,8 @@ import type {
   UserPhotoRecord,
   GpsPoint,
 } from "@/types/clinic";
+import { IranDigitField } from "@/components/IranDigitField";
+import { normalizeMobile, clampNationalIdInput } from "@/lib/person-identity";
 import { toFaDigits } from "@/lib/persian";
 
 export type PlatformSection =
@@ -49,7 +62,7 @@ export type PlatformSection =
   | "integrations"
   | "audit";
 
-type FraudQueueTab = "camera" | "sessions";
+type FraudQueueTab = "camera" | "sessions" | "vault";
 
 const FLAG_LABELS: Record<keyof PlatformSettings["featureFlags"], string> = {
   fraudWatch: "ضدتقلب دوربین",
@@ -78,6 +91,31 @@ const REVIEW_FA = {
   cleared: "تأیید هویت",
   flagged: "مشکوک",
 } as const;
+
+/** عنوان نشست ضدتقلب — هرگز hash Guid به‌عنوان «بیمار N» نشان داده نشود */
+function fraudSessionDisplayName(s: FraudCaptureSession, users: PlatformUserProfile[]) {
+  const fromDto = s.patientDisplayName?.trim();
+  if (fromDto) return fromDto;
+  if (s.userServerId) {
+    const byUser = users.find((u) => u.id === s.userServerId);
+    if (byUser?.fullName?.trim()) return byUser.fullName.trim();
+  }
+  if (s.patientServerId) {
+    const byPatient = users.find((u) => u.linkedPatientId === s.patientServerId);
+    if (byPatient?.fullName?.trim()) return byPatient.fullName.trim();
+  }
+  if (s.patientNationalId?.trim()) return `بیمار ${toFaDigits(s.patientNationalId.trim())}`;
+  return "بیمار بدون نام";
+}
+
+function resolveUserForFraudSession(s: FraudCaptureSession, users: PlatformUserProfile[]) {
+  return (
+    users.find((u) => s.userServerId && u.id === s.userServerId) ??
+    users.find((u) => s.patientServerId && u.linkedPatientId === s.patientServerId) ??
+    users.find((u) => u.patientId === s.patientId) ??
+    null
+  );
+}
 
 const KIND_FA: Record<EvidencePackage["kind"], string> = {
   camera_session: "جلسه دوربین",
@@ -119,7 +157,21 @@ function emptyUserDraft(clinicId: string): PlatformUserProfile {
     lastGps: null,
     gpsHistory: [],
     isActive: true,
+    contracts: [],
+    assignedContractId: null,
   };
+}
+
+function formatContractLabel(title: string, status?: string): string {
+  const inactive = status && status !== "Active";
+  return inactive ? `${title} · غیرفعال` : title;
+}
+
+function formatUserContractsLine(u: PlatformUserProfile): string {
+  const titles = (u.contracts ?? []).map((c) => formatContractLabel(c.title, c.status)).filter(Boolean);
+  if (titles.length === 0) return "بدون قرارداد";
+  if (titles.length <= 2) return titles.join(" · ");
+  return `${titles.slice(0, 2).join(" · ")} +${titles.length - 2}`;
 }
 
 function latestPortrait(photos: UserPhotoRecord[], patientId: number): UserPhotoRecord | null {
@@ -142,7 +194,31 @@ function formatRange(start: string, end: string): string {
 }
 
 /** Approximate decoded byte size of a data URL (base64 payload). */
+/** تامنیل فقط وقتی در DOM است دانلود می‌شود (نه در bootstrap) */
+function LazyPhotoImg({
+  photo,
+  alt,
+  className,
+}: {
+  photo: UserPhotoRecord;
+  alt: string;
+  className?: string;
+}) {
+  const needFetch = !photo.dataUrl && !!photo.storageKey;
+  const { url, failed } = useStorageObjectUrl(needFetch ? photo.storageKey : null);
+  const src = photo.dataUrl || url;
+  if (!src) {
+    return (
+      <div className={`flex items-center justify-center bg-slate-100 text-[9px] text-slate-400 ${className ?? ""}`}>
+        {failed ? "بارگذاری ناموفق" : "…"}
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} />;
+}
+
 function dataUrlBytes(dataUrl: string): number {
+  if (!dataUrl) return 0;
   const comma = dataUrl.indexOf(",");
   const b64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
   const padding = b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0;
@@ -170,19 +246,28 @@ export function PlatformAdminPanel({
   const platform = snapshot.platform;
   const section = initialSection;
   const isClinicScope = userScope === "clinic";
-  // ادمین کلینیک اصلاً نباید کاربران ادمین کل را در فهرست ببیند
-  const visibleUsers = useMemo(
-    () => (isClinicScope ? platform.users.filter((u) => u.primaryRole !== "platform") : platform.users),
-    [isClinicScope, platform.users],
-  );
+  const [includeInactiveContracts, setIncludeInactiveContracts] = useState(false);
+  const [usersOverride, setUsersOverride] = useState<PlatformUserProfile[] | null>(null);
+  const [usersReloadBusy, setUsersReloadBusy] = useState(false);
   const roleOptions = isClinicScope ? CLINIC_ROLE_OPTIONS : PRIMARY_ROLE_OPTIONS;
-  const [selectedUserId, setSelectedUserId] = useState(visibleUsers[0]?.id ?? "");
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState(platform.fraudSessions[0]?.id ?? "");
   const [selectedAlertId, setSelectedAlertId] = useState(platform.multiSessionAlerts?.[0]?.id ?? "");
   const [fraudTab, setFraudTab] = useState<FraudQueueTab>("sessions");
+  /** فریم‌های لود‌شده فقط برای نشست انتخاب‌شده — نه در bootstrap کل اپ */
+  const [lazySessionPhotos, setLazySessionPhotos] = useState<UserPhotoRecord[]>([]);
+  const [lazyPhotosBusy, setLazyPhotosBusy] = useState(false);
+  const [vaultTrash, setVaultTrash] = useState(false);
+  const [vaultRows, setVaultRows] = useState<ApiVaultFileDto[]>([]);
+  const [vaultSelected, setVaultSelected] = useState<Set<string>>(new Set());
+  const [vaultBusy, setVaultBusy] = useState(false);
+  const [vaultError, setVaultError] = useState("");
   const [reviewNote, setReviewNote] = useState("");
   const [sessionReviewNote, setSessionReviewNote] = useState("");
   const [settingsDraft, setSettingsDraft] = useState<PlatformSettings>(platform.settings);
+  const [factoryOtp, setFactoryOtp] = useState("");
+  const [factoryDemoCode, setFactoryDemoCode] = useState<string | null>(null);
+  const [factoryBusy, setFactoryBusy] = useState(false);
   const [packageFilter, setPackageFilter] = useState<PackageFilter>("all");
   const [mapPoint, setMapPoint] = useState<GpsMapPoint | null>(null);
   const [userTab, setUserTab] = useState<UserDetailTab>("profile");
@@ -195,6 +280,101 @@ export function PlatformAdminPanel({
   const [userDraft, setUserDraft] = useState<PlatformUserProfile>(() => emptyUserDraft(defaultClinicId));
   const authSessions = platform.authSessions ?? [];
   const multiSessionAlerts = platform.multiSessionAlerts ?? [];
+
+  useEffect(() => {
+    if (!includeInactiveContracts) {
+      setUsersOverride(null);
+      return;
+    }
+    let cancelled = false;
+    setUsersReloadBusy(true);
+    void fetchPlatformUsers(true)
+      .then((rows) => {
+        if (cancelled) return;
+        setUsersOverride(
+          rows.map((u) => ({
+            ...u,
+            clinicId: u.clinicId || defaultClinicId,
+          })),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setUsersOverride(null);
+      })
+      .finally(() => {
+        if (!cancelled) setUsersReloadBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [includeInactiveContracts, platform.users, defaultClinicId]);
+
+  // فریم نشست فقط وقتی تب دوربین باز است و نشست انتخاب شده
+  useEffect(() => {
+    if (section !== "fraud" || fraudTab !== "camera" || isClinicScope || !selectedSessionId) {
+      setLazySessionPhotos([]);
+      return;
+    }
+    let cancelled = false;
+    setLazyPhotosBusy(true);
+    void loadFraudSessionPhotoMeta(selectedSessionId)
+      .then((rows) => {
+        if (!cancelled) setLazySessionPhotos(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setLazySessionPhotos([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLazyPhotosBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [section, fraudTab, selectedSessionId, isClinicScope]);
+
+  // خزانه فقط برای ادمین کل؛ با تعویض تب یا سطل زباله دوباره لود می‌شود
+  useEffect(() => {
+    if (section !== "fraud" || fraudTab !== "vault" || isClinicScope) return;
+    let cancelled = false;
+    setVaultBusy(true);
+    setVaultError("");
+    void listVaultFiles(vaultTrash, 100)
+      .then((rows) => {
+        if (cancelled) return;
+        setVaultRows(rows);
+        setVaultSelected(new Set());
+      })
+      .catch((err) => {
+        if (!cancelled) setVaultError(err instanceof Error ? err.message : "بارگذاری خزانه ناموفق بود.");
+      })
+      .finally(() => {
+        if (!cancelled) setVaultBusy(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [section, fraudTab, vaultTrash, isClinicScope]);
+
+  const usersSource = usersOverride ?? platform.users;
+  // ادمین کلینیک اصلاً نباید کاربران ادمین کل را در فهرست ببیند
+  const visibleUsers = useMemo(
+    () => (isClinicScope ? usersSource.filter((u) => u.primaryRole !== "platform") : usersSource),
+    [isClinicScope, usersSource],
+  );
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPageSize, setUsersPageSize] = useState<ListPageSize>(20);
+  const pagedUsers = useMemo(
+    () => slicePage(visibleUsers, usersPage, usersPageSize),
+    [visibleUsers, usersPage, usersPageSize]
+  );
+
+  useEffect(() => {
+    setUsersPage(1);
+  }, [includeInactiveContracts, isClinicScope, usersSource.length]);
+
+  useEffect(() => {
+    if (!selectedUserId && visibleUsers[0]) setSelectedUserId(visibleUsers[0].id);
+  }, [selectedUserId, visibleUsers]);
 
   useEffect(() => {
     setOsmBaseDraft(platform.settings.osmLocal?.baseUrl ?? "");
@@ -226,8 +406,22 @@ export function PlatformAdminPanel({
       profilePhotoDataUrl: selectedUser.profilePhotoDataUrl ?? null,
       createdAt: selectedUser.createdAt ?? new Date().toISOString(),
       lastLoginAt: selectedUser.lastLoginAt ?? null,
+      contracts: selectedUser.contracts ?? [],
+      assignedContractId:
+        selectedUser.assignedContractId
+        ?? selectedUser.contracts?.find((c) => c.relation === "supervisor")?.contractId
+        ?? null,
     });
   }, [selectedUser, creatingUser]);
+
+  const contractChoices = useMemo(
+    () =>
+      (snapshot.contracts ?? []).map((c) => ({
+        id: c.serverId ?? String(c.id),
+        title: c.title || c.organizationName || c.code || String(c.id),
+      })),
+    [snapshot.contracts],
+  );
   const selectedSession =
     platform.fraudSessions.find((s) => s.id === selectedSessionId) ?? platform.fraudSessions[0] ?? null;
   const selectedAlert =
@@ -349,16 +543,25 @@ export function PlatformAdminPanel({
   };
 
   const saveUserDraft = async () => {
+    if (userDraft.primaryRole === "supervisor" && !userDraft.assignedContractId) {
+      window.alert("برای نقش ناظر انتخاب قرارداد الزامی است.");
+      return;
+    }
     const res = (await onAction({
       action: "PLATFORM_UPSERT_USER",
       // شناسه Guid سرور برای ویرایش؛ در ایجاد خالی است
       serverUserId: creatingUser ? undefined : userDraft.id,
       id: creatingUser ? undefined : userDraft.id,
+      // نام کامل هنوز برای نمایش لیست؛ API از first/last پر می‌شود (split امن)
       fullName: userDraft.fullName,
-      phone: userDraft.phone,
-      nationalId: userDraft.nationalId,
+      firstName: userDraft.fullName.trim().split(/\s+/)[0] || "",
+      lastName: userDraft.fullName.trim().split(/\s+/).slice(1).join(" ") || "",
+      phone: normalizeMobile(userDraft.phone),
+      nationalId: clampNationalIdInput(userDraft.nationalId),
       email: userDraft.email,
       clinicId: userDraft.clinicId,
+      // فقط برای نقش ناظر معنی‌دار است
+      contractId: userDraft.primaryRole === "supervisor" ? userDraft.assignedContractId ?? null : null,
       notes: userDraft.notes,
       primaryRole: userDraft.primaryRole,
       isActive: userDraft.isActive,
@@ -380,9 +583,17 @@ export function PlatformAdminPanel({
     await onAction({ action: "PLATFORM_RESET_USER_ACCESS", id: userDraft.id });
   };
 
+  // عکس‌های bootstrap + فریم تنبل نشست انتخاب‌شده
+  const reviewPhotos = useMemo(() => {
+    const byId = new Map<string, UserPhotoRecord>();
+    for (const p of platform.photos) byId.set(p.id, p);
+    for (const p of lazySessionPhotos) byId.set(p.id, p);
+    return [...byId.values()];
+  }, [platform.photos, lazySessionPhotos]);
+
   const casePortraitFallback =
     selectedUser?.patientId != null
-      ? platform.photos.find(
+      ? reviewPhotos.find(
           (p) =>
             p.patientId === selectedUser.patientId &&
             (p.kind === "portrait" || p.kind === "fraud_confirm")
@@ -393,7 +604,7 @@ export function PlatformAdminPanel({
   return (
     <div className="space-y-5">
       <header className="rounded-2xl border border-slate-200 bg-gradient-to-l from-slate-50 to-white p-5">
-        <p className="text-[10px] font-medium text-teal-700">کنترل پلتفرم · داده نمایشی</p>
+        <p className="text-[10px] font-medium text-teal-700">کنترل پلتفرم</p>
         <h1 className="mt-1 text-base font-semibold text-slate-900">
           {section === "dashboard" && "داشبورد پلتفرم"}
           {section === "users" && "مدیریت کاربران"}
@@ -473,8 +684,19 @@ export function PlatformAdminPanel({
                 کاربر جدید
               </button>
             </div>
+            <label className="mb-2 flex cursor-pointer items-center gap-1.5 px-1 text-[10px] text-slate-500">
+              <input
+                type="checkbox"
+                checked={includeInactiveContracts}
+                disabled={usersReloadBusy || busy}
+                onChange={(e) => setIncludeInactiveContracts(e.target.checked)}
+                className="rounded border-slate-300"
+              />
+              نمایش قراردادهای غیرفعال
+              {usersReloadBusy ? <Loader2 className="h-3 w-3 animate-spin text-slate-400" /> : null}
+            </label>
             <ul className="space-y-1">
-              {visibleUsers.map((u) => {
+              {pagedUsers.map((u) => {
                 const thumb = u.profilePhotoDataUrl;
                 const active = !creatingUser && selectedUser?.id === u.id;
                 return (
@@ -499,12 +721,25 @@ export function PlatformAdminPanel({
                           {u.roleLabel || roleOptions.find((r) => r.id === u.primaryRole)?.label} ·{" "}
                           {u.isActive === false ? "تعلیق" : "فعال"}
                         </span>
+                        <span className="block truncate text-[9px] text-slate-400">
+                          {u.nationalId ? toFaDigits(u.nationalId) : "بدون کدملی"} · {formatUserContractsLine(u)}
+                        </span>
                       </span>
                     </button>
                   </li>
                 );
               })}
             </ul>
+            <ListPager
+              page={usersPage}
+              pageSize={usersPageSize}
+              totalCount={visibleUsers.length}
+              onPageChange={setUsersPage}
+              onPageSizeChange={setUsersPageSize}
+              itemLabel="کاربر"
+              className="mt-2 border-t-0 px-0"
+              disabled={usersReloadBusy || busy}
+            />
           </div>
 
           {(selectedUser || creatingUser) && (
@@ -558,23 +793,60 @@ export function PlatformAdminPanel({
               {(userTab === "profile" || creatingUser) && (
                 <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {(
-                      [
-                        ["fullName", "نام کامل"],
-                        ["phone", "تلفن"],
-                        ["nationalId", "کد ملی"],
-                        ["email", "ایمیل"],
-                      ] as const
-                    ).map(([key, label]) => (
-                      <label key={key} className="block text-[11px] text-slate-600">
-                        {label}
-                        <input
-                          value={String(userDraft[key] ?? "")}
-                          onChange={(e) => setUserDraft((d) => ({ ...d, [key]: e.target.value }))}
-                          className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[11px]"
-                        />
-                      </label>
-                    ))}
+                    <label className="block text-[11px] text-slate-600">
+                      نام
+                      <input
+                        value={userDraft.fullName.trim().split(/\s+/)[0] || ""}
+                        onChange={(e) => {
+                          const last = userDraft.fullName.trim().split(/\s+/).slice(1).join(" ");
+                          setUserDraft((d) => ({
+                            ...d,
+                            fullName: `${e.target.value.trim()} ${last}`.trim(),
+                          }));
+                        }}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[11px]"
+                      />
+                    </label>
+                    <label className="block text-[11px] text-slate-600">
+                      نام‌خانوادگی
+                      <input
+                        value={userDraft.fullName.trim().split(/\s+/).slice(1).join(" ") || ""}
+                        onChange={(e) => {
+                          const first = userDraft.fullName.trim().split(/\s+/)[0] || "";
+                          setUserDraft((d) => ({
+                            ...d,
+                            fullName: `${first} ${e.target.value.trim()}`.trim(),
+                          }));
+                        }}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[11px]"
+                      />
+                    </label>
+                    <label className="block text-[11px] text-slate-600">
+                      تلفن
+                      <IranDigitField
+                        kind="mobile"
+                        value={userDraft.phone}
+                        onValueChange={(phone) => setUserDraft((d) => ({ ...d, phone }))}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-left font-mono text-[11px]"
+                      />
+                    </label>
+                    <label className="block text-[11px] text-slate-600">
+                      کد ملی
+                      <IranDigitField
+                        kind="nationalId"
+                        value={userDraft.nationalId}
+                        onValueChange={(nationalId) => setUserDraft((d) => ({ ...d, nationalId }))}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-left font-mono text-[11px]"
+                      />
+                    </label>
+                    <label className="block text-[11px] text-slate-600">
+                      ایمیل
+                      <input
+                        value={String(userDraft.email ?? "")}
+                        onChange={(e) => setUserDraft((d) => ({ ...d, email: e.target.value }))}
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[11px]"
+                      />
+                    </label>
                     <label className="block text-[11px] text-slate-600">
                       نقش
                       <select
@@ -582,7 +854,12 @@ export function PlatformAdminPanel({
                         onChange={(e) => {
                           const primaryRole = e.target.value as PlatformUserPrimaryRole;
                           const roleLabel = roleOptions.find((r) => r.id === primaryRole)?.label ?? primaryRole;
-                          setUserDraft((d) => ({ ...d, primaryRole, roleLabel }));
+                          setUserDraft((d) => ({
+                            ...d,
+                            primaryRole,
+                            roleLabel,
+                            assignedContractId: primaryRole === "supervisor" ? d.assignedContractId : null,
+                          }));
                         }}
                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[11px]"
                       >
@@ -593,7 +870,46 @@ export function PlatformAdminPanel({
                         ))}
                       </select>
                     </label>
+                    {userDraft.primaryRole === "supervisor" && (
+                      <label className="block text-[11px] text-slate-600 sm:col-span-2">
+                        قرارداد ناظر
+                        <select
+                          value={userDraft.assignedContractId ?? ""}
+                          onChange={(e) =>
+                            setUserDraft((d) => ({ ...d, assignedContractId: e.target.value || null }))
+                          }
+                          className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-[11px]"
+                        >
+                          <option value="">انتخاب قرارداد…</option>
+                          {contractChoices.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.title}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                   </div>
+                  {!creatingUser && (
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2 text-[11px] text-slate-600">
+                      <p className="font-medium text-slate-700">قراردادها</p>
+                      {(userDraft.contracts ?? []).length === 0 ? (
+                        <p className="mt-1 text-slate-400">بدون قرارداد مرتبط</p>
+                      ) : (
+                        <ul className="mt-1 space-y-0.5">
+                          {(userDraft.contracts ?? []).map((c) => (
+                            <li key={`${c.contractId}-${c.relation}`}>
+                              {formatContractLabel(c.title, c.status)}
+                              <span className="text-slate-400">
+                                {" "}
+                                · {c.relation === "supervisor" ? "ناظر" : "عضو"}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                   <label className="block text-[11px] text-slate-600">
                     یادداشت
                     <textarea
@@ -732,10 +1048,15 @@ export function PlatformAdminPanel({
                     ) : (
                       <p className="mt-2 text-[11px] text-slate-400">موقعیت GPS ثبت نشده.</p>
                     )}
-                    {selectedUser.patientId != null && (
+                    {(selectedUser.linkedPatientId || selectedUser.patientId != null) && (
                       <div className="mt-3 space-y-1">
                         {platform.fraudSessions
-                          .filter((s) => s.patientId === selectedUser.patientId)
+                          .filter(
+                            (s) =>
+                              (selectedUser.linkedPatientId &&
+                                s.patientServerId === selectedUser.linkedPatientId) ||
+                              (selectedUser.patientId != null && s.patientId === selectedUser.patientId)
+                          )
                           .map((s) => (
                             <button
                               key={s.id}
@@ -781,7 +1102,7 @@ export function PlatformAdminPanel({
                     </div>
                     <div className="mt-3 space-y-3">
                       {userPackages.map((pkg) => {
-                        const photos = photosInPackage(platform.photos, pkg.id);
+                        const photos = photosInPackage(reviewPhotos, pkg.id);
                         const points = gpsInPackage(selectedUser.gpsHistory, pkg.id);
                         return (
                           <article key={pkg.id} className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3">
@@ -798,13 +1119,17 @@ export function PlatformAdminPanel({
                               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                                 {photos.map((p) => (
                                   <figure key={p.id} className="overflow-hidden rounded-xl border border-white bg-white">
-                                    <img src={p.dataUrl} alt={p.kind} className="aspect-[3/4] w-full object-cover" />
+                                    <LazyPhotoImg photo={p} alt={p.kind} className="aspect-[3/4] w-full object-cover" />
                                     <figcaption className="px-2 py-1.5 text-[9px] leading-4 text-slate-500">
                                       {p.kind === "portrait" ? "پرتره" : p.kind === "fraud_confirm" ? "تأیید کاربر" : "فریم ضدتقلب"}
                                       <br />
                                       {new Date(p.capturedAt).toLocaleString("fa-IR")}
-                                      <br />
-                                      حجم: {formatFileSizeFa(dataUrlBytes(p.dataUrl))}
+                                      {p.dataUrl ? (
+                                        <>
+                                          <br />
+                                          حجم: {formatFileSizeFa(dataUrlBytes(p.dataUrl))}
+                                        </>
+                                      ) : null}
                                     </figcaption>
                                   </figure>
                                 ))}
@@ -851,6 +1176,8 @@ export function PlatformAdminPanel({
               [
                 ["sessions", "نشست‌های هم‌زمان", multiSessionAlerts.filter((a) => a.reviewStatus === "pending").length],
                 ["camera", "دوربین هویت", platform.fraudSessions.filter((s) => s.reviewStatus === "pending").length],
+                // خزانه شواهد فقط ادمین کل — ادمین کلینیک حتی لیست ندارد
+                ...(!isClinicScope ? ([["vault", "خزانه فایل", 0]] as const) : []),
               ] as const
             ).map(([id, label, count]) => (
               <button
@@ -994,7 +1321,7 @@ export function PlatformAdminPanel({
             <p className="mb-2 px-1 text-[10px] font-medium text-slate-500">جلسات ضدتقلب دوربین</p>
             <ul className="space-y-1">
               {platform.fraudSessions.map((s) => {
-                const name = platform.users.find((u) => u.patientId === s.patientId)?.fullName ?? `بیمار ${s.patientId}`;
+                const name = fraudSessionDisplayName(s, platform.users);
                 const pkg =
                   (s.packageId ? platform.packages.find((p) => p.id === s.packageId) : null) ??
                   platform.packages.find((p) => p.sessionId === s.id) ??
@@ -1028,20 +1355,26 @@ export function PlatformAdminPanel({
           {selectedSession && (
             <div className="space-y-4">
               {(() => {
-                const portrait = latestPortrait(platform.photos, selectedSession.patientId);
-                const frames = sessionFrames(platform.photos, selectedSession.id);
-                const name =
-                  platform.users.find((u) => u.patientId === selectedSession.patientId)?.fullName ??
-                  `بیمار ${selectedSession.patientId}`;
+                const portrait = latestPortrait(reviewPhotos, selectedSession.patientId);
+                const frames = sessionFrames(reviewPhotos, selectedSession.id);
+                const name = fraudSessionDisplayName(selectedSession, platform.users);
                 const pkg =
                   (selectedSession.packageId
                     ? platform.packages.find((p) => p.id === selectedSession.packageId)
                     : null) ??
                   platform.packages.find((p) => p.sessionId === selectedSession.id) ??
                   null;
-                const user = platform.users.find((u) => u.patientId === selectedSession.patientId);
-                const pkgGps = pkg && user ? gpsInPackage(user.gpsHistory, pkg.id) : [];
-                const pkgPhotos = pkg ? photosInPackage(platform.photos, pkg.id) : [];
+                const user = resolveUserForFraudSession(selectedSession, platform.users);
+                // اگر پکیج فیلتر ندهد، کل تاریخچهٔ GPS همان کاربر/پرونده را نشان بده
+                const pkgGps =
+                  user == null
+                    ? []
+                    : pkg
+                      ? gpsInPackage(user.gpsHistory, pkg.id).length
+                        ? gpsInPackage(user.gpsHistory, pkg.id)
+                        : user.gpsHistory
+                      : user.gpsHistory;
+                const pkgPhotos = pkg ? photosInPackage(reviewPhotos, pkg.id) : [];
                 return (
                   <>
                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -1058,30 +1391,39 @@ export function PlatformAdminPanel({
                           {toFaDigits(pkgPhotos.length)} عکس · {toFaDigits(pkgGps.length)} GPS
                         </div>
                       )}
+                      {lazyPhotosBusy && (
+                        <p className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400">
+                          <Loader2 className="h-3 w-3 animate-spin" /> در حال بارگذاری فریم‌ها…
+                        </p>
+                      )}
                       <div className="mt-4 grid gap-3 md:grid-cols-[180px_1fr]">
                         <figure className="rounded-xl border border-teal-200 bg-teal-50/40 p-2">
                           <p className="mb-1 text-center text-[10px] font-medium text-teal-800">عکس آخر کاربر</p>
                           {portrait ? (
-                            <img src={portrait.dataUrl} alt="پرتره" className="mx-auto aspect-[3/4] w-full max-w-[160px] rounded-lg object-cover" />
+                            <LazyPhotoImg
+                              photo={portrait}
+                              alt="پرتره"
+                              className="mx-auto aspect-[3/4] w-full max-w-[160px] rounded-lg object-cover"
+                            />
                           ) : (
                             <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-white text-[10px] text-slate-400">بدون پرتره</div>
                           )}
                           {portrait && (
                             <p className="mt-1 text-center text-[9px] text-slate-500">
                               ثبت: {new Date(portrait.capturedAt).toLocaleString("fa-IR")}
-                              <br />
-                              حجم: {formatFileSizeFa(dataUrlBytes(portrait.dataUrl))}
                             </p>
                           )}
                         </figure>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                           {frames.map((f, idx) => (
                             <figure key={f.id} className="rounded-xl border border-slate-100 bg-slate-50 p-1.5">
-                              <img src={f.dataUrl} alt={`فریم ${idx + 1}`} className="aspect-[3/4] w-full rounded-lg object-cover" />
+                              <LazyPhotoImg
+                                photo={f}
+                                alt={`فریم ${idx + 1}`}
+                                className="aspect-[3/4] w-full rounded-lg object-cover"
+                              />
                               <figcaption className="mt-1 text-center text-[9px] text-slate-500">
                                 فریم {toFaDigits(idx + 1)} · {new Date(f.capturedAt).toLocaleTimeString("fa-IR")}
-                                <br />
-                                حجم: {formatFileSizeFa(dataUrlBytes(f.dataUrl))}
                                 {f.gps ? (
                                   <>
                                     <br />
@@ -1097,7 +1439,9 @@ export function PlatformAdminPanel({
                               </figcaption>
                             </figure>
                           ))}
-                          {!frames.length && <p className="col-span-full text-[11px] text-slate-400">فریم خودکاری ثبت نشده.</p>}
+                          {!frames.length && !lazyPhotosBusy && (
+                            <p className="col-span-full text-[11px] text-slate-400">فریم خودکاری ثبت نشده.</p>
+                          )}
                         </div>
                       </div>
                       {pkgGps.length > 0 && (
@@ -1158,6 +1502,85 @@ export function PlatformAdminPanel({
             </div>
           )}
         </div>
+          )}
+
+          {fraudTab === "vault" && !isClinicScope && (
+            <VaultFilesPanel
+              trash={vaultTrash}
+              rows={vaultRows}
+              selected={vaultSelected}
+              busy={vaultBusy || Boolean(busy)}
+              error={vaultError}
+              onTrashChange={(t) => {
+                setVaultTrash(t);
+                setVaultSelected(new Set());
+              }}
+              onReload={async () => {
+                setVaultBusy(true);
+                setVaultError("");
+                try {
+                  const rows = await listVaultFiles(vaultTrash, 100);
+                  setVaultRows(rows);
+                  setVaultSelected(new Set());
+                } catch (err) {
+                  setVaultError(err instanceof Error ? err.message : "بارگذاری خزانه ناموفق بود.");
+                } finally {
+                  setVaultBusy(false);
+                }
+              }}
+              onToggle={(id) => {
+                setVaultSelected((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(id)) next.delete(id);
+                  else next.add(id);
+                  return next;
+                });
+              }}
+              onSelectAll={() => setVaultSelected(new Set(vaultRows.map((r) => r.id)))}
+              onSelectNone={() => setVaultSelected(new Set())}
+              onInvert={() =>
+                setVaultSelected((prev) => {
+                  const next = new Set<string>();
+                  for (const r of vaultRows) if (!prev.has(r.id)) next.add(r.id);
+                  return next;
+                })
+              }
+              onSoftDelete={async () => {
+                const docs = vaultRows.filter((r) => vaultSelected.has(r.id) && r.kind === "document").map((r) => r.id);
+                const photos = vaultRows.filter((r) => vaultSelected.has(r.id) && r.kind !== "document").map((r) => r.id);
+                if (!docs.length && !photos.length) return;
+                setVaultBusy(true);
+                setVaultError("");
+                try {
+                  await softDeleteVaultFiles(docs, photos);
+                  const rows = await listVaultFiles(vaultTrash, 100);
+                  setVaultRows(rows);
+                  setVaultSelected(new Set());
+                } catch (err) {
+                  setVaultError(err instanceof Error ? err.message : "حذف منطقی ناموفق بود.");
+                } finally {
+                  setVaultBusy(false);
+                }
+              }}
+              onHardDelete={async () => {
+                const docs = vaultRows.filter((r) => vaultSelected.has(r.id) && r.kind === "document").map((r) => r.id);
+                const photos = vaultRows.filter((r) => vaultSelected.has(r.id) && r.kind !== "document").map((r) => r.id);
+                if (!docs.length && !photos.length) return;
+                if (!window.confirm(`حذف فیزیکی ${toFaDigits(docs.length + photos.length)} فایل؟ این عمل برگشت‌پذیر نیست.`)) return;
+                setVaultBusy(true);
+                setVaultError("");
+                try {
+                  await hardDeleteVaultFiles(docs, photos);
+                  const rows = await listVaultFiles(vaultTrash, 100);
+                  setVaultRows(rows);
+                  setVaultSelected(new Set());
+                } catch (err) {
+                  setVaultError(err instanceof Error ? err.message : "حذف فیزیکی ناموفق بود.");
+                } finally {
+                  setVaultBusy(false);
+                }
+              }}
+            />
           )}
         </div>
       )}
@@ -1248,6 +1671,83 @@ export function PlatformAdminPanel({
           >
             ذخیره تنظیمات
           </button>
+
+          {userScope === "full" && (
+            <div className="mt-8 space-y-3 rounded-2xl border border-rose-200 bg-rose-50/60 p-4">
+              <div className="flex items-center gap-2 text-xs font-semibold text-rose-800">
+                <ShieldAlert className="h-4 w-4" />
+                منطقه خطر — ریست فکتوری
+              </div>
+              <p className="text-[11px] leading-5 text-rose-700/90">
+                همهٔ داده‌های دیتابیس و فایل‌های آپلود پاک می‌شوند و seed اولیه دوباره اعمال می‌گردد.
+                تأیید با OTP روی موبایل ادمین کل نشست فعلی الزامی است؛ پس از موفقیت باید دوباره وارد شوید.
+              </p>
+              <button
+                type="button"
+                disabled={busy || factoryBusy}
+                onClick={() => {
+                  void (async () => {
+                    setFactoryBusy(true);
+                    try {
+                      const res = (await onAction({
+                        action: "PLATFORM_FACTORY_RESET_REQUEST_OTP",
+                      })) as { demoCode?: string | null };
+                      setFactoryDemoCode(res?.demoCode ?? null);
+                      if (res?.demoCode) setFactoryOtp(String(res.demoCode));
+                    } finally {
+                      setFactoryBusy(false);
+                    }
+                  })();
+                }}
+                className="rounded-xl border border-rose-300 bg-white px-4 py-2.5 text-[11px] font-medium text-rose-700 disabled:opacity-50"
+              >
+                {factoryBusy ? "در حال ارسال…" : "درخواست کد تأیید OTP"}
+              </button>
+              {factoryDemoCode && (
+                <p className="text-[11px] text-rose-600" dir="ltr">
+                  demo OTP: {factoryDemoCode}
+                </p>
+              )}
+              <label className="block text-[11px] text-rose-800">
+                کد تأیید
+                <AppInput
+                  type="tel"
+                  inputMode="numeric"
+                  value={factoryOtp}
+                  onChange={(e) => setFactoryOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  className="mt-1 w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-left font-mono text-[11px]"
+                  placeholder="کد پیامک"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={busy || factoryBusy || factoryOtp.trim().length < 4}
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      "آیا مطمئنید؟ این عمل غیرقابل بازگشت است و همهٔ داده‌ها پاک می‌شوند.",
+                    )
+                  ) {
+                    return;
+                  }
+                  void (async () => {
+                    setFactoryBusy(true);
+                    try {
+                      await onAction({
+                        action: "PLATFORM_FACTORY_RESET_CONFIRM",
+                        code: factoryOtp.trim(),
+                      });
+                    } finally {
+                      setFactoryBusy(false);
+                    }
+                  })();
+                }}
+                className="rounded-xl bg-rose-700 px-4 py-2.5 text-[11px] font-medium text-white disabled:opacity-50"
+              >
+                تأیید نهایی و ریست فکتوری
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1400,6 +1900,130 @@ export function PlatformAdminPanel({
       )}
 
       {mapPoint && <GpsMapPopup point={mapPoint} onClose={() => setMapPoint(null)} />}
+    </div>
+  );
+}
+
+function VaultFilesPanel(props: {
+  trash: boolean;
+  rows: ApiVaultFileDto[];
+  selected: Set<string>;
+  busy: boolean;
+  error: string;
+  onTrashChange: (trash: boolean) => void;
+  onReload: () => void | Promise<void>;
+  onToggle: (id: string) => void;
+  onSelectAll: () => void;
+  onSelectNone: () => void;
+  onInvert: () => void;
+  onSoftDelete: () => void | Promise<void>;
+  onHardDelete: () => void | Promise<void>;
+}) {
+  const {
+    trash,
+    rows,
+    selected,
+    busy,
+    error,
+    onTrashChange,
+    onReload,
+    onToggle,
+    onSelectAll,
+    onSelectNone,
+    onInvert,
+    onSoftDelete,
+    onHardDelete,
+  } = props;
+  const selectedCount = selected.size;
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-xs font-semibold text-slate-800">خزانه فایل شواهد</h2>
+          <p className="mt-0.5 text-[10px] text-slate-500">
+            مسیر دیسک <span className="font-mono">yyyy/NNN/…</span> · فقط ادمین کل
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onTrashChange(false)}
+            className={`rounded-xl px-3 py-1.5 text-[11px] ${!trash ? "bg-teal-700 text-white" : "border border-slate-200 text-slate-600"}`}
+          >
+            فعال
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onTrashChange(true)}
+            className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-[11px] ${trash ? "bg-amber-700 text-white" : "border border-slate-200 text-slate-600"}`}
+          >
+            <Trash2 className="h-3 w-3" />
+            سطل زباله
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void onReload()}
+            className="rounded-xl border border-slate-200 px-3 py-1.5 text-[11px] text-slate-600 disabled:opacity-50"
+          >
+            {busy ? <Loader2 className="inline h-3.5 w-3.5 animate-spin" /> : "بروزرسانی"}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        <button type="button" disabled={busy || !rows.length} onClick={onSelectAll} className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] text-slate-600 disabled:opacity-50">
+          انتخاب همه
+        </button>
+        <button type="button" disabled={busy || !selectedCount} onClick={onSelectNone} className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] text-slate-600 disabled:opacity-50">
+          هیچ‌کدام
+        </button>
+        <button type="button" disabled={busy || !rows.length} onClick={onInvert} className="rounded-lg border border-slate-200 px-2.5 py-1 text-[10px] text-slate-600 disabled:opacity-50">
+          معکوس
+        </button>
+        <span className="self-center text-[10px] text-slate-400">
+          {toFaDigits(selectedCount)} از {toFaDigits(rows.length)} انتخاب
+        </span>
+        <div className="ms-auto flex flex-wrap gap-1.5">
+          {!trash && (
+            <button
+              type="button"
+              disabled={busy || !selectedCount}
+              onClick={() => void onSoftDelete()}
+              className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-medium text-amber-800 disabled:opacity-50"
+            >
+              حذف منطقی
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={busy || !selectedCount}
+            onClick={() => void onHardDelete()}
+            className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-medium text-rose-700 disabled:opacity-50"
+          >
+            حذف فیزیکی
+          </button>
+        </div>
+      </div>
+
+      {error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-[11px] text-rose-700">{error}</p>}
+
+      {busy && !rows.length ? (
+        <div className="flex justify-center rounded-xl border border-slate-100 px-3 py-8 text-slate-400">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      ) : (
+        <VaultFileThumbGrid
+          rows={rows}
+          selected={selected}
+          busy={busy}
+          onToggle={onToggle}
+          emptyLabel={trash ? "سطل زباله خالی است." : "فایل فعالی در خزانه نیست."}
+        />
+      )}
     </div>
   );
 }

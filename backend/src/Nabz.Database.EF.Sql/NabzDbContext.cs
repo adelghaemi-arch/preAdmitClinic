@@ -13,6 +13,7 @@ public class NabzDbContext : DbContext
 {
     public NabzDbContext(DbContextOptions<NabzDbContext> options) : base(options) { }
 
+    public DbSet<Person> Persons => Set<Person>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserRoleAssignment> UserRoleAssignments => Set<UserRoleAssignment>();
     public DbSet<OtpChallenge> OtpChallenges => Set<OtpChallenge>();
@@ -26,6 +27,7 @@ public class NabzDbContext : DbContext
     public DbSet<PackageLibraryRule> PackageLibraryRules => Set<PackageLibraryRule>();
     public DbSet<ContractSmsLog> ContractSmsLogs => Set<ContractSmsLog>();
     public DbSet<Patient> Patients => Set<Patient>();
+    public DbSet<PatientProfileRevision> PatientProfileRevisions => Set<PatientProfileRevision>();
     public DbSet<FormDefinition> FormDefinitions => Set<FormDefinition>();
     public DbSet<FormSection> FormSections => Set<FormSection>();
     public DbSet<FormItem> FormItems => Set<FormItem>();
@@ -42,12 +44,23 @@ public class NabzDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>(e =>
+        modelBuilder.Entity<Person>(e =>
         {
-            e.HasIndex(x => x.Mobile).IsUnique();
+            // موبایل تکراری مجاز (چند هویت روی یک شماره)
+            e.HasIndex(x => x.Mobile);
             e.Property(x => x.Mobile).HasMaxLength(20).IsRequired();
             e.Property(x => x.NationalId).HasMaxLength(20);
-            e.Property(x => x.FullName).HasMaxLength(200);
+            e.HasIndex(x => x.NationalId)
+                .IsUnique()
+                .HasFilter("NationalId IS NOT NULL AND NationalId <> ''");
+            e.Property(x => x.FirstName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.LastName).HasMaxLength(100).IsRequired();
+        });
+
+        modelBuilder.Entity<User>(e =>
+        {
+            e.HasOne(x => x.Person).WithMany().HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.PersonId).IsUnique();
         });
 
         modelBuilder.Entity<UserRoleAssignment>(e =>
@@ -58,14 +71,17 @@ public class NabzDbContext : DbContext
 
         modelBuilder.Entity<OtpChallenge>(e =>
         {
-            e.HasIndex(x => new { x.Mobile, x.ExpiresAt });
+            e.HasIndex(x => new { x.Mobile, x.Purpose, x.ExpiresAt });
             e.Property(x => x.Mobile).HasMaxLength(20);
+            e.Property(x => x.Purpose).HasMaxLength(32).IsRequired();
         });
 
         modelBuilder.Entity<AuthSession>(e =>
         {
-            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).IsRequired(false);
             e.HasIndex(x => new { x.UserId, x.RevokedAt });
+            e.Property(x => x.PendingMobile).HasMaxLength(20);
+            e.Property(x => x.LoginMobile).HasMaxLength(20);
         });
 
         modelBuilder.Entity<Clinic>(e =>
@@ -80,28 +96,48 @@ public class NabzDbContext : DbContext
             e.HasOne(x => x.Supervisor).WithOne(x => x.Contract).HasForeignKey<ContractSupervisor>(x => x.ContractId);
         });
 
+        modelBuilder.Entity<ContractSupervisor>(e =>
+        {
+            e.HasOne(x => x.Person).WithMany().HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<ContractMember>(e =>
         {
             e.HasOne(x => x.Contract).WithMany(x => x.Members).HasForeignKey(x => x.ContractId);
+            e.HasOne(x => x.Person).WithMany().HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(x => x.InviteToken).IsUnique();
-            e.HasIndex(x => new { x.ContractId, x.NationalId });
-            e.Property(x => x.Phone).HasMaxLength(20);
-            e.Property(x => x.NationalId).HasMaxLength(20);
+            // در یک قرارداد یک Person تکراری مجاز نیست
+            e.HasIndex(x => new { x.ContractId, x.PersonId }).IsUnique();
+            e.Property(x => x.IntroducedMobile).HasMaxLength(20);
         });
 
         modelBuilder.Entity<Patient>(e =>
         {
             e.HasOne(x => x.Clinic).WithMany().HasForeignKey(x => x.ClinicId);
+            e.HasOne(x => x.Person).WithMany().HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.OwnerUser).WithMany().HasForeignKey(x => x.OwnerUserId);
-            e.HasIndex(x => new { x.ClinicId, x.NationalId });
-            e.HasIndex(x => x.OwnerUserId);
-            e.Property(x => x.Phone).HasMaxLength(20);
-            e.Property(x => x.NationalId).HasMaxLength(20);
+            e.HasIndex(x => new { x.ClinicId, x.PersonId }).IsUnique();
+            e.HasIndex(x => x.OwnerUserId)
+                .IsUnique()
+                .HasFilter("OwnerUserId IS NOT NULL");
+            e.Property(x => x.Description).HasMaxLength(2000);
+            e.Property(x => x.HomePostalCode).HasMaxLength(10);
+        });
+
+        modelBuilder.Entity<PatientProfileRevision>(e =>
+        {
+            e.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientId);
+            e.HasOne(x => x.ChangedByUser).WithMany().HasForeignKey(x => x.ChangedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.PatientId, x.At });
+            e.Property(x => x.Field).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Source).HasMaxLength(32).IsRequired();
+            e.Property(x => x.OldValue).HasMaxLength(2000);
+            e.Property(x => x.NewValue).HasMaxLength(2000);
         });
 
         modelBuilder.Entity<FormDefinition>(e =>
         {
-            // Guid کلاینت‌ساخته — ValueGeneratedOnAdd روی SQLite باعث DbUpdateConcurrencyException می‌شود
             e.Property(x => x.Id).ValueGeneratedNever();
             e.HasIndex(x => new { x.ClinicId, x.Code, x.Version });
         });
