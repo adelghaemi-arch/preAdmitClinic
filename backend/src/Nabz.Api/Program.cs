@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Nabz.Api.Auth;
+using Nabz.Api.Middleware;
 using Nabz.Api.Seed;
 using Nabz.Application.Interfaces;
 using Nabz.Application.Time;
@@ -81,7 +82,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseCors();
+// Early: deny-set + محدودیت OTP بر اساس IP — قبل از Auth تا DB داغ نشود
+app.UseMiddleware<ApiAbuseEarlyMiddleware>();
 app.UseAuthentication();
+// PostAuth: soft/hard برای غیر Platform؛ hard → تعلیق
+app.UseMiddleware<ApiAbusePostAuthMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

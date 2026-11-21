@@ -1,6 +1,6 @@
 /*
  File: frontend/src/lib/__tests__/uc-adm-23.sms-test-gates.test.ts
- Description: UC-ADM-23 — گیت حالت تست پیامک نسبت به درگاه ذخیره‌شده
+ Description: UC-ADM-23 — گیت حالت تست پیامک و تست قبل از فعال‌سازی
  Parent Dependencies: clinic-sms-test.ts
  */
 
@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
   allowedSmsTestModes,
   isSmsTestModeAllowed,
+  resolveSmsTestProviderParam,
   smsTestUnavailableHint,
 } from "@/lib/clinic-sms-test";
 
@@ -24,8 +25,15 @@ describe("UC-ADM-23", () => {
     expect(isSmsTestModeAllowed("Kavenegar", "Direct")).toBe(false);
   });
 
-  it("1x — None هیچ حالتی ندارد و hint نشان می‌دهد", () => {
+  it("None با انتخاب target تست مجاز است و hint ندارد", () => {
+    expect(smsTestUnavailableHint("None", "Touba")).toBeNull();
+    expect(smsTestUnavailableHint("None", "Kavenegar")).toBeNull();
+    expect(resolveSmsTestProviderParam("None", "Touba")).toBe("Touba");
+  });
+
+  it("1x — None بدون target تست hint می‌دهد", () => {
     expect(allowedSmsTestModes("None")).toEqual([]);
-    expect(smsTestUnavailableHint("None")).toMatch(/درگاه/);
+    expect(smsTestUnavailableHint("None", null)).toMatch(/تست/);
+    expect(resolveSmsTestProviderParam("None", null)).toBeUndefined();
   });
 });

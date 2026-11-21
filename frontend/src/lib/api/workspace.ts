@@ -232,6 +232,7 @@ function emptyPlatform(clinic: ClinicDto | null): PlatformState {
     fraudSessions: [],
     authSessions: [],
     multiSessionAlerts: [],
+    apiAbuseIncidents: [],
     health: [],
     integrations: [],
     audit: [],
@@ -287,9 +288,13 @@ function mapApiUserToProfile(u: ApiUserDto, clinicId = ""): PlatformUserProfile 
   };
 }
 
-export async function fetchPlatformUsers(includeInactiveContracts = false) {
-  const q = includeInactiveContracts ? "?includeInactiveContracts=true" : "";
-  const users = await apiFetch<ApiUserDto[]>(`/api/users${q}`);
+export async function fetchPlatformUsers(includeInactiveContracts = false, search?: string | null) {
+  const params = new URLSearchParams();
+  if (includeInactiveContracts) params.set("includeInactiveContracts", "true");
+  const term = (search ?? "").trim();
+  if (term) params.set("q", term);
+  const qs = params.toString();
+  const users = await apiFetch<ApiUserDto[]>(`/api/users${qs ? `?${qs}` : ""}`);
   const mapped = users.map((u) => mapApiUserToProfile(u));
   // وقتی پلتفرم لیست را تازه می‌کند GPS هم برگردد
   if (typeof window !== "undefined") {
@@ -418,6 +423,44 @@ export async function loadWorkspaceSnapshot(): Promise<ClinicSnapshot> {
       await hydrateFraudForPlatform(platform);
     } catch {
       /* صف ضدتقلب خالی می‌ماند */
+    }
+    try {
+      const incidents = await apiFetch<
+        Array<{
+          id: string;
+          at: string;
+          userId?: string | null;
+          userMobile?: string | null;
+          userName?: string | null;
+          clientIp?: string | null;
+          dominantFingerprint: string;
+          samePathCount: number;
+          totalCount: number;
+          severity: string;
+          smsNotified: boolean;
+          acknowledged: boolean;
+          userIsActive: boolean;
+          detail?: string | null;
+        }>
+      >("/api/platform/api-abuse?take=50");
+      platform.apiAbuseIncidents = (incidents ?? []).map((i) => ({
+        id: i.id,
+        at: i.at,
+        userId: i.userId ?? null,
+        userMobile: i.userMobile ?? null,
+        userName: i.userName ?? null,
+        clientIp: i.clientIp ?? null,
+        dominantFingerprint: i.dominantFingerprint,
+        samePathCount: i.samePathCount,
+        totalCount: i.totalCount,
+        severity: i.severity,
+        smsNotified: i.smsNotified,
+        acknowledged: i.acknowledged,
+        userIsActive: i.userIsActive,
+        detail: i.detail ?? null,
+      }));
+    } catch {
+      platform.apiAbuseIncidents = [];
     }
   }
 

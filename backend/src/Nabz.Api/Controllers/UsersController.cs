@@ -30,9 +30,9 @@ public sealed class UsersController(IUserAdminService userAdmin) : ControllerBas
         [FromQuery] string? q = null,
         CancellationToken ct = default)
     {
-        // بدون page → لیست کامل (سازگاری bootstrap قدیمی workspace تا سقف سرویس)
+        // بدون page → لیست کامل (سازگاری bootstrap قدیمی workspace تا سقف سرویس) + فیلتر q روی DB
         if (page is null)
-            return Ok(await userAdmin.ListUsersAsync(IsPlatformAdmin(), includeInactiveContracts, ct));
+            return Ok(await userAdmin.ListUsersAsync(IsPlatformAdmin(), includeInactiveContracts, q, ct));
         return Ok(await userAdmin.ListUsersPagedAsync(
             IsPlatformAdmin(), page.Value, pageSize, q, includeInactiveContracts, ct));
     }

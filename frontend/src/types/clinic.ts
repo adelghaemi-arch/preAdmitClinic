@@ -501,6 +501,24 @@ export interface PlatformAuditEntry {
   detail: string;
 }
 
+/** حادثهٔ سوءاستفاده API برای ادمین کل (UC-PLT-17) */
+export interface ApiAbuseIncident {
+  id: string;
+  at: string;
+  userId: string | null;
+  userMobile: string | null;
+  userName: string | null;
+  clientIp: string | null;
+  dominantFingerprint: string;
+  samePathCount: number;
+  totalCount: number;
+  severity: string;
+  smsNotified: boolean;
+  acknowledged: boolean;
+  userIsActive: boolean;
+  detail: string | null;
+}
+
 export interface PlatformState {
   clinics: PlatformClinic[];
   users: PlatformUserProfile[];
@@ -509,6 +527,7 @@ export interface PlatformState {
   fraudSessions: FraudCaptureSession[];
   authSessions: AuthSession[];
   multiSessionAlerts: MultiSessionAlert[];
+  apiAbuseIncidents: ApiAbuseIncident[];
   health: PlatformHealthMetric[];
   integrations: PlatformIntegration[];
   settings: PlatformSettings;

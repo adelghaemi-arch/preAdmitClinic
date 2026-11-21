@@ -1,7 +1,7 @@
 /*
  File: backend/src/Nabz.Infrastructure/Sms/ClinicRoutingSmsSender.cs
- Description: مسیریابی ISmsSender بر اساس SmsProvider کلینیک (+ fallback env کاوه‌نگار)
- Parent Dependencies: KavenegarTemplateSmsSender, ToubaUrlSmsSender, IClinicRepository
+ Description: مسیریابی ISmsSender؛ Auth:FixedOtp بر درگاه فعال ادمین اولویت دارد
+ Parent Dependencies: KavenegarTemplateSmsSender, ToubaUrlSmsSender, IClinicRepository, AuthOptions
  */
 
 using Microsoft.Extensions.Logging;
@@ -18,10 +18,12 @@ public sealed class ClinicRoutingSmsSender(
     KavenegarTemplateSmsSender kavenegar,
     ToubaUrlSmsSender touba,
     IOptions<KavenegarOptions> kavenegarOptions,
+    IOptions<AuthOptions> authOptions,
     ILogger<ClinicRoutingSmsSender> logger) : ISmsSender
 {
     public async Task SendTemplateAsync(string mobile, string templateName, IReadOnlyList<string> tokens, CancellationToken ct = default)
     {
+        EnsureRealSmsAllowed();
         var clinic = await clinics.GetCurrentAsync(ct);
         var provider = ResolveProvider(clinic?.SmsProvider ?? ClinicSmsProvider.None);
 
@@ -38,6 +40,7 @@ public sealed class ClinicRoutingSmsSender(
 
     public async Task SendPlainAsync(string mobile, string content, CancellationToken ct = default)
     {
+        EnsureRealSmsAllowed();
         var clinic = await clinics.GetCurrentAsync(ct);
         var provider = ResolveProvider(clinic?.SmsProvider ?? ClinicSmsProvider.None);
 
@@ -58,6 +61,12 @@ public sealed class ClinicRoutingSmsSender(
             clinic.ToubaPassword ?? string.Empty,
             clinic.ToubaSendUrl,
             ct);
+    }
+
+    private void EnsureRealSmsAllowed()
+    {
+        if (authOptions.Value.HasFixedOtp)
+            throw new InvalidOperationException(ClinicSmsDispatch.FixedOtpBlocksSmsMessage);
     }
 
     private ClinicSmsProvider ResolveProvider(ClinicSmsProvider clinicProvider)

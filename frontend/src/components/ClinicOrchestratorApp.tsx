@@ -506,6 +506,15 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         if (!quiet) setToast({ text: "وضعیت کاربر به‌روز شد." });
         return { ok: true, snapshot: snap };
       }
+      if (action === "PLATFORM_ACK_API_ABUSE") {
+        const incidentId = String(payload.incidentId ?? "");
+        if (!incidentId) throw new Error("شناسه حادثه نامعتبر است.");
+        await apiFetch(`/api/platform/api-abuse/${incidentId}/acknowledge`, { method: "POST" });
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        if (!quiet) setToast({ text: "حادثه سوءاستفاده بررسی شد." });
+        return { ok: true, snapshot: snap };
+      }
       if (action === "PLATFORM_FACTORY_RESET_REQUEST_OTP") {
         const res = await apiFetch<{ ok: boolean; demoCode?: string | null; error?: string }>(
           "/api/platform/factory-reset/request-otp",

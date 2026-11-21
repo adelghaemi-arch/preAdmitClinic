@@ -42,6 +42,7 @@ public class NabzDbContext : DbContext
     public DbSet<PlatformSettings> PlatformSettings => Set<PlatformSettings>();
     public DbSet<PlatformAuditEntry> PlatformAuditEntries => Set<PlatformAuditEntry>();
     public DbSet<SmsCampaignTemplate> SmsCampaignTemplates => Set<SmsCampaignTemplate>();
+    public DbSet<ApiAbuseIncident> ApiAbuseIncidents => Set<ApiAbuseIncident>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,6 +83,9 @@ public class NabzDbContext : DbContext
         {
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).IsRequired(false);
             e.HasIndex(x => new { x.UserId, x.RevokedAt });
+            // هر ValidateToken با TokenHash می‌خواند — ایندکس برای جلوگیری از اسکن
+            e.HasIndex(x => x.TokenHash);
+            e.Property(x => x.TokenHash).HasMaxLength(128);
             e.Property(x => x.PendingMobile).HasMaxLength(20);
             e.Property(x => x.LoginMobile).HasMaxLength(20);
         });
@@ -238,6 +242,18 @@ public class NabzDbContext : DbContext
             e.Property(x => x.ProviderTemplateName).HasMaxLength(120);
             e.Property(x => x.TokenKeysJson).HasMaxLength(500).IsRequired();
             e.HasIndex(x => x.SortOrder);
+        });
+
+        modelBuilder.Entity<ApiAbuseIncident>(e =>
+        {
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).IsRequired(false);
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.Acknowledged, x.CreatedAt });
+            e.Property(x => x.ClientIp).HasMaxLength(64);
+            e.Property(x => x.DominantFingerprint).HasMaxLength(240).IsRequired();
+            e.Property(x => x.Severity).HasMaxLength(32).IsRequired();
+            e.Property(x => x.Detail).HasMaxLength(500);
+            e.Property(x => x.AcknowledgedBy).HasMaxLength(120);
         });
     }
 }

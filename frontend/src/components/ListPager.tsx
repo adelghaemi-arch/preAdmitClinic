@@ -43,57 +43,58 @@ export function ListPager({
   const from = totalCount === 0 ? 0 : (safePage - 1) * size + 1;
   const to = Math.min(safePage * size, totalCount);
 
+  const navBtn =
+    "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-slate-200 text-slate-400 hover:bg-slate-50 disabled:opacity-35";
+
   return (
     <div
-      className={`flex flex-col gap-2 border-t border-slate-100 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${className}`}
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-slate-100 px-3.5 py-2.5 sm:px-5 ${className}`}
     >
-      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
-        <span>
-          نمایش {toFaDigits(from)}–{toFaDigits(to)} از {toFaDigits(totalCount)} {itemLabel}
-        </span>
-        <label className="flex items-center gap-1.5 text-slate-500">
-          <span>در هر صفحه</span>
-          <select
-            aria-label="تعداد در هر صفحه"
-            disabled={disabled}
-            value={size}
-            onChange={(e) => {
-              onPageSizeChange(clampListPageSize(Number(e.target.value)));
-              onPageChange(1);
-            }}
-            className="app-select py-1 text-[10px]"
-          >
-            {LIST_PAGE_SIZES.map((n) => (
-              <option key={n} value={n}>
-                {toFaDigits(n)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <div className="flex items-center gap-1.5 self-end sm:self-auto">
+      <span className="text-[10px] leading-7 text-slate-400">
+        نمایش {toFaDigits(from)}–{toFaDigits(to)} از {toFaDigits(totalCount)} {itemLabel}
+      </span>
+      <div className="flex h-7 items-center gap-1">
         <button
           type="button"
           aria-label="صفحه قبل"
           disabled={disabled || safePage <= 1}
           onClick={() => onPageChange(safePage - 1)}
-          className="rounded-md border border-slate-200 p-1 text-slate-400 hover:bg-slate-50 disabled:opacity-35"
+          className={navBtn}
         >
-          <ChevronRight className="h-3 w-3" />
+          <ChevronRight className="h-2.5 w-2.5" strokeWidth={2.25} />
         </button>
-        <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-teal-50 px-1.5 text-[10px] font-semibold text-teal-700">
-          {toFaDigits(safePage)} / {toFaDigits(totalPages)}
+        <span className="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded border border-teal-100 bg-teal-50 px-2 text-[10px] font-semibold leading-none tabular-nums text-teal-700">
+          {toFaDigits(safePage)}/{toFaDigits(totalPages)}
         </span>
         <button
           type="button"
           aria-label="صفحه بعد"
           disabled={disabled || safePage >= totalPages}
           onClick={() => onPageChange(safePage + 1)}
-          className="rounded-md border border-slate-200 p-1 text-slate-400 hover:bg-slate-50 disabled:opacity-35"
+          className={navBtn}
         >
-          <ChevronLeft className="h-3 w-3" />
+          <ChevronLeft className="h-2.5 w-2.5" strokeWidth={2.25} />
         </button>
       </div>
+      <label className="ms-auto flex items-center gap-1.5 text-[10px] text-slate-500">
+        <span>در هر صفحه</span>
+        <select
+          aria-label="تعداد در هر صفحه"
+          disabled={disabled}
+          value={size}
+          onChange={(e) => {
+            onPageSizeChange(clampListPageSize(Number(e.target.value)));
+            onPageChange(1);
+          }}
+          className="app-select !h-7 !min-h-7 !py-0 !pl-2 !pr-6 text-[10px] leading-7"
+        >
+          {LIST_PAGE_SIZES.map((n) => (
+            <option key={n} value={n}>
+              {toFaDigits(n)}
+            </option>
+          ))}
+        </select>
+      </label>
     </div>
   );
 }

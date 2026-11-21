@@ -24,6 +24,8 @@ public sealed class KavenegarOptions
     public string? Sender { get; set; }
     public string? OtpTemplate { get; set; }
     public string? InviteTemplate { get; set; }
+    /// <summary>قالب هشدار سوءاستفاده API به ادمین کل (UC-PLT-17).</summary>
+    public string? AbuseAlertTemplate { get; set; }
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);
 }

@@ -54,36 +54,38 @@ public sealed class UserRepository(NabzDbContext db) : IUserRepository
 
     public void AddRole(UserRoleAssignment assignment) => db.UserRoleAssignments.Add(assignment);
 
-    public Task<List<User>> ListUsersAsync(AppRole? excludeHavingRole = null, int take = 500, CancellationToken ct = default)
+    public Task<List<User>> ListUsersAsync(AppRole? excludeHavingRole = null, int take = 500, string? q = null, CancellationToken ct = default)
     {
         // ادمین کلینیک نباید کاربران دارای نقش Platform را اصلاً ببیند
-        IQueryable<User> q = WithPerson(db.Users);
-        if (excludeHavingRole is AppRole excluded)
-            q = q.Where(u => !u.Roles.Any(r => r.Role == excluded));
-        return q.OrderBy(u => u.Person.LastName).ThenBy(u => u.Person.FirstName).Take(take).ToListAsync(ct);
+        IQueryable<User> query = ApplyUserSearch(WithPerson(db.Users), excludeHavingRole, q);
+        return query.OrderBy(u => u.Person.LastName).ThenBy(u => u.Person.FirstName).Take(take).ToListAsync(ct);
     }
 
     public async Task<(List<User> Items, int TotalCount)> ListUsersPagedAsync(
         AppRole? excludeHavingRole, int skip, int take, string? q, CancellationToken ct = default)
     {
-        IQueryable<User> query = WithPerson(db.Users);
-        if (excludeHavingRole is AppRole excluded)
-            query = query.Where(u => !u.Roles.Any(r => r.Role == excluded));
-        if (!string.IsNullOrWhiteSpace(q))
-        {
-            var term = q.Trim();
-            query = query.Where(u =>
-                u.Person.FirstName.Contains(term)
-                || u.Person.LastName.Contains(term)
-                || u.Person.Mobile.Contains(term)
-                || (u.Person.NationalId != null && u.Person.NationalId.Contains(term)));
-        }
+        IQueryable<User> query = ApplyUserSearch(WithPerson(db.Users), excludeHavingRole, q);
         var total = await query.CountAsync(ct);
         var items = await query
             .OrderBy(u => u.Person.LastName).ThenBy(u => u.Person.FirstName)
             .Skip(skip).Take(take)
             .ToListAsync(ct);
         return (items, total);
+    }
+
+    private static IQueryable<User> ApplyUserSearch(
+        IQueryable<User> query, AppRole? excludeHavingRole, string? q)
+    {
+        if (excludeHavingRole is AppRole excluded)
+            query = query.Where(u => !u.Roles.Any(r => r.Role == excluded));
+        if (string.IsNullOrWhiteSpace(q)) return query;
+        var term = q.Trim();
+        return query.Where(u =>
+            u.Person.FirstName.Contains(term)
+            || u.Person.LastName.Contains(term)
+            || (u.Person.FirstName + " " + u.Person.LastName).Contains(term)
+            || u.Person.Mobile.Contains(term)
+            || (u.Person.NationalId != null && u.Person.NationalId.Contains(term)));
     }
 }
 
@@ -600,4 +602,21 @@ public sealed class SmsCampaignTemplateRepository(NabzDbContext db) : ISmsCampai
 
     public async Task AddAsync(SmsCampaignTemplate template, CancellationToken ct = default)
         => await db.SmsCampaignTemplates.AddAsync(template, ct);
+}
+
+public sealed class ApiAbuseRepository(NabzDbContext db) : IApiAbuseRepository
+{
+    public async Task AddAsync(ApiAbuseIncident incident, CancellationToken ct = default)
+        => await db.ApiAbuseIncidents.AddAsync(incident, ct);
+
+    public Task<ApiAbuseIncident?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => db.ApiAbuseIncidents.FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public Task<List<ApiAbuseIncident>> ListAsync(bool? acknowledged, int take, CancellationToken ct = default)
+    {
+        var q = db.ApiAbuseIncidents.AsQueryable();
+        if (acknowledged.HasValue)
+            q = q.Where(x => x.Acknowledged == acknowledged.Value);
+        return q.OrderByDescending(x => x.CreatedAt).Take(take).ToListAsync(ct);
+    }
 }

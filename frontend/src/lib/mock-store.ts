@@ -452,6 +452,9 @@ export function hydrateMockStore(data: Partial<MockStore>): void {
     platform.multiSessionAlerts = Array.isArray(platform.multiSessionAlerts)
       ? platform.multiSessionAlerts
       : [];
+    platform.apiAbuseIncidents = Array.isArray(platform.apiAbuseIncidents)
+      ? platform.apiAbuseIncidents
+      : [];
     platform.settings = {
       ...platform.settings,
       featureFlags: {

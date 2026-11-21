@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IEvidenceRepository, EvidenceRepository>();
         services.AddScoped<IPlatformRepository, PlatformRepository>();
         services.AddScoped<ISmsCampaignTemplateRepository, SmsCampaignTemplateRepository>();
+        services.AddScoped<IApiAbuseRepository, ApiAbuseRepository>();
         services.AddScoped<IDatabaseFactoryReset, DatabaseFactoryReset>();
         return services;
     }

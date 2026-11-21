@@ -100,7 +100,27 @@ public sealed class UcAdm23_ClinicSmsTestTests
     }
 
     [Fact]
-    public async Task None_provider_1x_rejects()
+    public async Task None_active_with_Provider_Touba_sends()
+    {
+        var h = new ServiceHarness();
+        h.SeedClinic();
+        var clinic = (await h.Clinics.GetCurrentAsync())!;
+        Assert.Equal(ClinicSmsProvider.None, clinic.SmsProvider);
+        clinic.ToubaUsername = "u";
+        clinic.ToubaPassword = "p";
+        clinic.SmsSenderNumber = "1000";
+        var svc = h.CreateClinicService();
+
+        var result = await svc.TestSmsAsync(new ClinicSmsTestRequest(
+            ClinicSmsTestModes.Direct, "09121112233", PlainBody: "پیش از فعال", Provider: "Touba"));
+
+        Assert.True(result.Ok);
+        Assert.Single(h.Sms.PlainCalls);
+        Assert.Equal(ClinicSmsProvider.None, (await h.Clinics.GetCurrentAsync())!.SmsProvider);
+    }
+
+    [Fact]
+    public async Task None_without_Provider_1x_rejects()
     {
         var h = new ServiceHarness();
         h.SeedClinic();
@@ -108,8 +128,27 @@ public sealed class UcAdm23_ClinicSmsTestTests
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             svc.TestSmsAsync(new ClinicSmsTestRequest(ClinicSmsTestModes.Direct, "09121234567", PlainBody: "x")));
-        Assert.Contains("درگاه", ex.Message);
+        Assert.Contains("Provider", ex.Message);
         Assert.Empty(h.Sms.PlainCalls);
+    }
+
+    [Fact]
+    public async Task Mismatch_request_Provider_vs_active_rejects()
+    {
+        var h = new ServiceHarness();
+        h.SeedClinic();
+        var clinic = (await h.Clinics.GetCurrentAsync())!;
+        clinic.SmsProvider = ClinicSmsProvider.Touba;
+        clinic.ToubaUsername = "u";
+        clinic.ToubaPassword = "p";
+        clinic.SmsSenderNumber = "1000";
+        var svc = h.CreateClinicService();
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            svc.TestSmsAsync(new ClinicSmsTestRequest(
+                ClinicSmsTestModes.ProviderTemplate, "09121234567",
+                ProviderTemplateName: "otp", Provider: "Kavenegar")));
+        Assert.Contains("یکی نیست", ex.Message);
     }
 
     [Fact]

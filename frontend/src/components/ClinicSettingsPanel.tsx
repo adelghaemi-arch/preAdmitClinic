@@ -1,6 +1,6 @@
 /*
  File: frontend/src/components/ClinicSettingsPanel.tsx
- Description: تنظیمات بیمارستان — لوکیشن، پشتیبانی، سامانه پیامک و تست ارسال (UC-ADM-23)
+ Description: تنظیمات بیمارستان — لوکیشن، پشتیبانی، پیکربندی پیامک و تست قبل از فعال‌سازی (UC-ADM-23)
  Parent Dependencies: LocationPickerPopup, AppInput, clinic-sms-test, api/clinics, api/sms-templates
  */
 
@@ -9,6 +9,7 @@ import { MapPin, MessageSquare, Phone, Save, Send } from "lucide-react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import { LocationPickerPopup, type LocationPickResult } from "@/components/LocationPickerPopup";
 import { normalizePhone, readUsername } from "@/lib/auth";
+import { apiGetOtpMode } from "@/lib/api/auth";
 import {
   testClinicSms,
   type ClinicSmsProvider,
@@ -18,9 +19,11 @@ import { fetchSmsTemplates, type ApiSmsCampaignTemplateDto } from "@/lib/api/sms
 import {
   allowedSmsTestModes,
   isSmsTestModeAllowed,
+  resolveSmsTestProviderParam,
   smsTestModeLabel,
   smsTestUnavailableHint,
   type ClinicSmsTestMode,
+  type ClinicSmsTestTarget,
 } from "@/lib/clinic-sms-test";
 import type { ClinicLocation, ClinicSnapshot } from "@/types/clinic";
 
@@ -35,7 +38,6 @@ const SECRET_MASK = "••••••••";
 export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
   const clinic = snapshot.platform.clinics.find((c) => c.isCurrentTenant) ?? snapshot.platform.clinics[0];
   const loc: ClinicLocation = snapshot.clinicLocation;
-  // گیت تست از درگاه ذخیره‌شدهٔ سرور — نه state فرم ذخیره‌نشده
   const savedSmsProvider = (clinic?.smsProvider as ClinicSmsProvider) || "None";
 
   const [name, setName] = useState(clinic?.name ?? "");
@@ -52,6 +54,11 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
   const [smsProvider, setSmsProvider] = useState<ClinicSmsProvider>(
     (clinic?.smsProvider as ClinicSmsProvider) || "None"
   );
+  const [configTarget, setConfigTarget] = useState<ClinicSmsTestTarget>(() => {
+    const p = (clinic?.smsProvider as ClinicSmsProvider) || "None";
+    if (p === "Kavenegar") return "Kavenegar";
+    return "Touba";
+  });
   const [smsSenderNumber, setSmsSenderNumber] = useState(clinic?.smsSenderNumber ?? "");
   const [kavenegarApiKey, setKavenegarApiKey] = useState(
     clinic?.kavenegarApiKeySet ? SECRET_MASK : clinic?.kavenegarApiKey ?? ""
@@ -66,7 +73,20 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
     clinic?.toubaOtpMessageTemplate ?? "کد ورود شما: {code}"
   );
 
-  const allowedModes = useMemo(() => allowedSmsTestModes(savedSmsProvider), [savedSmsProvider]);
+  const [testTarget, setTestTarget] = useState<ClinicSmsTestTarget>(() => {
+    if (savedSmsProvider === "Kavenegar") return "Kavenegar";
+    return "Touba";
+  });
+
+  const effectiveTestProvider: ClinicSmsTestTarget =
+    savedSmsProvider === "Touba" || savedSmsProvider === "Kavenegar"
+      ? savedSmsProvider
+      : testTarget;
+
+  const allowedModes = useMemo(
+    () => allowedSmsTestModes(effectiveTestProvider),
+    [effectiveTestProvider]
+  );
   const [testMode, setTestMode] = useState<ClinicSmsTestMode>("AppTemplate");
   const [testMobile, setTestMobile] = useState(() => {
     try {
@@ -85,29 +105,36 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
   const [testing, setTesting] = useState(false);
   const [testMessage, setTestMessage] = useState("");
   const [testError, setTestError] = useState("");
+  const [fixedOtpEnabled, setFixedOtpEnabled] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!isSmsTestModeAllowed(savedSmsProvider, testMode) && allowedModes[0]) {
+    if (!isSmsTestModeAllowed(effectiveTestProvider, testMode) && allowedModes[0]) {
       setTestMode(allowedModes[0]);
     }
-  }, [savedSmsProvider, allowedModes, testMode]);
+  }, [effectiveTestProvider, allowedModes, testMode]);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const list = await fetchSmsTemplates(true);
+        const [list, mode] = await Promise.all([fetchSmsTemplates(true), apiGetOtpMode()]);
         if (cancelled) return;
         setTemplates(list);
         if (!templateId && list[0]?.id) setTemplateId(list[0].id);
+        setFixedOtpEnabled(mode.fixedOtpEnabled === true);
       } catch {
-        /* فهرست قالب برای تست اختیاری است تا UI تنظیمات نشکند */
+        /* فهرست قالب / otp mode اختیاری است تا UI تنظیمات نشکند */
+        try {
+          const mode = await apiGetOtpMode();
+          if (!cancelled) setFixedOtpEnabled(mode.fixedOtpEnabled === true);
+        } catch {
+          if (!cancelled) setFixedOtpEnabled(null);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-    // فقط یک‌بار هنگام mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -155,9 +182,21 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
     setTestError("");
     setTestMessage("");
     try {
-      if (!isSmsTestModeAllowed(savedSmsProvider, testMode)) {
-        throw new Error(smsTestUnavailableHint(savedSmsProvider) ?? "این حالت برای درگاه ذخیره‌شده مجاز نیست.");
+      if (fixedOtpEnabled) {
+        throw new Error(
+          "Auth:FixedOtp فعال است؛ ارسال واقعی غیرفعال است (اولویت env محلی). برای تست درگاه موقتاً FixedOtp را خالی کنید."
+        );
       }
+      if (!isSmsTestModeAllowed(effectiveTestProvider, testMode)) {
+        throw new Error(
+          smsTestUnavailableHint(savedSmsProvider, testTarget) ?? "این حالت برای درگاه تست مجاز نیست."
+        );
+      }
+      const providerParam = resolveSmsTestProviderParam(savedSmsProvider, testTarget);
+      if (!providerParam) {
+        throw new Error("درگاه ارسال تست را انتخاب کنید.");
+      }
+
       const mobile = normalizePhone(testMobile);
       const body: {
         mode: ClinicSmsTestModeApi;
@@ -166,7 +205,8 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
         plainBody?: string;
         providerTemplateName?: string;
         tokens?: string[];
-      } = { mode: testMode, mobile };
+        provider?: "Touba" | "Kavenegar";
+      } = { mode: testMode, mobile, provider: providerParam };
 
       if (testMode === "AppTemplate") {
         if (!templateId) throw new Error("قالب آماده را انتخاب کنید.");
@@ -187,7 +227,7 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
     }
   };
 
-  const unavailable = smsTestUnavailableHint(savedSmsProvider);
+  const unavailable = smsTestUnavailableHint(savedSmsProvider, testTarget);
 
   return (
     <section className="mx-auto max-w-xl space-y-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -246,19 +286,40 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
           سامانه پیامک
         </div>
         <p className="text-[10px] leading-5 text-teal-800/80">
-          ادمین بیمارستان انتخاب می‌کند پیامک‌ها از کدام درگاه بروند. طوبی = پنل TSMS روی sms.tsms.ir.
+          اول اعتبارنامه را ذخیره و تست کنید؛ بعد «درگاه فعال» را برای OTP/کمپین روشن کنید. طوبی = sms.tsms.ir.
         </p>
+        {fixedOtpEnabled && (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-5 text-amber-900">
+            <span className="font-semibold">اولویت env محلی:</span>{" "}
+            <code className="font-mono">Auth:FixedOtp</code> فعال است — OTP/کمپین/تست واقعی ارسال نمی‌شوند حتی اگر درگاه
+            را روشن کنید. برای تست درگاه، موقتاً FixedOtp را در env خالی کنید.
+          </p>
+        )}
 
         <label className="app-label text-[11px]">
-          درگاه فعال
+          درگاه فعال (تولید — فقط وقتی FixedOtp خالی است)
           <select
             value={smsProvider}
             onChange={(e) => setSmsProvider(e.target.value as ClinicSmsProvider)}
             className="app-select mt-1 w-full text-xs"
+            data-testid="sms-active-provider"
           >
             <option value="None">غیرفعال (فقط FixedOtp)</option>
             <option value="Kavenegar">کاوه‌نگار</option>
             <option value="Touba">طوبی</option>
+          </select>
+        </label>
+
+        <label className="app-label text-[11px]">
+          پیکربندی اعتبارنامه
+          <select
+            value={configTarget}
+            onChange={(e) => setConfigTarget(e.target.value as ClinicSmsTestTarget)}
+            className="app-select mt-1 w-full text-xs"
+            data-testid="sms-config-target"
+          >
+            <option value="Touba">طوبی</option>
+            <option value="Kavenegar">کاوه‌نگار</option>
           </select>
         </label>
 
@@ -269,11 +330,11 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
             onChange={(e) => setSmsSenderNumber(e.target.value)}
             className="app-input mt-1 font-mono"
             dir="ltr"
-            placeholder={smsProvider === "Touba" ? "1000…" : "1000…"}
+            placeholder="1000…"
           />
         </label>
 
-        {smsProvider === "Kavenegar" && (
+        {configTarget === "Kavenegar" && (
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
             <div className="text-[11px] font-semibold text-slate-700">تنظیمات کاوه‌نگار</div>
             <label className="app-label text-[11px]">
@@ -302,7 +363,7 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
           </div>
         )}
 
-        {smsProvider === "Touba" && (
+        {configTarget === "Touba" && (
           <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
             <div className="text-[11px] font-semibold text-slate-700">تنظیمات طوبی (TSMS)</div>
             <label className="app-label text-[11px]">
@@ -352,12 +413,27 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
         )}
 
         <div className="space-y-2 rounded-xl border border-dashed border-teal-200 bg-white/80 p-3">
-          <div className="text-[11px] font-semibold text-teal-900">تست / شبیه‌ساز ارسال</div>
+          <div className="text-[11px] font-semibold text-teal-900">تست ارسال (قبل از فعال‌سازی)</div>
           <p className="text-[10px] leading-5 text-slate-500">
-            از تنظیمات <span className="font-semibold">ذخیره‌شده روی سرور</span> استفاده می‌شود (درگاه فعلی سرور:{" "}
-            {savedSmsProvider === "None" ? "غیرفعال" : savedSmsProvider === "Touba" ? "طوبی" : "کاوه‌نگار"}). بعد از تغییر
-            درگاه، اول ذخیره کنید.
+            از اعتبار <span className="font-semibold">ذخیره‌شده روی سرور</span> استفاده می‌شود. درگاه فعال فعلی:{" "}
+            {savedSmsProvider === "None" ? "غیرفعال" : savedSmsProvider === "Touba" ? "طوبی" : "کاوه‌نگار"}. اول ذخیره،
+            بعد تست؛ اگر OK بود درگاه فعال را روشن کنید.
           </p>
+
+          {savedSmsProvider === "None" && (
+            <label className="app-label text-[11px]">
+              ارسال تست از طریق
+              <select
+                value={testTarget}
+                onChange={(e) => setTestTarget(e.target.value as ClinicSmsTestTarget)}
+                className="app-select mt-1 w-full text-xs"
+                data-testid="sms-test-target"
+              >
+                <option value="Touba">طوبی</option>
+                <option value="Kavenegar">کاوه‌نگار</option>
+              </select>
+            </label>
+          )}
 
           {unavailable ? (
             <p className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-800">
@@ -466,7 +542,7 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
 
               <button
                 type="button"
-                disabled={busy || testing || !!unavailable}
+                disabled={busy || testing || !!unavailable || fixedOtpEnabled === true}
                 onClick={() => void runSmsTest()}
                 className="secondary-button w-full justify-center"
                 data-testid="sms-test-send"

@@ -43,6 +43,8 @@ public sealed class FakeDatabaseFactoryReset(InMemoryStore store) : IDatabaseFac
         store.EvidencePackages.Clear();
         store.PlatformSettings.Clear();
         store.PlatformAudit.Clear();
+        store.SmsCampaignTemplates.Clear();
+        store.ApiAbuseIncidents.Clear();
         return Task.CompletedTask;
     }
 }

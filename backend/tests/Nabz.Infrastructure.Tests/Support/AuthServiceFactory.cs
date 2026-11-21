@@ -54,8 +54,10 @@ public sealed class AuthServiceFactory
             patientService,
             UnitOfWork,
             Sms,
+            new Nabz.Infrastructure.Abuse.ApiAbuseMemoryStore(),
             authOptions,
             kavenegarOptions,
+            Options.Create(new ApiAbuseOptions()),
             NullLogger<AuthService>.Instance);
     }
 }

@@ -86,16 +86,30 @@ public sealed class FakeUserRepository(InMemoryStore store) : IUserRepository
 
     public void AddRole(UserRoleAssignment assignment) => store.Roles.Add(assignment);
 
-    public Task<List<User>> ListUsersAsync(AppRole? excludeHavingRole = null, int take = 500, CancellationToken ct = default)
+    public Task<List<User>> ListUsersAsync(AppRole? excludeHavingRole = null, int take = 500, string? q = null, CancellationToken ct = default)
     {
-        IEnumerable<User> q = store.Users;
+        IEnumerable<User> query = store.Users;
         if (excludeHavingRole is AppRole excluded)
         {
             var excludedIds = store.Roles.Where(r => r.Role == excluded).Select(r => r.UserId).ToHashSet();
-            q = q.Where(u => !excludedIds.Contains(u.Id));
+            query = query.Where(u => !excludedIds.Contains(u.Id));
+        }
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var term = q.Trim();
+            query = query.Where(u =>
+            {
+                HydratePerson(u);
+                var full = $"{u.Person.FirstName} {u.Person.LastName}";
+                return u.Person.FirstName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || u.Person.LastName.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || full.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || u.Person.Mobile.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || (u.Person.NationalId?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false);
+            });
         }
 
-        var list = q
+        var list = query
             .Select(u =>
             {
                 HydratePerson(u);
@@ -920,6 +934,26 @@ public sealed class FakeSmsCampaignTemplateRepository(InMemoryStore store) : ISm
     {
         store.SmsCampaignTemplates.Add(template);
         return Task.CompletedTask;
+    }
+}
+
+public sealed class FakeApiAbuseRepository(InMemoryStore store) : IApiAbuseRepository
+{
+    public Task AddAsync(ApiAbuseIncident incident, CancellationToken ct = default)
+    {
+        store.ApiAbuseIncidents.Add(incident);
+        return Task.CompletedTask;
+    }
+
+    public Task<ApiAbuseIncident?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(store.ApiAbuseIncidents.FirstOrDefault(x => x.Id == id));
+
+    public Task<List<ApiAbuseIncident>> ListAsync(bool? acknowledged, int take, CancellationToken ct = default)
+    {
+        var q = store.ApiAbuseIncidents.AsEnumerable();
+        if (acknowledged.HasValue)
+            q = q.Where(x => x.Acknowledged == acknowledged.Value);
+        return Task.FromResult(q.OrderByDescending(x => x.CreatedAt).Take(take).ToList());
     }
 }
 

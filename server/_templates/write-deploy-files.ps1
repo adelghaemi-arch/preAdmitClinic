@@ -276,6 +276,16 @@ Kavenegar__ApiKey=
 Kavenegar__Sender=
 Kavenegar__OtpTemplate=
 Kavenegar__InviteTemplate=
+Kavenegar__AbuseAlertTemplate=
+
+# گارد ضدسوءاستفاده API (UC-PLT-17)
+ApiAbuse__SoftSamePathCount=80
+ApiAbuse__SoftTotalCount=120
+ApiAbuse__SoftWindowSeconds=10
+ApiAbuse__HardSamePathCount=250
+ApiAbuse__HardTotalCount=600
+ApiAbuse__HardWindowSeconds=60
+ApiAbuse__LastSeenMinIntervalSeconds=60
 
 # آپلود پایدار روی هاست: server/persist/uploads → /app/wwwroot/uploads
 # الزامی: هم‌تراز bind mount تا فایل‌ها داخل image نروند

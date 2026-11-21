@@ -5,7 +5,6 @@
  */
 
 using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nabz.Application.Abstractions;
@@ -30,8 +29,10 @@ public sealed class AuthService(
     IPatientService patientService,
     IUnitOfWork uow,
     ISmsSender sms,
+    IApiAbuseMemoryStore abuseMemory,
     IOptions<AuthOptions> authOptions,
     IOptions<KavenegarOptions> kavenegarOptions,
+    IOptions<ApiAbuseOptions> abuseOptions,
     ILogger<AuthService> logger) : IAuthService
 {
     public async Task<OtpRequestResult> RequestOtpAsync(string mobile, CancellationToken ct = default)
@@ -202,12 +203,21 @@ public sealed class AuthService(
     public async Task<AuthSessionPrincipal?> ValidateTokenAsync(string rawToken, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(rawToken)) return null;
-        var session = await auth.GetActiveSessionByTokenHashAsync(Hash(rawToken.Trim()), ct);
+        var tokenHash = Hash(rawToken.Trim());
+        // deny-set حافظه: بعد از تعلیق abuse دیگر به DB نمی‌زنیم
+        if (abuseMemory.IsTokenDenied(tokenHash))
+            return null;
+
+        var session = await auth.GetActiveSessionByTokenHashAsync(tokenHash, ct);
         if (session is null) return null;
 
-        session.LastSeenAt = DateTime.UtcNow;
-        session.UpdatedAt = DateTime.UtcNow;
-        await uow.SaveChangesAsync(ct);
+        // LastSeen را هر درخواست Save نکن — فشار بی‌خودی روی DB
+        if (!abuseMemory.ShouldSkipLastSeenWrite(tokenHash, abuseOptions.Value.LastSeenMinIntervalSeconds))
+        {
+            session.LastSeenAt = DateTime.UtcNow;
+            session.UpdatedAt = DateTime.UtcNow;
+            await uow.SaveChangesAsync(ct);
+        }
 
         if (session.PendingSelection)
         {
@@ -696,9 +706,5 @@ public sealed class AuthService(
 
     private static string NormalizeMobile(string mobile) => IranMobile.Normalize(mobile);
 
-    private static string Hash(string value)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(value));
-        return Convert.ToHexString(bytes);
-    }
+    private static string Hash(string value) => TokenHashing.Sha256Hex(value);
 }

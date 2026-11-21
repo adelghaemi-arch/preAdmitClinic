@@ -523,6 +523,7 @@ export function buildSeedPlatformState(): PlatformState {
     fraudSessions,
     authSessions,
     multiSessionAlerts,
+    apiAbuseIncidents: [],
     health,
     integrations,
     settings: { ...DEFAULT_PLATFORM_SETTINGS },

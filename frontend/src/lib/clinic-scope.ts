@@ -26,6 +26,7 @@ function redactPlatform(snapshot: ClinicSnapshot, viewerUserId?: number): Platfo
     fraudSessions: [],
     authSessions: ownSessions,
     multiSessionAlerts: [],
+    apiAbuseIncidents: [],
     health: [],
     integrations: [],
     settings: {

@@ -65,7 +65,7 @@ export interface ClinicSmsTestResultDto {
   detail?: string | null;
 }
 
-/** UC-ADM-23 — از تنظیمات ذخیره‌شدهٔ سرور؛ مستقل از FixedOtp. */
+/** UC-ADM-23 — از تنظیمات ذخیره‌شدهٔ سرور؛ مستقل از FixedOtp و درگاه فعال. */
 export async function testClinicSms(body: {
   mode: ClinicSmsTestModeApi;
   mobile: string;
@@ -73,6 +73,8 @@ export async function testClinicSms(body: {
   plainBody?: string | null;
   providerTemplateName?: string | null;
   tokens?: string[] | null;
+  /** وقتی SmsProvider فعال None است الزامی است */
+  provider?: "Touba" | "Kavenegar" | null;
 }) {
   return apiFetch<ClinicSmsTestResultDto>("/api/clinics/current/sms/test", {
     method: "POST",

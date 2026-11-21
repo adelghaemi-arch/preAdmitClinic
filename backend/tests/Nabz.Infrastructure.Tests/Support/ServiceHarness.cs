@@ -74,13 +74,45 @@ public sealed class ServiceHarness
         return t.Id;
     }
 
+    public Nabz.Infrastructure.Abuse.ApiAbuseMemoryStore AbuseMemory { get; } = new();
+
     public AuthService CreateAuthService(string fixedOtp = "12345")
     {
         var authOptions = Options.Create(new AuthOptions { FixedOtp = fixedOtp });
         var kavenegarOptions = Options.Create(new KavenegarOptions { InviteTemplate = "invite", OtpTemplate = "otp" });
+        var abuseOptions = Options.Create(new ApiAbuseOptions());
         return new AuthService(
             Users, Persons, Auth, Contracts, Patients, Clinics, Platform, CreatePatientService(), UnitOfWork, Sms,
-            authOptions, kavenegarOptions, NullLogger<AuthService>.Instance);
+            AbuseMemory, authOptions, kavenegarOptions, abuseOptions, NullLogger<AuthService>.Instance);
+    }
+
+    public ApiAbuseGuardService CreateApiAbuseGuardService(
+        string? fixedOtp = "12345",
+        string? abuseAlertTemplate = "abuse_alert",
+        string? apiKey = "test-key",
+        ApiAbuseOptions? abuseOpt = null)
+    {
+        var authOptions = Options.Create(new AuthOptions { FixedOtp = fixedOtp });
+        var kavenegarOptions = Options.Create(new KavenegarOptions
+        {
+            InviteTemplate = "invite",
+            OtpTemplate = "otp",
+            AbuseAlertTemplate = abuseAlertTemplate,
+            ApiKey = apiKey,
+            Sender = "1000"
+        });
+        return new ApiAbuseGuardService(
+            AbuseMemory,
+            new FakeApiAbuseRepository(Store),
+            Auth,
+            Users,
+            Platform,
+            UnitOfWork,
+            Sms,
+            Options.Create(abuseOpt ?? new ApiAbuseOptions()),
+            authOptions,
+            kavenegarOptions,
+            NullLogger<ApiAbuseGuardService>.Instance);
     }
 
     public FormService CreateFormService() => new(Forms, Patients, ProfileRevisions, Users, Contracts, UnitOfWork);
@@ -101,7 +133,13 @@ public sealed class ServiceHarness
     }
 
     public ClinicService CreateClinicService()
-        => new(Clinics, UnitOfWork, Sms, SmsTemplates, NullLogger<ClinicService>.Instance);
+        => new(
+            Clinics,
+            UnitOfWork,
+            Sms,
+            SmsTemplates,
+            Options.Create(new KavenegarOptions { InviteTemplate = "invite", ApiKey = "test-key", Sender = "1000" }),
+            NullLogger<ClinicService>.Instance);
 
     public PathwayLibraryRuleService CreatePathwayLibraryRuleService()
         => new(LibraryRules, Contracts, UnitOfWork);

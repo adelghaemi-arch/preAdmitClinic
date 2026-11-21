@@ -57,7 +57,9 @@ public record ClinicSmsTestRequest(
     Guid? TemplateId = null,
     string? PlainBody = null,
     string? ProviderTemplateName = null,
-    IReadOnlyList<string>? Tokens = null);
+    IReadOnlyList<string>? Tokens = null,
+    /// <summary>درگاه تست وقتی SmsProvider فعال None است (Touba / Kavenegar).</summary>
+    string? Provider = null);
 
 public record ClinicSmsTestResult(bool Ok, string Mode, bool Simulated, string? Detail = null);
 

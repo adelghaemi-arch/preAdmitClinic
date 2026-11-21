@@ -37,6 +37,7 @@ export const PLATFORM_ACTION_NAMES = new Set([
   "PLATFORM_RESET_USER_ACCESS",
   "PLATFORM_FACTORY_RESET_REQUEST_OTP",
   "PLATFORM_FACTORY_RESET_CONFIRM",
+  "PLATFORM_ACK_API_ABUSE",
   "START_FRAUD_CAMERA_SESSION",
   "CAPTURE_FRAUD_FRAME",
   "END_FRAUD_CAMERA_SESSION",
@@ -372,6 +373,23 @@ export function runPlatformAction(body: Record<string, unknown>, viewerRole: str
         : `تست ناموفق · ${lastError ?? "Nominatim در دسترس نیست"}`,
     });
     return { ok: true, status: 200, meta: { osmLocal: nextOsm } };
+  }
+
+  if (action === "PLATFORM_ACK_API_ABUSE") {
+    const incidentId = String(payload.incidentId ?? "");
+    if (!Array.isArray(platform.apiAbuseIncidents)) platform.apiAbuseIncidents = [];
+    const row = platform.apiAbuseIncidents.find((i) => i.id === incidentId);
+    if (!row) throw new Error("حادثه یافت نشد.");
+    row.acknowledged = true;
+    mockMutations.appendAudit({
+      id: randomUUID(),
+      at: new Date().toISOString(),
+      actor: "platform",
+      action: "PLATFORM_ACK_API_ABUSE",
+      target: incidentId,
+      detail: "",
+    });
+    return { ok: true };
   }
 
   if (action === "PLATFORM_REVIEW_MULTI_SESSION") {

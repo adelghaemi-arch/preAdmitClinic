@@ -493,25 +493,27 @@
 
 - **بازیگر اصلی:** ادمین کلینیک
 - **بازیگر ثانویه:** سیستم؛ درگاه کاوه‌نگار / طوبی
-- **هدف:** از صفحه تنظیمات بیمارستان، صحت پیکربندی درگاه را با یک ارسال تستی به موبایل دلخواه بررسی کند (قالب آماده پلتفرم، متن مستقیم، یا قالب پنل درگاه)
-- **پیش‌شرط:** نقش Admin یا Platform؛ `Clinic.SmsProvider` ذخیره‌شده `Kavenegar` یا `Touba` (نه `None`)
-- **پس‌شرط موفقیت:** یک فراخوانی واقعی `ISmsSender` انجام شده؛ قیف/کمپین تغییر نکرده؛ مسیر مستقل از `Auth:FixedOtp` است
-- **اکشن فنی:** `POST /api/clinics/current/sms/test` با `mode` = `AppTemplate` | `Direct` | `ProviderTemplate`
+- **هدف:** قبل از فعال‌سازی تولید، صحت اعتبارنامه‌های ذخیره‌شده را با یک ارسال تستی بررسی کند (قالب آماده، متن مستقیم، یا قالب پنل درگاه)
+- **پیش‌شرط:** نقش Admin یا Platform؛ اعتبارنامه‌های درگاه روی سرور ذخیره شده؛ `provider` در request یا `Clinic.SmsProvider` فعال = `Kavenegar`/`Touba`
+- **پس‌شرط موفقیت:** یک فراخوانی واقعی `IClinicSmsDispatch` (مستقل از مسیریاب تولید)؛ قیف/کمپین و `SmsProvider` تغییر نکرده؛ مسیر مستقل از `Auth:FixedOtp`
+- **اکشن فنی:** `POST /api/clinics/current/sms/test` با `mode` = `AppTemplate` | `Direct` | `ProviderTemplate` و اختیاری `provider` = `Touba` | `Kavenegar`
 
 #### سناریوی اصلی (موفقیت)
-1. ادمین در باکس سامانه پیامک حالت تست را انتخاب می‌کند و موبایل مقصد را وارد می‌کند.
-2. **AppTemplate:** قالب فعال پلتفرم را برمی‌گزیند → طوبی: `BodyPreview` با توکن نمونه → `SendPlainAsync`؛ کاوه‌نگار: `ProviderTemplateName` + توکن نمونه → `SendTemplateAsync`.
-3. **Direct (فقط طوبی):** متن آزاد → `SendPlainAsync`.
-4. **ProviderTemplate (فقط کاوه‌نگار):** نام قالب پنل + تا ۳ توکن → `SendTemplateAsync`.
-5. سیستم نتیجهٔ ok را برمی‌گرداند؛ UI پیام موفقیت نشان می‌دهد.
+1. ادمین اعتبار را با **درگاه فعال = غیرفعال** ذخیره می‌کند، سپس در باکس تست «ارسال از طریق» و حالت تست و موبایل را می‌زند.
+2. **AppTemplate:** قالب فعال پلتفرم → طوبی: `BodyPreview` → `SendToubaPlainAsync`؛ کاوه‌نگار: `ProviderTemplateName` → `SendKavenegarTemplateAsync`.
+3. **Direct (فقط طوبی):** متن آزاد → `SendToubaPlainAsync`.
+4. **ProviderTemplate (فقط کاوه‌نگار):** نام قالب پنل + تا ۳ توکن → `SendKavenegarTemplateAsync`.
+5. سیستم ok برمی‌گرداند؛ ادمین در صورت تمایل «درگاه فعال» را روشن و ذخیره می‌کند.
 
 #### سناریوهای استثنا
-- **1x.** `SmsProvider=None`؛ سیستم بدون ارسال رد می‌کند.
+- **1x.** هیچ Provider موثری نیست (`SmsProvider=None` و بدون `provider` در request)؛ رد بدون ارسال.
 - **2x.** موبایل نامعتبر (غیر از ۰۹xxxxxxxxx)؛ رد.
 - **3x.** `Direct` روی کاوه‌نگار یا `ProviderTemplate` روی طوبی؛ رد با پیام راهنما.
 - **4x.** `AppTemplate` بدون `templateId` یا قالب یافت‌نشد / غیرفعال؛ رد.
 - **5x.** کاوه‌نگار + قالب آماده بدون `ProviderTemplateName`؛ رد.
 - **6x.** `Direct` با متن خالی یا `ProviderTemplate` با نام قالب خالی؛ رد.
+- **7x.** `provider` request با درگاه فعال ذخیره‌شده مغایر باشد؛ رد.
 - **Na.** تنظیمات فرم ذخیره‌نشده در UI اعمال نمی‌شود؛ ارسال از تنظیمات سرور است.
-- **Nb.** FixedOtp مسیر تست را بای‌پس نمی‌کند (برخلاف OTP/کمپین).
+- **Nb.** اگر `Auth:FixedOtp` پر باشد، تست هم **مسدود** است (اولویت env محلی روی درگاه ادمین و UC-ADM-23).
+- **Nc.** OTP/کمپین تولید تا وقتی `SmsProvider` فعال نشده از درگاه واقعی استفاده نمی‌کنند؛ با FixedOtp اصلاً ارسال واقعی نمی‌شود.
 

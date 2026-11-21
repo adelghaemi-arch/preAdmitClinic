@@ -97,10 +97,15 @@ export async function apiFetch<T = unknown>(path: string, options: ApiFetchOptio
   }
 
   if (!res.ok) {
+    // ۴۲۹: بدون retry خودکار — حلقهٔ خودزنی با گارد سرور نساز
     const errMsg =
-      typeof parsed === "object" && parsed && "error" in parsed
-        ? String((parsed as { error: unknown }).error)
-        : `خطای سرور (${res.status})`;
+      res.status === 429
+        ? typeof parsed === "object" && parsed && "error" in parsed
+          ? String((parsed as { error: unknown }).error)
+          : "درخواست‌های تکراری زیاد است؛ کمی بعد تلاش کنید."
+        : typeof parsed === "object" && parsed && "error" in parsed
+          ? String((parsed as { error: unknown }).error)
+          : `خطای سرور (${res.status})`;
     throw new ApiError(errMsg, res.status, parsed);
   }
 

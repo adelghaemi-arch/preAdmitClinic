@@ -1,14 +1,16 @@
 /*
  File: backend/src/Nabz.Infrastructure/Services/ClinicService.cs
- Description: سرویس کلینیک جاری — لوکیشن، پشتیبانی، سامانه پیامک، تست ارسال (UC-ADM-23)
- Parent Dependencies: IClinicRepository, ISmsSender, ISmsCampaignTemplateRepository, ClinicSmsTestSamples
+ Description: سرویس کلینیک جاری — لوکیشن، پشتیبانی، سامانه پیامک، تست ارسال قبل از فعال‌سازی (UC-ADM-23)
+ Parent Dependencies: IClinicRepository, IClinicSmsDispatch, ISmsCampaignTemplateRepository, ClinicSmsTestSamples
  */
 
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nabz.Application.Abstractions;
 using Nabz.Application.Interfaces;
 using Nabz.Application.Interfaces.Repositories;
+using Nabz.Application.Options;
 using Nabz.Application.Sms;
 using Nabz.Domain.Entities;
 using Nabz.Domain.Enums;
@@ -18,8 +20,9 @@ namespace Nabz.Infrastructure.Services;
 public sealed class ClinicService(
     IClinicRepository clinics,
     IUnitOfWork uow,
-    ISmsSender sms,
+    IClinicSmsDispatch smsDispatch,
     ISmsCampaignTemplateRepository smsTemplates,
+    IOptions<KavenegarOptions> kavenegarOptions,
     ILogger<ClinicService> logger) : IClinicService
 {
     public const string DefaultToubaSendUrl = "https://sms.tsms.ir/url/tsms.php";
@@ -94,12 +97,11 @@ public sealed class ClinicService(
 
     public async Task<ClinicSmsTestResult> TestSmsAsync(ClinicSmsTestRequest request, CancellationToken ct = default)
     {
-        // FixedOtp عمداً نادیده — هدف تست درگاه واقعی است
+        // FixedOtp عمداً نادیده — هدف تست درگاه واقعی است؛ از مسیریاب تولید استفاده نمی‌شود
         var c = await clinics.GetCurrentAsync(ct)
             ?? throw new InvalidOperationException("کلینیک جاری یافت نشد.");
 
-        if (c.SmsProvider == ClinicSmsProvider.None)
-            throw new InvalidOperationException("ابتدا درگاه پیامک را ذخیره کنید (کاوه‌نگار یا طوبی).");
+        var effective = ResolveTestProvider(c, request.Provider);
 
         var mobile = NormalizeMobile09(request.Mobile);
         if (!Mobile09.IsMatch(mobile))
@@ -108,7 +110,7 @@ public sealed class ClinicService(
         var mode = (request.Mode ?? string.Empty).Trim();
         if (mode.Equals(ClinicSmsTestModes.Direct, StringComparison.OrdinalIgnoreCase))
         {
-            if (c.SmsProvider != ClinicSmsProvider.Touba)
+            if (effective != ClinicSmsProvider.Touba)
                 throw new InvalidOperationException("پیامک مستقیم فقط برای طوبی است؛ کاوه‌نگار فقط قالب دارد.");
             var body = (request.PlainBody ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(body))
@@ -116,14 +118,16 @@ public sealed class ClinicService(
             if (body.Length > 900)
                 throw new InvalidOperationException("متن پیامک بیش از حد طولانی است.");
 
-            await sms.SendPlainAsync(mobile, body, ct);
-            logger.LogInformation("تست SMS Direct به {Mobile} (Touba)", MaskMobile(mobile));
+            await EnsureToubaCreds(c);
+            await smsDispatch.SendToubaPlainAsync(
+                mobile, body, c.SmsSenderNumber!, c.ToubaUsername!, c.ToubaPassword!, c.ToubaSendUrl, ct);
+            logger.LogInformation("تست SMS Direct به {Mobile} (Touba, active={Active})", MaskMobile(mobile), c.SmsProvider);
             return new ClinicSmsTestResult(true, ClinicSmsTestModes.Direct, Simulated: false, "پیامک مستقیم ارسال شد.");
         }
 
         if (mode.Equals(ClinicSmsTestModes.ProviderTemplate, StringComparison.OrdinalIgnoreCase))
         {
-            if (c.SmsProvider != ClinicSmsProvider.Kavenegar)
+            if (effective != ClinicSmsProvider.Kavenegar)
                 throw new InvalidOperationException("قالب سامانهٔ درگاه فقط برای کاوه‌نگار است؛ برای طوبی از متن مستقیم یا قالب آماده استفاده کنید.");
             var templateName = (request.ProviderTemplateName ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(templateName))
@@ -137,7 +141,13 @@ public sealed class ClinicService(
             if (tokens.Count == 0)
                 tokens = ["تست"];
 
-            await sms.SendTemplateAsync(mobile, templateName, tokens, ct);
+            await smsDispatch.SendKavenegarTemplateAsync(
+                mobile,
+                templateName,
+                tokens,
+                FirstNonEmpty(c.KavenegarApiKey, kavenegarOptions.Value.ApiKey),
+                FirstNonEmpty(c.SmsSenderNumber, kavenegarOptions.Value.Sender),
+                ct);
             logger.LogInformation("تست SMS ProviderTemplate {Template} به {Mobile}", templateName, MaskMobile(mobile));
             return new ClinicSmsTestResult(true, ClinicSmsTestModes.ProviderTemplate, Simulated: false, "قالب درگاه ارسال شد.");
         }
@@ -154,22 +164,29 @@ public sealed class ClinicService(
 
             var tokenKeys = ClinicSmsTestSamples.ParseTokenKeys(campaign.TokenKeysJson);
 
-            if (c.SmsProvider == ClinicSmsProvider.Touba)
+            if (effective == ClinicSmsProvider.Touba)
             {
                 var body = ClinicSmsTestSamples.FillBodyPreview(campaign.BodyPreview, tokenKeys, mobile);
                 if (string.IsNullOrWhiteSpace(body))
                     throw new InvalidOperationException("پیش‌نمایش قالب پس از جایگذاری خالی است.");
-                await sms.SendPlainAsync(mobile, body, ct);
+                await EnsureToubaCreds(c);
+                await smsDispatch.SendToubaPlainAsync(
+                    mobile, body, c.SmsSenderNumber!, c.ToubaUsername!, c.ToubaPassword!, c.ToubaSendUrl, ct);
                 logger.LogInformation("تست SMS AppTemplate {Code} plain به {Mobile}", campaign.Code, MaskMobile(mobile));
                 return new ClinicSmsTestResult(true, ClinicSmsTestModes.AppTemplate, Simulated: false, $"قالب «{campaign.Title}» ارسال شد.");
             }
 
-            // کاوه‌نگار
             var providerName = (campaign.ProviderTemplateName ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(providerName))
                 throw new InvalidOperationException("این قالب نام قالب کاوه‌نگار (ProviderTemplateName) ندارد.");
             var tokens = ClinicSmsTestSamples.ResolveTokens(tokenKeys, mobile);
-            await sms.SendTemplateAsync(mobile, providerName, tokens, ct);
+            await smsDispatch.SendKavenegarTemplateAsync(
+                mobile,
+                providerName,
+                tokens,
+                FirstNonEmpty(c.KavenegarApiKey, kavenegarOptions.Value.ApiKey),
+                FirstNonEmpty(c.SmsSenderNumber, kavenegarOptions.Value.Sender),
+                ct);
             logger.LogInformation("تست SMS AppTemplate {Code} lookup به {Mobile}", campaign.Code, MaskMobile(mobile));
             return new ClinicSmsTestResult(true, ClinicSmsTestModes.AppTemplate, Simulated: false, $"قالب «{campaign.Title}» ارسال شد.");
         }
@@ -177,8 +194,46 @@ public sealed class ClinicService(
         throw new InvalidOperationException("حالت تست نامعتبر است (AppTemplate / Direct / ProviderTemplate).");
     }
 
+    private static ClinicSmsProvider ResolveTestProvider(Clinic c, string? requestProvider)
+    {
+        ClinicSmsProvider? requested = null;
+        if (!string.IsNullOrWhiteSpace(requestProvider))
+        {
+            requested = ParseProvider(requestProvider.Trim());
+            if (requested == ClinicSmsProvider.None)
+                throw new InvalidOperationException("Provider تست باید کاوه‌نگار یا طوبی باشد.");
+        }
+
+        if (c.SmsProvider != ClinicSmsProvider.None
+            && requested is ClinicSmsProvider rp
+            && rp != c.SmsProvider)
+        {
+            throw new InvalidOperationException(
+                $"درگاه فعال ذخیره‌شده ({c.SmsProvider}) با Provider تست ({rp}) یکی نیست.");
+        }
+
+        var effective = requested ?? c.SmsProvider;
+        if (effective == ClinicSmsProvider.None)
+            throw new InvalidOperationException(
+                "برای تست، فیلد Provider را بفرستید (Touba / Kavenegar) یا درگاه فعال را تنظیم کنید.");
+        return effective;
+    }
+
+    private static Task EnsureToubaCreds(Clinic c)
+    {
+        if (string.IsNullOrWhiteSpace(c.ToubaUsername)
+            || string.IsNullOrWhiteSpace(c.ToubaPassword)
+            || string.IsNullOrWhiteSpace(c.SmsSenderNumber))
+        {
+            throw new InvalidOperationException(
+                "برای تست طوبی، نام کاربری، رمز و خط ارسال را ذخیره کنید (درگاه فعال می‌تواند غیرفعال بماند).");
+        }
+        return Task.CompletedTask;
+    }
+
     private static void ValidateSmsConfig(Clinic c)
     {
+        // فقط هنگام فعال‌سازی تولید اجباری است؛ با None می‌توان اعتبار را برای تست ذخیره کرد
         if (c.SmsProvider == ClinicSmsProvider.Touba)
         {
             if (string.IsNullOrWhiteSpace(c.ToubaUsername))
@@ -212,10 +267,18 @@ public sealed class ClinicService(
         return t;
     }
 
+    private static string? FirstNonEmpty(params string?[] values)
+    {
+        foreach (var v in values)
+        {
+            if (!string.IsNullOrWhiteSpace(v)) return v.Trim();
+        }
+        return null;
+    }
+
     private static string NormalizeMobile09(string? mobile)
     {
         var m = (mobile ?? string.Empty).Trim().Replace(" ", "").Replace("-", "");
-        // ارقام فارسی/عربی → لاتین
         m = string.Concat(m.Select(ch => ch switch
         {
             >= '۰' and <= '۹' => (char)('0' + (ch - '۰')),

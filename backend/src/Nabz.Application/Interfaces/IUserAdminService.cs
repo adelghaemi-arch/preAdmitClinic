@@ -15,6 +15,7 @@ public interface IUserAdminService
     Task<IReadOnlyList<PlatformUserDto>> ListUsersAsync(
         bool actorIsPlatformAdmin,
         bool includeInactiveContracts = false,
+        string? q = null,
         CancellationToken ct = default);
     Task<PagedResultDto<PlatformUserDto>> ListUsersPagedAsync(
         bool actorIsPlatformAdmin,

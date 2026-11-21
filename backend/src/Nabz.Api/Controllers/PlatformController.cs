@@ -15,7 +15,11 @@ namespace Nabz.Api.Controllers;
 [ApiController]
 [Authorize(Roles = "Platform")]
 [Route("api/platform")]
-public sealed class PlatformController(IPlatformService platform, IAuthService auth, ISmsCampaignTemplateService smsTemplates) : ControllerBase
+public sealed class PlatformController(
+    IPlatformService platform,
+    IAuthService auth,
+    ISmsCampaignTemplateService smsTemplates,
+    IApiAbuseGuardService apiAbuse) : ControllerBase
 {
     [HttpPost("clinic-status")]
     public async Task<IActionResult> ClinicStatus([FromBody] ClinicStatusBody body, CancellationToken ct)
@@ -107,6 +111,24 @@ public sealed class PlatformController(IPlatformService platform, IAuthService a
     {
         await platform.ReviewMultiSessionAsync(body.AlertId, body.Status, body.Note, ActorName(), ct);
         return Ok(new { ok = true });
+    }
+
+    [HttpGet("api-abuse")]
+    public async Task<IActionResult> ListApiAbuse([FromQuery] bool? acknowledged, [FromQuery] int take = 50, CancellationToken ct = default)
+        => Ok(await apiAbuse.ListIncidentsAsync(acknowledged, take, ct));
+
+    [HttpPost("api-abuse/{id:guid}/acknowledge")]
+    public async Task<IActionResult> AcknowledgeApiAbuse(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await apiAbuse.AcknowledgeAsync(id, ActorName(), ct);
+            return Ok(new { ok = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { ok = false, error = ex.Message });
+        }
     }
 
     [HttpPost("users/{userId:guid}/reset-access")]

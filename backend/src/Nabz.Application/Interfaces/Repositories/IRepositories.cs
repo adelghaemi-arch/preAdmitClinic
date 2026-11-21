@@ -28,8 +28,8 @@ public interface IUserRepository
     Task AddAsync(User user, CancellationToken ct = default);
     Task<List<UserRoleAssignment>> ListRolesAsync(Guid userId, CancellationToken ct = default);
     void AddRole(UserRoleAssignment assignment);
-    /// <summary>فهرست کاربران؛ در صورت excludeHavingRole کاربران دارای آن نقش حذف می‌شوند.</summary>
-    Task<List<User>> ListUsersAsync(AppRole? excludeHavingRole = null, int take = 500, CancellationToken ct = default);
+    /// <summary>فهرست کاربران؛ در صورت excludeHavingRole کاربران دارای آن نقش حذف می‌شوند. q روی نام/نام‌خانوادگی/موبایل/کدملی.</summary>
+    Task<List<User>> ListUsersAsync(AppRole? excludeHavingRole = null, int take = 500, string? q = null, CancellationToken ct = default);
     Task<(List<User> Items, int TotalCount)> ListUsersPagedAsync(
         AppRole? excludeHavingRole, int skip, int take, string? q, CancellationToken ct = default);
 }
@@ -186,4 +186,11 @@ public interface ISmsCampaignTemplateRepository
     Task<SmsCampaignTemplate?> GetByCodeAsync(string code, CancellationToken ct = default);
     Task<List<SmsCampaignTemplate>> ListAsync(bool activeOnly, CancellationToken ct = default);
     Task AddAsync(SmsCampaignTemplate template, CancellationToken ct = default);
+}
+
+public interface IApiAbuseRepository
+{
+    Task AddAsync(ApiAbuseIncident incident, CancellationToken ct = default);
+    Task<ApiAbuseIncident?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<List<ApiAbuseIncident>> ListAsync(bool? acknowledged, int take, CancellationToken ct = default);
 }

@@ -4,7 +4,7 @@
  Parent Dependencies: types/clinic, VaultFileThumbGrid, api/evidence vault, platform-actions via onAction
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   CheckCircle2,
@@ -16,6 +16,7 @@ import {
   Package,
   Plug,
   ScrollText,
+  Search,
   Settings2,
   ShieldAlert,
   Smartphone,
@@ -52,7 +53,7 @@ import type {
 } from "@/types/clinic";
 import { IranDigitField } from "@/components/IranDigitField";
 import { normalizeMobile, clampNationalIdInput } from "@/lib/person-identity";
-import { formatFaDateTime, formatFaTime, toFaDigits } from "@/lib/persian";
+import { formatFaDateTime, formatFaTime, toFaDigits, toLatinDigits } from "@/lib/persian";
 
 export type PlatformSection =
   | "dashboard"
@@ -63,7 +64,7 @@ export type PlatformSection =
   | "integrations"
   | "audit";
 
-type FraudQueueTab = "camera" | "sessions" | "vault";
+type FraudQueueTab = "camera" | "sessions" | "vault" | "abuse";
 
 const FLAG_LABELS: Record<keyof PlatformSettings["featureFlags"], string> = {
   fraudWatch: "ضدتقلب دوربین",
@@ -251,6 +252,12 @@ export function PlatformAdminPanel({
   const [includeInactiveContracts, setIncludeInactiveContracts] = useState(false);
   const [usersOverride, setUsersOverride] = useState<PlatformUserProfile[] | null>(null);
   const [usersReloadBusy, setUsersReloadBusy] = useState(false);
+  const [userSearchDraft, setUserSearchDraft] = useState("");
+  const [userSearchApplied, setUserSearchApplied] = useState("");
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPageSize, setUsersPageSize] = useState<ListPageSize>(20);
+  const userSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userSearchReqRef = useRef(0);
   const roleOptions = isClinicScope ? CLINIC_ROLE_OPTIONS : PRIMARY_ROLE_OPTIONS;
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState(platform.fraudSessions[0]?.id ?? "");
@@ -283,33 +290,59 @@ export function PlatformAdminPanel({
   const authSessions = platform.authSessions ?? [];
   const multiSessionAlerts = platform.multiSessionAlerts ?? [];
 
-  useEffect(() => {
-    if (!includeInactiveContracts) {
-      setUsersOverride(null);
-      return;
-    }
-    let cancelled = false;
-    setUsersReloadBusy(true);
-    void fetchPlatformUsers(true)
-      .then((rows) => {
-        if (cancelled) return;
+  const normalizeUserSearchTerm = (raw: string) => toLatinDigits(raw).trim();
+
+  const reloadUsersFromServer = useCallback(
+    async (searchTerm: string, inactive: boolean) => {
+      const term = normalizeUserSearchTerm(searchTerm);
+      const reqId = ++userSearchReqRef.current;
+      setUsersReloadBusy(true);
+      try {
+        if (!term && !inactive) {
+          if (reqId === userSearchReqRef.current) setUsersOverride(null);
+          return;
+        }
+        const rows = await fetchPlatformUsers(inactive, term || null);
+        if (reqId !== userSearchReqRef.current) return;
         setUsersOverride(
           rows.map((u) => ({
             ...u,
             clinicId: u.clinicId || defaultClinicId,
           })),
         );
-      })
-      .catch(() => {
-        if (!cancelled) setUsersOverride(null);
-      })
-      .finally(() => {
-        if (!cancelled) setUsersReloadBusy(false);
-      });
+        setUsersPage(1);
+      } catch {
+        if (reqId === userSearchReqRef.current && !term && !inactive) setUsersOverride(null);
+      } finally {
+        if (reqId === userSearchReqRef.current) setUsersReloadBusy(false);
+      }
+    },
+    [defaultClinicId]
+  );
+
+  const applyUserSearch = useCallback((raw: string) => {
+    if (userSearchTimerRef.current) {
+      clearTimeout(userSearchTimerRef.current);
+      userSearchTimerRef.current = null;
+    }
+    setUserSearchApplied(normalizeUserSearchTerm(raw));
+  }, []);
+
+  useEffect(() => {
+    void reloadUsersFromServer(userSearchApplied, includeInactiveContracts);
+  }, [includeInactiveContracts, platform.users, reloadUsersFromServer, userSearchApplied]);
+
+  useEffect(() => {
+    if (userSearchTimerRef.current) clearTimeout(userSearchTimerRef.current);
+    const draft = userSearchDraft;
+    if (normalizeUserSearchTerm(draft) === userSearchApplied) return;
+    userSearchTimerRef.current = setTimeout(() => {
+      applyUserSearch(draft);
+    }, 3000);
     return () => {
-      cancelled = true;
+      if (userSearchTimerRef.current) clearTimeout(userSearchTimerRef.current);
     };
-  }, [includeInactiveContracts, platform.users, defaultClinicId]);
+  }, [userSearchDraft, userSearchApplied, applyUserSearch]);
 
   // فریم نشست فقط وقتی تب دوربین باز است و نشست انتخاب شده
   useEffect(() => {
@@ -363,8 +396,6 @@ export function PlatformAdminPanel({
     () => (isClinicScope ? usersSource.filter((u) => u.primaryRole !== "platform") : usersSource),
     [isClinicScope, usersSource],
   );
-  const [usersPage, setUsersPage] = useState(1);
-  const [usersPageSize, setUsersPageSize] = useState<ListPageSize>(20);
   const pagedUsers = useMemo(
     () => slicePage(visibleUsers, usersPage, usersPageSize),
     [visibleUsers, usersPage, usersPageSize]
@@ -606,8 +637,7 @@ export function PlatformAdminPanel({
   return (
     <div className="space-y-5">
       <header className="rounded-2xl border border-slate-200 bg-gradient-to-l from-slate-50 to-white p-5">
-        <p className="text-[10px] font-medium text-teal-700">کنترل پلتفرم</p>
-        <h1 className="mt-1 text-base font-semibold text-slate-900">
+        <h1 className="text-base font-semibold text-slate-900">
           {section === "dashboard" && "داشبورد پلتفرم"}
           {section === "users" && "مدیریت کاربران"}
           {section === "fraud" && "بازبینی ضدتقلب"}
@@ -616,13 +646,54 @@ export function PlatformAdminPanel({
           {section === "integrations" && "یکپارچه‌سازی‌ها"}
           {section === "audit" && "ممیزی و ردپای اقدامات"}
         </h1>
-        <p className="mt-1.5 max-w-2xl text-[11px] leading-6 text-slate-500">
-          {section === "users"
-            ? "مدیریت حساب‌ها: مشخصات، نشست‌های فعال و در صورت نیاز بررسی موردی GPS و ضدتقلب."
-            : section === "fraud"
+        {section !== "users" && (
+          <p className="mt-1.5 max-w-2xl text-[11px] leading-6 text-slate-500">
+            {section === "fraud"
               ? "صف بازبینی هویت دوربین و هشدار حساب‌هایی با دو یا چند نشست هم‌زمان."
               : "این پنل جدا از ادمین کلینیک است: کاربران، ضدتقلب و سلامت فنی سامانه."}
-        </p>
+          </p>
+        )}
+        {section === "users" && (
+          <form
+            className="mt-3 flex flex-wrap items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              applyUserSearch(userSearchDraft);
+            }}
+          >
+            <label className="relative min-w-[220px] flex-1">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 z-[1] h-3.5 w-3.5 -translate-y-1/2 text-slate-400" aria-hidden />
+              <AppInput
+                value={userSearchDraft}
+                onChange={(e) => setUserSearchDraft(e.target.value)}
+                className="app-input w-full py-2 pl-9 pr-3 text-[11px]"
+                placeholder="جستجو: نام، نام‌خانوادگی، موبایل، کدملی"
+                aria-label="جستجوی کاربران"
+                data-testid="platform-user-search"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={usersReloadBusy || busy}
+              className="secondary-button h-9 shrink-0 px-3 text-[11px]"
+            >
+              {usersReloadBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "جستجو"}
+            </button>
+            {userSearchApplied ? (
+              <button
+                type="button"
+                disabled={usersReloadBusy || busy}
+                className="text-[10px] text-slate-500 underline-offset-2 hover:underline"
+                onClick={() => {
+                  setUserSearchDraft("");
+                  applyUserSearch("");
+                }}
+              >
+                پاک کردن فیلتر
+              </button>
+            ) : null}
+          </form>
+        )}
       </header>
 
       {section === "dashboard" && (
@@ -700,7 +771,8 @@ export function PlatformAdminPanel({
             <ul className="space-y-1">
               {pagedUsers.map((u) => {
                 const thumb = u.profilePhotoDataUrl;
-                const active = !creatingUser && selectedUser?.id === u.id;
+                const selected = !creatingUser && selectedUser?.id === u.id;
+                const suspended = u.isActive === false;
                 return (
                   <li key={u.id}>
                     <button
@@ -711,20 +783,29 @@ export function PlatformAdminPanel({
                         setUserTab("profile");
                       }}
                       className={`flex w-full items-center gap-2 rounded-xl px-2 py-2 text-right text-[11px] ${
-                        active ? "bg-teal-50 text-teal-800" : "hover:bg-slate-50 text-slate-700"
+                        selected
+                          ? "bg-teal-50 text-teal-800"
+                          : suspended
+                            ? "bg-[#f0e6c8]/60 text-[#6b5a2a] hover:bg-[#f0e6c8]"
+                            : "text-slate-700 hover:bg-slate-50"
                       }`}
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-[10px] font-semibold text-slate-500">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold ${
+                          suspended ? "bg-[#e8d9a8] text-[#6b5a2a]" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
                         {thumb ? <img src={thumb} alt="" className="h-full w-full object-cover" /> : u.fullName.slice(0, 1)}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{u.fullName}</span>
-                        <span className="block truncate text-[10px] text-slate-400">
-                          {u.roleLabel || roleOptions.find((r) => r.id === u.primaryRole)?.label} ·{" "}
-                          {u.isActive === false ? "تعلیق" : "فعال"}
-                        </span>
-                        <span className="block truncate text-[9px] text-slate-400">
-                          {u.nationalId ? toFaDigits(u.nationalId) : "بدون کدملی"} · {formatUserContractsLine(u)}
+                        <span
+                          className={`block truncate text-[9px] ${
+                            suspended ? "text-[#8a7340]" : "text-slate-400"
+                          }`}
+                        >
+                          {formatUserContractsLine(u)}
+                          {suspended ? " · تعلیق" : ""}
                         </span>
                       </span>
                     </button>
@@ -1178,6 +1259,16 @@ export function PlatformAdminPanel({
               [
                 ["sessions", "نشست‌های هم‌زمان", multiSessionAlerts.filter((a) => a.reviewStatus === "pending").length],
                 ["camera", "دوربین هویت", platform.fraudSessions.filter((s) => s.reviewStatus === "pending").length],
+                // سوءاستفاده API فقط ادمین کل (UC-PLT-17)
+                ...(!isClinicScope
+                  ? ([
+                      [
+                        "abuse",
+                        "سوءاستفاده API",
+                        (platform.apiAbuseIncidents ?? []).filter((i) => !i.acknowledged).length,
+                      ],
+                    ] as const)
+                  : []),
                 // خزانه شواهد فقط ادمین کل — ادمین کلینیک حتی لیست ندارد
                 ...(!isClinicScope ? ([["vault", "خزانه فایل", 0]] as const) : []),
               ] as const
@@ -1504,6 +1595,59 @@ export function PlatformAdminPanel({
             </div>
           )}
         </div>
+          )}
+
+          {fraudTab === "abuse" && !isClinicScope && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="mb-3 text-[11px] text-slate-500">
+                کاربرانی که با تکرار بی‌خودی API تعلیق شده‌اند (UC-PLT-17). پس از بررسی می‌توانید ثبت را ببندید یا از بخش کاربران دوباره فعال کنید.
+              </p>
+              <ul className="space-y-2">
+                {(platform.apiAbuseIncidents ?? []).map((inc) => (
+                  <li
+                    key={inc.id}
+                    className="rounded-xl border border-slate-100 px-3 py-2 text-[11px] text-slate-700"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-medium">
+                        {inc.userName || inc.userMobile || inc.clientIp || "ناشناس"}
+                        {!inc.userIsActive && (
+                          <span className="mr-2 rounded bg-rose-50 px-1.5 py-0.5 text-[9px] text-rose-700">
+                            معلق
+                          </span>
+                        )}
+                        {inc.acknowledged && (
+                          <span className="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-[9px] text-slate-500">
+                            بررسی‌شده
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-[10px] text-slate-400">{toFaDigits(inc.at)}</span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-slate-500" dir="ltr">
+                      {inc.dominantFingerprint} · same={toFaDigits(inc.samePathCount)} · total=
+                      {toFaDigits(inc.totalCount)}
+                      {inc.smsNotified ? " · SMS✓" : ""}
+                    </p>
+                    {!inc.acknowledged && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="mt-2 rounded-lg border border-teal-200 px-2 py-1 text-[10px] text-teal-800 hover:bg-teal-50 disabled:opacity-50"
+                        onClick={() =>
+                          void onAction({ type: "PLATFORM_ACK_API_ABUSE", incidentId: inc.id })
+                        }
+                      >
+                        ثبت بررسی
+                      </button>
+                    )}
+                  </li>
+                ))}
+                {!(platform.apiAbuseIncidents ?? []).length && (
+                  <li className="px-2 text-[11px] text-slate-400">حادثه‌ای ثبت نشده است.</li>
+                )}
+              </ul>
+            </div>
           )}
 
           {fraudTab === "vault" && !isClinicScope && (

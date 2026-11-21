@@ -33,11 +33,12 @@ public sealed class UserAdminService(
     public async Task<IReadOnlyList<PlatformUserDto>> ListUsersAsync(
         bool actorIsPlatformAdmin,
         bool includeInactiveContracts = false,
+        string? q = null,
         CancellationToken ct = default)
     {
         // ادمین کلینیک اصلاً نباید از وجود ادمین‌های کل مطلع شود
         var exclude = actorIsPlatformAdmin ? (AppRole?)null : AppRole.Platform;
-        var list = await users.ListUsersAsync(exclude, 500, ct);
+        var list = await users.ListUsersAsync(exclude, 500, q, ct);
         var clinicFilter = await ResolveClinicFilterAsync(actorIsPlatformAdmin, ct);
         return await MapManyAsync(list, clinicFilter, includeInactiveContracts, ct);
     }

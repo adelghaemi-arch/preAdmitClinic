@@ -99,7 +99,7 @@
 | UC-ADM-18 | UT-BE-ADM-18 | UT-FE-ADM-18 | SMK-API-ADM-18 | اصلی round-trip؛ **1x** بسته خالی؛ **3x** gender نامعتبر | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm18_FormPackageIoTests.cs` | `frontend/src/lib/__tests__/uc-adm-18.form-package.test.ts` |
 | UC-ADM-19 | UT-BE-ADM-19 | UT-FE-ADM-19 | — | اصلی import کاتالوگ CA؛ evaluator gender همه / marital / age | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm19_FormMatrixCatalogTests.cs` | `frontend/src/lib/__tests__/uc-form-engine.test.ts` |
 | UC-ADM-21 | UT-BE-ADM-21 | — | — | ماسک secret؛ اعتبارسنجی طوبی | `…/Admin/UcAdm21_ClinicSmsSettingsTests.cs` | — |
-| UC-ADM-23 | UT-BE-ADM-23 | UT-FE-ADM-23 | — | AppTemplate/Direct/ProviderTemplate؛ **1x** None؛ **3x** mismatch؛ **5x** بدون ProviderTemplateName | `…/Admin/UcAdm23_ClinicSmsTestTests.cs` | `frontend/src/lib/__tests__/uc-adm-23.sms-test-gates.test.ts` |
+| UC-ADM-23 | UT-BE-ADM-23 | UT-FE-ADM-23 | — | AppTemplate/Direct/ProviderTemplate؛ تست با None+`provider`؛ **1x** بدون Provider؛ **3x** mismatch حالت؛ **7x** مغایرت provider | `…/Admin/UcAdm23_ClinicSmsTestTests.cs` | `frontend/src/lib/__tests__/uc-adm-23.sms-test-gates.test.ts` |
 
 ---
 
@@ -140,6 +140,8 @@
 | UC-PLT-13 | UT-BE-PLT-13 | — | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Platform/UcPlt13_FactoryResetTests.cs` | — |
 | UC-PLT-14 | UT-BE-PLT-14 | UT-FE-PLT-14 | — | خزانه فایل | `…/Platform/UcPlt14_FileVaultTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
 | UC-PLT-15 | UT-BE-PLT-15 | UT-FE-PLT-15 | SMK-API-PLT-15 | FixedOtp+1؛ **3a** پایه خام رد؛ اولویت روی Patient هم‌شماره | `…/Platform/UcPlt15_PlatformAuthOtpTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
+| UC-PLT-16 | UT-BE-PLT-16 | UT-FE-PLT-16 | — | قالب پیامک گروهی | `…/Platform/` (در صورت وجود) | `frontend/src/lib/__tests__/uc-plt.test.ts` |
+| UC-PLT-17 | UT-BE-PLT-17 | UT-FE-PLT-17 | SMK-API-PLT-17 | soft ۴۲۹؛ hard تعلیق+SMS؛ Platform معاف؛ FixedOtp بدون SMS؛ burst مشروع بدون hard | `…/Platform/UcPlt17_ApiAbuseGuardTests.cs` | `frontend/src/lib/__tests__/uc-plt.test.ts` |
 
 **Smoke مشترک Platform:** `backend/tests/Nabz.Api.Tests/Smoke/AuthOtpSmokeTests.cs` — `PlatformAdmin_Login_HasPlatformRole` (ورود `09133752696` با FixedOtp+1 + `GET /api/auth/me`؛ هم‌تراز TC-AUTH-06 / UC-PLT-15)
 

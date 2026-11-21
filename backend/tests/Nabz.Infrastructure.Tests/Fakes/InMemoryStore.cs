@@ -39,6 +39,7 @@ public sealed class InMemoryStore
     public List<PlatformSettings> PlatformSettings { get; } = [];
     public List<PlatformAuditEntry> PlatformAudit { get; } = [];
     public List<SmsCampaignTemplate> SmsCampaignTemplates { get; } = [];
+    public List<ApiAbuseIncident> ApiAbuseIncidents { get; } = [];
 
     /// <summary>همگام‌سازی navigationهای تغییر یافته در حافظه با لیست‌های flat برای fake repository.</summary>
     public void SyncNavigation()

@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { PLATFORM_ACTION_NAMES } from "@/lib/platform-actions";
 import {
   allowedPagesFor,
   PLATFORM_PAGES,
@@ -100,5 +101,19 @@ describe("UC-PLT-15", () => {
     const demos = listOtpDemoLogins();
     expect(demos.some((d) => d.phone === "09133752696")).toBe(false);
     expect(demos.some((d) => d.name === "ادمین کل")).toBe(false);
+  });
+});
+
+describe("UC-PLT-17", () => {
+  it("صفحه نظارت و اکشن acknowledge سوءاستفاده برای platform موجود است", () => {
+    expect(allowedPagesFor("platform")).toContain("platform-fraud");
+    expect(PLATFORM_ACTION_NAMES.has("PLATFORM_ACK_API_ABUSE")).toBe(true);
+  });
+
+  it("ApiError برای ۴۲۹ پیام فارسی دارد", async () => {
+    const { ApiError } = await import("@/lib/api/http");
+    const err = new ApiError("درخواست‌های تکراری زیاد است؛ کمی بعد تلاش کنید.", 429);
+    expect(err.status).toBe(429);
+    expect(err.message).toContain("تکراری");
   });
 });

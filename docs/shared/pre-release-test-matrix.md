@@ -184,6 +184,7 @@ flowchart LR
 | TC-PLT-11 | UC-PLT-11 | platform | — | ثبت و مشاهده ممیزی | رویداد در لیست audit | |
 | TC-PLT-12 | UC-PLT-12 | platform | — | سلامت فنی UI | صفحه بدون خطا لود می‌شود | |
 | TC-PLT-13 | UC-PLT-13 | platform | `09133752696` + OTP | ریست فکتوری از تنظیمات | DB+uploads پاک؛ seed؛ ادمین کل دوباره لاگین؛ یک‌بار DROP قبل از اولین بیلد اسکواش | |
+| TC-PLT-17 | UC-PLT-17 | platform | کاربر غیر Platform | تکرار مصنوعی همان API تا hard؛ بررسی فهرست و تعلیق | حساب معلق؛ ردیف در api-abuse؛ SMS فقط اگر FixedOtp خالی و قالب ست باشد | |
 
 ---
 

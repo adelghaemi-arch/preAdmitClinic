@@ -181,12 +181,12 @@ Smoke اجباری: `CorsPreflightSmokeTests` در `Nabz.Api.Tests` (مسیر `p
 
 ## ماتریس OTP / SMS روی سرور
 
-1. `Auth__FixedOtp` پر → کد ثابت؛ SMS ارسال نمی‌شود.
+1. **`Auth__FixedOtp` پر → اولویت مطلق env محلی:** کد ثابت؛ **هیچ** ارسال واقعی (OTP، کمپین، تست UC-ADM-23) حتی اگر ادمین `Clinic.SmsProvider` را کاوه‌نگار/طوبی کرده باشد. قفل در `AuthService` + `ClinicRoutingSmsSender` + `ClinicSmsDispatch`.
 2. وگرنه `Clinic.SmsProvider` از تنظیمات بیمارستان (UC-ADM-21):
    - `Kavenegar` → ApiKey کلینیک یا fallback `Kavenegar__*` از env؛ قالب OTP/Invite.
    - `Touba` → URL API `sms.tsms.ir/url/tsms.php` با Username/Password/خط ارسال؛ OTP از `ToubaOtpMessageTemplate`؛ کمپین از `BodyPreview`.
    - `None` بدون env کاوه‌نگار → پیکربندی ناقص.
-3. برای **prod:** FixedOtp خالی + درگاه کلینیک کامل.
+3. برای **prod:** FixedOtp خالی + درگاه کلینیک کامل. برای تست واقعی درگاه روی لوکال، موقتاً FixedOtp را خالی کنید.
 
 ## Seed و migrate
 
