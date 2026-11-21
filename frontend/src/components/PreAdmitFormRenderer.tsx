@@ -1,7 +1,7 @@
 /*
  File: frontend/src/components/PreAdmitFormRenderer.tsx
- Description: پرسشنامه پیش‌پذیرش؛ گیت عکس اجباری؛ autosave سریال draft
- Parent Dependencies: form-engine, clinic types, ApiError
+ Description: پرسشنامه پیش‌پذیرش؛ hydrate draft از mine قبل از photo gate؛ draft فقط در سطح بخش
+ Parent Dependencies: form-engine, api/forms, clinic types, ApiError
  */
 
 import { AppInput, AppTextarea } from "@/components/AppInput";
@@ -29,8 +29,10 @@ import type {
 import { ApiError } from "@/lib/api/http";
 import { beginOwnerEvidenceGps, stopOwnerGpsWatch } from "@/lib/owner-gps-watch";
 import {
+  answersForSection,
   buildContext,
   getAnswer,
+  hydrateFormAnswersWithPrefill,
   isFormDateItem,
   isItemComplete,
   isItemVisible,
@@ -45,6 +47,7 @@ import {
   validateForm,
   visibleSections,
 } from "@/lib/form-engine";
+import { fetchMyFormResponse } from "@/lib/api/forms";
 import { normalizeMaritalStatus } from "@/lib/marital-status";
 import { toFaDigits } from "@/lib/persian";
 import { iranLocalDayOffset } from "@/lib/date-iso";
@@ -192,39 +195,6 @@ function layoutBaseItems(items: FormItemDefinition[]): BaseLayoutRow[] {
     if (!used.has(item.id)) rows.push({ kind: "full", item });
   }
   return rows;
-}
-
-function ensureFormDateAnswers(
-  form: FormDefinition,
-  answers: FormAnswer[],
-  patient: PatientFullDto
-): FormAnswer[] {
-  const byCode = new Map(answers.map((a) => [a.itemCode, a]));
-  let changed = false;
-  for (const item of form.items) {
-    if (!isFormDateItem(item)) continue;
-    const today = prefillValue(item, patient);
-    const existing = byCode.get(item.code);
-    if (!existing) {
-      byCode.set(item.code, { itemCode: item.code, valueCode: null, valueRaw: today, notes: "" });
-      changed = true;
-      continue;
-    }
-    if (!existing.valueRaw?.trim()) {
-      byCode.set(item.code, { ...existing, valueRaw: today });
-      changed = true;
-    }
-  }
-  if (!changed) return answers;
-  return form.items.map(
-    (item) =>
-      byCode.get(item.code) ?? {
-        itemCode: item.code,
-        valueCode: null,
-        valueRaw: prefillValue(item, patient),
-        notes: "",
-      }
-  );
 }
 
 function ItemField({
@@ -408,16 +378,28 @@ export function PreAdmitFormRenderer({
   const [saveHint, setSaveHint] = useState("");
   const [invalidCodes, setInvalidCodes] = useState<string[]>([]);
   const [localPhotoUrl, setLocalPhotoUrl] = useState<string | null>(null);
+  // تا پاسخ mine نیاید، prefill خالی flash نشود (مخصوصاً دستگاه دوم)
+  const [draftHydrating, setDraftHydrating] = useState(false);
   const answersRef = useRef<FormAnswer[]>([]);
   const formTopRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollCode = useRef<string | null>(null);
   const skipNextTopScroll = useRef(false);
   const navScrollReady = useRef(false);
   const hydratedKey = useRef("");
-  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // جلوگیری از POST موازی autosave که طوفان ۵۰۰/CORS می‌سازد
+  // جلوگیری از POST موازی هنگام ترک بخش / ذخیره موقت
   const draftInFlight = useRef(false);
   const draftQueued = useRef<FormAnswer[] | null>(null);
+  // فریم ضدتقلب تا تأیید پرتره فقط محلی؛ آپلود دسته‌ای با UPDATE_PATIENT_PHOTO
+  const fraudFrameQueue = useRef<
+    Array<{
+      sessionId: string;
+      wrapKey: string;
+      photoDataUrl: string;
+      lat?: number;
+      lon?: number;
+      accuracy?: number;
+    }>
+  >([]);
 
   useEffect(() => {
     answersRef.current = answers;
@@ -427,36 +409,80 @@ export function PreAdmitFormRenderer({
     if (!form) {
       setAnswers([]);
       hydratedKey.current = "";
+      setDraftHydrating(false);
       return;
     }
     const key = `${patient.id}:${form.id}`;
     if (hydratedKey.current === key) return;
-    hydratedKey.current = key;
+
     setSectionIndex(0);
     setOnScreeningPhase(false);
     setOnDocumentsPhase(false);
     setInvalidCodes([]);
     setLocalPhotoUrl(null);
-    const existing = latestResponseForForm(patient.formResponses, form.id);
-    if (existing?.answers?.length) {
-      setAnswers(ensureFormDateAnswers(form, existing.answers, patient));
+
+    const localExisting = latestResponseForForm(patient.formResponses, form.id);
+    const applyLocalOrPrefill = () => {
+      setAnswers(
+        hydrateFormAnswersWithPrefill(form, patient, localExisting?.answers)
+      );
+    };
+
+    // فقط مالک در حالت ویرایش draft سرور را می‌خواند؛ readOnly از snapshot محلی
+    const serverPatientId = patient.serverId?.trim();
+    if (readOnly || !serverPatientId) {
+      hydratedKey.current = key;
+      applyLocalOrPrefill();
+      setDraftHydrating(false);
       return;
     }
-    setAnswers(
-      form.items.map((item) => ({
-        itemCode: item.code,
-        valueCode: null,
-        valueRaw: prefillValue(item, patient),
-        notes: "",
-      }))
-    );
-  }, [form, patient.id, patient.formResponses, patient]);
 
-  useEffect(() => {
+    let cancelled = false;
+    setDraftHydrating(true);
+    // اگر snapshot محلی answers دارد، فوراً نشان بده تا flash خالی نباشد؛ سپس mine جایگزین می‌کند
+    if (localExisting?.answers?.length) {
+      setAnswers(hydrateFormAnswersWithPrefill(form, patient, localExisting.answers));
+    }
+
+    (async () => {
+      try {
+        const mine = await fetchMyFormResponse(serverPatientId, form.id);
+        if (cancelled) return;
+        // answers سرور بر prefill و حتی snapshot محلی اولویت دارند
+        setAnswers(
+          hydrateFormAnswersWithPrefill(form, patient, mine?.answers?.length ? mine.answers : localExisting?.answers)
+        );
+        if (mine?.answers?.length) {
+          void onAction({
+            action: "HYDRATE_FORM_RESPONSE",
+            patientId: patient.id,
+            serverPatientId,
+            formId: form.id,
+            formCode: mine.formCode || form.code,
+            status: mine.status,
+            answers: mine.answers,
+            completedAt: mine.submittedAt,
+            silent: true,
+          }).catch(() => {
+            /* patch محلی اختیاری — شکست hydrate UI را متوقف نمی‌کند */
+          });
+        }
+      } catch {
+        if (!cancelled) applyLocalOrPrefill();
+      } finally {
+        if (!cancelled) {
+          hydratedKey.current = key;
+          setDraftHydrating(false);
+        }
+      }
+    })();
+
     return () => {
-      if (draftTimer.current) clearTimeout(draftTimer.current);
+      cancelled = true;
     };
-  }, []);
+    // onAction عمداً در deps نیست — ناپایداری والد نباید mine را کنسل‌لوپ کند
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate فقط با تعویض پرونده/فرم
+  }, [form, patient.id, patient.serverId, patient.formResponses, readOnly]);
 
   useEffect(() => {
     if (!navScrollReady.current) {
@@ -541,10 +567,18 @@ export function PreAdmitFormRenderer({
     );
   const invalidSet = useMemo(() => new Set(invalidCodes), [invalidCodes]);
 
-  const persistDraft = async (nextAnswers: FormAnswer[], quiet = true) => {
+  // فاز مدارک آیتم فرم ندارد؛ draft فقط برای بخش سوالات
+  const activeDraftSectionId = (): string | null => {
+    if (onDocumentsPhase) return null;
+    if (onScreeningPhase) return screeningSection?.id ?? null;
+    return sections[sectionIndex]?.id ?? null;
+  };
+
+  const persistDraft = async (sectionAnswers: FormAnswer[], quiet = true) => {
     if (!form || readOnly || submitted) return;
+    if (sectionAnswers.length === 0) return;
     if (draftInFlight.current) {
-      draftQueued.current = nextAnswers;
+      draftQueued.current = sectionAnswers;
       return;
     }
     draftInFlight.current = true;
@@ -558,10 +592,9 @@ export function PreAdmitFormRenderer({
         formId: form.id,
         serverFormId: form.id,
         mode: "draft",
-        answers: nextAnswers,
+        answers: sectionAnswers,
         silent: true,
       });
-      // Keep a subtle inline hint only; never toast on autosave.
       setSaveHint("");
       if (!quiet) setMessage("پیش‌نویس ذخیره شد.");
     } catch (e) {
@@ -581,19 +614,11 @@ export function PreAdmitFormRenderer({
     }
   };
 
-  const scheduleDraftSave = (nextAnswers: FormAnswer[]) => {
-    if (draftTimer.current) clearTimeout(draftTimer.current);
-    draftTimer.current = setTimeout(() => {
-      void persistDraft(nextAnswers, true);
-    }, 650);
-  };
-
   const updateItem = (item: FormItemDefinition, next: FormAnswer) => {
+    // فقط state محلی؛ ارسال به سرور هنگام ترک بخش / ذخیره موقت
     setAnswers((prev) => {
       const merged = upsertAnswer(prev, next);
-      const synced = form ? syncSkippedAnswers(form, merged, buildContext(patient, merged, form)) : merged;
-      scheduleDraftSave(synced);
-      return synced;
+      return form ? syncSkippedAnswers(form, merged, buildContext(patient, merged, form)) : merged;
     });
     setInvalidCodes((prev) => prev.filter((c) => c !== item.code));
     setError("");
@@ -601,11 +626,20 @@ export function PreAdmitFormRenderer({
   };
 
   const flushDraft = async () => {
-    if (draftTimer.current) {
-      clearTimeout(draftTimer.current);
-      draftTimer.current = null;
+    if (!form) return;
+    const sectionId = activeDraftSectionId();
+    if (!sectionId) return;
+    await persistDraft(answersForSection(form, sectionId, answersRef.current), true);
+  };
+
+  const saveTempDraft = async () => {
+    if (!form) return;
+    const sectionId = activeDraftSectionId();
+    if (!sectionId) {
+      setMessage("در این مرحله پاسخ سوالی برای ذخیره موقت نیست.");
+      return;
     }
-    await persistDraft(answersRef.current, true);
+    await persistDraft(answersForSection(form, sectionId, answersRef.current), false);
   };
 
   const missingCodesForItems = (items: FormItemDefinition[], nextAnswers = answers) =>
@@ -782,10 +816,6 @@ export function PreAdmitFormRenderer({
 
   const persistSubmit = async () => {
     if (!form || readOnly) return;
-    if (draftTimer.current) {
-      clearTimeout(draftTimer.current);
-      draftTimer.current = null;
-    }
     setSaving(true);
     setError("");
     setMessage("");
@@ -815,6 +845,30 @@ export function PreAdmitFormRenderer({
     }
   };
 
+  const flushFraudFrameQueue = async () => {
+    const queued = fraudFrameQueue.current.splice(0, fraudFrameQueue.current.length);
+    for (const frame of queued) {
+      try {
+        await onAction({
+          action: "CAPTURE_FRAUD_FRAME",
+          patientId: patient.id,
+          serverPatientId: patient.serverId ?? undefined,
+          userId,
+          sessionId: frame.sessionId,
+          wrapKey: frame.wrapKey,
+          kind: "fraud_auto",
+          photoDataUrl: frame.photoDataUrl,
+          lat: frame.lat,
+          lon: frame.lon,
+          accuracy: frame.accuracy,
+          silent: true,
+        });
+      } catch {
+        /* پرتره اولویت دارد؛ شکست فریم میانی را نادیده بگیر */
+      }
+    }
+  };
+
   const fraudWatch = useMemo(() => {
     // فلگ پلتفرم خاموش ⇒ بدون نشست/فریم ضدتقلب
     if (!enableFraudWatch) return null;
@@ -823,6 +877,7 @@ export function PreAdmitFormRenderer({
       userId,
       intervalSeconds: fraudIntervalSeconds,
       onStartSession: async (patientId: number) => {
+        fraudFrameQueue.current = [];
         // serverPatientId برای API Guid؛ patientId عددی فقط برای سازگاری UI
         const res = (await onAction({
           action: "START_FRAUD_CAMERA_SESSION",
@@ -830,37 +885,33 @@ export function PreAdmitFormRenderer({
           serverPatientId: patient.serverId ?? undefined,
           userId,
           silent: true,
-        })) as { sessionId?: string } | null;
-        return res?.sessionId ?? null;
+        })) as { sessionId?: string; wrapKey?: string } | null;
+        const sessionId = String(res?.sessionId ?? "").trim();
+        const wrapKey = String(res?.wrapKey ?? "").trim();
+        if (!sessionId || !wrapKey) return null;
+        return { sessionId, wrapKey };
       },
       onAutoFrame: async ({
         sessionId,
+        wrapKey,
         photoDataUrl,
         lat,
         lon,
         accuracy,
       }: {
         sessionId: string;
+        wrapKey: string;
         photoDataUrl: string;
         lat?: number;
         lon?: number;
         accuracy?: number;
       }) => {
-        await onAction({
-          action: "CAPTURE_FRAUD_FRAME",
-          patientId: patient.id,
-          serverPatientId: patient.serverId ?? undefined,
-          userId,
-          sessionId,
-          kind: "fraud_auto",
-          photoDataUrl,
-          lat,
-          lon,
-          accuracy,
-          silent: true,
-        });
+        // بدون POST فوری؛ صف محلی تا تأیید پرتره
+        fraudFrameQueue.current.push({ sessionId, wrapKey, photoDataUrl, lat, lon, accuracy });
+        if (fraudFrameQueue.current.length > 24) fraudFrameQueue.current.shift();
       },
       onEndSession: async (sessionId: string) => {
+        fraudFrameQueue.current = [];
         await onAction({ action: "END_FRAUD_CAMERA_SESSION", sessionId, silent: true });
       },
     };
@@ -899,6 +950,19 @@ export function PreAdmitFormRenderer({
     );
   }
 
+  // تا settle شدن mine، photo/فرم را نشان نده — وگرنه capture یک‌بار flash و با hydrate unmount می‌شود (کلیک اول گالری «نشد»)
+  const hydrateKey = form ? `${patient.id}:${form.id}` : "";
+  const awaitingDraftHydrate =
+    Boolean(form && !readOnly && patient.serverId?.trim()) && hydratedKey.current !== hydrateKey;
+  if (draftHydrating || awaitingDraftHydrate) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-600">
+        <Loader2 className="h-5 w-5 animate-spin text-teal-700" aria-hidden />
+        در حال بارگذاری پیش‌نویس پرسشنامه…
+      </div>
+    );
+  }
+
   const resolvedPhoto = localPhotoUrl || patient.photoDataUrl || null;
   // بدون پرتره قبلی، ورود به پیش‌پذیرش همیشه عکس را اجباری می‌کند (مستقل از journeyIntroSeen)
   const needsPhotoGate =
@@ -923,6 +987,8 @@ export function PreAdmitFormRenderer({
           if (!serverPatientId) {
             throw new Error("شناسه سرور پرونده یافت نشد؛ صفحه را تازه کنید.");
           }
+          // فریم‌های دوره‌ای با تأیید پرتره یکجا می‌روند — نه هر چند ثانیه
+          await flushFraudFrameQueue();
           await onAction({
             action: "UPDATE_PATIENT_PHOTO",
             patientId: patient.id,
@@ -1282,7 +1348,7 @@ export function PreAdmitFormRenderer({
             <button
               type="button"
               disabled={busy || saving}
-              onClick={() => void persistDraft(answers, false)}
+              onClick={() => void saveTempDraft()}
               className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 disabled:opacity-40"
             >
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}

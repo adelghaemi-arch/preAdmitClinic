@@ -9,6 +9,61 @@
 
 # Changelog فرایندی
 
+## ۱۴۰۵/۰۸/۳۰ — جلوگیری از دوباره‌شدن گالری/تأیید عکس پیش‌پذیرش
+
+- تا settle شدن `responses/mine`، photo gate mount نمی‌شود (رفع flash/unmount که کلیک اول گالری را باطل می‌کرد).
+- `PatientPhotoCapture`: ensure استریم بدون ریست `adjust`/`preview`؛ تغییر هویت `fraudWatch` جریان گالری را صفر نمی‌کند.
+
+## ۱۴۰۵/۰۸/۳۰ — پیشرفت پرسشنامه روی رستر قرارداد
+
+- draft/submit فرم مالک: همگام `ContractMember` لینک‌شده — درصد پیشرفت، `Abandoned` هنگام شروع، `Completed` با intake کامل.
+- `ContractMemberDto` + قیف: `formStatus` (None/Draft/Submitted)، `profileProgressPct`، شمارش `FormDraft` / `FormSubmitted`.
+- UI ادمین/ناظر: فیلتر و badge «شروع پرسشنامه» / «تکمیل»؛ UC-ADM-07/12 و UC-SUP-02/03.
+
+## ۱۴۰۵/۰۸/۳۰ — جابجایی پیکسلی گالری قبل/بعد زوم
+
+- pan پیکسلی (`panX`/`panY`) به‌جای offset نرمال؛ درگ ماوس/لمس و دکمه‌های جابجایی؛ هنگام زوم نقطهٔ کانونی مرکز قاب حفظ می‌شود سپس clamp.
+- UC-OWN-05: تنظیم بخش دلخواه داخل قاب قبل یا بعد از زوم.
+
+## ۱۴۰۵/۰۸/۳۰ — گالری پرتره با زوم داخل قاب + بدون capture
+
+- انتخاب از گالری روی موبایل و دسکتاپ: `accept="image/*"` بدون `capture` تا picker فایل/گالری باز شود (دوربین زنده جدا با `getUserMedia`).
+- فاز تنظیم گالری: زوم/جابجایی داخل همان بیضی؛ اعتبارسنجی چهره و خروجی استاندارد ۳×۴ مثل مسیر دوربین؛ استریم ضدتقلب هنگام adjust قطع نمی‌شود.
+- UC-OWN-05 سناریو ۲/۲c به‌روز شد.
+
+## ۱۴۰۵/۰۸/۳۰ — hydrate draft پیش‌پذیرش از responses/mine
+
+- باز کردن پرسشنامه Owner: `GET /api/forms/responses/mine`؛ answers سرور روی فرم (اولویت بر prefill Patient).
+- بدون draft → همان prefill نام/کدملی/موبایل/سکونت؛ ادامه روی دستگاه دیگر بدون وابستگی به snapshot محلی خالی.
+- UC-OWN-03 گام hydrate + استثنای 2a؛ patch محلی `HYDRATE_FORM_RESPONSE`.
+
+## ۱۴۰۵/۰۸/۲۹ — upsert پاسخ پیش‌پذیرش (رفع 409 پوسته خالی)
+
+- ذخیرهٔ draft/submit برای همهٔ آیتم‌ها: بر اساس `ItemCode` موجود → update، نبود → insert (مخلوط در یک درخواست).
+- حذف wipe+reinsert در submit؛ فقط prune کدهای غایب از payload کامل.
+- `FormResponse`/`FormAnswer` با `ValueGeneratedNever`؛ ایندکس یکتا `(ResponseId, ItemCode)`.
+- دموگرافیک BASE بعد از `SaveChanges` اول answers تا شکست Person/User Answers را خالی نگذارد.
+- Controller: یک retry با scope تازه روی concurrency + لاگ `Entries`.
+
+## ۱۴۰۵/۰۸/۲۹ — فریم ضدتقلب مبهم + زمان ایران در API
+
+- آپلود فریم ``fraud_auto``: نام تصادفی ``.bin``، ``application/octet-stream``، پوشش ``NBZ1`` با ``wrapKey`` نشست؛ سرور unwrap + تأیید JPEG و ذخیرهٔ ``{guid}.jpg``.
+- ``StartFraud`` پاسخ ``wrapKey`` می‌دهد؛ ``Capture`` وجود blob را enforce می‌کند؛ ``PatientPhoto.MimeType`` و ``FraudCaptureSession.WireWrapKey``.
+- همهٔ ``DateTime`` در JSON API به وقت ایران با آفست ``+03:30``؛ ``EvidencePackage.DayKey`` روز مدنی ایران؛ فرانت instant را بدون تبدیل TZ مرورگر نمایش می‌دهد.
+
+## ۱۴۰۵/۰۸/۲۹ — دموگرافیک BASE و عکس بدون آپلود فرت‌فرت
+
+- ترک بخش BASE: همگام‌سازی یک‌بارهٔ تولد/تاهل/سکونت روی Patient (`form_draft`) همراه draft بخش.
+- گیت عکس پیش‌پذیرش: فریم‌های `fraud_auto` تا تأیید پرتره فقط در صف کلاینت؛ آپلود دسته‌ای با تأیید.
+- تنظیمات پروفایل Owner: عکس جدید محلی تا «ذخیره پروفایل» همراه دموگرافیک.
+
+## ۱۴۰۵/۰۸/۲۹ — draft پرسشنامه فقط در سطح بخش
+
+- حذف autosave هر فیلد؛ ویرایش فقط در state کلاینت می‌ماند.
+- ذخیره draft هنگام ترک بخش (بعدی/قبلی/استپر) یا «ذخیره موقت»؛ بدنه فقط `itemCode`های همان بخش.
+- بک‌اند: draft با upsert بر اساس `ItemCode` (بدون RemoveRange کامل)؛ submit همچنان جایگزینی کامل.
+- کاهش تداخل `409` ناشی از delete+reinsert هم‌زمان answers.
+
 ## ۱۴۰۵/۰۸/۲۹ — خانه مینیمال Owner → پیش‌پذیرش نشست‌محور
 
 - ورود Owner همیشه به داشبورد با فاصله بالای مسیر (موبایل فشرده)؛ صفحهٔ اجباری `journey-intro` حذف شد.

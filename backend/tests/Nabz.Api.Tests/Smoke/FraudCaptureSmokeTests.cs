@@ -9,6 +9,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Nabz.Api.Tests.Support;
+using Nabz.Application.Security;
 
 namespace Nabz.Api.Tests.Smoke;
 
@@ -59,12 +60,16 @@ public sealed class FraudCaptureSmokeTests : IClassFixture<NabzApiFactory>
 
         var startRes = await _client.PostAsJsonAsync("/api/evidence/fraud/start", new { patientId });
         Assert.Equal(HttpStatusCode.OK, startRes.StatusCode);
-        var sessionId = (await startRes.Content.ReadFromJsonAsync<JsonElement>(JsonOpts))
-            .GetProperty("sessionId").GetGuid();
+        var startBody = await startRes.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        var sessionId = startBody.GetProperty("sessionId").GetGuid();
+        var wrapKey = startBody.GetProperty("wrapKey").GetString()!;
         Assert.NotEqual(Guid.Empty, sessionId);
+        Assert.False(string.IsNullOrWhiteSpace(wrapKey));
 
-        var key1 = await UploadTinyJpegAsync("fraud-1.jpg");
-        var key2 = await UploadTinyJpegAsync("fraud-2.jpg");
+        var key1 = await UploadWrappedFraudAsync(sessionId, wrapKey, patientId);
+        var key2 = await UploadWrappedFraudAsync(sessionId, wrapKey, patientId);
+        Assert.DoesNotContain("fraud", key1, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith(".jpg", key1, StringComparison.OrdinalIgnoreCase);
 
         Assert.Equal(HttpStatusCode.OK, (await _client.PostAsJsonAsync("/api/evidence/fraud/capture", new
         {
@@ -100,7 +105,15 @@ public sealed class FraudCaptureSmokeTests : IClassFixture<NabzApiFactory>
         var path = string.Join("/", storageKey.Split('/').Select(Uri.EscapeDataString));
         var fileRes = await _client.GetAsync($"/api/files/{path}");
         Assert.Equal(HttpStatusCode.OK, fileRes.StatusCode);
-        Assert.True((await fileRes.Content.ReadAsByteArrayAsync()).Length > 10);
+        var downloaded = await fileRes.Content.ReadAsByteArrayAsync();
+        Assert.True(downloaded.Length > 10);
+        Assert.Equal(0xFF, downloaded[0]);
+        Assert.Equal(0xD8, downloaded[1]);
+        Assert.Equal("image/jpeg", fileRes.Content.Headers.ContentType?.MediaType);
+
+        // زمان پاسخ API باید آفست ایران داشته باشد
+        var startedAt = detail.GetProperty("startedAt").GetString()!;
+        Assert.Contains("+03:30", startedAt);
 
         // —— Platform: بازه ۸ ——
         var current = await (await _client.GetAsync("/api/platform/settings"))
@@ -162,15 +175,19 @@ public sealed class FraudCaptureSmokeTests : IClassFixture<NabzApiFactory>
         }
     };
 
-    private async Task<string> UploadTinyJpegAsync(string fileName)
+    private async Task<string> UploadWrappedFraudAsync(Guid sessionId, string wrapKey, Guid patientId)
     {
+        var envelope = FraudFrameWireCodec.Wrap(TinyJpeg, wrapKey);
         using var form = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(TinyJpeg);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
-        form.Add(fileContent, "file", fileName);
+        var fileContent = new ByteArrayContent(envelope);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        form.Add(fileContent, "file", $"{Guid.NewGuid():N}.bin");
+        form.Add(new StringContent(sessionId.ToString()), "sessionId");
+        form.Add(new StringContent(patientId.ToString()), "patientId");
         var res = await _client.PostAsync("/api/files", form);
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         var body = await res.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        Assert.Equal("image/jpeg", body.GetProperty("contentType").GetString());
         var key = body.GetProperty("storageKey").GetString();
         Assert.False(string.IsNullOrWhiteSpace(key));
         return key!;

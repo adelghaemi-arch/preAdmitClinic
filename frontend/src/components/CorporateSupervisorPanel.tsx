@@ -78,6 +78,10 @@ export function CorporateSupervisorPanel({
     ).length;
     const abandoned = list.filter((m) => m.onboardingStage === "abandoned").length;
     const completed = list.filter((m) => m.onboardingStage === "completed").length;
+    const formDraft = list.filter((m) => m.formStatus === "draft").length;
+    const formSubmitted = list.filter(
+      (m) => m.formStatus === "submitted" || m.onboardingStage === "completed"
+    ).length;
     const notOpened = list.filter(
       (m) => m.onboardingStage === "sms_sent" || m.onboardingStage === "not_sent"
     ).length;
@@ -119,6 +123,8 @@ export function CorporateSupervisorPanel({
       logged,
       abandoned,
       completed,
+      formDraft,
+      formSubmitted,
       notOpened,
       unscheduled,
       todayScheduled,
@@ -135,8 +141,15 @@ export function CorporateSupervisorPanel({
       if (q && !normalizeText(`${m.fullName} ${m.department} ${m.phone} ${m.personnelCode}`).includes(q)) {
         return false;
       }
-      if (stageFilter === "incomplete" && m.onboardingStage === "completed") return false;
-      if (stageFilter !== "all" && stageFilter !== "incomplete" && m.onboardingStage !== stageFilter) {
+      if (stageFilter === "incomplete" && (m.onboardingStage === "completed" || m.formStatus === "submitted"))
+        return false;
+      if (stageFilter === "form_draft" && m.formStatus !== "draft") return false;
+      if (
+        stageFilter !== "all" &&
+        stageFilter !== "incomplete" &&
+        stageFilter !== "form_draft" &&
+        m.onboardingStage !== stageFilter
+      ) {
         return false;
       }
       if (apptFilter === "unscheduled" && m.appointmentStatus !== "unscheduled") return false;
@@ -262,8 +275,9 @@ export function CorporateSupervisorPanel({
                 {[
                   { label: "لینک پیامک را باز کرده‌اند", val: summary.opened, color: "bg-indigo-500" },
                   { label: "وارد حساب شده‌اند (لاگین)", val: summary.logged, color: "bg-violet-500" },
-                  { label: "وسط تکمیل پروفایل رها کرده‌اند", val: summary.abandoned, color: "bg-amber-500" },
-                  { label: "پیش‌ثبت‌نام را کامل کرده‌اند", val: summary.completed, color: "bg-emerald-600" },
+                  { label: "پرسشنامه را شروع کرده‌اند", val: summary.formDraft, color: "bg-amber-500" },
+                  { label: "پرسشنامه را تکمیل کرده‌اند", val: summary.formSubmitted, color: "bg-emerald-600" },
+                  { label: "وسط تکمیل رها کرده‌اند", val: summary.abandoned, color: "bg-orange-500" },
                   { label: "هنوز لینک را باز نکرده‌اند", val: summary.notOpened, color: "bg-slate-400" },
                 ].map((row) => {
                   const pct = summary.total ? Math.round((row.val / summary.total) * 100) : 0;
@@ -380,11 +394,12 @@ export function CorporateSupervisorPanel({
               >
                 <option value="all">همه وضعیت‌های پروفایل</option>
                 <option value="incomplete">همه تکمیل‌نکرده‌ها</option>
+                <option value="form_draft">شروع پرسشنامه ({toFaDigits(summary?.formDraft ?? 0)})</option>
                 <option value="abandoned">رها کرده وسط کار</option>
                 <option value="logged_in">لاگین کرده</option>
                 <option value="link_opened">فقط لینک باز کرده</option>
                 <option value="sms_sent">پیامک‌شده (باز نکرده)</option>
-                <option value="completed">تکمیل‌شده</option>
+                <option value="completed">تکمیل پرسشنامه ({toFaDigits(summary?.formSubmitted ?? 0)})</option>
               </select>
               <select
                 value={apptFilter}
@@ -436,7 +451,14 @@ export function CorporateSupervisorPanel({
                       >
                         {ONBOARDING_META[m.onboardingStage].short}
                       </span>
-                      {m.onboardingStage === "abandoned" && (
+                      {m.formStatus === "draft" && (
+                        <div className="mt-0.5 text-[10px] text-amber-800">پرسشنامه شروع‌شده</div>
+                      )}
+                      {m.formStatus === "submitted" && (
+                        <div className="mt-0.5 text-[10px] text-emerald-700">پرسشنامه تکمیل</div>
+                      )}
+                      {(m.formStatus === "draft" || m.onboardingStage === "abandoned") &&
+                        m.profileProgressPct > 0 && (
                         <div className="mt-0.5 text-[10px] text-amber-700">
                           {toFaDigits(m.profileProgressPct)}٪ تکمیل شده
                         </div>

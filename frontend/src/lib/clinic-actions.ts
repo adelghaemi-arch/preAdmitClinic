@@ -855,11 +855,18 @@ export async function handleClinicAction(body: Record<string, any>, viewer: Snap
         valueRaw: a.valueRaw == null || a.valueRaw === "" ? a.valueRaw : normalizePersianInput(String(a.valueRaw)),
         notes: a.notes == null || a.notes === "" ? a.notes : normalizePersianInput(String(a.notes)),
       }));
-      const ctx = buildContext(patient, incomingAnswers, form);
-      const answers = syncSkippedAnswers(form, incomingAnswers, ctx);
       const existing = [...(patient.formResponses ?? [])];
       const versionKey = formVersionId(form);
       let response = existing.find((r) => r.formId === form.id && r.formVersionId === versionKey && r.status === "draft");
+      // draft بخش‌محور: با پاسخ‌های قبلی merge تا بخش‌های دیگر پاک نشوند
+      let workingAnswers = incomingAnswers;
+      if (mode === "draft" && response?.answers?.length) {
+        const byCode = new Map(response.answers.map((a) => [a.itemCode, a]));
+        for (const a of incomingAnswers) byCode.set(a.itemCode, a);
+        workingAnswers = [...byCode.values()];
+      }
+      const ctx = buildContext(patient, workingAnswers, form);
+      const answers = syncSkippedAnswers(form, workingAnswers, ctx);
       const nowIso = now.toISOString();
       if (!response) {
         response = {

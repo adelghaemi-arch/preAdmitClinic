@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { ExternalLink, MapPinned, X } from "lucide-react";
 import { openOsmMap } from "@/lib/osm-routing";
-import { toFaDigits } from "@/lib/persian";
+import { formatFaDateTime, toFaDigits } from "@/lib/persian";
 
 export interface GpsMapPoint {
   lat: number;
@@ -66,7 +66,7 @@ export function GpsMapPopup({ point, onClose }: Props) {
             </p>
             {point.capturedAt && (
               <p className="mt-0.5 text-[10px] text-slate-400">
-                ثبت: {new Date(point.capturedAt).toLocaleString("fa-IR")}
+                ثبت: {formatFaDateTime(point.capturedAt)}
               </p>
             )}
           </div>

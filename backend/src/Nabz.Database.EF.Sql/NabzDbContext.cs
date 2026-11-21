@@ -157,6 +157,8 @@ public class NabzDbContext : DbContext
 
         modelBuilder.Entity<FormResponse>(e =>
         {
+            // Id از EntityBase کلاینت‌ساید است؛ ValueGeneratedOnAdd باعث state غلط و 409 روی insert می‌شد
+            e.Property(x => x.Id).ValueGeneratedNever();
             e.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientId);
             e.HasOne(x => x.Form).WithMany().HasForeignKey(x => x.FormId);
             e.HasIndex(x => new { x.PatientId, x.FormId });
@@ -164,7 +166,11 @@ public class NabzDbContext : DbContext
 
         modelBuilder.Entity<FormAnswer>(e =>
         {
+            e.Property(x => x.Id).ValueGeneratedNever();
+            // طول محدود برای ایندکس یکتا (upsert بر اساس ItemCode)
+            e.Property(x => x.ItemCode).HasMaxLength(128).IsRequired();
             e.HasOne(x => x.Response).WithMany(x => x.Answers).HasForeignKey(x => x.ResponseId);
+            e.HasIndex(x => new { x.ResponseId, x.ItemCode }).IsUnique();
         });
 
         modelBuilder.Entity<IntakeDocumentGroup>(e =>
@@ -180,6 +186,7 @@ public class NabzDbContext : DbContext
         modelBuilder.Entity<PatientPhoto>(e =>
         {
             e.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientId);
+            e.Property(x => x.MimeType).HasMaxLength(100);
         });
 
         modelBuilder.Entity<GpsPoint>(e =>
@@ -190,6 +197,7 @@ public class NabzDbContext : DbContext
         modelBuilder.Entity<FraudCaptureSession>(e =>
         {
             e.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientId);
+            e.Property(x => x.WireWrapKey).HasMaxLength(128);
         });
 
         modelBuilder.Entity<EvidencePackage>(e =>

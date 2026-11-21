@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Infrastructure/Services/ContractService.cs
- Description: قرارداد، اعضا (CRUD)، بسته سلامت با گیت پذیرش، SMS قالبی و onboarding
+ Description: قرارداد، اعضا، قیف onboarding + formStatus پیشرفت پرسشنامه
  Parent Dependencies: IContractRepository, IPatientRepository, IUserRepository, IPersonRepository, ISmsSender, AuthOptions
  */
 
@@ -525,6 +525,7 @@ public sealed class ContractService(
     private static ContractMemberDto MapMember(ContractMember m)
     {
         var p = m.Person;
+        var formStatus = ResolveFormStatus(m);
         return new(
         m.Id, m.ContractId,
         p.FirstName, p.LastName, PersonName.Display(p.FirstName, p.LastName),
@@ -536,7 +537,19 @@ public sealed class ContractService(
         HealthPackageTitles.Resolve(m.AssignedPackageCode, m.AssignedPackageTitle),
         m.MatchedRuleTitle,
         m.LinkedPatientId, m.InviteToken,
-        m.SmsInviteCount, m.LastSmsAt);
+        m.SmsInviteCount, m.LastSmsAt,
+        m.ProfileProgressPct, m.AbandonedAtStep, m.ProfileCompletedAt,
+        formStatus, formStatus == "Submitted");
+    }
+
+    /// <summary>None / Draft / Submitted از stage و درصد ذخیره‌شده روی عضو.</summary>
+    internal static string ResolveFormStatus(ContractMember m)
+    {
+        if (m.OnboardingStage == OnboardingStage.Completed)
+            return "Submitted";
+        if (m.ProfileProgressPct > 0 || m.OnboardingStage == OnboardingStage.Abandoned)
+            return "Draft";
+        return "None";
     }
 
     public async Task<ContractFunnelStatsDto> GetFunnelStatsAsync(Guid contractId, CancellationToken ct = default)
@@ -544,6 +557,7 @@ public sealed class ContractService(
         var c = await contracts.GetByIdAsync(contractId, includeMembers: true, ct)
             ?? throw new InvalidOperationException("قرارداد یافت نشد.");
         var members = c.Members;
+        var formStatuses = members.Select(ResolveFormStatus).ToList();
         return new ContractFunnelStatsDto(
             contractId,
             members.Count,
@@ -553,7 +567,9 @@ public sealed class ContractService(
             members.Count(m => m.OnboardingStage == OnboardingStage.LoggedIn),
             members.Count(m => m.OnboardingStage == OnboardingStage.Abandoned),
             members.Count(m => m.OnboardingStage == OnboardingStage.Completed),
-            members.Count(m => m.LinkedPatientId.HasValue));
+            members.Count(m => m.LinkedPatientId.HasValue),
+            formStatuses.Count(s => s == "Draft"),
+            formStatuses.Count(s => s == "Submitted"));
     }
 
     /// <summary>

@@ -93,7 +93,7 @@ flowchart LR
 |-------|-----|--------------|---------|--------|---------------------|-----------|
 | TC-OWN-01 | UC-OWN-01 | owner | عضو قرارداد + ثبت سیستم | OTP موفق | نقش `owner`؛ هدایت به خانه | |
 | TC-OWN-02 | UC-OWN-02 | owner | ورود موفق | باز کردن داشبورد وضعیت | وضعیت ثبت و پیش‌پذیرش نمایش داده می‌شود | |
-| TC-OWN-03 | UC-OWN-03 | owner | فرم منتشرشده | پر کردن بخشی → ذخیره پیش‌نویس | draft ذخیره؛ قابل ادامه | |
+| TC-OWN-03 | UC-OWN-03 | owner | فرم منتشرشده | پر کردن بخش → ترک بخش/ذخیره موقت (بدون autosave فیلد)؛ سپس باز کردن روی نشست/دستگاه دیگر | draft همان بخش merge؛ بخش‌های دیگر دست‌نخورده؛ answers از mine hydrate (تولد/قد نه فقط پلاک) | |
 | TC-OWN-04 | UC-OWN-04 | owner | پیش‌نویس کامل | ارسال نهایی | وضعیت submitted؛ قفل ویرایش طبق قوانین فرم | |
 | TC-OWN-05 | UC-OWN-05 | owner | پرونده فعال | ثبت عکس پرونده | عکس در پرونده دیده می‌شود | |
 | TC-OWN-06 | UC-OWN-06 | owner | — | افزودن گروه مدرک | گروه در لیست مدارک | |
@@ -132,7 +132,7 @@ flowchart LR
 | TC-ADM-04 | UC-ADM-04 | admin | قرارداد | ورود اعضا (import) | اعضا در رستر | |
 | TC-ADM-05 | UC-ADM-05 | admin | قرارداد | ذخیره قوانین بسته سلامت | قوانین ذخیره و قابل خواندن | |
 | TC-ADM-06 | UC-ADM-06 | admin | اعضا + SMS config | پیامک دعوت گروهی | FixedOtp: بدون SMS واقعی؛ وگرنه قالب Invite | |
-| TC-ADM-07 | UC-ADM-07 | admin | عضو | به‌روزرسانی قیف onboarding | وضعیت عضو عوض می‌شود | |
+| TC-ADM-07 | UC-ADM-07 | admin | عضو لینک‌شده | draft بخش فرم سپس submit | عضو Abandoned+٪ سپس Completed؛ formStatus در رستر | |
 | TC-ADM-08 | UC-ADM-08 | admin | عضو قرارداد | admit اختیاری یا OTP owner با soft-admit | بیمار سیستم ساخته/لینک؛ OTP بدون admit اجباری | |
 | TC-ADM-09 | UC-ADM-09 | admin | — | ایجاد/ویرایش فرم پیش‌پذیرش | فرم draft ذخیره | |
 | TC-ADM-10 | UC-ADM-10 | admin | فرم draft | انتشار فرم | فرم published برای owner | |
@@ -140,7 +140,7 @@ flowchart LR
 | TC-ADM-FORM-SEED | UC-ADM-19 | admin / API | استارت تازه + Seed | مشاهدهٔ فرم‌های کلینیک | دو فرم Published: `cancer_screening_male_v02` و `cancer_screening_female_v02`؛ `PREADMIT_V1` آرشیو/غایب از لیست فعال | |
 | TC-ADM-FORM-VIS | UC-OWN-03 / UC-ADM-19 | owner | بیمار زن متأهل ≥۵۰ و مرد مجرد ۲۰ | باز کردن پرسشنامه | سوالات مشروط تاهل/سن طبق ماتریس؛ سوال نامرتبط دیده نمی‌شود؛ زیر ageMin رد | |
 | TC-ADM-FORM-PKG | UC-ADM-18 | admin | فرم‌های seeded | خروجی JSON و Excel → ورود مجدد | round-trip بدون خطا؛ تعداد فرم‌ها پایدار؛ قوانین visibility حفظ | |
-| TC-ADM-12 | UC-ADM-12 | admin | دادهٔ مانیتور | داشبورد کلیات/قیف | اعداد و وضعیت‌ها منطقی | |
+| TC-ADM-12 | UC-ADM-12 | admin | دادهٔ مانیتور | داشبورد کلیات/قیف؛ فیلتر شروع/تکمیل پرسشنامه | FormDraft/FormSubmitted و badge پیشرفت منطقی | |
 | TC-ADM-13 | UC-ADM-13 | admin | پرونده موجود | مشاهده پرونده از مانیتور | وضعیت پیش‌پذیرش درست | |
 | TC-ADM-14 | UC-ADM-14 | platform | env غیر-prod | ریست فکتوری پلتفرم با OTP (یا re-seed سرور) | قفل در production؛ DB+آپلود به حالت seed؛ UI ادمین کلینیک دکمهٔ ریست mock ندارد | |
 | TC-ADM-15 | UC-ADM-15 | admin | کاربران seed | فهرست کاربران کلینیک | کاربران Platform در لیست **نیستند** | |
@@ -157,7 +157,7 @@ flowchart LR
 |-------|-----|--------------|---------|--------|---------------------|-----------|
 | TC-SUP-01 | UC-SUP-01 | supervisor | ناظر روی قرارداد | OTP ورود | فقط workspace ناظر؛ بدون پنل ادمین کلینیک کامل | |
 | TC-SUP-02 | UC-SUP-02 | supervisor | دادهٔ قیف | داشبورد پایش | فقط قرارداد سازمان خود | |
-| TC-SUP-03 | UC-SUP-03 | supervisor | اعضا | رستر کارکنان و وضعیت | اعضای سازمان خود؛ نه سازمان دیگر | |
+| TC-SUP-03 | UC-SUP-03 | supervisor | اعضا | رستر کارکنان و وضعیت پیش‌پذیرش | اعضای سازمان خود؛ شروع/تکمیل پرسشنامه دیده می‌شود | |
 | TC-SUP-04 | UC-SUP-04 | supervisor | SMS config | پیامک گروهی یادآوری | ارسال قالبی / FixedOtp بدون SMS | |
 | TC-SUP-05 | UC-SUP-05 | supervisor | نشست فعال | خروج | نشست باطل؛ برگشت به لاگین | |
 

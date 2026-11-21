@@ -452,6 +452,9 @@ public sealed class FormRepository(NabzDbContext db) : IFormRepository
     public async Task AddResponseAsync(FormResponse response, CancellationToken ct = default)
         => await db.FormResponses.AddAsync(response, ct);
 
+    public async Task AddAnswerAsync(FormAnswer answer, CancellationToken ct = default)
+        => await db.FormAnswers.AddAsync(answer, ct);
+
     public void RemoveAnswers(IEnumerable<FormAnswer> answers) => db.FormAnswers.RemoveRange(answers);
 }
 

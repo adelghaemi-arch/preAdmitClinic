@@ -1,3 +1,9 @@
+/*
+ File: frontend/src/lib/form-engine.ts
+ Description: موتور پرسشنامه؛ visibility، پیشرفت، hydrate draft+prefill، answersForSection
+ Parent Dependencies: types/clinic, residence-address, marital-status
+ */
+
 import catalogSeed from "@/lib/form-catalog.seed.json";
 import { iranLocalDayOffset } from "@/lib/date-iso";
 import { normalizeMaritalStatus } from "@/lib/marital-status";
@@ -153,6 +159,16 @@ export function itemsOfSection(form: FormDefinition, sectionId: string): FormIte
   return form.items.filter((i) => i.sectionId === sectionId).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
+/** پاسخ‌های متعلق به یک بخش — برای draft بخش‌محور (نه کل فرم). */
+export function answersForSection(
+  form: FormDefinition,
+  sectionId: string,
+  answers: FormAnswer[]
+): FormAnswer[] {
+  const codes = new Set(itemsOfSection(form, sectionId).map((i) => i.code));
+  return answers.filter((a) => codes.has(a.itemCode));
+}
+
 /** Sections that still have at least one visible non-signature item for this audience. */
 export function visibleSections(form: FormDefinition, ctx: AudienceContext): FormSectionDefinition[] {
   return sectionsOf(form).filter((section) =>
@@ -280,6 +296,40 @@ export function prefillValue(
     return buildResidenceFromPatient(patient);
   }
   return "";
+}
+
+/**
+ * answers سرور اولویت دارند؛ آیتم بدون answer سرور prefill می‌گیرد (مثلاً نام قفل).
+ * تاریخ فرم خالی از سرور با امروز پر می‌شود.
+ */
+export function hydrateFormAnswersWithPrefill(
+  form: FormDefinition,
+  patient: Parameters<typeof prefillValue>[1],
+  serverAnswers: FormAnswer[] | null | undefined
+): FormAnswer[] {
+  const byCode = new Map((serverAnswers ?? []).map((a) => [a.itemCode, a]));
+  return form.items.map((item) => {
+    const fromServer = byCode.get(item.code);
+    if (fromServer) {
+      const valueRaw =
+        !fromServer.valueRaw?.trim() && isFormDateItem(item)
+          ? prefillValue(item, patient)
+          : fromServer.valueRaw ?? "";
+      return {
+        itemCode: item.code,
+        valueCode: fromServer.valueCode ?? null,
+        valueRaw,
+        notes: fromServer.notes ?? "",
+        skippedByRule: fromServer.skippedByRule,
+      };
+    }
+    return {
+      itemCode: item.code,
+      valueCode: null,
+      valueRaw: prefillValue(item, patient),
+      notes: "",
+    };
+  });
 }
 
 export function isItemComplete(item: FormItemDefinition, answer: FormAnswer, visible: boolean): boolean {

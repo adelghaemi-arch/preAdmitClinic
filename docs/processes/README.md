@@ -49,6 +49,8 @@ flowchart LR
 
 صف اتاق، نوبت کلینیک، زمان مراجعه، ایستگاه‌ها، چک‌این، فراخوان، پاراکلینیک، پذیرش عملیاتی، همراه — رجوع به [`future/README.md`](future/README.md).
 
+تجمیع استراتژیک (فعلی + آینده + پیشنهاد): [`../shared/platform-strategic-plan.md`](../shared/platform-strategic-plan.md).
+
 ## پیاده‌سازی بک‌اند (وضعیت)
 
 اسکلت `backend/` (پروژه‌های `Nabz.*`) و دیتابیس لوکال `NabzClinic` برای دامنهٔ v1 آماده است: Auth/OTP، قرارداد، بیمار، فرم، شواهد، پلتفرم. فرانت دامنهٔ v1 به API وصل است؛ لایهٔ mock فقط مسیر legacy QR/کیوسک (`/patient?token=`) باقی مانده است.

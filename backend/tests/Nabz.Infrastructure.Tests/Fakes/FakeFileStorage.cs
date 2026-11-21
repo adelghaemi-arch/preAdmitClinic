@@ -30,9 +30,27 @@ public sealed class FakeFileStorage : IFileStorage
         var bytes = ms.ToArray();
         var year = DateTime.UtcNow.ToString("yyyy");
         var prefix = LocalFileStorage.NormalizeNationalIdPrefix(context?.NationalIdPrefix);
-        var key = $"{year}/{prefix}/{Guid.NewGuid():N}_{Path.GetFileName(fileName)}";
-        _files[key] = (bytes, contentType, fileName);
-        return new StoredFileResult(key, fileName, contentType, bytes.Length);
+        string leaf;
+        string storedName;
+        if (!string.IsNullOrWhiteSpace(context?.CanonicalFileName))
+        {
+            storedName = Path.GetFileName(context.CanonicalFileName);
+            leaf = storedName;
+        }
+        else
+        {
+            storedName = Path.GetFileName(fileName);
+            leaf = $"{Guid.NewGuid():N}_{storedName}";
+        }
+        var key = $"{year}/{prefix}/{leaf}";
+        _files[key] = (bytes, contentType, storedName);
+        return new StoredFileResult(key, storedName, contentType, bytes.Length);
+    }
+
+    /// <summary>برای تست capture بدون آپلود واقعی.</summary>
+    public void Seed(string storageKey, byte[] bytes, string contentType = "image/jpeg")
+    {
+        _files[storageKey] = (bytes, contentType, Path.GetFileName(storageKey));
     }
 
     public Task<(Stream Stream, string ContentType, string FileName)?> OpenReadAsync(string storageKey, CancellationToken ct = default)

@@ -1,11 +1,12 @@
 /*
  File: frontend/src/lib/api/evidence.ts
- Description: API شواهد — fraud/config، نشست/فریم ضدتقلب، GPS، بازبینی؛ دانلود storage با path segment
- Parent Dependencies: api/http, api/patients uploadFileBlob
+ Description: API شواهد — fraud/config، نشست/فریم ضدتقلب مبهم، GPS، بازبینی؛ دانلود storage
+ Parent Dependencies: api/http, api/patients uploadFileBlob, fraud-wire
  */
 
 import { apiFetch, getApiBaseUrl, readApiToken } from "@/lib/api/http";
 import { uploadFileBlob } from "@/lib/api/patients";
+import { randomOpaqueBinName, wrapFraudJpeg } from "@/lib/fraud-wire";
 
 export type FraudFrameKind = "fraud_auto" | "fraud_confirm";
 
@@ -49,6 +50,14 @@ export interface ApiGpsPointDto {
   patientNationalId?: string | null;
 }
 
+function dataUrlToBytes(dataUrl: string): Uint8Array {
+  const [, b64] = dataUrl.split(",");
+  const binary = atob(b64 ?? "");
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 function dataUrlToBlob(dataUrl: string): Blob {
   const [meta, b64] = dataUrl.split(",");
   const mime = /data:([^;]+)/.exec(meta)?.[1] ?? "image/jpeg";
@@ -63,6 +72,21 @@ export async function uploadDataUrlAsFile(dataUrl: string, fileName: string, ser
   return uploadFileBlob(blob, fileName, serverPatientId);
 }
 
+/** فریم ضدتقلب: JPEG → پوشش NBZ1 با نام .bin و octet-stream */
+export async function uploadOpaqueFraudFrame(
+  dataUrl: string,
+  sessionId: string,
+  wrapKey: string,
+  serverPatientId?: string | null
+) {
+  const jpeg = dataUrl.startsWith("data:")
+    ? dataUrlToBytes(dataUrl)
+    : new Uint8Array(await (await fetch(dataUrl)).arrayBuffer());
+  const wrapped = await wrapFraudJpeg(jpeg, wrapKey);
+  const blob = new Blob([wrapped], { type: "application/octet-stream" });
+  return uploadFileBlob(blob, randomOpaqueBinName(), serverPatientId, sessionId);
+}
+
 export async function fetchFraudCaptureConfig() {
   return apiFetch<{ fraudAutoCaptureSeconds: number; fraudWatchEnabled: boolean }>(
     "/api/evidence/fraud/config"
@@ -70,7 +94,7 @@ export async function fetchFraudCaptureConfig() {
 }
 
 export async function startFraudSession(serverPatientId: string) {
-  return apiFetch<{ ok: boolean; sessionId: string }>("/api/evidence/fraud/start", {
+  return apiFetch<{ ok: boolean; sessionId: string; wrapKey: string }>("/api/evidence/fraud/start", {
     method: "POST",
     body: { patientId: serverPatientId },
   });

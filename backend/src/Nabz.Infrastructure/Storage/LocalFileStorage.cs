@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Infrastructure/Storage/LocalFileStorage.cs
- Description: ذخیره سلسله‌مراتبی yyyy/NNN زیر persist/uploads؛ گارد ریشهٔ داکر؛ حذف امن کلید نسبی
+ Description: ذخیره سلسله‌مراتبی yyyy/NNN؛ CanonicalFileName برای فریم مبهم؛ گارد ریشهٔ داکر
  Parent Dependencies: IFileStorage, IConfiguration
  */
 
@@ -40,12 +40,25 @@ public sealed class LocalFileStorage(IConfiguration configuration) : IFileStorag
         StorageSaveContext? context = null,
         CancellationToken ct = default)
     {
-        var safeName = Path.GetFileName(fileName);
-        if (string.IsNullOrWhiteSpace(safeName)) safeName = "file.bin";
+        // نام داخلی canonical برای فریم مبهم — بدون چسباندن نام/پسوند کلاینت
+        string safeName;
+        string keyLeaf;
+        if (!string.IsNullOrWhiteSpace(context?.CanonicalFileName))
+        {
+            safeName = Path.GetFileName(context.CanonicalFileName);
+            if (string.IsNullOrWhiteSpace(safeName)) safeName = $"{Guid.NewGuid():N}.bin";
+            keyLeaf = safeName;
+        }
+        else
+        {
+            safeName = Path.GetFileName(fileName);
+            if (string.IsNullOrWhiteSpace(safeName)) safeName = "file.bin";
+            keyLeaf = $"{Guid.NewGuid():N}_{safeName}";
+        }
         var year = DateTime.UtcNow.ToString("yyyy");
         var prefix = NormalizeNationalIdPrefix(context?.NationalIdPrefix);
         // سلسله: سال / سه رقم کدملی / فایل — جلوگیری از انباشت در یک پوشه
-        var key = $"{year}/{prefix}/{Guid.NewGuid():N}_{safeName}";
+        var key = $"{year}/{prefix}/{keyLeaf}";
         var full = Path.Combine(Root(), key.Replace('/', Path.DirectorySeparatorChar));
         Directory.CreateDirectory(Path.GetDirectoryName(full)!);
         await using var fs = File.Create(full);

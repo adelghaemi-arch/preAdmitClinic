@@ -1,7 +1,7 @@
 /*
  File: backend/src/Nabz.Infrastructure/Services/FormService.cs
- Description: تعریف/انتشار/ساختار فرم؛ resolve مخاطب؛ draft/submit با گارد مالکیت نشست؛ import/export بسته
- Parent Dependencies: IFormRepository, FormAudienceEvaluator, FormPackageExcel, PersonIdentity
+ Description: تعریف/انتشار/ساختار فرم؛ upsert پاسخ؛ sync پیشرفت عضو قرارداد
+ Parent Dependencies: IFormRepository, IContractRepository, FormAudienceEvaluator
  */
 
 using System.Globalization;
@@ -22,6 +22,7 @@ public sealed class FormService(
     IPatientRepository patients,
     IPatientProfileRevisionRepository profileRevisions,
     IUserRepository users,
+    IContractRepository contracts,
     IUnitOfWork uow) : IFormService
 {
     public async Task<FormSummaryDto> UpsertFormAsync(Guid clinicId, Guid? formId, string code, string title, string? warningText, string targetAudienceJson, CancellationToken ct = default)
@@ -463,40 +464,43 @@ public sealed class FormService(
             };
             await forms.AddResponseAsync(response, ct);
         }
-        else
-        {
-            // RemoveRange بدون Clear → موجودیت‌های Deleted داخل navigation می‌مانند و SaveChanges به DbUpdateConcurrencyException می‌خورد
-            var oldAnswers = response.Answers.ToList();
-            if (oldAnswers.Count > 0)
-            {
-                forms.RemoveAnswers(oldAnswers);
-                response.Answers.Clear();
-            }
-        }
 
-        foreach (var a in answers)
+        // draft و submit: هر ItemCode موجود → update؛ جدید → insert (مخلوط در یک درخواست مجاز)
+        await UpsertAnswersAsync(response, answers, ct);
+
+        if (status == FormResponseStatus.Submitted)
         {
-            response.Answers.Add(new FormAnswer
+            // فقط کدهای غایب از payload کامل prune — نه wipe+reinsert
+            var keep = new HashSet<string>(answers.Select(a => a.ItemCode), StringComparer.OrdinalIgnoreCase);
+            var extras = response.Answers.Where(a => !keep.Contains(a.ItemCode)).ToList();
+            if (extras.Count > 0)
             {
-                ResponseId = response.Id,
-                ItemCode = a.ItemCode,
-                ValueCode = a.ValueCode,
-                ValueRaw = a.ValueRaw,
-                Notes = a.Notes,
-                SkippedByRule = a.SkippedByRule
-            });
+                forms.RemoveAnswers(extras);
+                foreach (var x in extras)
+                    response.Answers.Remove(x);
+            }
         }
 
         response.Status = status;
         response.UpdatedAt = DateTime.UtcNow;
         if (status == FormResponseStatus.Submitted)
-        {
             response.SubmittedAt = DateTime.UtcNow;
-            // یک منبع حقیقت: پاسخ BASE تولد/تاهل روی Patient نوشته می‌شود + سوابق از→به
+
+        // اول answers تا پوستهٔ خالی / شکست دموگرافیک Answers را خالی نگذارد
+        await uow.SaveChangesAsync(ct);
+
+        var needsSecondSave = false;
+        var hasBaseDemographics = answers.Any(a =>
+            a.ItemCode.EndsWith("_BASE_birthDate", StringComparison.OrdinalIgnoreCase)
+            || a.ItemCode.EndsWith("_BASE_maritalStatus", StringComparison.OrdinalIgnoreCase)
+            || a.ItemCode.EndsWith("_BASE_residence", StringComparison.OrdinalIgnoreCase));
+        if (hasBaseDemographics)
+        {
             var before = PatientProfileDiff.SnapshotDemographics(patient);
             ApplyDemographicsFromAnswers(patient, answers);
             var after = PatientProfileDiff.SnapshotDemographics(patient);
-            var revs = PatientProfileDiff.Build(patient.Id, actingUserId, "form_submit", before, after);
+            var revSource = status == FormResponseStatus.Submitted ? "form_submit" : "form_draft";
+            var revs = PatientProfileDiff.Build(patient.Id, actingUserId, revSource, before, after);
             if (revs.Count > 0)
                 await profileRevisions.AddRangeAsync(revs, ct);
             patient.UpdatedAt = DateTime.UtcNow;
@@ -507,9 +511,12 @@ public sealed class FormService(
                 if (owner is not null && owner.PersonId == patient.PersonId)
                     owner.UpdatedAt = DateTime.UtcNow;
             }
+            needsSecondSave = true;
+        }
 
-            // Intake کامل فقط وقتی همهٔ فرم‌های Published مخاطب Submitted باشند (اجازهٔ سوالات جدید بعداً)
-            await uow.SaveChangesAsync(ct);
+        if (status == FormResponseStatus.Submitted)
+        {
+            // Intake کامل فقط وقتی همهٔ فرم‌های Published مخاطب Submitted باشند
             var allForms = await forms.ListByClinicAsync(patient.ClinicId, ct);
             var pendingOther = false;
             foreach (var f in allForms.Where(x => x.Status == FormPublishStatus.Published))
@@ -527,7 +534,6 @@ public sealed class FormService(
             {
                 patient.IntakeCompleted = true;
                 patient.IntakeCompletedAt = DateTime.UtcNow;
-                // هم‌ترازی با mock: submit نهایی intro را هم دیده‌شده می‌کند
                 patient.JourneyIntroSeen = true;
             }
             else
@@ -535,10 +541,167 @@ public sealed class FormService(
                 patient.IntakeCompleted = false;
                 patient.IntakeCompletedAt = null;
             }
+            needsSecondSave = true;
         }
 
-        await uow.SaveChangesAsync(ct);
+        // پیشرفت رستر قرارداد از FormResponse — قبل از Save دوم تا یک تراکنش بماند
+        if (await TrySyncLinkedMemberProgressAsync(patient, form, response, status, answers, ct))
+            needsSecondSave = true;
+
+        if (needsSecondSave)
+            await uow.SaveChangesAsync(ct);
+
         return Map(response);
+    }
+
+    /// <summary>
+    /// عضو لینک‌شده: درصد پیشرفت، Abandoned هنگام شروع draft، Completed با intake کامل.
+    /// </summary>
+    private async Task<bool> TrySyncLinkedMemberProgressAsync(
+        Patient patient,
+        FormDefinition form,
+        FormResponse response,
+        FormResponseStatus status,
+        IReadOnlyList<FormAnswerInput> payloadAnswers,
+        CancellationToken ct)
+    {
+        if (patient.LinkedContractMemberId is not Guid memberId)
+            return false;
+        var member = await contracts.GetMemberByIdAsync(memberId, ct);
+        if (member is null)
+            return false;
+
+        var answerMap = response.Answers
+            .GroupBy(a => a.ItemCode, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Last().ValueCode ?? g.Last().ValueRaw,
+                StringComparer.OrdinalIgnoreCase);
+
+        var pct = ComputeFormProgressPct(form, patient, answerMap);
+        var hasContent = response.Answers.Any(HasAnswerContent)
+            || payloadAnswers.Any(a =>
+                !string.IsNullOrWhiteSpace(a.ValueCode) || !string.IsNullOrWhiteSpace(a.ValueRaw));
+
+        member.LastActivityAt = DateTime.UtcNow;
+        member.UpdatedAt = DateTime.UtcNow;
+
+        if (status == FormResponseStatus.Submitted && patient.IntakeCompleted)
+        {
+            member.OnboardingStage = OnboardingStage.Completed;
+            member.ProfileProgressPct = 100;
+            member.ProfileCompletedAt ??= DateTime.UtcNow;
+            member.AbandonedAtStep = null;
+            return true;
+        }
+
+        if (!hasContent && pct <= 0)
+            return true;
+
+        // شروع/ادامهٔ پر کردن — Completed را پایین نیاور
+        if (member.OnboardingStage != OnboardingStage.Completed)
+        {
+            if (member.OnboardingStage is OnboardingStage.LoggedIn or OnboardingStage.LinkOpened
+                or OnboardingStage.SmsSent or OnboardingStage.NotSent)
+                member.OnboardingStage = OnboardingStage.Abandoned;
+
+            member.ProfileProgressPct = Math.Clamp(pct, 0, 99);
+            member.AbandonedAtStep = ResolveAbandonedStep(form, payloadAnswers) ?? member.AbandonedAtStep;
+            member.ProfileCompletedAt = null;
+        }
+
+        return true;
+    }
+
+    private static bool HasAnswerContent(FormAnswer a)
+    {
+        if (a.SkippedByRule) return false;
+        return !string.IsNullOrWhiteSpace(a.ValueCode) || !string.IsNullOrWhiteSpace(a.ValueRaw);
+    }
+
+    /// <summary>هم‌تراز overallProgress فرانت: آیتم‌های visible تکمیل‌شده.</summary>
+    internal static int ComputeFormProgressPct(
+        FormDefinition form,
+        Patient patient,
+        IReadOnlyDictionary<string, string?> answerMap)
+    {
+        var visible = form.Items
+            .Where(i => FormAudienceEvaluator.IsItemVisible(i, patient, answerMap))
+            .ToList();
+        if (visible.Count == 0) return 0;
+        var done = 0;
+        foreach (var item in visible)
+        {
+            if (!answerMap.TryGetValue(item.Code, out var val) || string.IsNullOrWhiteSpace(val))
+                continue;
+            if (string.Equals(item.InputType, "residence_address", StringComparison.OrdinalIgnoreCase) &&
+                !ResidenceAddressParser.TryParse(val, out _, out _))
+                continue;
+            done++;
+        }
+        return (int)Math.Round(100.0 * done / visible.Count);
+    }
+
+    private static string? ResolveAbandonedStep(FormDefinition form, IReadOnlyList<FormAnswerInput> answers)
+    {
+        if (answers.Count == 0) return null;
+        var byCode = form.Items.ToDictionary(i => i.Code, StringComparer.OrdinalIgnoreCase);
+        FormSection? lastSection = null;
+        var lastOrder = -1;
+        foreach (var a in answers)
+        {
+            if (string.IsNullOrWhiteSpace(a.ValueCode) && string.IsNullOrWhiteSpace(a.ValueRaw))
+                continue;
+            if (!byCode.TryGetValue(a.ItemCode, out var item)) continue;
+            if (item.SortOrder < lastOrder) continue;
+            lastOrder = item.SortOrder;
+            lastSection = form.Sections.FirstOrDefault(s => s.Id == item.SectionId);
+        }
+        return lastSection?.Code ?? lastSection?.Title;
+    }
+
+    /// <summary>بر اساس ItemCode: موجود → به‌روزرسانی؛ نبود → درج با AddAnswer صریح.</summary>
+    private async Task UpsertAnswersAsync(
+        FormResponse response,
+        IReadOnlyList<FormAnswerInput> answers,
+        CancellationToken ct)
+    {
+        var byCode = response.Answers
+            .GroupBy(a => a.ItemCode, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var a in answers)
+        {
+            if (string.IsNullOrWhiteSpace(a.ItemCode)) continue;
+            var code = a.ItemCode.Trim();
+            if (code.Length > 128)
+                throw new InvalidOperationException($"کد آیتم بیش از حد طولانی است: {code[..32]}…");
+
+            if (byCode.TryGetValue(code, out var existing))
+            {
+                existing.ValueCode = a.ValueCode;
+                existing.ValueRaw = a.ValueRaw;
+                existing.Notes = a.Notes;
+                existing.SkippedByRule = a.SkippedByRule;
+                existing.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                var created = new FormAnswer
+                {
+                    ResponseId = response.Id,
+                    ItemCode = code,
+                    ValueCode = a.ValueCode,
+                    ValueRaw = a.ValueRaw,
+                    Notes = a.Notes,
+                    SkippedByRule = a.SkippedByRule
+                };
+                await forms.AddAnswerAsync(created, ct);
+                if (!response.Answers.Contains(created))
+                    response.Answers.Add(created);
+                byCode[code] = created;
+            }
+        }
     }
 
     /// <summary>از کدهای BASE تولد/تاهل/آدرس سکونت روی موجودیت بیمار می‌نویسد.</summary>

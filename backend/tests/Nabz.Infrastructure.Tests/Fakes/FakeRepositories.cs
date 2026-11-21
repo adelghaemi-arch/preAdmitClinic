@@ -674,10 +674,24 @@ public sealed class FakeFormRepository(InMemoryStore store) : IFormRepository
         return Task.CompletedTask;
     }
 
+    public Task AddAnswerAsync(FormAnswer answer, CancellationToken ct = default)
+    {
+        if (!store.FormAnswers.Contains(answer))
+            store.FormAnswers.Add(answer);
+        var response = store.Responses.FirstOrDefault(r => r.Id == answer.ResponseId);
+        if (response is not null && !response.Answers.Contains(answer))
+            response.Answers.Add(answer);
+        return Task.CompletedTask;
+    }
+
     public void RemoveAnswers(IEnumerable<FormAnswer> answers)
     {
         foreach (var answer in answers)
+        {
             store.FormAnswers.Remove(answer);
+            foreach (var response in store.Responses)
+                response.Answers.Remove(answer);
+        }
     }
 }
 

@@ -59,13 +59,40 @@ export function formatFaDateRelative(isoDate: string): string {
   return formatted;
 }
 
+/**
+ * دیوارساعت ایران از رشتهٔ API (مثلاً 2026-11-20T22:03:00+03:30) —
+ * بدون تبدیل TZ مرورگر؛ فقط ارقام همان رشته.
+ */
+export function parseIranApiWallClock(iso: string): { ymd: string; hh: string; mm: string; ss: string } | null {
+  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(iso.trim());
+  if (!m) return null;
+  return { ymd: m[1]!, hh: m[2]!, mm: m[3]!, ss: m[4] ?? "00" };
+}
+
 export function formatFaTime(isoOrDate: string | Date | null | undefined): string {
   if (!isoOrDate) return "—";
+  if (typeof isoOrDate === "string") {
+    const wall = parseIranApiWallClock(isoOrDate);
+    if (wall) return toFaDigits(`${wall.hh}:${wall.mm}`);
+  }
   const d = typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
   if (Number.isNaN(d.getTime())) return "—";
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return toFaDigits(`${hh}:${mm}`);
+}
+
+/** تاریخ+ساعت نمایشی از instant ایرانِ API — بدون toLocaleString مرورگر. */
+export function formatFaDateTime(isoOrDate: string | Date | null | undefined): string {
+  if (!isoOrDate) return "—";
+  if (typeof isoOrDate === "string") {
+    const wall = parseIranApiWallClock(isoOrDate);
+    if (wall) {
+      const dayLabel = isIsoDay(wall.ymd) ? formatFaDate(wall.ymd) : wall.ymd;
+      return toFaDigits(`${dayLabel} ${wall.hh}:${wall.mm}`);
+    }
+  }
+  return formatFaTime(isoOrDate);
 }
 
 export function createMedicineBoxSvgDataUrl(title: string, dose: string, color = "#0284C7"): string {

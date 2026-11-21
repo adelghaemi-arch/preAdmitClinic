@@ -51,7 +51,7 @@ import type {
 } from "@/types/clinic";
 import { IranDigitField } from "@/components/IranDigitField";
 import { normalizeMobile, clampNationalIdInput } from "@/lib/person-identity";
-import { toFaDigits } from "@/lib/persian";
+import { formatFaDateTime, formatFaTime, toFaDigits } from "@/lib/persian";
 
 export type PlatformSection =
   | "dashboard"
@@ -188,8 +188,9 @@ function sessionFrames(photos: UserPhotoRecord[], sessionId: string): UserPhotoR
 }
 
 function formatRange(start: string, end: string): string {
-  const a = new Date(start).toLocaleString("fa-IR");
-  const b = new Date(end).toLocaleString("fa-IR");
+  // API از قبل وقت ایران می‌دهد — بدون toLocaleString مرورگر
+  const a = formatFaDateTime(start);
+  const b = formatFaDateTime(end);
   return a === b ? a : `${a} ← ${b}`;
 }
 
@@ -953,10 +954,10 @@ export function PlatformAdminPanel({
                     </span>
                   </p>
                   <p className="text-slate-600">
-                    آخرین ورود: {userDraft.lastLoginAt ? new Date(userDraft.lastLoginAt).toLocaleString("fa-IR") : "—"}
+                    آخرین ورود: {userDraft.lastLoginAt ? formatFaDateTime(userDraft.lastLoginAt) : "—"}
                   </p>
                   <p className="text-slate-600">
-                    ایجاد: {userDraft.createdAt ? new Date(userDraft.createdAt).toLocaleString("fa-IR") : "—"}
+                    ایجاد: {userDraft.createdAt ? formatFaDateTime(userDraft.createdAt) : "—"}
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1">
                     <button
@@ -1020,7 +1021,7 @@ export function PlatformAdminPanel({
                             {s.system} · {s.browser} · {SURFACE_FA[s.appSurface]} · {s.ipHint}
                           </p>
                           <p className="text-[10px] text-slate-400">
-                            آخرین فعالیت: {toFaDigits(new Date(s.lastSeenAt).toLocaleString("fa-IR"))}
+                            آخرین فعالیت: {formatFaDateTime(s.lastSeenAt)}
                           </p>
                         </li>
                       ))}
@@ -1067,7 +1068,7 @@ export function PlatformAdminPanel({
                               }}
                               className="block w-full rounded-xl border border-slate-100 px-3 py-2 text-right text-[10px] text-slate-600 hover:bg-slate-50"
                             >
-                              جلسه ضدتقلب · {REVIEW_FA[s.reviewStatus]} · {new Date(s.startedAt).toLocaleString("fa-IR")}
+                              جلسه ضدتقلب · {REVIEW_FA[s.reviewStatus]} · {formatFaDateTime(s.startedAt)}
                             </button>
                           ))}
                       </div>
@@ -1123,7 +1124,7 @@ export function PlatformAdminPanel({
                                     <figcaption className="px-2 py-1.5 text-[9px] leading-4 text-slate-500">
                                       {p.kind === "portrait" ? "پرتره" : p.kind === "fraud_confirm" ? "تأیید کاربر" : "فریم ضدتقلب"}
                                       <br />
-                                      {new Date(p.capturedAt).toLocaleString("fa-IR")}
+                                      {formatFaDateTime(p.capturedAt)}
                                       {p.dataUrl ? (
                                         <>
                                           <br />
@@ -1146,7 +1147,7 @@ export function PlatformAdminPanel({
                                     <MapPin className="ml-1 inline h-3 w-3 text-teal-700" />
                                     {toFaDigits(g.lat.toFixed(5))} ، {toFaDigits(g.lon.toFixed(5))}
                                     {" · "}
-                                    {new Date(g.capturedAt).toLocaleString("fa-IR")} · {g.source}
+                                    {formatFaDateTime(g.capturedAt)} · {g.source}
                                   </button>
                                 </li>
                               ))}
@@ -1224,7 +1225,7 @@ export function PlatformAdminPanel({
                             {toFaDigits(a.activeSessionCount)} نشست · {REVIEW_FA[a.reviewStatus]}
                           </div>
                           <div className="mt-0.5 text-[9px] text-slate-400">
-                            {toFaDigits(new Date(a.openedAt).toLocaleString("fa-IR"))}
+                            {formatFaDateTime(a.openedAt)}
                           </div>
                         </button>
                       </li>
@@ -1254,7 +1255,7 @@ export function PlatformAdminPanel({
                             {s.system} · {s.browser} · {SURFACE_FA[s.appSurface]} · {s.ipHint}
                           </p>
                           <p className="text-[10px] text-slate-400">
-                            آخرین فعالیت: {toFaDigits(new Date(s.lastSeenAt).toLocaleString("fa-IR"))}
+                            آخرین فعالیت: {formatFaDateTime(s.lastSeenAt)}
                           </p>
                         </li>
                       ))}
@@ -1410,7 +1411,7 @@ export function PlatformAdminPanel({
                           )}
                           {portrait && (
                             <p className="mt-1 text-center text-[9px] text-slate-500">
-                              ثبت: {new Date(portrait.capturedAt).toLocaleString("fa-IR")}
+                              ثبت: {formatFaDateTime(portrait.capturedAt)}
                             </p>
                           )}
                         </figure>
@@ -1423,7 +1424,7 @@ export function PlatformAdminPanel({
                                 className="aspect-[3/4] w-full rounded-lg object-cover"
                               />
                               <figcaption className="mt-1 text-center text-[9px] text-slate-500">
-                                فریم {toFaDigits(idx + 1)} · {new Date(f.capturedAt).toLocaleTimeString("fa-IR")}
+                                فریم {toFaDigits(idx + 1)} · {formatFaTime(f.capturedAt)}
                                 {f.gps ? (
                                   <>
                                     <br />
@@ -1456,7 +1457,7 @@ export function PlatformAdminPanel({
                               >
                                 <MapPin className="ml-1 inline h-3 w-3 text-teal-700" />
                                 {toFaDigits(g.lat.toFixed(5))} ، {toFaDigits(g.lon.toFixed(5))} ·{" "}
-                                {new Date(g.capturedAt).toLocaleString("fa-IR")}
+                                {formatFaDateTime(g.capturedAt)}
                               </button>
                             </li>
                           ))}
@@ -1835,7 +1836,7 @@ export function PlatformAdminPanel({
                   </div>
                   {osm.lastTestedAt && (
                     <p className="mt-2 text-[10px] text-slate-400">
-                      آخرین تست: {new Date(osm.lastTestedAt).toLocaleString("fa-IR")}
+                      آخرین تست: {formatFaDateTime(osm.lastTestedAt)}
                       {osm.lastError ? ` · ${osm.lastError}` : ""}
                     </p>
                   )}
@@ -1868,7 +1869,7 @@ export function PlatformAdminPanel({
                 <p className="mt-3 text-[11px] text-slate-600">{item.notes}</p>
                 <p className="mt-2 text-[10px] text-slate-400">
                   کلید: {item.apiKeyMasked}
-                  {item.lastSyncAt ? ` · آخرین sync ${new Date(item.lastSyncAt).toLocaleString("fa-IR")}` : ""}
+                  {item.lastSyncAt ? ` · آخرین sync ${formatFaDateTime(item.lastSyncAt)}` : ""}
                 </p>
               </div>
             );
@@ -1887,7 +1888,7 @@ export function PlatformAdminPanel({
               <li key={a.id} className="px-4 py-3 text-[11px]">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-medium text-slate-800">{a.action}</span>
-                  <span className="text-[10px] text-slate-400">{new Date(a.at).toLocaleString("fa-IR")}</span>
+                  <span className="text-[10px] text-slate-400">{formatFaDateTime(a.at)}</span>
                 </div>
                 <p className="mt-0.5 text-slate-600">
                   {a.actor} → {a.target}

@@ -1,14 +1,17 @@
 /*
  File: frontend/src/lib/api/forms.ts
- Description: نگاشت ساختار فرم API به FormDefinition فرانت + package IO
+ Description: نگاشت ساختار فرم API + draft/submit + خواندن responses/mine
  Parent Dependencies: api/http, types/clinic
  */
 
-import { apiFetch, getApiBaseUrl, readApiToken } from "@/lib/api/http";
+import { apiFetch, ApiError, getApiBaseUrl, readApiToken } from "@/lib/api/http";
 import type {
+  FormAnswer,
+  FormAnswerValue,
   FormDefinition,
   FormItemDefinition,
   FormPublishStatus,
+  FormResponseStatus,
   FormSectionDefinition,
   FormVisibilityRule,
 } from "@/types/clinic";
@@ -225,4 +228,78 @@ export async function saveFormResponse(body: {
       })),
     },
   });
+}
+
+/** پاسخ draft/submitted مالک از API (camelCase). */
+export interface MyFormResponseApi {
+  id: string;
+  patientId: string;
+  formId: string;
+  formCode: string;
+  status: string;
+  submittedAt?: string | null;
+  answers: Array<{
+    itemCode: string;
+    valueCode?: string | null;
+    valueRaw?: string | null;
+    notes?: string | null;
+    skippedByRule?: boolean;
+  }>;
+}
+
+export interface MyFormResponseMapped {
+  id: string;
+  formId: string;
+  formCode: string;
+  status: FormResponseStatus;
+  submittedAt: string | null;
+  answers: FormAnswer[];
+}
+
+/** نگاشت answers سرور به FormAnswer فرانت. */
+export function mapMyFormResponseAnswers(
+  rows: MyFormResponseApi["answers"] | null | undefined
+): FormAnswer[] {
+  if (!rows?.length) return [];
+  return rows.map((a) => {
+    const rawCode = a.valueCode != null ? String(a.valueCode) : null;
+    const valueCode =
+      rawCode === "yes" || rawCode === "no" || rawCode === "unknown" ? (rawCode as FormAnswerValue) : null;
+    return {
+      itemCode: String(a.itemCode ?? ""),
+      valueCode,
+      valueRaw: a.valueRaw != null ? String(a.valueRaw) : "",
+      notes: a.notes != null ? String(a.notes) : "",
+      skippedByRule: Boolean(a.skippedByRule),
+    };
+  });
+}
+
+export function mapMyFormResponse(dto: MyFormResponseApi): MyFormResponseMapped {
+  const statusRaw = (dto.status ?? "draft").toLowerCase();
+  const status: FormResponseStatus = statusRaw === "submitted" ? "submitted" : "draft";
+  return {
+    id: dto.id,
+    formId: dto.formId,
+    formCode: dto.formCode ?? "",
+    status,
+    submittedAt: dto.submittedAt ?? null,
+    answers: mapMyFormResponseAnswers(dto.answers),
+  };
+}
+
+/** خواندن draft/submitted مالک؛ 404 → null. */
+export async function fetchMyFormResponse(
+  patientId: string,
+  formId: string
+): Promise<MyFormResponseMapped | null> {
+  try {
+    const dto = await apiFetch<MyFormResponseApi>(
+      `/api/forms/responses/mine?patientId=${encodeURIComponent(patientId)}&formId=${encodeURIComponent(formId)}`
+    );
+    return mapMyFormResponse(dto);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
 }

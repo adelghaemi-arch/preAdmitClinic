@@ -134,6 +134,8 @@ public interface IFormRepository
     Task AddAsync(FormDefinition form, CancellationToken ct = default);
     Task<FormResponse?> GetResponseAsync(Guid patientId, Guid formId, CancellationToken ct = default);
     Task AddResponseAsync(FormResponse response, CancellationToken ct = default);
+    // درج صریح answer با state Added — جلوگیری از 409 روی ValueGenerated
+    Task AddAnswerAsync(FormAnswer answer, CancellationToken ct = default);
     void RemoveAnswers(IEnumerable<FormAnswer> answers);
 }
 

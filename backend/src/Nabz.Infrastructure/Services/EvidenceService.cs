@@ -1,13 +1,15 @@
 /*
  File: backend/src/Nabz.Infrastructure/Services/EvidenceService.cs
- Description: مدارک، عکس، GPS، خزانه فایل Platform و حذف soft/hard با IFileStorage
- Parent Dependencies: IEvidenceRepository, IPatientRepository, IPlatformRepository, IFileStorage
+ Description: مدارک، عکس، GPS، نشست ضدتقلب با wrapKey، خزانه Platform؛ DayKey ایران
+ Parent Dependencies: IEvidenceRepository, IPatientRepository, IPlatformRepository, IFileStorage, IranTime
  */
 
 using Nabz.Application.Abstractions;
 using Nabz.Application.Identity;
 using Nabz.Application.Interfaces;
 using Nabz.Application.Interfaces.Repositories;
+using Nabz.Application.Security;
+using Nabz.Application.Time;
 using Nabz.Domain.Entities;
 using Nabz.Domain.Enums;
 using Nabz.Infrastructure.Storage;
@@ -148,7 +150,7 @@ public sealed class EvidenceService(
         await uow.SaveChangesAsync(ct);
     }
 
-    public async Task<Guid> StartFraudSessionAsync(Guid patientId, Guid actingUserId, CancellationToken ct = default)
+    public async Task<FraudStartResultDto> StartFraudSessionAsync(Guid patientId, Guid actingUserId, CancellationToken ct = default)
     {
         await RequireOwner(patientId, actingUserId, ct);
         // فلگ ادمین کل؛ فقط کلاینت کافی نیست
@@ -158,16 +160,27 @@ public sealed class EvidenceService(
         // remount دوربین نباید نشست باز قبلی را یتیم کند
         var open = await evidence.GetOpenFraudSessionAsync(patientId, actingUserId, ct);
         if (open is not null)
-            return open.Id;
+        {
+            // نشست قدیمی بدون کلید — یک‌بار تولید و ذخیره
+            if (string.IsNullOrWhiteSpace(open.WireWrapKey))
+            {
+                open.WireWrapKey = FraudFrameWireCodec.CreateWrapKey();
+                open.UpdatedAt = DateTime.UtcNow;
+                await uow.SaveChangesAsync(ct);
+            }
+            return new FraudStartResultDto(open.Id, open.WireWrapKey);
+        }
 
         var started = DateTime.UtcNow;
+        var wrapKey = FraudFrameWireCodec.CreateWrapKey();
         var package = new EvidencePackage
         {
             PatientId = patientId,
             UserId = actingUserId,
             Kind = EvidencePackageKind.CameraSession,
             Label = "camera_session",
-            DayKey = started.ToString("yyyy-MM-dd"),
+            // روز مدنی ایران — نه UTC تا با گروه‌بندی محصول یکی باشد
+            DayKey = IranTime.IranDayKey(started),
             StartedAt = started,
             EndedAt = null
         };
@@ -179,12 +192,30 @@ public sealed class EvidenceService(
             PatientId = patientId,
             UserId = actingUserId,
             PackageId = package.Id,
-            StartedAt = started
+            StartedAt = started,
+            WireWrapKey = wrapKey
         };
         await evidence.AddFraudSessionAsync(session, ct);
         package.SessionId = session.Id;
         await uow.SaveChangesAsync(ct);
-        return session.Id;
+        return new FraudStartResultDto(session.Id, wrapKey);
+    }
+
+    public async Task<string> GetFraudWireWrapKeyAsync(Guid sessionId, Guid actingUserId, CancellationToken ct = default)
+    {
+        var session = await evidence.GetFraudSessionAsync(sessionId, ct)
+            ?? throw new InvalidOperationException("نشست ضدتقلب یافت نشد.");
+        if (session.UserId != actingUserId)
+            throw new UnauthorizedAccessException("فقط صاحب نشست ضدتقلب مجاز است.");
+        if (session.EndedAt is not null)
+            throw new InvalidOperationException("نشست ضدتقلب بسته شده است.");
+        if (string.IsNullOrWhiteSpace(session.WireWrapKey))
+        {
+            session.WireWrapKey = FraudFrameWireCodec.CreateWrapKey();
+            session.UpdatedAt = DateTime.UtcNow;
+            await uow.SaveChangesAsync(ct);
+        }
+        return session.WireWrapKey;
     }
 
     public async Task CaptureFraudFrameAsync(Guid sessionId, Guid actingUserId, string storageKey, double? lat, double? lon, double? accuracy, UserPhotoKind kind = UserPhotoKind.FraudAuto, CancellationToken ct = default)
@@ -197,12 +228,23 @@ public sealed class EvidenceService(
             throw new InvalidOperationException("نشست ضدتقلب بسته شده است.");
         if (kind is not UserPhotoKind.FraudAuto and not UserPhotoKind.FraudConfirm)
             throw new InvalidOperationException("نوع فریم ضدتقلب نامعتبر است.");
+        if (string.IsNullOrWhiteSpace(storageKey))
+            throw new InvalidOperationException("کلید ذخیره فایل خالی است.");
+        // بدون blob روی دیسک ردیف شواهد ثبت نشود
+        var opened = await files.OpenReadAsync(storageKey, ct);
+        if (opened is null)
+            throw new InvalidOperationException("فایل فریم روی سرور یافت نشد.");
+        await using (opened.Value.Stream)
+        {
+            // فقط وجود فایل کافی است؛ MIME از پسوند/دیسک
+        }
         await evidence.AddPhotoAsync(new PatientPhoto
         {
             PatientId = session.PatientId,
             UserId = actingUserId,
             Kind = kind,
             StorageKey = storageKey,
+            MimeType = "image/jpeg",
             SessionId = sessionId,
             PackageId = session.PackageId,
             GpsLat = lat,

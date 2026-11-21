@@ -69,7 +69,11 @@ public sealed class EvidenceController(IEvidenceService evidence) : ControllerBa
     [Authorize(Roles = "Owner")]
     [HttpPost("fraud/start")]
     public async Task<IActionResult> StartFraud([FromBody] FraudStartBody body, CancellationToken ct)
-        => Ok(new { ok = true, sessionId = await evidence.StartFraudSessionAsync(body.PatientId, User.GetUserId(), ct) });
+    {
+        var started = await evidence.StartFraudSessionAsync(body.PatientId, User.GetUserId(), ct);
+        // wrapKey فقط برای Owner نشست — در بازبینی پلتفرم برنمی‌گردد
+        return Ok(new { ok = true, sessionId = started.SessionId, wrapKey = started.WrapKey });
+    }
 
     [Authorize(Roles = "Owner")]
     [HttpPost("fraud/capture")]

@@ -458,7 +458,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.FormAnswer", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -466,7 +465,8 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.Property<string>("ItemCode")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
@@ -488,7 +488,8 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ResponseId");
+                    b.HasIndex("ResponseId", "ItemCode")
+                        .IsUnique();
 
                     b.ToTable("FormAnswers");
                 });
@@ -609,7 +610,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.FormResponse", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -719,6 +719,11 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WireWrapKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
 
                     b.HasKey("Id");
 
@@ -1086,6 +1091,11 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.Property<int>("Kind")
                         .HasColumnType("int");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<Guid?>("PackageId")
                         .HasColumnType("uniqueidentifier");

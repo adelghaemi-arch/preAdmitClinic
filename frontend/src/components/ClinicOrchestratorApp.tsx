@@ -114,7 +114,7 @@ import {
   recordGpsPoint,
   reviewFraudSession,
   startFraudSession,
-  uploadDataUrlAsFile,
+  uploadOpaqueFraudFrame,
 } from "@/lib/api/evidence";
 import { updateCurrentClinic } from "@/lib/api/clinics";
 import { apiFetch } from "@/lib/api/http";
@@ -649,6 +649,62 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         if (!quiet) setToast({ text: "پروفایل بیمار به‌روز شد." });
         return { ok: true };
       }
+      // فقط patch محلی از GET responses/mine — بدون POST
+      if (action === "HYDRATE_FORM_RESPONSE") {
+        const patientGuid = String(payload.serverPatientId ?? "").trim();
+        const formGuid = String(payload.formId ?? "").trim();
+        const localId = Number(payload.patientId);
+        const answersRaw = Array.isArray(payload.answers) ? payload.answers : [];
+        const status = payload.status === "submitted" ? "submitted" : "draft";
+        const completedAt =
+          payload.completedAt != null ? String(payload.completedAt) : status === "submitted" ? new Date().toISOString() : null;
+        const formCode = String(payload.formCode ?? "");
+        const nowIso = new Date().toISOString();
+        const incoming = answersRaw.map((row) => {
+          const a = row as Record<string, unknown>;
+          return {
+            itemCode: String(a.itemCode ?? ""),
+            valueCode: (a.valueCode as "yes" | "no" | "unknown" | null) ?? null,
+            valueRaw: a.valueRaw != null ? String(a.valueRaw) : "",
+            notes: a.notes != null ? String(a.notes) : "",
+            skippedByRule: Boolean(a.skippedByRule),
+          };
+        });
+        setSnapshot((prev) => ({
+          ...prev,
+          patients: prev.patients.map((p) => {
+            if (p.serverId !== patientGuid && p.id !== localId) return p;
+            const existing = p.formResponses?.find((r) => r.formId === formGuid);
+            const other = (p.formResponses ?? []).filter((r) => r.formId !== formGuid);
+            return {
+              ...p,
+              formResponses: [
+                ...other,
+                {
+                  id: existing?.id ?? `fr_api_${formGuid}`,
+                  patientId: p.id,
+                  formId: formGuid,
+                  formCode: formCode || existing?.formCode || "",
+                  formVersion: existing?.formVersion ?? 1,
+                  formVersionId: existing?.formVersionId ?? formGuid,
+                  status: status as "draft" | "submitted",
+                  startedAt: existing?.startedAt ?? nowIso,
+                  updatedAt: nowIso,
+                  completedAt,
+                  answers: incoming,
+                  context: {
+                    gender: p.gender,
+                    age: p.age,
+                    maritalStatus: p.maritalStatus ?? "",
+                  },
+                },
+              ],
+              intakeCompleted: status === "submitted" ? true : p.intakeCompleted,
+            };
+          }),
+        }));
+        return { ok: true };
+      }
       if (action === "SAVE_FORM_RESPONSE") {
         const { saveFormResponse } = await import("@/lib/api/forms");
         const { parseResidenceAddress } = await import("@/lib/residence-address");
@@ -677,34 +733,49 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         });
         // workspace هنوز patients را hydrate نمی‌کند — فقط همین پرونده را محلی به‌روز کن
         const localId = Number(payload.patientId);
+        // دموگرافیک BASE روی ترک بخش draft هم روی Patient می‌نشیند (هم‌تراز بک‌اند)
+        const birthRaw = mappedAnswers.find((a) => /_BASE_birthDate$/i.test(a.itemCode))?.valueRaw?.trim() || null;
+        const maritalRaw =
+          mappedAnswers.find((a) => /_BASE_maritalStatus$/i.test(a.itemCode))?.valueRaw?.trim() ||
+          mappedAnswers.find((a) => /_BASE_maritalStatus$/i.test(a.itemCode))?.valueCode?.trim() ||
+          null;
         const residenceRaw = mappedAnswers.find((a) => /_BASE_residence$/i.test(a.itemCode))?.valueRaw;
-        const home = mode === "submit" && residenceRaw ? parseResidenceAddress(residenceRaw) : null;
+        const home = residenceRaw ? parseResidenceAddress(residenceRaw) : null;
         setSnapshot((prev) => ({
           ...prev,
           patients: prev.patients.map((p) => {
             if (p.serverId !== patientGuid && p.id !== localId) return p;
             const formIdLocal = String(payload.formId ?? formGuid);
+            const existing = p.formResponses?.find((r) => r.formId === formIdLocal);
             const other = (p.formResponses ?? []).filter((r) => r.formId !== formIdLocal);
             const nowIso = new Date().toISOString();
+            const incoming = mappedAnswers.map((a) => ({
+              itemCode: a.itemCode,
+              valueCode: (a.valueCode as "yes" | "no" | "unknown" | null) ?? null,
+              valueRaw: a.valueRaw ?? "",
+              notes: a.notes ?? "",
+              skippedByRule: a.skippedByRule,
+            }));
+            // draft بخش‌محور: با answers قبلی merge؛ submit کل را جایگزین می‌کند
+            let nextAnswers = incoming;
+            if (mode === "draft" && existing?.answers?.length) {
+              const byCode = new Map(existing.answers.map((a) => [a.itemCode, a]));
+              for (const a of incoming) byCode.set(a.itemCode, a);
+              nextAnswers = [...byCode.values()];
+            }
             const nextResponse = {
-              id: `fr_api_${formGuid}`,
+              id: existing?.id ?? `fr_api_${formGuid}`,
               patientId: p.id,
               formId: formIdLocal,
-              formCode: p.formResponses?.find((r) => r.formId === formIdLocal)?.formCode ?? "",
-              formVersion: 1,
-              formVersionId: formGuid,
+              formCode: existing?.formCode ?? "",
+              formVersion: existing?.formVersion ?? 1,
+              formVersionId: existing?.formVersionId ?? formGuid,
               status: (mode === "submit" ? "submitted" : "draft") as "draft" | "submitted",
-              startedAt: nowIso,
+              startedAt: existing?.startedAt ?? nowIso,
               updatedAt: nowIso,
               completedAt: mode === "submit" ? nowIso : null,
-              answers: mappedAnswers.map((a) => ({
-                itemCode: a.itemCode,
-                valueCode: (a.valueCode as "yes" | "no" | "unknown" | null) ?? null,
-                valueRaw: a.valueRaw ?? "",
-                notes: a.notes ?? "",
-                skippedByRule: a.skippedByRule,
-              })),
-              context: { gender: p.gender, age: p.age, maritalStatus: null as string | null },
+              answers: nextAnswers,
+              context: { gender: p.gender, age: p.age, maritalStatus: maritalRaw ?? null },
             };
             return {
               ...p,
@@ -712,6 +783,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               intakeCompleted: mode === "submit" ? true : p.intakeCompleted,
               // سرور در submit نهایی JourneyIntroSeen را هم ست می‌کند
               journeyIntroSeen: mode === "submit" ? true : p.journeyIntroSeen,
+              ...(birthRaw ? { birthDate: birthRaw } : {}),
+              ...(maritalRaw ? { maritalStatus: maritalRaw } : {}),
               ...(home
                 ? {
                     homeLat: home.lat,
@@ -823,14 +896,17 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         }
         if (!serverId) throw new Error("شناسه سرور بیمار برای ضدتقلب یافت نشد.");
         const started = await startFraudSession(serverId);
-        return { ok: true, sessionId: started.sessionId };
+        return { ok: true, sessionId: started.sessionId, wrapKey: started.wrapKey };
       }
       if (action === "CAPTURE_FRAUD_FRAME") {
         const sessionId = String(payload.sessionId ?? "").trim();
+        const wrapKey = String(payload.wrapKey ?? "").trim();
         const dataUrl = String(payload.photoDataUrl ?? "").trim();
         if (!sessionId || !dataUrl.startsWith("data:")) return { ok: false };
+        if (!wrapKey) throw new Error("کلید پوشش نشست ضدتقلب یافت نشد.");
         const fraudPatientId = String(payload.serverPatientId ?? "").trim() || undefined;
-        const uploaded = await uploadDataUrlAsFile(dataUrl, `fraud-${Date.now()}.jpg`, fraudPatientId);
+        // نام/پسوند/هدر مبهم؛ سرور unwrap و JPEG واقعی نگه می‌دارد
+        const uploaded = await uploadOpaqueFraudFrame(dataUrl, sessionId, wrapKey, fraudPatientId);
         const kind = String(payload.kind ?? "fraud_auto") === "fraud_confirm" ? "fraud_confirm" : "fraud_auto";
         await captureFraudFrame({
           sessionId,

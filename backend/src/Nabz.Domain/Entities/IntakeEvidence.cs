@@ -42,6 +42,8 @@ public class PatientPhoto : EntityBase
     public Guid? UserId { get; set; }
     public UserPhotoKind Kind { get; set; }
     public string StorageKey { get; set; } = string.Empty;
+    /// <summary>MIME واقعی پس از تأیید سرور — نه ادعای کلاینت روی سیم.</summary>
+    public string MimeType { get; set; } = "image/jpeg";
     public DateTime CapturedAt { get; set; } = DateTime.UtcNow;
     public Guid? SessionId { get; set; }
     public Guid? PackageId { get; set; }
@@ -77,6 +79,8 @@ public class FraudCaptureSession : EntityBase
     public DateTime? ReviewedAt { get; set; }
     public string? ReviewedBy { get; set; }
     public Guid? PackageId { get; set; }
+    /// <summary>کلید پوشش سیم برای فریم‌های این نشست — در DTO بازبینی پلتفرم برنمی‌گردد.</summary>
+    public string WireWrapKey { get; set; } = string.Empty;
 }
 
 public class EvidencePackage : EntityBase

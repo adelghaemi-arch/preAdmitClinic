@@ -1,10 +1,11 @@
 /*
  File: backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm12_14_MonitorAndResetTests.cs
- Description: مانیتور قیف/پرونده ادمین؛ ریست دمو فقط فرانت است
+ Description: مانیتور قیف؛ پیشرفت پرسشنامه روی عضو؛ ریست دمو فقط فرانت
  Parent Dependencies: ServiceHarness
  */
 
 using Nabz.Application.Interfaces;
+using Nabz.Domain.Enums;
 using Nabz.Infrastructure.Tests.Support;
 
 namespace Nabz.Infrastructure.Tests.UseCases.Admin;
@@ -28,6 +29,66 @@ public sealed class UcAdm12_14_MonitorAndResetTests
         var funnel = await contracts.GetFunnelStatsAsync(created.Id);
 
         Assert.Equal(2, funnel.MemberCount);
+        Assert.Equal(0, funnel.FormDraft);
+        Assert.Equal(0, funnel.FormSubmitted);
+    }
+
+    /// <summary>draft پرسشنامه → Abandoned + FormDraft؛ submit کامل → Completed + FormSubmitted.</summary>
+    [Fact]
+    [Trait("UC", "UC-ADM-12")]
+    public async Task UC_ADM_12_FormDraftThenSubmit_UpdatesMemberProgressAndFunnel()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var (patient, owner) = h.SeedPatient(clinicId, phone: "09120002111");
+        var contracts = h.CreateContractService();
+        var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد پیشرفت", "سازمان", null));
+        await contracts.ImportMembersAsync(created.Id,
+        [
+            new ImportMemberRequest(
+                patient.Person.FirstName, patient.Person.LastName,
+                patient.Person.NationalId!, patient.Person.Mobile,
+                patient.Person.BirthDate ?? new DateOnly(1996, 1, 1),
+                patient.Person.Gender ?? "مرد", null, null, null, null)
+        ]);
+
+        var member = h.Store.Members.Single(m => m.ContractId == created.Id);
+        Assert.Equal(patient.Id, member.LinkedPatientId);
+        Assert.Equal(member.Id, patient.LinkedContractMemberId);
+        member.OnboardingStage = OnboardingStage.LoggedIn;
+
+        var (formId, _, itemCode) = h.SeedPublishedForm(clinicId);
+        var forms = h.CreateFormService();
+
+        await forms.SaveResponseAsync(
+            patient.Id, formId, FormResponseStatus.Draft,
+            [new FormAnswerInput(itemCode, null, "پاسخ پیش‌نویس", null, false)], owner.Id);
+
+        Assert.Equal(OnboardingStage.Abandoned, member.OnboardingStage);
+        Assert.True(member.ProfileProgressPct > 0);
+
+        var funnelDraft = await contracts.GetFunnelStatsAsync(created.Id);
+        Assert.Equal(1, funnelDraft.FormDraft);
+        Assert.Equal(0, funnelDraft.FormSubmitted);
+
+        var listed = await contracts.ListMembersAsync(created.Id);
+        Assert.Equal("Draft", listed[0].FormStatus);
+        Assert.False(listed[0].IntakeCompleted);
+
+        await forms.SaveResponseAsync(
+            patient.Id, formId, FormResponseStatus.Submitted,
+            [new FormAnswerInput(itemCode, null, "پاسخ نهایی", null, false)], owner.Id);
+
+        Assert.Equal(OnboardingStage.Completed, member.OnboardingStage);
+        Assert.Equal(100, member.ProfileProgressPct);
+        Assert.NotNull(member.ProfileCompletedAt);
+
+        var funnelDone = await contracts.GetFunnelStatsAsync(created.Id);
+        Assert.Equal(0, funnelDone.FormDraft);
+        Assert.Equal(1, funnelDone.FormSubmitted);
+        listed = await contracts.ListMembersAsync(created.Id);
+        Assert.Equal("Submitted", listed[0].FormStatus);
+        Assert.True(listed[0].IntakeCompleted);
     }
 
     [Fact]

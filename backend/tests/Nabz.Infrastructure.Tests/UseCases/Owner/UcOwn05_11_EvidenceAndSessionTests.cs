@@ -115,14 +115,33 @@ public sealed class UcOwn05_11_EvidenceAndSessionTests
         Assert.Equal(7, config.FraudAutoCaptureSeconds);
         Assert.True(config.FraudWatchEnabled);
 
-        var sessionId = await evidence.StartFraudSessionAsync(patient.Id, owner.Id);
-        await evidence.CaptureFraudFrameAsync(sessionId, owner.Id, "frames/1.jpg", 35.7, 51.4, 5);
-        await evidence.CaptureFraudFrameAsync(sessionId, owner.Id, "frames/2.jpg", null, null, null);
-        await evidence.EndFraudSessionAsync(sessionId, owner.Id);
+        var started = await evidence.StartFraudSessionAsync(patient.Id, owner.Id);
+        Assert.False(string.IsNullOrWhiteSpace(started.WrapKey));
+        h.Files.Seed("frames/1.jpg", [0xFF, 0xD8, 0xFF, 0xD9]);
+        h.Files.Seed("frames/2.jpg", [0xFF, 0xD8, 0xFF, 0xD9]);
+        await evidence.CaptureFraudFrameAsync(started.SessionId, owner.Id, "frames/1.jpg", 35.7, 51.4, 5);
+        await evidence.CaptureFraudFrameAsync(started.SessionId, owner.Id, "frames/2.jpg", null, null, null);
+        await evidence.EndFraudSessionAsync(started.SessionId, owner.Id);
 
-        var session = h.Store.FraudSessions.Single(s => s.Id == sessionId);
+        var session = h.Store.FraudSessions.Single(s => s.Id == started.SessionId);
         Assert.NotNull(session.EndedAt);
-        Assert.Equal(2, h.Store.Photos.Count(p => p.SessionId == sessionId));
+        Assert.Equal(started.WrapKey, session.WireWrapKey);
+        Assert.Equal(2, h.Store.Photos.Count(p => p.SessionId == started.SessionId));
+    }
+
+    [Fact]
+    [Trait("UC", "UC-OWN-09")]
+    public async Task UC_OWN_09_Nx_CaptureWithoutBlob_Throws()
+    {
+        var h = new ServiceHarness();
+        h.SeedPlatformSettings();
+        var clinicId = h.SeedClinic();
+        var (patient, owner) = h.SeedPatient(clinicId);
+        var evidence = h.CreateEvidenceService();
+        var started = await evidence.StartFraudSessionAsync(patient.Id, owner.Id);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            evidence.CaptureFraudFrameAsync(started.SessionId, owner.Id, "missing/key.jpg", null, null, null));
     }
 
     /// <summary>Nx: فلگ fraudWatch خاموش ⇒ شروع نشست ممنوع.</summary>

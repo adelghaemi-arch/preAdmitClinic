@@ -1,6 +1,6 @@
 /*
  File: frontend/src/components/OwnerProfileForm.tsx
- Description: ویرایش پروفایل سلامتجو — نام، تولد، تاهل، آدرس/لوکیشن، عکس
+ Description: ویرایش پروفایل سلامتجو — دموگرافیک + عکس محلی تا ذخیره یکجا
  Parent Dependencies: ResidenceAddressField, PatientPhotoCapture, PersianDateField, api/patients
  */
 
@@ -46,9 +46,11 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
     })
   );
   const [saving, setSaving] = useState(false);
-  const [photoBusy, setPhotoBusy] = useState(false);
+  // عکس فقط محلی تا «ذخیره پروفایل» — جلوگیری از آپلود فوری جدا از دموگرافیک
+  const [pendingPhotoDataUrl, setPendingPhotoDataUrl] = useState<string | null>(null);
 
   const phoneDisplay = useMemo(() => patient.phone, [patient.phone]);
+  const previewPhoto = pendingPhotoDataUrl || patient.photoDataUrl || null;
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -69,7 +71,7 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
         homeUnit: applyHome ? home!.unit ?? null : null,
         homePostalCode: applyHome ? home!.postalCode ?? null : null,
       });
-      onSaved({
+      const patch: Partial<PatientFullDto> = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         fullName: `${firstName.trim()} ${lastName.trim()}`.trim(),
@@ -81,7 +83,19 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
         homePlaque: applyHome ? home!.plaque : patient.homePlaque,
         homeUnit: applyHome ? home!.unit ?? null : patient.homeUnit,
         homePostalCode: applyHome ? home!.postalCode ?? null : patient.homePostalCode,
-      });
+      };
+      if (pendingPhotoDataUrl) {
+        if (!patient.serverId) throw new Error("شناسه سرور پرونده یافت نشد.");
+        const res = await fetch(pendingPhotoDataUrl);
+        const blob = await res.blob();
+        const uploaded = await uploadFileBlob(blob, "portrait.jpg", patient.serverId);
+        await postPatientPortrait(patient.serverId, uploaded.storageKey);
+        patch.photoDataUrl = pendingPhotoDataUrl;
+        patch.hasPortrait = true;
+        patch.portraitStorageKey = uploaded.storageKey;
+        setPendingPhotoDataUrl(null);
+      }
+      onSaved(patch);
     } catch (err) {
       onError(err instanceof Error ? err.message : "ذخیره پروفایل انجام نشد.");
     } finally {
@@ -89,23 +103,12 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
     }
   };
 
-  const onPhoto = async (dataUrl: string) => {
+  const onPhoto = (dataUrl: string) => {
     if (!patient.serverId) {
       onError("شناسه سرور پرونده یافت نشد.");
       return;
     }
-    setPhotoBusy(true);
-    try {
-      const res = await fetch(dataUrl);
-      const blob = await res.blob();
-      const uploaded = await uploadFileBlob(blob, "portrait.jpg", patient.serverId);
-      await postPatientPortrait(patient.serverId, uploaded.storageKey);
-      onSaved({ photoDataUrl: dataUrl, hasPortrait: true, portraitStorageKey: uploaded.storageKey });
-    } catch (err) {
-      onError(err instanceof Error ? err.message : "آپلود عکس انجام نشد.");
-    } finally {
-      setPhotoBusy(false);
-    }
+    setPendingPhotoDataUrl(dataUrl);
   };
 
   return (
@@ -151,8 +154,13 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
 
       <div className="rounded-xl border border-slate-200 p-3">
         <p className="mb-2 text-xs font-semibold text-slate-700">عکس پرونده</p>
-        {patient.photoDataUrl && (
-          <img src={patient.photoDataUrl} alt="عکس فعلی" className="mb-3 h-28 w-auto rounded-lg border border-slate-200" />
+        {previewPhoto && (
+          <img src={previewPhoto} alt="عکس پرونده" className="mb-3 h-28 w-auto rounded-lg border border-slate-200" />
+        )}
+        {pendingPhotoDataUrl && (
+          <p className="mb-2 rounded-lg bg-teal-50 px-2 py-1.5 text-[10px] text-teal-800">
+            عکس جدید فقط محلی است؛ با «ذخیره پروفایل» به سرور می‌رود.
+          </p>
         )}
         {!patient.serverId ? (
           <p className="rounded-lg bg-amber-50 p-3 text-[11px] leading-6 text-amber-900">
@@ -161,8 +169,8 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
         ) : (
           <PatientPhotoCapture
             patientName={patient.fullName}
-            busy={photoBusy}
-            onConfirm={(url) => void onPhoto(url)}
+            busy={saving}
+            onConfirm={(url) => onPhoto(url)}
           />
         )}
       </div>

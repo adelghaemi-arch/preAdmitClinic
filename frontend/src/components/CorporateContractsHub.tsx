@@ -82,7 +82,17 @@ interface Props {
   busy: boolean;
 }
 
-type FunnelFilter = "all" | "not_sent" | "sms_sent" | "opened_any" | "link_opened" | "logged_any" | "logged_in" | "abandoned" | "completed";
+type FunnelFilter =
+  | "all"
+  | "not_sent"
+  | "sms_sent"
+  | "opened_any"
+  | "link_opened"
+  | "logged_any"
+  | "logged_in"
+  | "abandoned"
+  | "form_draft"
+  | "completed";
 type ApptFilter = "all" | "unscheduled" | "scheduled_any" | "today" | "pinned" | "auto_scheduled" | "visited";
 
 const STEPS: Array<{ id: ContractHubTab; n: string; title: string; sub: string; icon: typeof Users }> = [
@@ -96,7 +106,7 @@ const GUIDE: Record<ContractHubTab, string> = {
   people: "در این مرحله افراد سازمان را وارد قرارداد می‌کنید؛ از API خارجی، فایل اکسل یا ثبت دستی. پس از دریافت، سامانه بسته سلامت مناسب هر نفر را می‌چسباند و برایش پیامک تکمیل پروفایل می‌فرستد.",
   packages: "در این مرحله مشخص می‌کنید هر فرد با چه بسته سلامتی وارد کلینیک شود. قوانین در کتابخانه مرکزی سیستم ذخیره می‌شوند، در هر قرارداد قابل استفاده مجدد‌اند و می‌توانید از همان‌جا قانون جدید هم بسازید.",
   schedule: "در این مرحله برای هر روز سقف پذیرش و قانون توزیع را تعیین می‌کنید؛ افراد دستی فیکس می‌شوند و باقی ظرفیت به‌صورت خودکار از میان افراد بدون نوبت فراخوان می‌شود.",
-  funnel: "در این مرحله می‌بینید چه کسانی لینک را باز کرده‌اند، کجاها رها شده‌اند و چه کسانی تکمیل کرده‌اند؛ و می‌توانید برای گروه‌های موردنظر پیامک یادآوری بفرستید.",
+  funnel: "در این مرحله می‌بینید چه کسانی لینک را باز کرده‌اند، چه کسانی پرسشنامه را شروع کرده یا تکمیل کرده‌اند؛ و می‌توانید برای گروه‌های موردنظر پیامک یادآوری بفرستید.",
 };
 
 export function CorporateContractsHub({ snapshot, initialTab = "people", onAction, onOpenPatientRecord, onSwitchToSupervisor, busy }: Props) {
@@ -294,6 +304,9 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
       loggedAny: m.filter((x) => ["logged_in", "abandoned", "completed"].includes(x.onboardingStage)).length,
       loggedInOnly: countStage("logged_in"),
       abandoned: countStage("abandoned"),
+      // شروع پرسشنامه (draft) — مستقل از badge SMS
+      formDraft: m.filter((x) => x.formStatus === "draft" || (x.onboardingStage === "abandoned" && x.formStatus !== "submitted")).length,
+      formSubmitted: m.filter((x) => x.formStatus === "submitted" || x.onboardingStage === "completed").length,
       completed: countStage("completed"),
       unscheduled: m.filter((x) => x.appointmentStatus === "unscheduled").length,
       scheduledToday: m.filter((x) => x.scheduledDate === today && x.appointmentStatus !== "unscheduled").length,
@@ -315,7 +328,8 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
       if (funnelFilter === "logged_any" && !["logged_in", "abandoned", "completed"].includes(s)) return false;
       if (funnelFilter === "logged_in" && s !== "logged_in") return false;
       if (funnelFilter === "abandoned" && s !== "abandoned") return false;
-      if (funnelFilter === "completed" && s !== "completed") return false;
+      if (funnelFilter === "form_draft" && x.formStatus !== "draft" && !(s === "abandoned" && x.formStatus !== "submitted")) return false;
+      if (funnelFilter === "completed" && s !== "completed" && x.formStatus !== "submitted") return false;
       const a = x.appointmentStatus;
       if (apptFilter === "unscheduled" && a !== "unscheduled") return false;
       if (apptFilter === "scheduled_any" && a === "unscheduled") return false;
@@ -1055,14 +1069,15 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
       {/* Step 4 — funnel + sms */}
       {tab === "funnel" && (
         <div className="space-y-5">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
             {([
               { id: "all" as FunnelFilter, title: "کل افراد قرارداد", count: stats.total, sub: `${toFaDigits(stats.notSent)} بدون پیامک`, cls: "border-slate-200 bg-white" },
               { id: "sms_sent" as FunnelFilter, title: "پیامک‌شده (باز نکرده)", count: stats.smsSentOnly, sub: "هنوز لینک را باز نکرده‌اند", cls: "border-sky-200 bg-sky-50/50" },
               { id: "opened_any" as FunnelFilter, title: "لینک را باز کرده‌اند", count: stats.openedAny, sub: `${toFaDigits(stats.linkOpenedOnly)} نفر بدون لاگین`, cls: "border-indigo-200 bg-indigo-50/50" },
               { id: "logged_any" as FunnelFilter, title: "لاگین کرده‌اند", count: stats.loggedAny, sub: `${toFaDigits(stats.loggedInOnly)} نفر شروع‌نکرده`, cls: "border-violet-200 bg-violet-50/50" },
-              { id: "abandoned" as FunnelFilter, title: "رها کرده وسط تکمیل", count: stats.abandoned, sub: "نیازمند یادآوری", cls: "border-amber-300 bg-amber-50/70" },
-              { id: "completed" as FunnelFilter, title: "تکمیل‌شده نهایی", count: stats.completed, sub: `${toFaDigits(stats.total ? Math.round((stats.completed / stats.total) * 100) : 0)}٪ کل قرارداد`, cls: "border-emerald-200 bg-emerald-50/60" },
+              { id: "form_draft" as FunnelFilter, title: "شروع پرسشنامه", count: stats.formDraft, sub: "در حال تکمیل پیش‌پذیرش", cls: "border-amber-300 bg-amber-50/70" },
+              { id: "abandoned" as FunnelFilter, title: "رها کرده وسط تکمیل", count: stats.abandoned, sub: "نیازمند یادآوری", cls: "border-orange-200 bg-orange-50/60" },
+              { id: "completed" as FunnelFilter, title: "تکمیل پرسشنامه", count: stats.formSubmitted, sub: `${toFaDigits(stats.total ? Math.round((stats.formSubmitted / stats.total) * 100) : 0)}٪ کل قرارداد`, cls: "border-emerald-200 bg-emerald-50/60" },
             ]).map((card) => (
               <button key={card.id} type="button" onClick={() => { setFunnelFilter(card.id); setCheckedIds([]); }} className={`rounded-2xl border p-3.5 text-right transition ${card.cls} ${funnelFilter === card.id ? "ring-2 ring-teal-600" : "hover:border-teal-300"}`}>
                 <div className="text-[11px] font-semibold text-slate-600">{card.title}</div>
@@ -1078,7 +1093,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                 <h2 className="text-sm font-bold text-slate-800">جزئیات تک‌به‌تک افراد ({toFaDigits(filteredFunnelMembers.length)} نفر){membersBusy ? " · در حال بارگذاری…" : ""}</h2>
                 <div className="flex flex-wrap items-center gap-2">
                   <button type="button" onClick={() => exportContractReportExcel(contract)} className="secondary-button py-1 text-[10px]"><Download className="h-3.5 w-3.5" />خروجی اکسل</button>
-                  <select value={funnelFilter} onChange={(e) => setFunnelFilter(e.target.value as FunnelFilter)} className="app-select text-xs"><option value="all">همه مراحل</option><option value="not_sent">پیامک‌نشده ({toFaDigits(stats.notSent)})</option><option value="sms_sent">بازنکرده لینک ({toFaDigits(stats.smsSentOnly)})</option><option value="opened_any">بازکنندگان لینک ({toFaDigits(stats.openedAny)})</option><option value="logged_any">لاگین‌کردگان ({toFaDigits(stats.loggedAny)})</option><option value="abandoned">رهاکردگان وسط کار ({toFaDigits(stats.abandoned)})</option><option value="completed">تکمیل‌شده ({toFaDigits(stats.completed)})</option></select>
+                  <select value={funnelFilter} onChange={(e) => setFunnelFilter(e.target.value as FunnelFilter)} className="app-select text-xs"><option value="all">همه مراحل</option><option value="not_sent">پیامک‌نشده ({toFaDigits(stats.notSent)})</option><option value="sms_sent">بازنکرده لینک ({toFaDigits(stats.smsSentOnly)})</option><option value="opened_any">بازکنندگان لینک ({toFaDigits(stats.openedAny)})</option><option value="logged_any">لاگین‌کردگان ({toFaDigits(stats.loggedAny)})</option><option value="form_draft">شروع پرسشنامه ({toFaDigits(stats.formDraft)})</option><option value="abandoned">رهاکردگان وسط کار ({toFaDigits(stats.abandoned)})</option><option value="completed">تکمیل پرسشنامه ({toFaDigits(stats.formSubmitted)})</option></select>
                   <select value={apptFilter} onChange={(e) => setApptFilter(e.target.value as ApptFilter)} className="app-select text-xs"><option value="all">همه نوبت‌ها</option><option value="unscheduled">فراخوان‌نشده</option><option value="today">نوبت امروز</option><option value="pinned">دستی (پین)</option><option value="auto_scheduled">فراخوان خودکار</option><option value="visited">مراجعه‌کرده</option></select>
                   <label className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs"><Search className="h-3.5 w-3.5 text-slate-400" /><AppInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="نام، کد ملی..." className="w-28 bg-transparent outline-none" /></label>
                 </div>
@@ -1091,7 +1106,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                       <tr key={m.id} className="hover:bg-slate-50/70">
                         <td className="py-2.5 pr-1"><input type="checkbox" checked={checkedIds.includes(m.id)} onChange={(e) => setCheckedIds((prev) => e.target.checked ? [...prev, m.id] : prev.filter((id) => id !== m.id))} className="accent-teal-700" /></td>
                         <td className="py-2.5"><div className="font-semibold text-slate-800">{m.fullName} <span className="text-[10px] font-normal text-slate-400">({m.gender} · {toFaDigits(m.age)})</span></div><div className="text-[10px] text-slate-400">{toFaDigits(m.phone)} · {m.department}</div><div className="text-[10px] text-slate-400">کدملی: {toFaDigits(m.nationalId)}</div></td>
-                        <td className="py-2.5"><div className="flex flex-wrap items-center gap-1.5"><span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium ${ONBOARDING_META[m.onboardingStage].badgeClass}`}>{ONBOARDING_META[m.onboardingStage].label}</span><span className="text-[10px] text-slate-400">({toFaDigits(m.smsInviteCount)} پیامک)</span></div>{m.onboardingStage === "abandoned" && <div className="mt-1 flex items-center gap-2 text-[10px] text-amber-800"><span className="inline-block h-1.5 w-16 overflow-hidden rounded-full bg-amber-100"><span className="block h-full bg-amber-500" style={{ width: `${m.profileProgressPct}%` }} /></span><span>{toFaDigits(m.profileProgressPct)}٪ — توقف در {m.abandonedAtStep}</span></div>}{m.onboardingStage === "completed" && m.profileCompletedAt && <div className="mt-0.5 text-[10px] text-emerald-700">تکمیل در ساعت {formatFaTime(m.profileCompletedAt)}</div>}</td>
+                        <td className="py-2.5"><div className="flex flex-wrap items-center gap-1.5"><span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium ${ONBOARDING_META[m.onboardingStage].badgeClass}`}>{ONBOARDING_META[m.onboardingStage].label}</span>{m.formStatus === "draft" && <span className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-900">پرسشنامه شروع‌شده</span>}{m.formStatus === "submitted" && <span className="inline-flex rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">پرسشنامه تکمیل</span>}<span className="text-[10px] text-slate-400">({toFaDigits(m.smsInviteCount)} پیامک)</span></div>{(m.formStatus === "draft" || m.onboardingStage === "abandoned") && m.profileProgressPct > 0 && <div className="mt-1 flex items-center gap-2 text-[10px] text-amber-800"><span className="inline-block h-1.5 w-16 overflow-hidden rounded-full bg-amber-100"><span className="block h-full bg-amber-500" style={{ width: `${m.profileProgressPct}%` }} /></span><span>{toFaDigits(m.profileProgressPct)}٪{m.abandonedAtStep ? ` — توقف در ${m.abandonedAtStep}` : ""}</span></div>}{(m.formStatus === "submitted" || m.onboardingStage === "completed") && m.profileCompletedAt && <div className="mt-0.5 text-[10px] text-emerald-700">تکمیل در ساعت {formatFaTime(m.profileCompletedAt)}</div>}</td>
                         <td className="py-2.5"><div className="text-[11px] font-medium text-slate-700">{resolvePackageDisplayTitle(m.assignedPathwayCode, m.assignedPathwayTitle)}</div><div className="text-[9px] text-slate-400">{m.matchedRuleTitle}</div></td>
                         <td className="py-2.5"><span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium ${APPOINTMENT_META[m.appointmentStatus].badgeClass}`}>{APPOINTMENT_META[m.appointmentStatus].short}</span>{m.scheduledLabel && <div className="mt-0.5 text-[10px] text-slate-500">{m.scheduledLabel}</div>}</td>
                         <td className="py-2.5"><button type="button" onClick={() => setBanner(`لینک اختصاصی ${m.fullName}: ${m.inviteToken}`)} className="secondary-button py-1 text-[10px]"><Link2 className="h-3 w-3 text-teal-700" />مشاهده</button></td>

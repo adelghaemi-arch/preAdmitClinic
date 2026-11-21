@@ -9,6 +9,11 @@
 
 # Changelog نگارش اسناد
 
+## ۱۴۰۵/۰۸/۳۰ — برنامه استراتژیک پلتفرم پیش‌پذیرش
+
+- سند تجمیعی [`platform-strategic-plan.md`](platform-strategic-plan.md): فیچر/فرایند v1، نقشهٔ راه `processes/future`، پیشنهادهای محصولی (بالینی، B2B، ضدتقلب، روز خدمت، کانال، داده، انطباق)، فازبندی و تصمیم‌های باز.
+- ردیف در [`docs/README.md`](../README.md) و [`shared/README.md`](README.md).
+
 ## ۱۴۰۵/۰۸/۲۸ — ایندکس docs و دیپلوی سرور
 
 - [`docs/README.md`](../README.md) با عنوان **مستندات — ایندکس** و پوشه‌های موضوعی اضافه شد.

@@ -342,6 +342,9 @@ function makeMember(
     onboardingStage: raw.stage,
     profileProgressPct: raw.pct,
     abandonedAtStep: raw.abandonedStep ?? null,
+    formStatus:
+      raw.stage === "completed" ? "submitted" : raw.stage === "abandoned" || raw.pct > 0 ? "draft" : "none",
+    intakeCompleted: raw.stage === "completed",
     smsInviteCount: sent ? (raw.stage === "abandoned" ? 2 : 1) : 0,
     lastSmsAt: sent ? hoursAgo(36 - (id % 12)) : null,
     linkOpenedAt: opened ? hoursAgo(28 - (id % 10)) : null,

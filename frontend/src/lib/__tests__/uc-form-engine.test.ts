@@ -1,18 +1,19 @@
 /*
  File: frontend/src/lib/__tests__/uc-form-engine.test.ts
- Description: تست دروازه انتشار فرم (coding/audience) برای UC-ADM
+ Description: تست coding/audience (UC-ADM) و answersForSection draft بخش‌محور (UC-OWN-03)
  Parent Dependencies: lib/form-engine, types/clinic
  */
 
 import { describe, expect, it } from "vitest";
 import {
+  answersForSection,
   evalVisibilityRule,
   itemCodingIssues,
   resolveFormForPatient,
   validateFormDefinitionCoding,
   type AudienceContext,
 } from "@/lib/form-engine";
-import type { FormDefinition, FormItemDefinition, FormTargetAudience } from "@/types/clinic";
+import type { FormAnswer, FormDefinition, FormItemDefinition, FormTargetAudience } from "@/types/clinic";
 
 const audience: FormTargetAudience = { gender: "همه", ageMin: null, ageMax: null };
 
@@ -151,5 +152,26 @@ describe("UC-OWN-03", () => {
     const rule = { field: "age" as const, op: "gte" as const, value: 50 };
     expect(evalVisibilityRule(rule, young)).toBe(false);
     expect(evalVisibilityRule(rule, older)).toBe(true);
+  });
+
+  it("answersForSection: فقط itemCodeهای همان بخش برای draft بخش‌محور", () => {
+    const form = minimalForm([
+      minimalItem({ id: "i1", sectionId: "sec-1", code: "SEC1_Q1" }),
+      minimalItem({ id: "i2", sectionId: "sec-1", code: "SEC1_Q2" }),
+      minimalItem({ id: "i3", sectionId: "sec-2", code: "SEC2_Q1" }),
+    ]);
+    form.sections = [
+      { id: "sec-1", formId: "f1", code: "S1", title: "بخش ۱", sortOrder: 1, timeWindowHint: "", guideText: "" },
+      { id: "sec-2", formId: "f1", code: "S2", title: "بخش ۲", sortOrder: 2, timeWindowHint: "", guideText: "" },
+    ];
+    const answers: FormAnswer[] = [
+      { itemCode: "SEC1_Q1", valueCode: "yes", valueRaw: "yes", notes: "" },
+      { itemCode: "SEC1_Q2", valueCode: "no", valueRaw: "no", notes: "" },
+      { itemCode: "SEC2_Q1", valueCode: "yes", valueRaw: "yes", notes: "" },
+    ];
+    const section1 = answersForSection(form, "sec-1", answers);
+    expect(section1.map((a) => a.itemCode).sort()).toEqual(["SEC1_Q1", "SEC1_Q2"]);
+    expect(answersForSection(form, "sec-2", answers)).toHaveLength(1);
+    expect(answersForSection(form, "sec-2", answers)[0].itemCode).toBe("SEC2_Q1");
   });
 });

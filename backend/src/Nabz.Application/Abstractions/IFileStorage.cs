@@ -8,8 +8,11 @@ namespace Nabz.Application.Abstractions;
 
 public record StoredFileResult(string StorageKey, string FileName, string ContentType, long SizeBytes);
 
-/// <summary>زمینهٔ شارد مسیر: سال UTC + سه رقم اول کدملی.</summary>
-public record StorageSaveContext(string? NationalIdPrefix = null);
+/// <summary>
+/// زمینهٔ شارد مسیر: سال UTC + سه رقم اول کدملی.
+/// اگر <see cref="CanonicalFileName"/> ست باشد، همان نام داخلی (بدون نام کلاینت) روی دیسک می‌رود.
+/// </summary>
+public record StorageSaveContext(string? NationalIdPrefix = null, string? CanonicalFileName = null);
 
 public interface IFileStorage
 {

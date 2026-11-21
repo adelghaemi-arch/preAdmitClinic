@@ -41,6 +41,9 @@ public record GpsPointDto(
 /// <summary>برش عمومی تنظیمات ضدتقلب برای نقش‌های غیر-Platform (مثلاً Owner).</summary>
 public record FraudCaptureConfigDto(int FraudAutoCaptureSeconds, bool FraudWatchEnabled);
 
+/// <summary>شروع/reuse نشست ضدتقلب — wrapKey فقط برای Owner نشست‌دار.</summary>
+public record FraudStartResultDto(Guid SessionId, string WrapKey);
+
 /// <summary>ردیف خزانهٔ فایل برای ادمین کل — document یا photo.</summary>
 public record VaultFileDto(
     Guid Id,
@@ -67,7 +70,9 @@ public interface IEvidenceService
     Task RemoveDocumentGroupAsync(Guid groupId, Guid actingUserId, CancellationToken ct = default);
     Task RemoveDocumentFileAsync(Guid fileId, Guid actingUserId, CancellationToken ct = default);
     Task UpdatePatientPhotoAsync(Guid patientId, Guid actingUserId, string storageKey, CancellationToken ct = default);
-    Task<Guid> StartFraudSessionAsync(Guid patientId, Guid actingUserId, CancellationToken ct = default);
+    Task<FraudStartResultDto> StartFraudSessionAsync(Guid patientId, Guid actingUserId, CancellationToken ct = default);
+    /// <summary>کلید پوشش سیم برای آپلود فریم مبهم؛ فقط مالک نشست باز.</summary>
+    Task<string> GetFraudWireWrapKeyAsync(Guid sessionId, Guid actingUserId, CancellationToken ct = default);
     Task CaptureFraudFrameAsync(Guid sessionId, Guid actingUserId, string storageKey, double? lat, double? lon, double? accuracy, UserPhotoKind kind = UserPhotoKind.FraudAuto, CancellationToken ct = default);
     Task EndFraudSessionAsync(Guid sessionId, Guid actingUserId, CancellationToken ct = default);
     Task RecordGpsAsync(Guid patientId, Guid actingUserId, double lat, double lon, double accuracy, string source, CancellationToken ct = default);

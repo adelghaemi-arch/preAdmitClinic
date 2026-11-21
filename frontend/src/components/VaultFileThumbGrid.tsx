@@ -10,7 +10,7 @@ import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { FileText, Loader2, X } from "lucide-react";
 import type { ApiVaultFileDto } from "@/lib/api/evidence";
 import { useStorageObjectUrl } from "@/hooks/useStorageObjectUrl";
-import { toFaDigits } from "@/lib/persian";
+import { formatFaDateTime, toFaDigits } from "@/lib/persian";
 
 GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -142,9 +142,9 @@ function VaultThumbCell({
           <p className="truncate text-[9px] text-slate-400" title={row.storageKey}>
             {row.fileName}
           </p>
-          <p className="text-[9px] text-slate-400">{new Date(row.capturedAt).toLocaleString("fa-IR")}</p>
+          <p className="text-[9px] text-slate-400">{formatFaDateTime(row.capturedAt)}</p>
           {row.deletedAt && (
-            <p className="text-[9px] text-amber-700">حذف: {new Date(row.deletedAt).toLocaleString("fa-IR")}</p>
+            <p className="text-[9px] text-amber-700">حذف: {formatFaDateTime(row.deletedAt)}</p>
           )}
           {row.nationalId ? (
             <p className="truncate font-mono text-[8px] text-slate-400">{toFaDigits(row.nationalId)}</p>

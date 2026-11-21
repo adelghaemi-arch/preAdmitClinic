@@ -90,6 +90,8 @@ function addMembersToContract(
       onboardingStage: sendSmsNow ? "sms_sent" : "not_sent",
       profileProgressPct: 0,
       abandonedAtStep: null,
+      formStatus: "none",
+      intakeCompleted: false,
       smsInviteCount: sendSmsNow ? 1 : 0,
       lastSmsAt: sendSmsNow ? now : null,
       linkOpenedAt: null,
@@ -294,6 +296,8 @@ export function runContractAction(
       targetMember.loggedInAt = targetMember.loggedInAt ?? now;
       targetMember.profileProgressPct = Math.min(95, Math.max(25, Number(body.progressPct) || 55));
       targetMember.abandonedAtStep = String(body.abandonedAtStep || "گام ۲ از ۴: داروهای مصرفی و حساسیت‌ها");
+      targetMember.formStatus = "draft";
+      targetMember.intakeCompleted = false;
       if (typeof body.draftSymptoms === "string") targetMember.draftSymptoms = body.draftSymptoms;
       if (typeof body.draftAllergies === "string") targetMember.draftAllergies = body.draftAllergies;
       if (typeof body.draftMedications === "string") targetMember.draftMedications = body.draftMedications;
@@ -303,6 +307,8 @@ export function runContractAction(
       targetMember.profileCompletedAt = now;
       targetMember.profileProgressPct = 100;
       targetMember.abandonedAtStep = null;
+      targetMember.formStatus = "submitted";
+      targetMember.intakeCompleted = true;
       if (typeof body.draftSymptoms === "string") targetMember.draftSymptoms = body.draftSymptoms;
       if (typeof body.draftAllergies === "string") targetMember.draftAllergies = body.draftAllergies;
       if (typeof body.draftMedications === "string") targetMember.draftMedications = body.draftMedications;

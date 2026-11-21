@@ -29,7 +29,11 @@ public record ContractMemberDto(
     string? MatchedRuleTitle,
     Guid? LinkedPatientId, string InviteToken,
     // شمارش دعوت برای badge قیف پس از SMS فردی/گروهی
-    int SmsInviteCount, DateTime? LastSmsAt);
+    int SmsInviteCount, DateTime? LastSmsAt,
+    // پیشرفت پرسشنامه پیش‌پذیرش (همگام با FormResponse)
+    int ProfileProgressPct, string? AbandonedAtStep, DateTime? ProfileCompletedAt,
+    /// <summary>None | Draft | Submitted</summary>
+    string FormStatus, bool IntakeCompleted);
 
 public record PackageRuleInput(
     string Title, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PackageCode, int Priority, Guid? LibraryRuleId);
@@ -75,4 +79,8 @@ public interface IContractService
 
 public record ContractFunnelStatsDto(
     Guid ContractId, int MemberCount,
-    int NotSent, int SmsSent, int LinkOpened, int LoggedIn, int Abandoned, int Completed, int LinkedPatients);
+    int NotSent, int SmsSent, int LinkOpened, int LoggedIn, int Abandoned, int Completed, int LinkedPatients,
+    /// <summary>اعضایی که پرسشنامه را شروع کرده‌اند (Draft / Abandoned با پیشرفت).</summary>
+    int FormDraft,
+    /// <summary>اعضایی که پیش‌پذیرش را تکمیل کرده‌اند.</summary>
+    int FormSubmitted);

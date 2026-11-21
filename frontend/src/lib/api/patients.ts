@@ -123,11 +123,18 @@ export async function fetchPatientProfileRevisions(serverPatientId: string, take
   );
 }
 
-export async function uploadFileBlob(blob: Blob, fileName: string, serverPatientId?: string | null) {
+export async function uploadFileBlob(
+  blob: Blob,
+  fileName: string,
+  serverPatientId?: string | null,
+  sessionId?: string | null
+) {
   const form = new FormData();
   form.append("file", blob, fileName);
   // patientId → شارد مسیر yyyy/NNN روی سرور
   if (serverPatientId) form.append("patientId", serverPatientId);
+  // sessionId فقط برای فریم پوشش‌دار ضدتقلب (NBZ1)
+  if (sessionId) form.append("sessionId", sessionId);
   return apiFetch<{
     ok: boolean;
     storageKey: string;

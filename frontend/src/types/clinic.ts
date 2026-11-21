@@ -837,6 +837,9 @@ export interface ContractMember {
   onboardingStage: OnboardingStage;
   profileProgressPct: number;
   abandonedAtStep: string | null;
+  /** وضعیت پرسشنامه پیش‌پذیرش روی رستر — از FormResponse همگام می‌شود */
+  formStatus: "none" | "draft" | "submitted";
+  intakeCompleted: boolean;
   smsInviteCount: number;
   lastSmsAt: string | null;
   linkOpenedAt: string | null;

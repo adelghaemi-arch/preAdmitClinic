@@ -1,6 +1,6 @@
 /*
  File: frontend/src/lib/api/contracts.ts
- Description: نگاشت قرارداد/اعضا از Nabz.Api به shape فرانت (شامل SmsInviteCount/LastSmsAt)
+ Description: نگاشت قرارداد/اعضا از Nabz.Api (قیف + formStatus پیشرفت پرسشنامه)
  Parent Dependencies: api/http, api/roles, types/clinic
  */
 
@@ -57,6 +57,25 @@ export interface ApiContractMemberDto {
   inviteToken: string;
   smsInviteCount?: number;
   lastSmsAt?: string | null;
+  profileProgressPct?: number;
+  abandonedAtStep?: string | null;
+  profileCompletedAt?: string | null;
+  formStatus?: string | null;
+  intakeCompleted?: boolean;
+}
+
+export interface ApiContractFunnelStatsDto {
+  contractId: string;
+  memberCount: number;
+  notSent: number;
+  smsSent: number;
+  linkOpened: number;
+  loggedIn: number;
+  abandoned: number;
+  completed: number;
+  linkedPatients: number;
+  formDraft: number;
+  formSubmitted: number;
 }
 
 function mapOnboarding(stage: string): ContractMember["onboardingStage"] {
@@ -67,6 +86,13 @@ function mapOnboarding(stage: string): ContractMember["onboardingStage"] {
   if (s === "abandoned") return "abandoned";
   if (s === "completed") return "completed";
   return "not_sent";
+}
+
+function mapFormStatus(raw: string | null | undefined): ContractMember["formStatus"] {
+  const s = (raw ?? "").toLowerCase();
+  if (s === "submitted") return "submitted";
+  if (s === "draft") return "draft";
+  return "none";
 }
 
 function emptySupervisor(name?: string | null, phone?: string | null): CorporateContract["supervisor"] {
@@ -126,14 +152,16 @@ export function mapApiMember(m: ApiContractMemberDto, contractNumericId: number)
     matchedRuleTitle: m.matchedRuleTitle ?? "",
     manualPackageOverride: false,
     onboardingStage: mapOnboarding(m.onboardingStage),
-    profileProgressPct: 0,
-    abandonedAtStep: null,
+    profileProgressPct: Number(m.profileProgressPct ?? 0),
+    abandonedAtStep: m.abandonedAtStep != null ? String(m.abandonedAtStep) : null,
+    formStatus: mapFormStatus(m.formStatus),
+    intakeCompleted: Boolean(m.intakeCompleted) || mapFormStatus(m.formStatus) === "submitted",
     smsInviteCount: Number(m.smsInviteCount ?? 0),
     lastSmsAt: m.lastSmsAt ? String(m.lastSmsAt) : null,
     linkOpenedAt: null,
     loggedInAt: null,
     lastActivityAt: null,
-    profileCompletedAt: null,
+    profileCompletedAt: m.profileCompletedAt ? String(m.profileCompletedAt) : null,
     draftSymptoms: "",
     draftAllergies: "",
     draftMedications: "",

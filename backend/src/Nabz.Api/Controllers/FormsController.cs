@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Api/Controllers/FormsController.cs
- Description: فرم پیش‌پذیرش، ساختار، resolve، draft/submit؛ SaveResponse با ۴۰۳/۴۰۹ خوانا
+ Description: فرم پیش‌پذیرش، ساختار، resolve، draft/submit؛ SaveResponse با retry یک‌بار روی concurrency
  Parent Dependencies: IFormService, CurrentUserExtensions
  */
 
@@ -16,7 +16,10 @@ namespace Nabz.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/forms")]
-public sealed class FormsController(IFormService forms) : ControllerBase
+public sealed class FormsController(
+    IFormService forms,
+    IServiceScopeFactory scopes,
+    ILogger<FormsController> log) : ControllerBase
 {
     [Authorize(Roles = "Admin,Specialist,Owner,Platform")]
     [HttpGet]
@@ -105,10 +108,12 @@ public sealed class FormsController(IFormService forms) : ControllerBase
         // answers null → ۴۰۰ خوانا؛ استثنای دامنه نباید ۵۰۰ بدون CORS شود
         if (body.Answers is null)
             return BadRequest(new { ok = false, error = "فهرست پاسخ‌ها الزامی است." });
+
+        var status = body.Submit ? FormResponseStatus.Submitted : FormResponseStatus.Draft;
+        var userId = User.GetUserId();
         try
         {
-            var status = body.Submit ? FormResponseStatus.Submitted : FormResponseStatus.Draft;
-            var r = await forms.SaveResponseAsync(body.PatientId, body.FormId, status, body.Answers, User.GetUserId(), ct);
+            var r = await forms.SaveResponseAsync(body.PatientId, body.FormId, status, body.Answers, userId, ct);
             return Ok(r);
         }
         catch (UnauthorizedAccessException ex)
@@ -119,10 +124,44 @@ public sealed class FormsController(IFormService forms) : ControllerBase
         {
             return BadRequest(new { ok = false, error = ex.Message });
         }
-        catch (DbUpdateConcurrencyException)
+        catch (DbUpdateConcurrencyException ex)
         {
-            // تداخل حذف/درج answers؛ بدنهٔ JSON تا پروکسی «CORS» خام نشان ندهد
-            return Conflict(new { ok = false, error = "ذخیره هم‌زمان تداخل داشت؛ دوباره تلاش کنید." });
+            log.LogWarning(
+                ex,
+                "FormResponse concurrency patient={PatientId} form={FormId} entries={Entries}; retry once",
+                body.PatientId,
+                body.FormId,
+                string.Join(",", ex.Entries.Select(e => $"{e.Metadata.ClrType.Name}:{e.State}")));
+            // DbContext آلوده است؛ یک بار با scope تازه
+            try
+            {
+                await using var scope = scopes.CreateAsyncScope();
+                var retry = scope.ServiceProvider.GetRequiredService<IFormService>();
+                var r = await retry.SaveResponseAsync(body.PatientId, body.FormId, status, body.Answers, userId, ct);
+                return Ok(r);
+            }
+            catch (DbUpdateConcurrencyException ex2)
+            {
+                log.LogWarning(
+                    ex2,
+                    "FormResponse concurrency exhausted patient={PatientId} form={FormId} entries={Entries}",
+                    body.PatientId,
+                    body.FormId,
+                    string.Join(",", ex2.Entries.Select(e => $"{e.Metadata.ClrType.Name}:{e.State}")));
+                return Conflict(new { ok = false, error = "ذخیره هم‌زمان تداخل داشت؛ دوباره تلاش کنید." });
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new { ok = false, error = "ذخیره پاسخ ناموفق بود؛ دوباره تلاش کنید." });
+            }
+            catch (InvalidOperationException ex2)
+            {
+                return BadRequest(new { ok = false, error = ex2.Message });
+            }
+            catch (UnauthorizedAccessException ex2)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { ok = false, error = ex2.Message });
+            }
         }
         catch (DbUpdateException)
         {

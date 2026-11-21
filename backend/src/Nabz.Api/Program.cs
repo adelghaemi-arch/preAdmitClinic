@@ -4,12 +4,14 @@
  Parent Dependencies: Nabz.Infrastructure, Nabz.Database.EF.Sql, AppDataSeeder, SessionAuthenticationHandler
  */
 
+using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Nabz.Api.Auth;
 using Nabz.Api.Seed;
 using Nabz.Application.Interfaces;
+using Nabz.Application.Time;
 using Nabz.Database.EF.Sql;
 using Nabz.Infrastructure;
 
@@ -18,7 +20,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers().AddJsonOptions(o =>
 {
     o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    // DateTime API → وقت ایران؛ DB همچنان UTC
+    o.JsonSerializerOptions.Converters.Add(new IranDateTimeJsonConverter());
+    o.JsonSerializerOptions.Converters.Add(new IranNullableDateTimeJsonConverter());
     o.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    // تا +03:30 و متن فارسی در JSON به‌صورت \uXXXX دیده نشوند
+    o.JsonSerializerOptions.Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
 });
 builder.Services.AddOpenApi();
 

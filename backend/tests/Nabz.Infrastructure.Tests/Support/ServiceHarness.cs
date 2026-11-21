@@ -62,7 +62,7 @@ public sealed class ServiceHarness
             authOptions, kavenegarOptions, NullLogger<AuthService>.Instance);
     }
 
-    public FormService CreateFormService() => new(Forms, Patients, ProfileRevisions, Users, UnitOfWork);
+    public FormService CreateFormService() => new(Forms, Patients, ProfileRevisions, Users, Contracts, UnitOfWork);
 
     public EvidenceService CreateEvidenceService() => new(Evidence, Patients, ProfileRevisions, Platform, Files, UnitOfWork);
 

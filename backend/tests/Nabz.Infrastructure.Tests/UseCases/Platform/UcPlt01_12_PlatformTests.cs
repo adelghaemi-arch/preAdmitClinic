@@ -121,9 +121,9 @@ public sealed class UcPlt01_12_PlatformTests
         var clinicId = h.SeedClinic();
         var (patient, owner) = h.SeedPatient(clinicId);
         var evidence = h.CreateEvidenceService();
-        var sessionId = await evidence.StartFraudSessionAsync(patient.Id, owner.Id);
+        var started = await evidence.StartFraudSessionAsync(patient.Id, owner.Id);
 
-        await evidence.ReviewFraudSessionAsync(sessionId, FraudReviewStatus.Cleared, "ok", "reviewer");
+        await evidence.ReviewFraudSessionAsync(started.SessionId, FraudReviewStatus.Cleared, "ok", "reviewer");
 
         Assert.Equal(FraudReviewStatus.Cleared, h.Store.FraudSessions[0].ReviewStatus);
     }

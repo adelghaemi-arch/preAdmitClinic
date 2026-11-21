@@ -58,6 +58,40 @@ public sealed class LocalFileStorageTests
     }
 
     [Fact]
+    [Trait("UC", "UC-OWN-09")]
+    public async Task SaveAsync_CanonicalFileName_OmitsClientNameSuffix()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "nabz-storage-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Storage:Root"] = root
+                })
+                .Build();
+            var storage = new LocalFileStorage(config);
+            var canonical = $"{Guid.NewGuid():N}.jpg";
+            await using var stream = new MemoryStream(new byte[] { 0xFF, 0xD8, 0xFF, 0xD9 });
+            var saved = await storage.SaveAsync(
+                stream,
+                "ignored-client.bin",
+                "image/jpeg",
+                new StorageSaveContext("001", CanonicalFileName: canonical));
+
+            Assert.EndsWith("/" + canonical, saved.StorageKey.Replace('\\', '/'));
+            Assert.DoesNotContain("ignored-client", saved.StorageKey);
+            Assert.Equal(canonical, saved.FileName);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task DeleteAsync_RemovesBlob_AndRejectsPathTraversal()
     {
         var root = Path.Combine(Path.GetTempPath(), "nabz-storage-" + Guid.NewGuid().ToString("N"));
