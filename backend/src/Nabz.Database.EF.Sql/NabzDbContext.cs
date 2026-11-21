@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Database.EF.Sql/NabzDbContext.cs
- Description: DbContext دامنهٔ v1 نبض کلینیک — تنها محل مجاز EF
+ Description: DbContext دامنهٔ v1 نفس — تنها محل مجاز EF
  Parent Dependencies: Nabz.Domain
  */
 
@@ -23,8 +23,8 @@ public class NabzDbContext : DbContext
     public DbSet<CorporateContract> CorporateContracts => Set<CorporateContract>();
     public DbSet<ContractSupervisor> ContractSupervisors => Set<ContractSupervisor>();
     public DbSet<ContractMember> ContractMembers => Set<ContractMember>();
-    public DbSet<ContractPackageRule> ContractPackageRules => Set<ContractPackageRule>();
-    public DbSet<PackageLibraryRule> PackageLibraryRules => Set<PackageLibraryRule>();
+    public DbSet<ContractPathwayRule> ContractPathwayRules => Set<ContractPathwayRule>();
+    public DbSet<PathwayLibraryRule> PathwayLibraryRules => Set<PathwayLibraryRule>();
     public DbSet<ContractSmsLog> ContractSmsLogs => Set<ContractSmsLog>();
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<PatientProfileRevision> PatientProfileRevisions => Set<PatientProfileRevision>();
@@ -41,6 +41,7 @@ public class NabzDbContext : DbContext
     public DbSet<EvidencePackage> EvidencePackages => Set<EvidencePackage>();
     public DbSet<PlatformSettings> PlatformSettings => Set<PlatformSettings>();
     public DbSet<PlatformAuditEntry> PlatformAuditEntries => Set<PlatformAuditEntry>();
+    public DbSet<SmsCampaignTemplate> SmsCampaignTemplates => Set<SmsCampaignTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,6 +56,7 @@ public class NabzDbContext : DbContext
                 .HasFilter("NationalId IS NOT NULL AND NationalId <> ''");
             e.Property(x => x.FirstName).HasMaxLength(100).IsRequired();
             e.Property(x => x.LastName).HasMaxLength(100).IsRequired();
+            e.Property(x => x.FatherName).HasMaxLength(100);
         });
 
         modelBuilder.Entity<User>(e =>
@@ -87,6 +89,14 @@ public class NabzDbContext : DbContext
         modelBuilder.Entity<Clinic>(e =>
         {
             e.Property(x => x.Name).HasMaxLength(200);
+            e.Property(x => x.PreAdmitSupportPhone).HasMaxLength(32);
+            e.Property(x => x.SmsSenderNumber).HasMaxLength(64);
+            e.Property(x => x.KavenegarApiKey).HasMaxLength(200);
+            e.Property(x => x.KavenegarOtpTemplate).HasMaxLength(120);
+            e.Property(x => x.ToubaUsername).HasMaxLength(120);
+            e.Property(x => x.ToubaPassword).HasMaxLength(200);
+            e.Property(x => x.ToubaSendUrl).HasMaxLength(300);
+            e.Property(x => x.ToubaOtpMessageTemplate).HasMaxLength(500);
         });
 
         modelBuilder.Entity<CorporateContract>(e =>
@@ -205,9 +215,9 @@ public class NabzDbContext : DbContext
             e.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientId);
         });
 
-        modelBuilder.Entity<ContractPackageRule>(e =>
+        modelBuilder.Entity<ContractPathwayRule>(e =>
         {
-            e.HasOne(x => x.Contract).WithMany(x => x.PackageRules).HasForeignKey(x => x.ContractId);
+            e.HasOne(x => x.Contract).WithMany(x => x.PathwayRules).HasForeignKey(x => x.ContractId);
         });
 
         modelBuilder.Entity<ContractSmsLog>(e =>
@@ -218,6 +228,16 @@ public class NabzDbContext : DbContext
         modelBuilder.Entity<MultiSessionAlert>(e =>
         {
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId);
+        });
+
+        modelBuilder.Entity<SmsCampaignTemplate>(e =>
+        {
+            e.Property(x => x.Code).HasMaxLength(64).IsRequired();
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            e.Property(x => x.ProviderTemplateName).HasMaxLength(120);
+            e.Property(x => x.TokenKeysJson).HasMaxLength(500).IsRequired();
+            e.HasIndex(x => x.SortOrder);
         });
     }
 }

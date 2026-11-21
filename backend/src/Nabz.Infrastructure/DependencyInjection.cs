@@ -1,7 +1,7 @@
 /*
  File: backend/src/Nabz.Infrastructure/DependencyInjection.cs
- Description: ثبت سرویس‌های دامنه، SMS قالبی و Options
- Parent Dependencies: Nabz.Application Interfaces, KavenegarTemplateSmsSender
+ Description: ثبت سرویس‌های دامنه، SMS چندسامانه‌ای و Options
+ Parent Dependencies: ClinicRoutingSmsSender, KavenegarTemplateSmsSender, ToubaUrlSmsSender
  */
 
 using Microsoft.Extensions.Configuration;
@@ -21,16 +21,21 @@ public static class DependencyInjection
     {
         services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
         services.Configure<KavenegarOptions>(configuration.GetSection(KavenegarOptions.SectionName));
-        services.AddHttpClient<ISmsSender, KavenegarTemplateSmsSender>();
+        services.Configure<FrontendUrlsOptions>(configuration.GetSection(FrontendUrlsOptions.SectionName));
+
+        services.AddHttpClient<KavenegarTemplateSmsSender>();
+        services.AddHttpClient<ToubaUrlSmsSender>();
+        services.AddScoped<ISmsSender, ClinicRoutingSmsSender>();
 
         services.AddScoped<IClinicService, ClinicService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IContractService, ContractService>();
-        services.AddScoped<IPackageLibraryRuleService, PackageLibraryRuleService>();
+        services.AddScoped<IPathwayLibraryRuleService, PathwayLibraryRuleService>();
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IFormService, FormService>();
         services.AddScoped<IEvidenceService, EvidenceService>();
         services.AddScoped<IPlatformService, PlatformService>();
+        services.AddScoped<ISmsCampaignTemplateService, SmsCampaignTemplateService>();
         services.AddScoped<IUserAdminService, UserAdminService>();
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         return services;

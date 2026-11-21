@@ -20,6 +20,10 @@ export interface AuthMeDto {
   isActive: boolean;
 }
 
+export interface OtpModeResponse {
+  fixedOtpEnabled: boolean;
+}
+
 export interface OtpRequestResponse {
   ok: boolean;
   demoCode?: string | null;
@@ -41,6 +45,11 @@ export interface OtpVerifyResponse {
   needsSelection?: boolean;
   candidates?: OtpIdentityCandidate[];
   error?: string;
+}
+
+/** آیا سرور در حالت FixedOtp است (بدون افشای کد). */
+export async function apiGetOtpMode(): Promise<OtpModeResponse> {
+  return apiFetch<OtpModeResponse>("/api/auth/otp/mode", { auth: false });
 }
 
 export async function apiRequestOtp(mobile: string): Promise<OtpRequestResponse> {

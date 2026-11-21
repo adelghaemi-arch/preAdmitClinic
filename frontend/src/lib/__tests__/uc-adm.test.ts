@@ -13,11 +13,11 @@ import {
   V1_ROLES,
 } from "@/lib/workspace";
 
-const ADMIN_EXPECTED = ["contracts", "contract-packages", "contract-funnel", "rule-library", "forms", "clinic-users"] as const;
+const ADMIN_EXPECTED = ["contracts", "rule-library", "forms", "clinic-users"] as const;
 
 describe("UC-ADM-01", () => {
-  it("خانه ادمین contracts است", () => {
-    expect(ROLE_NAV.admin.home).toBe("contracts");
+  it("خانه ادمین dashboard است", () => {
+    expect(ROLE_NAV.admin.home).toBe("dashboard");
   });
 });
 
@@ -28,14 +28,16 @@ describe("UC-ADM-02", () => {
 });
 
 describe("UC-ADM-03", () => {
-  it("allowedPages شامل contract-packages", () => {
-    expect(allowedPagesFor("admin")).toContain("contract-packages");
+  it("contract-packages در سایدبار ادمین نیست (تب داخل قرارداد)", () => {
+    expect(ROLE_NAV.admin.groups.flatMap((g) => g.pages)).not.toContain("contract-packages");
+    expect(allowedPagesFor("admin")).not.toContain("contract-packages");
   });
 });
 
 describe("UC-ADM-04", () => {
-  it("allowedPages شامل contract-funnel", () => {
-    expect(allowedPagesFor("admin")).toContain("contract-funnel");
+  it("contract-funnel در سایدبار ادمین نیست (تب داخل قرارداد)", () => {
+    expect(ROLE_NAV.admin.groups.flatMap((g) => g.pages)).not.toContain("contract-funnel");
+    expect(allowedPagesFor("admin")).not.toContain("contract-funnel");
   });
 });
 
@@ -82,9 +84,10 @@ describe("UC-ADM-10", () => {
 });
 
 describe("UC-ADM-11", () => {
-  it("ROLE_NAV.admin گروه قرارداد دارد", () => {
-    const titles = ROLE_NAV.admin.groups.map((g) => g.title);
-    expect(titles.some((t) => t.includes("قرارداد"))).toBe(true);
+  it("صفحه قرارداد زیر نمای کلی بعد از داشبورد است", () => {
+    const overview = ROLE_NAV.admin.groups.find((g) => g.title.includes("نمای کلی"));
+    expect(overview?.pages).toEqual(expect.arrayContaining(["dashboard", "contracts"]));
+    expect(overview?.pages.indexOf("dashboard")).toBeLessThan(overview!.pages.indexOf("contracts"));
   });
 });
 
@@ -100,7 +103,7 @@ describe("UC-ADM-12", () => {
 describe("UC-ADM-05b", () => {
   it("صفحه rule-library در ناوبری ادمین است", () => {
     expect(allowedPagesFor("admin")).toContain("rule-library");
-    expect(ROLE_NAV.admin.labels?.["rule-library"]).toBe("کتابخانه قوانین");
+    expect(ROLE_NAV.admin.labels?.["rule-library"]).toBe("کتابخانه مسیر سلامتی");
   });
 });
 

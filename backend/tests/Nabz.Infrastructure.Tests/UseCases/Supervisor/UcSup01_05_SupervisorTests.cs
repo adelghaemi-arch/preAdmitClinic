@@ -83,7 +83,8 @@ public sealed class UcSup01_05_SupervisorTests
             new ImportMemberRequest("عضو", "تست", "0013542419", "09120002002", new DateOnly(1985, 1, 1), "زن", null, null, null, null)
         ]);
 
-        var sent = await contracts.SendBulkSmsAsync(created.Id, "یادآوری", null, Guid.NewGuid(), asSupervisor: true);
+        var templateId = h.SeedDefaultSmsTemplate();
+        var sent = await contracts.SendBulkSmsAsync(created.Id, templateId, "یادآوری", null, Guid.NewGuid(), asSupervisor: true);
 
         Assert.Equal(1, sent);
         Assert.Empty(h.Sms.SentCalls);

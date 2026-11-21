@@ -280,6 +280,19 @@ export interface PlatformClinic {
   plan: string;
   adminContact: string;
   adminPhone: string;
+  /** تلفن پشتیبانی پیش‌پذیرش — پیام خطای ورود شماره ثبت‌نشده */
+  preAdmitSupportPhone?: string;
+  /** سامانه پیامک: None | Kavenegar | Touba */
+  smsProvider?: string;
+  smsSenderNumber?: string;
+  kavenegarApiKey?: string;
+  kavenegarApiKeySet?: boolean;
+  kavenegarOtpTemplate?: string;
+  toubaUsername?: string;
+  toubaPassword?: string;
+  toubaPasswordSet?: boolean;
+  toubaSendUrl?: string;
+  toubaOtpMessageTemplate?: string;
   patientsToday: number;
   staffCount: number;
   contractsCount: number;
@@ -639,6 +652,8 @@ export interface PatientFullDto {
   fullName: string;
   firstName?: string;
   lastName?: string;
+  /** نام پدر — اختیاری */
+  fatherName?: string | null;
   nationalId: string;
   age: number;
   /** ISO yyyy-MM-dd از سرور */
@@ -647,6 +662,8 @@ export interface PatientFullDto {
   maritalStatus?: string | null;
   phone: string;
   pathwayTitle: string;
+  /** تاریخ مراجعه برنامه‌ای از عضو قرارداد — بنر پیش‌پذیرش */
+  scheduledVisitDate?: string | null;
   /** needs_form | already_complete از snapshot Owner */
   intakeGate?: "needs_form" | "already_complete" | null;
   hasPortrait?: boolean;
@@ -722,7 +739,7 @@ export type OnboardingStage =
  * - pinned: دستی و قطعی برای یک تاریخ مشخص تعیین شده (مثلاً عادل امروز بیاید)
  * - auto_scheduled: به‌صورت اتوماتیک طبق فرمول سقف روزانه فراخوان و نوبت‌دهی شده
  * - checked_in: به کلینیک مراجعه کرده و وارد مسیر روزانه شده
- * - visit_done: کلیه ایستگاه‌های بسته سلامت وی تکمیل شده
+ * - visit_done: کلیه ایستگاه‌های مسیر سلامتی وی تکمیل شده
  */
 export type ContractAppointmentStatus =
   | "unscheduled"
@@ -736,7 +753,7 @@ export type ContractAppointmentStatus =
  * Contracts attach copies of library rules (or create private ones) to bind
  * the right health package to each member based on age / gender / job category.
  */
-export interface PackageLibraryRule {
+export interface PathwayLibraryRule {
   id: string;
   code: string;
   title: string;
@@ -749,13 +766,13 @@ export interface PackageLibraryRule {
   createdAt: string;
   /** اعضا match‌شده و هنوز Completed نشده‌اند */
   activeMatchedCount?: number;
-  /** اعضا با OnboardingStage=Completed که به این قانون match شده‌اند */
+  /** اعضا با OnboardingStage=Completed که به این مسیر match شده‌اند */
   previouslyUsedCount?: number;
-  /** تعداد قراردادهایی که این قانون را attach کرده‌اند */
+  /** تعداد قراردادهایی که این مسیر را attach کرده‌اند */
   attachedContractCount?: number;
 }
 
-export interface ContractPackageRule {
+export interface ContractPathwayRule {
   id: string;
   /** Set when this rule came from (or is linked to) the central library. */
   libraryRuleId?: string | null;
@@ -815,12 +832,15 @@ export interface ContractMember {
   personnelCode: string;
   firstName: string;
   lastName: string;
+  fatherName?: string | null;
   /** نمایش یکپارچه — از first+last */
   fullName: string;
   nationalId: string;
   phone: string;
   /** ISO yyyy-MM-dd میلادی */
   birthDate: string | null;
+  /** تاریخ مراجعه از رستر/اکسل (ISO) — جدا از نوبت‌دهی mock */
+  scheduledVisitDate?: string | null;
   /** سن محاسبه‌شده برای نمایش/قوانین */
   age: number;
   gender: "مرد" | "زن";
@@ -831,8 +851,8 @@ export interface ContractMember {
   /** Bound health package based on contract demographic rules */
   assignedPathwayCode: string;
   assignedPathwayTitle: string;
-  matchedRuleTitle: string;
-  manualPackageOverride: boolean;
+  matchedPathwayTitle: string;
+  manualPathwayOverride: boolean;
   /** Pre-registration funnel tracking (independent of appointment) */
   onboardingStage: OnboardingStage;
   profileProgressPct: number;
@@ -873,7 +893,7 @@ export interface CorporateContract {
   apiKey: string;
   lastApiSyncAt: string | null;
   defaultPathwayCode: string;
-  packageRules: ContractPackageRule[];
+  pathwayRules: ContractPathwayRule[];
   dayQuotas: ContractDayQuota[];
   supervisor: ContractSupervisor;
   smsLogs: ContractSmsLog[];
@@ -885,7 +905,7 @@ export interface CorporateContract {
 
 export interface ClinicSnapshot {
   clinicLocation: ClinicLocation;
-  packageRuleLibrary: PackageLibraryRule[];
+  pathwayLibrary: PathwayLibraryRule[];
   rooms: RoomDto[];
   links: CompanionLinkDto[];
   pathways: PathwayDto[];

@@ -6,6 +6,7 @@
 
 using Nabz.Domain.Entities;
 using Nabz.Domain.Enums;
+using Nabz.Infrastructure.Services;
 using Nabz.Infrastructure.Tests.Support;
 
 namespace Nabz.Infrastructure.Tests.UseCases.Owner;
@@ -89,15 +90,44 @@ public sealed class UcOwn01_AuthOtpTests
     {
         var factory = new AuthServiceFactory();
         SeedClinicAndPatient(factory, KnownMobile);
+        factory.Store.PlatformSettings.Add(new PlatformSettings { SupportPhone = "02191000000" });
         var auth = factory.Create(FixedOtp);
 
         var request = await auth.RequestOtpAsync("09999999999");
 
         Assert.False(request.Ok);
         Assert.Null(request.DemoCode);
-        Assert.Equal("شماره در سیستم ثبت نشده است.", request.Error);
+        Assert.Equal(
+            "شماره موبایل شما در سیستم ثبت نشده است. لطفاً با سازمان یا مجموعهٔ خود پیگیری کنید؛ در صورت نیاز با شماره 02191000000 تماس بگیرید.",
+            request.Error);
         Assert.Empty(factory.Store.Otps);
         Assert.Empty(factory.Sms.SentCalls);
+    }
+
+    [Fact]
+    public async Task UC_OWN_01_UnknownMobile_UsesClinicPreAdmitSupportPhone_WhenNoPlatformSupport()
+    {
+        var factory = new AuthServiceFactory();
+        var clinicId = SeedClinicAndPatient(factory, KnownMobile);
+        factory.Store.Clinics.First(c => c.Id == clinicId).PreAdmitSupportPhone = "09120000001";
+        var auth = factory.Create(FixedOtp);
+
+        var request = await auth.RequestOtpAsync("09999999999");
+
+        Assert.False(request.Ok);
+        Assert.Contains("09120000001", request.Error);
+        Assert.Contains("سازمان", request.Error);
+        Assert.Contains("پیگیری", request.Error);
+    }
+
+    [Fact]
+    public void UC_OWN_01_UnknownMobile_Message_WithoutPhone_StillGuidesUser()
+    {
+        var msg = AuthService.FormatUnknownMobileError(null);
+        Assert.Contains("سازمان", msg);
+        Assert.Contains("پیگیری", msg);
+        Assert.Contains("پشتیبانی پیش‌پذیرش", msg);
+        Assert.DoesNotContain("با شماره", msg);
     }
 
     [Fact]

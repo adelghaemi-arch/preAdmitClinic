@@ -20,8 +20,8 @@ public sealed class InMemoryStore
     public List<CorporateContract> Contracts { get; } = [];
     public List<ContractMember> Members { get; } = [];
     public List<ContractSupervisor> Supervisors { get; } = [];
-    public List<ContractPackageRule> PackageRules { get; } = [];
-    public List<PackageLibraryRule> PackageLibraryRules { get; } = [];
+    public List<ContractPathwayRule> PathwayRules { get; } = [];
+    public List<PathwayLibraryRule> PathwayLibraryRules { get; } = [];
     public List<ContractSmsLog> ContractSmsLogs { get; } = [];
     public List<Patient> Patients { get; } = [];
     public List<PatientProfileRevision> ProfileRevisions { get; } = [];
@@ -38,6 +38,7 @@ public sealed class InMemoryStore
     public List<EvidencePackage> EvidencePackages { get; } = [];
     public List<PlatformSettings> PlatformSettings { get; } = [];
     public List<PlatformAuditEntry> PlatformAudit { get; } = [];
+    public List<SmsCampaignTemplate> SmsCampaignTemplates { get; } = [];
 
     /// <summary>همگام‌سازی navigationهای تغییر یافته در حافظه با لیست‌های flat برای fake repository.</summary>
     public void SyncNavigation()
@@ -47,10 +48,10 @@ public sealed class InMemoryStore
             if (c.Supervisor is not null && !Supervisors.Contains(c.Supervisor))
                 Supervisors.Add(c.Supervisor);
 
-            foreach (var r in c.PackageRules)
+            foreach (var r in c.PathwayRules)
             {
-                if (!PackageRules.Contains(r))
-                    PackageRules.Add(r);
+                if (!PathwayRules.Contains(r))
+                    PathwayRules.Add(r);
             }
         }
 

@@ -117,7 +117,7 @@ export function scopeSnapshot(snapshot: ClinicSnapshot, viewer?: SnapshotViewer 
       links: [],
       staff: [],
       pathways: [],
-      packageRuleLibrary: [],
+      pathwayLibrary: [],
       contracts: [],
       forms: [],
     };
@@ -126,7 +126,7 @@ export function scopeSnapshot(snapshot: ClinicSnapshot, viewer?: SnapshotViewer 
     // External corporate supervisor sees contract progress, funnel & appointments — never private clinical notes/allergies.
     return {
       ...snapshot,
-      packageRuleLibrary: [],
+      pathwayLibrary: [],
       links: [],
       staff: [],
       patients: [],
@@ -174,7 +174,7 @@ export function scopeSnapshot(snapshot: ClinicSnapshot, viewer?: SnapshotViewer 
       ...contract,
       apiKey: "••••••••",
       apiEndpoint: "",
-      packageRules: [],
+      pathwayRules: [],
       dayQuotas: [],
       smsLogs: [],
       supervisor: {
@@ -199,7 +199,7 @@ export function scopeSnapshot(snapshot: ClinicSnapshot, viewer?: SnapshotViewer 
     staff: [],
     pathways: [],
     contracts: membershipContracts,
-    packageRuleLibrary: [],
+    pathwayLibrary: [],
     platform: redactPlatform(snapshot, viewer.userId),
     clinicLocation: snapshot.clinicLocation,
     patients: visiblePatients.map((patient) => {

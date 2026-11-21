@@ -26,12 +26,13 @@ public static class DependencyInjection
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IClinicRepository, ClinicRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
-        services.AddScoped<IPackageLibraryRuleRepository, PackageLibraryRuleRepository>();
+        services.AddScoped<IPathwayLibraryRuleRepository, PathwayLibraryRuleRepository>();
         services.AddScoped<IPatientRepository, PatientRepository>();
         services.AddScoped<IPatientProfileRevisionRepository, PatientProfileRevisionRepository>();
         services.AddScoped<IFormRepository, FormRepository>();
         services.AddScoped<IEvidenceRepository, EvidenceRepository>();
         services.AddScoped<IPlatformRepository, PlatformRepository>();
+        services.AddScoped<ISmsCampaignTemplateRepository, SmsCampaignTemplateRepository>();
         services.AddScoped<IDatabaseFactoryReset, DatabaseFactoryReset>();
         return services;
     }

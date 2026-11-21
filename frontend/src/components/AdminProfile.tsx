@@ -1,4 +1,9 @@
-﻿import React, { useMemo, useState } from "react";
+﻿/*
+ File: frontend/src/components/AdminProfile.tsx
+ Description: پنل ادمین کلینیک — بسته‌ها و تنظیمات با برند نفس
+ Parent Dependencies: AppInput, clinic-actions
+ */
+import React, { useMemo, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   AlertOctagon,
@@ -191,7 +196,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
       id: editingPathwayId,
       title: pkgTitle.trim(),
       description:
-        pkgDesc.trim() || "مسیر استاندارد هماهنگ یک‌روزه کلینیک نبض",
+        pkgDesc.trim() || "مسیر استاندارد هماهنگ یک‌روزه نفس",
       stationCodes: pkgStations,
       estimatedTotalMinutes: mins,
     });

@@ -43,6 +43,7 @@ public static class PatientProfileDiff
     {
         ["FirstName"] = p.Person.FirstName,
         ["LastName"] = p.Person.LastName,
+        ["FatherName"] = p.Person.FatherName,
         ["BirthDate"] = p.Person.BirthDate?.ToString("yyyy-MM-dd"),
         ["MaritalStatus"] = p.MaritalStatus,
         ["Gender"] = p.Person.Gender,

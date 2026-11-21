@@ -1,7 +1,7 @@
 /*
- File: backend/src/Nabz.Api/Controllers/PackageLibraryRulesController.cs
- Description: API کتابخانه مرکزی قوانین بسته — CRUD، جستجو و آمار
- Parent Dependencies: IPackageLibraryRuleService
+ File: backend/src/Nabz.Api/Controllers/PathwayLibraryRulesController.cs
+ Description: API کتابخانه مرکزی مسیرهای سلامتی — CRUD، جستجو و آمار
+ Parent Dependencies: IPathwayLibraryRuleService
  */
 
 using Microsoft.AspNetCore.Authorization;
@@ -12,8 +12,8 @@ namespace Nabz.Api.Controllers;
 
 [ApiController]
 [Authorize(Roles = "Admin,Platform")]
-[Route("api/package-library-rules")]
-public sealed class PackageLibraryRulesController(IPackageLibraryRuleService library) : ControllerBase
+[Route("api/pathway-library-rules")]
+public sealed class PathwayLibraryRulesController(IPathwayLibraryRuleService library) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] string? q, [FromQuery] int take = 200, CancellationToken ct = default)
@@ -27,7 +27,7 @@ public sealed class PackageLibraryRulesController(IPackageLibraryRuleService lib
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] UpsertPackageLibraryRuleRequest body, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] UpsertPathwayLibraryRuleRequest body, CancellationToken ct)
     {
         try
         {
@@ -40,7 +40,7 @@ public sealed class PackageLibraryRulesController(IPackageLibraryRuleService lib
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpsertPackageLibraryRuleRequest body, CancellationToken ct)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpsertPathwayLibraryRuleRequest body, CancellationToken ct)
     {
         try
         {

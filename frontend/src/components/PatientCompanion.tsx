@@ -1,5 +1,10 @@
-﻿import { useEffect, useState } from "react";
-import { HeartPulse, X } from "lucide-react";
+﻿/*
+ File: frontend/src/components/PatientCompanion.tsx
+ Description: نمای همراه سلامتجو با برند نفس و آیکن محصول
+ Parent Dependencies: PatientMobileProfile, JourneyIntroPage, client-db
+ */
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import type { ClinicSnapshot } from "@/types/clinic";
 import { PatientMobileProfile } from "./PatientMobileProfile";
 import { JourneyIntroPage } from "./JourneyIntroPage";
@@ -59,8 +64,8 @@ export function PatientCompanion({ token, initialSnapshot }: { token: string; in
     <main className="mx-auto min-h-screen max-w-[650px] bg-slate-50">
       <div className="flex items-center justify-between border-b border-slate-100 bg-white px-5 py-3">
         <span className="flex items-center gap-2 text-xs font-bold text-[#20745c]">
-          <HeartPulse className="h-5 w-5" />
-          همراه سلامتجو نبض
+          <img src="/icon-64x64.png" alt="نفس" className="h-5 w-5 rounded-md object-cover" />
+          همراه سلامتجو نفس
         </span>
         <span className="text-[9px] text-slate-400">مراقبت پیوسته، کنار شما</span>
       </div>

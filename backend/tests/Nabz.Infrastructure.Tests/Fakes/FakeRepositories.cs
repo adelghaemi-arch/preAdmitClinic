@@ -223,7 +223,7 @@ public sealed class FakeContractRepository(InMemoryStore store) : IContractRepos
 
         contract.Supervisor = store.Supervisors.FirstOrDefault(s => s.ContractId == contract.Id);
         HydratePerson(contract.Supervisor);
-        contract.PackageRules = store.PackageRules.Where(r => r.ContractId == contract.Id).ToList();
+        contract.PathwayRules = store.PathwayRules.Where(r => r.ContractId == contract.Id).ToList();
         if (includeMembers)
         {
             contract.Members = store.Members.Where(m => m.ContractId == contract.Id).ToList();
@@ -240,8 +240,8 @@ public sealed class FakeContractRepository(InMemoryStore store) : IContractRepos
         {
             c.Supervisor = store.Supervisors.FirstOrDefault(s => s.ContractId == c.Id);
             HydratePerson(c.Supervisor);
-            // هم‌تراز EF: قوانین بسته در List هم لازم است تا ContractDto.PackageRules خالی نماند
-            c.PackageRules = store.PackageRules.Where(r => r.ContractId == c.Id).ToList();
+            // هم‌تراز EF: مسیرهای سلامتی در List هم لازم است تا ContractDto.PathwayRules خالی نماند
+            c.PathwayRules = store.PathwayRules.Where(r => r.ContractId == c.Id).ToList();
             c.Members = store.Members.Where(m => m.ContractId == c.Id).ToList();
             foreach (var m in c.Members) HydratePerson(m);
         }
@@ -427,34 +427,34 @@ public sealed class FakeContractRepository(InMemoryStore store) : IContractRepos
         return Task.FromResult(sup);
     }
 
-    public void RemovePackageRules(IEnumerable<ContractPackageRule> rules)
+    public void RemovePathwayRules(IEnumerable<ContractPathwayRule> rules)
     {
         foreach (var rule in rules)
-            store.PackageRules.Remove(rule);
+            store.PathwayRules.Remove(rule);
     }
 
-    public Task<ContractPackageRule?> GetPackageRuleByIdAsync(Guid ruleId, CancellationToken ct = default)
-        => Task.FromResult(store.PackageRules.FirstOrDefault(x => x.Id == ruleId));
+    public Task<ContractPathwayRule?> GetPathwayRuleByIdAsync(Guid ruleId, CancellationToken ct = default)
+        => Task.FromResult(store.PathwayRules.FirstOrDefault(x => x.Id == ruleId));
 
-    public Task<List<ContractPackageRule>> ListPackageRulesByLibraryRuleIdAsync(Guid libraryRuleId, CancellationToken ct = default)
-        => Task.FromResult(store.PackageRules.Where(x => x.LibraryRuleId == libraryRuleId).ToList());
+    public Task<List<ContractPathwayRule>> ListPathwayRulesByLibraryRuleIdAsync(Guid libraryRuleId, CancellationToken ct = default)
+        => Task.FromResult(store.PathwayRules.Where(x => x.LibraryRuleId == libraryRuleId).ToList());
 
-    public Task AddPackageRuleAsync(ContractPackageRule rule, CancellationToken ct = default)
+    public Task AddPathwayRuleAsync(ContractPathwayRule rule, CancellationToken ct = default)
     {
-        if (!store.PackageRules.Contains(rule))
-            store.PackageRules.Add(rule);
+        if (!store.PathwayRules.Contains(rule))
+            store.PathwayRules.Add(rule);
         return Task.CompletedTask;
     }
 }
 
-public sealed class FakePackageLibraryRuleRepository(InMemoryStore store) : IPackageLibraryRuleRepository
+public sealed class FakePathwayLibraryRuleRepository(InMemoryStore store) : IPathwayLibraryRuleRepository
 {
-    public Task<PackageLibraryRule?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => Task.FromResult(store.PackageLibraryRules.FirstOrDefault(x => x.Id == id));
+    public Task<PathwayLibraryRule?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(store.PathwayLibraryRules.FirstOrDefault(x => x.Id == id));
 
-    public Task<List<PackageLibraryRule>> ListAsync(string? query, int take, CancellationToken ct = default)
+    public Task<List<PathwayLibraryRule>> ListAsync(string? query, int take, CancellationToken ct = default)
     {
-        IEnumerable<PackageLibraryRule> q = store.PackageLibraryRules;
+        IEnumerable<PathwayLibraryRule> q = store.PathwayLibraryRules;
         if (!string.IsNullOrWhiteSpace(query))
         {
             var t = query.Trim();
@@ -464,36 +464,36 @@ public sealed class FakePackageLibraryRuleRepository(InMemoryStore store) : IPac
                 || (x.Description?.Contains(t, StringComparison.OrdinalIgnoreCase) ?? false)
                 || x.JobCategory.Contains(t, StringComparison.OrdinalIgnoreCase)
                 || x.Gender.Contains(t, StringComparison.OrdinalIgnoreCase)
-                || x.PackageCode.Contains(t, StringComparison.OrdinalIgnoreCase));
+                || x.PathwayCode.Contains(t, StringComparison.OrdinalIgnoreCase));
         }
         return Task.FromResult(q.OrderBy(x => x.Code).Take(take).ToList());
     }
 
     public Task<int> CountAsync(CancellationToken ct = default)
-        => Task.FromResult(store.PackageLibraryRules.Count);
+        => Task.FromResult(store.PathwayLibraryRules.Count);
 
-    public Task AddAsync(PackageLibraryRule rule, CancellationToken ct = default)
+    public Task AddAsync(PathwayLibraryRule rule, CancellationToken ct = default)
     {
-        store.PackageLibraryRules.Add(rule);
+        store.PathwayLibraryRules.Add(rule);
         return Task.CompletedTask;
     }
 
-    public void Remove(PackageLibraryRule rule) => store.PackageLibraryRules.Remove(rule);
+    public void Remove(PathwayLibraryRule rule) => store.PathwayLibraryRules.Remove(rule);
 
     public Task<int> CountAttachedContractsAsync(Guid libraryRuleId, CancellationToken ct = default)
-        => Task.FromResult(store.PackageRules.Where(x => x.LibraryRuleId == libraryRuleId).Select(x => x.ContractId).Distinct().Count());
+        => Task.FromResult(store.PathwayRules.Where(x => x.LibraryRuleId == libraryRuleId).Select(x => x.ContractId).Distinct().Count());
 
     public Task<(int ActiveMatched, int PreviouslyUsed)> CountMemberUsageAsync(Guid libraryRuleId, CancellationToken ct = default)
     {
-        var titlesByContract = store.PackageRules
+        var titlesByContract = store.PathwayRules
             .Where(r => r.LibraryRuleId == libraryRuleId)
             .GroupBy(r => r.ContractId)
             .ToDictionary(g => g.Key, g => g.Select(r => r.Title).ToHashSet(StringComparer.Ordinal));
 
         var matched = store.Members.Where(m =>
             titlesByContract.TryGetValue(m.ContractId, out var titles)
-            && m.MatchedRuleTitle is not null
-            && titles.Contains(m.MatchedRuleTitle));
+            && m.MatchedPathwayTitle is not null
+            && titles.Contains(m.MatchedPathwayTitle));
 
         var active = matched.Count(m => m.OnboardingStage != OnboardingStage.Completed);
         var previously = matched.Count(m => m.OnboardingStage == OnboardingStage.Completed);
@@ -899,6 +899,28 @@ public sealed class FakePlatformRepository(InMemoryStore store) : IPlatformRepos
 
     public Task<List<PlatformAuditEntry>> ListAuditAsync(int take, CancellationToken ct = default)
         => Task.FromResult(store.PlatformAudit.OrderByDescending(x => x.At).Take(take).ToList());
+}
+
+public sealed class FakeSmsCampaignTemplateRepository(InMemoryStore store) : ISmsCampaignTemplateRepository
+{
+    public Task<SmsCampaignTemplate?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(store.SmsCampaignTemplates.FirstOrDefault(x => x.Id == id));
+
+    public Task<SmsCampaignTemplate?> GetByCodeAsync(string code, CancellationToken ct = default)
+        => Task.FromResult(store.SmsCampaignTemplates.FirstOrDefault(x => x.Code == code));
+
+    public Task<List<SmsCampaignTemplate>> ListAsync(bool activeOnly, CancellationToken ct = default)
+    {
+        var q = store.SmsCampaignTemplates.AsEnumerable();
+        if (activeOnly) q = q.Where(x => x.IsActive);
+        return Task.FromResult(q.OrderBy(x => x.SortOrder).ThenBy(x => x.Title).ToList());
+    }
+
+    public Task AddAsync(SmsCampaignTemplate template, CancellationToken ct = default)
+    {
+        store.SmsCampaignTemplates.Add(template);
+        return Task.CompletedTask;
+    }
 }
 
 public sealed class FakePatientProfileRevisionRepository(InMemoryStore store) : IPatientProfileRevisionRepository

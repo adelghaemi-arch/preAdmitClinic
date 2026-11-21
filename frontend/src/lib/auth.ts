@@ -1,11 +1,12 @@
 /*
  File: frontend/src/lib/auth.ts
- Description: ورود OTP با انتخاب کدملی وقتی موبایل چندنفره است
+ Description: ورود OTP با انتخاب کدملی؛ دمو لاگین فقط در FixedOtp و بدون ادمین کل
  Parent Dependencies: api/auth, api/http, api/roles
  */
 
 import {
   apiGetMe,
+  apiGetOtpMode,
   apiRequestOtp,
   apiRevokeSession,
   apiSelectIdentity,
@@ -43,7 +44,8 @@ function meToUser(me: AuthMeDto): AppUserDto {
     jobTitle: primary === "platform" ? "ادمین کل" : primary === "admin" ? "ادمین کلینیک" : primary === "specialist" ? "پزشک" : primary === "supervisor" ? "ناظر سازمان" : "سلامتجو",
     primaryRole: primary,
     medicalCouncilCode: "—",
-    canAccessAllRoles: me.roles.includes("Platform") || me.roles.includes("Admin"),
+    // فقط ادمین کل اجازهٔ ورود به workspace نقش‌های دیگر را دارد
+    canAccessAllRoles: me.roles.includes("Platform"),
   };
 }
 
@@ -149,7 +151,30 @@ export async function selectOtpIdentity(nationalId: string): Promise<OtpVerifyRe
   }
 }
 
-/** شماره‌های seed بک‌اند برای ورود سریع دمو (نه mock-store). */
+/** فقط با FixedOtp فعال؛ در حالت پیامک واقعی بلوک ورود سریع مخفی می‌ماند (fail-closed). */
+export function shouldShowOtpDemoQuickLogin(fixedOtpEnabled: boolean | null | undefined): boolean {
+  return fixedOtpEnabled === true;
+}
+
+/** باکس «پیامک نمایشی» فقط وقتی FixedOtp و کد دمو از سرور آمده باشد. */
+export function shouldShowOtpDemoSmsPreview(
+  fixedOtpEnabled: boolean | null | undefined,
+  demoCode: string | null | undefined
+): boolean {
+  return shouldShowOtpDemoQuickLogin(fixedOtpEnabled) && Boolean(demoCode?.trim());
+}
+
+/** پرچم FixedOtp از API؛ خطا/قطع شبکه → false تا دمو لو نرود. */
+export async function fetchOtpFixedModeEnabled(): Promise<boolean> {
+  try {
+    const r = await apiGetOtpMode();
+    return r.fixedOtpEnabled === true;
+  } catch {
+    return false;
+  }
+}
+
+/** شماره‌های seed بک‌اند برای ورود سریع دمو (نه mock-store). ادمین کل عمداً اینجا نیست. */
 export function listOtpDemoLogins(): Array<{ name: string; phone: string; hint: string; kind: "patient" | "supervisor" }> {
   return [
     { name: "ادمین کلینیک", phone: "09120000001", hint: "نقش Admin", kind: "supervisor" },

@@ -78,10 +78,10 @@ flowchart LR
 | TC-AUTH-03 | UC-OWN-01 | owner | کد صادر شده | کد غلط ۵ رقمی | خطا؛ نشست ساخته نمی‌شود | |
 | TC-AUTH-04 | UC-OWN-01 | owner | کد منقضی / انقضا صفر | صبر تا انقضا یا شبیه‌سازی؛ تأیید | خطا؛ درخواست ارسال دوباره لازم | |
 | TC-AUTH-05 | UC-OWN-01 / UC-SUP-01 | هر نقش | ورود موفق | `GET /api/auth/me` (Network) | `userId`، `mobile`، `roles` با UI هم‌خوان | |
-| TC-AUTH-06 | — | platform | seed ادمین کل | لاگین با `09133752696` + FixedOtp/کد واقعی | نقش Platform؛ پنل ادمین کل | |
+| TC-AUTH-06 | UC-PLT-15 | platform | seed ادمین کل | لاگین با `09133752696`؛ FixedOtp: نمایش پایه، ورود با پایه+۱؛ پایه خام رد | نقش Platform؛ پنل ادمین کل | |
 | TC-AUTH-07 | — | staging FixedOtp | `Auth__FixedOtp` پر | درخواست OTP + دعوت گروهی (در صورت اجرا) | کد = مقدار ثابت؛ لاگ/کاوه‌نگار صدا زده نمی‌شود | |
 | TC-AUTH-08 | — | staging Kavenegar | FixedOtp خالی + ApiKey | درخواست OTP روی موبایل واقعی تست | پیامک قالبی می‌رسد؛ verify با همان کد | |
-| TC-AUTH-09 | UC-ADM-16 / UC-PLT-04 | admin + platform | حساب چندنقشی Admin و Platform جدا | لاگین Admin: سوئیچر سایدبار بدون «ادمین کل»؛ منوی حساب بدون «تغییر نقش»؛ لاگین Platform: سوئیچ به ادمین کلینیک ممکن | Admin به `platform-dashboard` نمی‌رود؛ Platform می‌تواند workspace admin را باز کند | |
+| TC-AUTH-09 | UC-ADM-16 / UC-PLT-04 | admin + platform | حساب Admin و Platform جدا | لاگین Admin: بدون سوئیچر نقش (فقط admin)؛ لاگین Platform: سوئیچ به همه نقش‌های قابل‌انتخاب ممکن | Admin به نقش‌های دیگر و `platform-dashboard` نمی‌رود؛ Platform می‌تواند workspace admin/owner/… را باز کند | |
 
 ---
 
@@ -127,10 +127,12 @@ flowchart LR
 | TC-ID | UC | بازیگر / env | پیش‌شرط | گام‌ها | نتیجهٔ مورد انتظار | Pass/Fail |
 |-------|-----|--------------|---------|--------|---------------------|-----------|
 | TC-ADM-01 | UC-ADM-01 | admin | لاگین ادمین | ایجاد قرارداد سازمانی | قرارداد در لیست | |
+| TC-ADM-22 | UC-ADM-22 | admin | قرارداد موجود | ویرایش عنوان/سازمان/بسته پایه از هدر | لیست و هدر به‌روز؛ Code ثابت | |
 | TC-ADM-02 | UC-ADM-02 | admin | قرارداد موجود | تنظیم ناظر سازمان | ناظر به قرارداد لینک می‌شود | |
 | TC-ADM-03 | UC-ADM-03 | admin | قرارداد | تنظیم API / همگام‌سازی (در صورت فعال) | پیکربندی ذخیره؛ sync بدون crash | |
 | TC-ADM-04 | UC-ADM-04 | admin | قرارداد | ورود اعضا (import) | اعضا در رستر | |
-| TC-ADM-05 | UC-ADM-05 | admin | قرارداد | ذخیره قوانین بسته سلامت | قوانین ذخیره و قابل خواندن | |
+| TC-ADM-04b | UC-ADM-04b | admin | عضو not_sent و عضو link_opened | حذف از تب افراد | فقط قبل از پیش‌پذیرش حذف می‌شود | |
+| TC-ADM-05 | UC-ADM-05 | admin | قرارداد | ذخیره مسیر + اولویت + بررسی مجدد + override سطل | مسیرها ذخیره؛ جابه‌جایی فقط پس از apply؛ override فوری در سطل | |
 | TC-ADM-06 | UC-ADM-06 | admin | اعضا + SMS config | پیامک دعوت گروهی | FixedOtp: بدون SMS واقعی؛ وگرنه قالب Invite | |
 | TC-ADM-07 | UC-ADM-07 | admin | عضو لینک‌شده | draft بخش فرم سپس submit | عضو Abandoned+٪ سپس Completed؛ formStatus در رستر | |
 | TC-ADM-08 | UC-ADM-08 | admin | عضو قرارداد | admit اختیاری یا OTP owner با soft-admit | بیمار سیستم ساخته/لینک؛ OTP بدون admit اجباری | |

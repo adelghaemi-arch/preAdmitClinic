@@ -100,6 +100,14 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<bool>("IsCurrentTenant")
                         .HasColumnType("bit");
 
+                    b.Property<string>("KavenegarApiKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("KavenegarOtpTemplate")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
                     b.Property<double?>("Latitude")
                         .HasColumnType("float");
 
@@ -111,8 +119,35 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("PreAdmitSupportPhone")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("SmsProvider")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SmsSenderNumber")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<string>("ToubaOtpMessageTemplate")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ToubaPassword")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ToubaSendUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("ToubaUsername")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -131,10 +166,10 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<string>("AbandonedAtStep")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("AssignedPackageCode")
+                    b.Property<string>("AssignedPathwayCode")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("AssignedPackageTitle")
+                    b.Property<string>("AssignedPathwayTitle")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("ContractId")
@@ -172,13 +207,13 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<DateTime?>("LoggedInAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("ManualPackageOverride")
+                    b.Property<bool>("ManualPathwayOverride")
                         .HasColumnType("bit");
 
                     b.Property<string>("MaritalStatus")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("MatchedRuleTitle")
+                    b.Property<string>("MatchedPathwayTitle")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("OnboardingStage")
@@ -195,6 +230,9 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.Property<int>("ProfileProgressPct")
                         .HasColumnType("int");
+
+                    b.Property<DateOnly?>("ScheduledVisitDate")
+                        .HasColumnType("date");
 
                     b.Property<int>("SmsInviteCount")
                         .HasColumnType("int");
@@ -219,7 +257,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.ToTable("ContractMembers");
                 });
 
-            modelBuilder.Entity("Nabz.Domain.Entities.ContractPackageRule", b =>
+            modelBuilder.Entity("Nabz.Domain.Entities.ContractPathwayRule", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -248,7 +286,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<int?>("MinAge")
                         .HasColumnType("int");
 
-                    b.Property<string>("PackageCode")
+                    b.Property<string>("PathwayCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -266,7 +304,7 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.HasIndex("ContractId");
 
-                    b.ToTable("ContractPackageRules");
+                    b.ToTable("ContractPathwayRules");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.ContractSmsLog", b =>
@@ -375,7 +413,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("DefaultPackageCode")
+                    b.Property<string>("DefaultPathwayCode")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateOnly?>("EndDate")
@@ -937,7 +975,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.ToTable("OtpChallenges");
                 });
 
-            modelBuilder.Entity("Nabz.Domain.Entities.PackageLibraryRule", b =>
+            modelBuilder.Entity("Nabz.Domain.Entities.PathwayLibraryRule", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -967,7 +1005,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<int?>("MinAge")
                         .HasColumnType("int");
 
-                    b.Property<string>("PackageCode")
+                    b.Property<string>("PathwayCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -980,7 +1018,7 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PackageLibraryRules");
+                    b.ToTable("PathwayLibraryRules");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.Patient", b =>
@@ -989,10 +1027,10 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("AssignedPackageCode")
+                    b.Property<string>("AssignedPathwayCode")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("AssignedPackageTitle")
+                    b.Property<string>("AssignedPathwayTitle")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("ClinicId")
@@ -1186,6 +1224,10 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("FatherName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1310,6 +1352,61 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.ToTable("PlatformSettings");
                 });
 
+            modelBuilder.Entity("Nabz.Domain.Entities.SmsCampaignTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BodyPreview")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ProviderTemplateName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<bool>("RequiresEmrUrl")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TokenKeysJson")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("SortOrder");
+
+                    b.ToTable("SmsCampaignTemplates");
+                });
+
             modelBuilder.Entity("Nabz.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1398,10 +1495,10 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Navigation("Person");
                 });
 
-            modelBuilder.Entity("Nabz.Domain.Entities.ContractPackageRule", b =>
+            modelBuilder.Entity("Nabz.Domain.Entities.ContractPathwayRule", b =>
                 {
                     b.HasOne("Nabz.Domain.Entities.CorporateContract", "Contract")
-                        .WithMany("PackageRules")
+                        .WithMany("PathwayRules")
                         .HasForeignKey("ContractId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1657,7 +1754,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                 {
                     b.Navigation("Members");
 
-                    b.Navigation("PackageRules");
+                    b.Navigation("PathwayRules");
 
                     b.Navigation("SmsLogs");
 

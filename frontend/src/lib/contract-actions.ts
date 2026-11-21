@@ -13,10 +13,10 @@ import {
   emptyIntakeAnswers,
   type ContractDayQuota,
   type ContractMember,
-  type ContractPackageRule,
+  type ContractPathwayRule,
   type CorporateContract,
   type OnboardingStage,
-  type PackageLibraryRule,
+  type PathwayLibraryRule,
 } from "@/types/clinic";
 
 function nextContractId(): number {
@@ -59,7 +59,7 @@ function addMembersToContract(
     const id = nextMemberId();
     const pkg = resolveMemberPackage(
       { age: person.age, gender: person.gender, jobCategory: person.jobCategory },
-      contract.packageRules,
+      contract.pathwayRules,
       contract.defaultPathwayCode,
       mockStore.pathways
     );
@@ -85,8 +85,8 @@ function addMembersToContract(
       source,
       assignedPathwayCode: pkg.pathwayCode,
       assignedPathwayTitle: pkg.pathwayTitle,
-      matchedRuleTitle: pkg.ruleTitle,
-      manualPackageOverride: false,
+      matchedPathwayTitle: pkg.ruleTitle,
+      manualPathwayOverride: false,
       onboardingStage: sendSmsNow ? "sms_sent" : "not_sent",
       profileProgressPct: 0,
       abandonedAtStep: null,
@@ -231,17 +231,20 @@ function fillQuotaForDay(
 }
 
 export const CONTRACT_ACTION_NAMES = new Set([
-  "UPSERT_LIBRARY_RULE",
-  "DELETE_LIBRARY_RULE",
-  "ATTACH_LIBRARY_RULES",
-  "DETACH_CONTRACT_RULE",
+  "UPSERT_PATHWAY_LIBRARY_ITEM",
+  "DELETE_PATHWAY_LIBRARY_ITEM",
+  "ATTACH_PATHWAY_LIBRARY",
+  "DETACH_CONTRACT_PATHWAY",
   "CREATE_CONTRACT",
+  "UPDATE_CONTRACT",
   "UPDATE_CONTRACT_API",
   "UPDATE_CONTRACT_SUPERVISOR",
   "SYNC_CONTRACT_FROM_API",
   "IMPORT_CONTRACT_MEMBERS",
-  "SAVE_CONTRACT_PACKAGE_RULES",
-  "OVERRIDE_MEMBER_PACKAGE",
+  "SAVE_CONTRACT_PATHWAY_RULES",
+  "OVERRIDE_MEMBER_PATHWAY",
+  "PREVIEW_PATHWAY_RECHECK",
+  "APPLY_PATHWAY_RECHECK",
   "PIN_MEMBER_DATE",
   "UPSERT_DAY_QUOTA",
   "REMOVE_DAY_QUOTA",
@@ -324,14 +327,14 @@ export function runContractAction(
     return { ok: false, status: 403, error: "دسترسی به مدیریت قراردادهای سازمانی مجاز نیست." };
   }
 
-  if (action === "UPSERT_LIBRARY_RULE") {
+  if (action === "UPSERT_PATHWAY_LIBRARY_ITEM") {
     const raw = body.rule ?? {};
     const title = String(raw.title ?? "").trim();
     const pathwayCode = String(raw.pathwayCode ?? "").trim();
     if (title.length < 3 || !pathwayCode) {
-      return { ok: false, status: 400, error: "عنوان قانون و بسته سلامت مقصد را کامل وارد کنید." };
+      return { ok: false, status: 400, error: "عنوان مسیر و قالب ایستگاهی مقصد را کامل وارد کنید." };
     }
-    const gender: PackageLibraryRule["gender"] = raw.gender === "مرد" ? "مرد" : raw.gender === "زن" ? "زن" : "همه";
+    const gender: PathwayLibraryRule["gender"] = raw.gender === "مرد" ? "مرد" : raw.gender === "زن" ? "زن" : "همه";
     const minAge = raw.minAge !== "" && raw.minAge !== null && raw.minAge !== undefined ? Number(raw.minAge) : null;
     const maxAge = raw.maxAge !== "" && raw.maxAge !== null && raw.maxAge !== undefined ? Number(raw.maxAge) : null;
     const values = {
@@ -346,11 +349,11 @@ export function runContractAction(
 
     if (raw.id) {
       const existing = mockStore.libraryRuleById(String(raw.id));
-      if (!existing) return { ok: false, status: 404, error: "قانون کتابخانه یافت نشد." };
+      if (!existing) return { ok: false, status: 404, error: "مسیر کتابخانه یافت نشد." };
       Object.assign(existing, values);
       // Reflect the change on every contract rule sourced from this library rule.
       for (const contract of mockStore.contracts) {
-        for (const rule of contract.packageRules) {
+        for (const rule of contract.pathwayRules) {
           if (rule.libraryRuleId !== existing.id) continue;
           Object.assign(rule, {
             title: values.title,
@@ -365,30 +368,30 @@ export function runContractAction(
       return { ok: true, status: 200, meta: { libraryRuleId: existing.id } };
     }
 
-    const created: PackageLibraryRule = {
+    const created: PathwayLibraryRule = {
       id: `lib-${Date.now()}`,
-      code: `LR-${String(mockStore.packageRuleLibrary.length + 1).padStart(3, "0")}`,
+      code: `LR-${String(mockStore.pathwayLibrary.length + 1).padStart(3, "0")}`,
       createdAt: now,
       ...values,
     };
-    mockStore.packageRuleLibrary.push(created);
+    mockStore.pathwayLibrary.push(created);
     return { ok: true, status: 200, meta: { libraryRuleId: created.id } };
   }
 
-  if (action === "DELETE_LIBRARY_RULE") {
+  if (action === "DELETE_PATHWAY_LIBRARY_ITEM") {
     const id = String(body.libraryRuleId ?? "");
-    const index = mockStore.packageRuleLibrary.findIndex((r) => r.id === id);
-    if (index < 0) return { ok: false, status: 404, error: "قانون کتابخانه یافت نشد." };
-    mockStore.packageRuleLibrary.splice(index, 1);
+    const index = mockStore.pathwayLibrary.findIndex((r) => r.id === id);
+    if (index < 0) return { ok: false, status: 404, error: "مسیر کتابخانه یافت نشد." };
+    mockStore.pathwayLibrary.splice(index, 1);
     for (const contract of mockStore.contracts) {
-      for (const rule of contract.packageRules) {
+      for (const rule of contract.pathwayRules) {
         if (rule.libraryRuleId === id) rule.libraryRuleId = null;
       }
     }
     return { ok: true, status: 200 };
   }
 
-  if (action === "ATTACH_LIBRARY_RULES") {
+  if (action === "ATTACH_PATHWAY_LIBRARY") {
     const contract = mockStore.contractById(Number(body.contractId));
     if (!contract) return { ok: false, status: 404, error: "قرارداد مورد نظر یافت نشد." };
     const ids: string[] = Array.isArray(body.libraryRuleIds) ? body.libraryRuleIds.map(String) : [];
@@ -396,8 +399,8 @@ export function runContractAction(
     for (const ruleId of ids) {
       const libRule = mockStore.libraryRuleById(ruleId);
       if (!libRule) continue;
-      if (contract.packageRules.some((r) => r.libraryRuleId === ruleId)) continue;
-      contract.packageRules.push({
+      if (contract.pathwayRules.some((r) => r.libraryRuleId === ruleId)) continue;
+      contract.pathwayRules.push({
         id: `rule-${Date.now()}-${added}`,
         libraryRuleId: ruleId,
         title: libRule.title,
@@ -406,42 +409,42 @@ export function runContractAction(
         maxAge: libRule.maxAge,
         jobCategory: libRule.jobCategory,
         pathwayCode: libRule.pathwayCode,
-        priority: contract.packageRules.length + 1,
+        priority: contract.pathwayRules.length + 1,
       });
       added++;
     }
     // Recompute package assignment for every non-overridden member.
     for (const member of contract.members) {
-      if (member.manualPackageOverride) continue;
+      if (member.manualPathwayOverride) continue;
       const pkg = resolveMemberPackage(
         { age: member.age, gender: member.gender, jobCategory: member.jobCategory },
-        contract.packageRules,
+        contract.pathwayRules,
         contract.defaultPathwayCode,
         mockStore.pathways
       );
       member.assignedPathwayCode = pkg.pathwayCode;
       member.assignedPathwayTitle = pkg.pathwayTitle;
-      member.matchedRuleTitle = pkg.ruleTitle;
+      member.matchedPathwayTitle = pkg.ruleTitle;
     }
     return { ok: true, status: 200, meta: { addedCount: added, added } };
   }
 
-  if (action === "DETACH_CONTRACT_RULE") {
+  if (action === "DETACH_CONTRACT_PATHWAY") {
     const contract = mockStore.contractById(Number(body.contractId));
     if (!contract) return { ok: false, status: 404, error: "قرارداد مورد نظر یافت نشد." };
     const id = String(body.ruleId ?? "");
-    contract.packageRules = contract.packageRules.filter((r) => r.id !== id).map((r, idx) => ({ ...r, priority: idx + 1 }));
+    contract.pathwayRules = contract.pathwayRules.filter((r) => r.id !== id).map((r, idx) => ({ ...r, priority: idx + 1 }));
     for (const member of contract.members) {
-      if (member.manualPackageOverride) continue;
+      if (member.manualPathwayOverride) continue;
       const pkg = resolveMemberPackage(
         { age: member.age, gender: member.gender, jobCategory: member.jobCategory },
-        contract.packageRules,
+        contract.pathwayRules,
         contract.defaultPathwayCode,
         mockStore.pathways
       );
       member.assignedPathwayCode = pkg.pathwayCode;
       member.assignedPathwayTitle = pkg.pathwayTitle;
-      member.matchedRuleTitle = pkg.ruleTitle;
+      member.matchedPathwayTitle = pkg.ruleTitle;
     }
     return { ok: true, status: 200 };
   }
@@ -469,8 +472,8 @@ export function runContractAction(
 
     const id = nextContractId();
     const today = isoDayOffset(0);
-    const defaultRules: ContractPackageRule[] = Array.isArray(body.packageRules) && body.packageRules.length
-      ? body.packageRules
+    const defaultRules: ContractPathwayRule[] = Array.isArray(body.pathwayRules) && body.pathwayRules.length
+      ? body.pathwayRules
       : [
           {
             id: `rule-${id}-1`,
@@ -516,7 +519,7 @@ export function runContractAction(
       apiKey: apiKey || `ORG-KEY-${1000 + id * 37}`,
       lastApiSyncAt: null,
       defaultPathwayCode,
-      packageRules: defaultRules,
+      pathwayRules: defaultRules,
       dayQuotas: [
         {
           id: `q-${id}-1`,
@@ -559,6 +562,20 @@ export function runContractAction(
   // Remaining actions target an existing contract
   const contract = mockStore.contractById(Number(body.contractId));
   if (!contract) return { ok: false, status: 404, error: "قرارداد مورد نظر یافت نشد." };
+
+  if (action === "UPDATE_CONTRACT") {
+    // Code پس از ایجاد قفل است؛ فقط عنوان/سازمان/بسته پیش‌فرض
+    const title = normalizePersianLetters(String(body.title ?? "").trim());
+    const organizationName = normalizePersianLetters(String(body.organizationName ?? "").trim());
+    const defaultPathwayCode = String(body.defaultPathwayCode ?? "").trim();
+    if (title.length < 3 || organizationName.length < 2) {
+      return { ok: false, status: 400, error: "عنوان قرارداد و نام سازمان را وارد کنید." };
+    }
+    contract.title = title;
+    contract.organizationName = organizationName;
+    if (defaultPathwayCode) contract.defaultPathwayCode = defaultPathwayCode;
+    return { ok: true, status: 200 };
+  }
 
   if (action === "UPDATE_CONTRACT_API") {
     const apiKey = String(body.apiKey ?? "").trim();
@@ -609,18 +626,18 @@ export function runContractAction(
     return { ok: true, status: 200, meta: result };
   }
 
-  if (action === "SAVE_CONTRACT_PACKAGE_RULES") {
-    const rules: ContractPackageRule[] = Array.isArray(body.packageRules) ? body.packageRules : [];
+  if (action === "SAVE_CONTRACT_PATHWAY_RULES") {
+    const rules: ContractPathwayRule[] = Array.isArray(body.pathwayRules) ? body.pathwayRules : [];
     // Optionally persist the newly authored rule to the central library for reuse.
     if (body.saveToLibrary) {
       const first = rules[0];
       if (first) {
         const libraryRuleId = first.libraryRuleId ?? `lib-${Date.now()}`;
-        const libraryEntry: PackageLibraryRule = {
+        const libraryEntry: PathwayLibraryRule = {
           id: libraryRuleId,
-          code: `LR-${String(mockStore.packageRuleLibrary.length + 1).padStart(3, "0")}`,
+          code: `LR-${String(mockStore.pathwayLibrary.length + 1).padStart(3, "0")}`,
           title: first.title,
-          description: String(body.ruleDescription ?? "").trim() || "قانون تعریف‌شده داخل قرارداد",
+          description: String(body.ruleDescription ?? "").trim() || "مسیر تعریف‌شده داخل قرارداد",
           gender: first.gender,
           minAge: first.minAge,
           maxAge: first.maxAge,
@@ -628,39 +645,97 @@ export function runContractAction(
           pathwayCode: first.pathwayCode,
           createdAt: now,
         };
-        const idx = mockStore.packageRuleLibrary.findIndex((r) => r.id === libraryRuleId);
-        if (idx >= 0) mockStore.packageRuleLibrary[idx] = libraryEntry;
-        else mockStore.packageRuleLibrary.push(libraryEntry);
+        const idx = mockStore.pathwayLibrary.findIndex((r) => r.id === libraryRuleId);
+        if (idx >= 0) mockStore.pathwayLibrary[idx] = libraryEntry;
+        else mockStore.pathwayLibrary.push(libraryEntry);
         rules[0] = { ...first, libraryRuleId };
       }
     }
     if (body.defaultPathwayCode) contract.defaultPathwayCode = String(body.defaultPathwayCode);
-    contract.packageRules = rules.map((r, idx) => ({ ...r, priority: idx + 1 }));
-    // Re-evaluate package binding for every non-overridden member in this contract
+    contract.pathwayRules = rules.map((r, idx) => ({ ...r, priority: idx + 1 }));
+    // skipMemberReapply: فقط اولویت؛ جابه‌جایی با PREVIEW/APPLY_PATHWAY_RECHECK
+    if (body.skipMemberReapply !== true) {
+      for (const member of contract.members) {
+        if (member.manualPathwayOverride) continue;
+        const pkg = resolveMemberPackage(
+          { age: member.age, gender: member.gender, jobCategory: member.jobCategory },
+          contract.pathwayRules,
+          contract.defaultPathwayCode,
+          mockStore.pathways
+        );
+        member.assignedPathwayCode = pkg.pathwayCode;
+        member.assignedPathwayTitle = pkg.pathwayTitle;
+        member.matchedPathwayTitle = pkg.ruleTitle;
+      }
+    }
+    return { ok: true, status: 200 };
+  }
+
+  if (action === "OVERRIDE_MEMBER_PATHWAY") {
+    const member = contract.members.find((m) => m.id === Number(body.memberId));
+    const pathwayCode = String(body.pathwayCode ?? "").trim();
+    const pathway = mockStore.pathways.find((p) => p.code === pathwayCode);
+    if (!member || !pathwayCode) return { ok: false, status: 404, error: "فرد یا مسیر یافت نشد." };
+    const pathwayTitle = String(body.pathwayTitle ?? "").trim() || pathway?.title || pathwayCode;
+    member.assignedPathwayCode = pathwayCode;
+    member.assignedPathwayTitle = pathway?.title ?? pathwayTitle;
+    // عنوان سطل برای UI — همان عنوان انتخاب‌شده تا عضو فوراً در کارت درست دیده شود
+    member.matchedPathwayTitle = pathwayTitle;
+    member.manualPathwayOverride = true;
+    return { ok: true, status: 200 };
+  }
+
+  if (action === "PREVIEW_PATHWAY_RECHECK") {
+    const rows = contract.members.map((member) => {
+      const proposed = resolveMemberPackage(
+        { age: member.age, gender: member.gender, jobCategory: member.jobCategory },
+        contract.pathwayRules,
+        contract.defaultPathwayCode,
+        mockStore.pathways
+      );
+      const wouldChange =
+        (member.assignedPathwayCode || "") !== proposed.pathwayCode ||
+        (member.matchedPathwayTitle || "") !== (proposed.ruleTitle || "");
+      const admitted = Boolean(member.linkedPatientId);
+      return {
+        memberId: member.serverId || String(member.id),
+        fullName: member.fullName,
+        currentPathwayTitle: member.assignedPathwayTitle,
+        proposedPathwayTitle: proposed.pathwayTitle,
+        proposedMatchedTitle: proposed.ruleTitle,
+        wouldChange,
+        manualOverride: member.manualPathwayOverride,
+        admitted,
+        canApply: !admitted,
+      };
+    });
+    return { ok: true, status: 200, meta: { rows } };
+  }
+
+  if (action === "APPLY_PATHWAY_RECHECK") {
+    const idSet = new Set((Array.isArray(body.memberIds) ? body.memberIds : []).map((x: unknown) => String(x)));
+    let applied = 0;
+    let skipped = 0;
     for (const member of contract.members) {
-      if (member.manualPackageOverride) continue;
+      const key = member.serverId || String(member.id);
+      if (!idSet.has(key) && !idSet.has(String(member.id))) continue;
+      if (member.linkedPatientId) {
+        skipped++;
+        continue;
+      }
+      member.manualPathwayOverride = false;
       const pkg = resolveMemberPackage(
         { age: member.age, gender: member.gender, jobCategory: member.jobCategory },
-        contract.packageRules,
+        contract.pathwayRules,
         contract.defaultPathwayCode,
         mockStore.pathways
       );
       member.assignedPathwayCode = pkg.pathwayCode;
       member.assignedPathwayTitle = pkg.pathwayTitle;
-      member.matchedRuleTitle = pkg.ruleTitle;
+      member.matchedPathwayTitle = pkg.ruleTitle;
+      applied++;
     }
-    return { ok: true, status: 200 };
-  }
-
-  if (action === "OVERRIDE_MEMBER_PACKAGE") {
-    const member = contract.members.find((m) => m.id === Number(body.memberId));
-    const pathway = mockStore.pathways.find((p) => p.code === String(body.pathwayCode));
-    if (!member || !pathway) return { ok: false, status: 404, error: "فرد یا بسته درمانی یافت نشد." };
-    member.assignedPathwayCode = pathway.code;
-    member.assignedPathwayTitle = pathway.title;
-    member.matchedRuleTitle = "تخصیص دستی اختصاصی توسط ادمین";
-    member.manualPackageOverride = true;
-    return { ok: true, status: 200 };
+    return { ok: true, status: 200, meta: { applied, skipped } };
   }
 
   if (action === "PIN_MEMBER_DATE") {

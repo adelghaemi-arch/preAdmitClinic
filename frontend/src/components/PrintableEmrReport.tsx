@@ -1,4 +1,9 @@
-﻿import { ResultAttachment } from "./ResultAttachment";
+﻿/*
+ File: frontend/src/components/PrintableEmrReport.tsx
+ Description: گزارش قابل چاپ پرونده الکترونیک با برند نفس
+ Parent Dependencies: ResultAttachment
+ */
+import { ResultAttachment } from "./ResultAttachment";
 
 import React from "react";
 import {
@@ -119,7 +124,7 @@ export function PrintableEmrReport({
           <div className="flex flex-wrap items-start justify-between gap-4 border-b-2 border-sky-600 pb-5">
             <div>
               <div className="text-xs font-bold text-sky-700">
-                سامانه سلامت دیجیتال نبض کلینیک
+                سامانه سلامت دیجیتال نفس
               </div>
               <h2 className="mt-1 text-xl font-extrabold text-slate-900">
                 گزارش پرونده الکترونیک جامع یک‌روزه (Today&apos;s Complete EMR)

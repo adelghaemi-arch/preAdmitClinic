@@ -28,12 +28,13 @@ public sealed class ServiceHarness
     public FakeAuthRepository Auth { get; }
     public FakeClinicRepository Clinics { get; }
     public FakeContractRepository Contracts { get; }
-    public FakePackageLibraryRuleRepository LibraryRules { get; }
+    public FakePathwayLibraryRuleRepository LibraryRules { get; }
     public FakePatientRepository Patients { get; }
     public FakePatientProfileRevisionRepository ProfileRevisions { get; }
     public FakeFormRepository Forms { get; }
     public FakeEvidenceRepository Evidence { get; }
     public FakePlatformRepository Platform { get; }
+    public FakeSmsCampaignTemplateRepository SmsTemplates { get; }
 
     public ServiceHarness()
     {
@@ -43,14 +44,34 @@ public sealed class ServiceHarness
         Auth = new FakeAuthRepository(Store);
         Clinics = new FakeClinicRepository(Store);
         Contracts = new FakeContractRepository(Store);
-        LibraryRules = new FakePackageLibraryRuleRepository(Store);
+        LibraryRules = new FakePathwayLibraryRuleRepository(Store);
         Patients = new FakePatientRepository(Store);
         ProfileRevisions = new FakePatientProfileRevisionRepository(Store);
         Forms = new FakeFormRepository(Store);
         Evidence = new FakeEvidenceRepository(Store);
         Platform = new FakePlatformRepository(Store);
+        SmsTemplates = new FakeSmsCampaignTemplateRepository(Store);
         DatabaseReset = new FakeDatabaseFactoryReset(Store);
         Seeder = new FakeAppDataSeeder(Store);
+        SeedDefaultSmsTemplate();
+    }
+
+    public Guid SeedDefaultSmsTemplate(string code = "invite_register")
+    {
+        var existing = Store.SmsCampaignTemplates.FirstOrDefault(t => t.Code == code);
+        if (existing is not null) return existing.Id;
+        var t = new SmsCampaignTemplate
+        {
+            Code = code,
+            Title = "دعوت تکمیل ثبت‌نام",
+            BodyPreview = "سلام {name}، لینک ثبت‌نام: {invite_url}",
+            ProviderTemplateName = "invite",
+            TokenKeysJson = """["invite_token","name"]""",
+            IsActive = true,
+            SortOrder = 1,
+        };
+        Store.SmsCampaignTemplates.Add(t);
+        return t.Id;
     }
 
     public AuthService CreateAuthService(string fixedOtp = "12345")
@@ -58,7 +79,7 @@ public sealed class ServiceHarness
         var authOptions = Options.Create(new AuthOptions { FixedOtp = fixedOtp });
         var kavenegarOptions = Options.Create(new KavenegarOptions { InviteTemplate = "invite", OtpTemplate = "otp" });
         return new AuthService(
-            Users, Persons, Auth, Contracts, Patients, Clinics, CreatePatientService(), UnitOfWork, Sms,
+            Users, Persons, Auth, Contracts, Patients, Clinics, Platform, CreatePatientService(), UnitOfWork, Sms,
             authOptions, kavenegarOptions, NullLogger<AuthService>.Instance);
     }
 
@@ -73,11 +94,16 @@ public sealed class ServiceHarness
     {
         var authOptions = Options.Create(new AuthOptions { FixedOtp = fixedOtp });
         var kavenegarOptions = Options.Create(new KavenegarOptions { InviteTemplate = "invite" });
+        var frontendUrls = Options.Create(new FrontendUrlsOptions { My = "https://my.example.test" });
         return new ContractService(
-            Contracts, LibraryRules, Patients, Users, Persons, UnitOfWork, Sms, authOptions, kavenegarOptions, NullLogger<ContractService>.Instance);
+            Contracts, LibraryRules, Patients, Users, Persons, Clinics, SmsTemplates, UnitOfWork, Sms,
+            authOptions, kavenegarOptions, frontendUrls, NullLogger<ContractService>.Instance);
     }
 
-    public PackageLibraryRuleService CreatePackageLibraryRuleService()
+    public ClinicService CreateClinicService()
+        => new(Clinics, UnitOfWork, Sms, SmsTemplates, NullLogger<ClinicService>.Instance);
+
+    public PathwayLibraryRuleService CreatePathwayLibraryRuleService()
         => new(LibraryRules, Contracts, UnitOfWork);
 
     public UserAdminService CreateUserAdminService() => new(Users, Persons, Patients, Contracts, Clinics, Platform, UnitOfWork);
@@ -159,7 +185,7 @@ public sealed class ServiceHarness
         if (Store.PlatformSettings.Count > 0) return;
         Store.PlatformSettings.Add(new PlatformSettings
         {
-            BrandName = "نبض تست",
+            BrandName = "نفس تست",
             OtpLength = 5,
             OtpTtlSeconds = 120,
             FraudAutoCaptureSeconds = 7,

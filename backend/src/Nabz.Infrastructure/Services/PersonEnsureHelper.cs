@@ -18,7 +18,8 @@ public static class PersonEnsureHelper
         string FirstName,
         string LastName,
         string? Gender,
-        DateOnly? BirthDate);
+        DateOnly? BirthDate,
+        string? FatherName = null);
 
     /// <summary>کدملی وقتی معتبر است کلید جستجو؛ وگرنه Person جدید با موبایل.</summary>
     public static async Task<Person> EnsurePersonAsync(
@@ -47,6 +48,7 @@ public static class PersonEnsureHelper
                 NationalId = nid,
                 FirstName = input.FirstName.Trim(),
                 LastName = input.LastName.Trim(),
+                FatherName = string.IsNullOrWhiteSpace(input.FatherName) ? null : input.FatherName.Trim(),
                 Gender = input.Gender,
                 BirthDate = input.BirthDate
             };
@@ -75,6 +77,8 @@ public static class PersonEnsureHelper
 
         if (!string.IsNullOrWhiteSpace(input.Gender))
             person.Gender = input.Gender.Trim();
+        if (input.FatherName is not null)
+            person.FatherName = string.IsNullOrWhiteSpace(input.FatherName) ? null : input.FatherName.Trim();
         person.BirthDate ??= input.BirthDate;
         person.UpdatedAt = DateTime.UtcNow;
     }
@@ -86,7 +90,8 @@ public static class PersonEnsureHelper
         DateOnly? birthDate,
         bool clearBirthDate,
         string? gender,
-        bool allowGender)
+        bool allowGender,
+        string? fatherName = null)
     {
         if (firstName is not null)
         {
@@ -98,6 +103,8 @@ public static class PersonEnsureHelper
             var ln = lastName.Trim();
             if (ln.Length >= 2) person.LastName = ln;
         }
+        if (fatherName is not null)
+            person.FatherName = string.IsNullOrWhiteSpace(fatherName) ? null : fatherName.Trim();
         if (clearBirthDate) person.BirthDate = null;
         else if (birthDate is not null) person.BirthDate = birthDate;
         if (allowGender && gender is not null)
@@ -114,5 +121,6 @@ public static class PersonEnsureHelper
         person.FirstName,
         person.LastName,
         person.Gender,
-        person.BirthDate);
+        person.BirthDate,
+        person.FatherName);
 }

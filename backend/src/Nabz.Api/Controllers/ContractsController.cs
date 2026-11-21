@@ -46,6 +46,12 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
     public async Task<IActionResult> Create([FromQuery] Guid clinicId, [FromBody] CreateContractRequest body, CancellationToken ct)
         => Ok(await contracts.CreateAsync(clinicId, body, ct));
 
+    // مشخصات پایه (عنوان/سازمان/بسته پیش‌فرض)؛ Code قفل؛ API و ناظر مسیر جدا دارند
+    [Authorize(Roles = "Admin,Platform")]
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateContractRequest body, CancellationToken ct)
+        => Ok(await contracts.UpdateAsync(id, body, ct));
+
     [Authorize(Roles = "Admin,Platform")]
     [HttpPut("{id:guid}/supervisor")]
     public async Task<IActionResult> Supervisor(Guid id, [FromBody] UpdateSupervisorRequest body, CancellationToken ct)
@@ -106,8 +112,17 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
         var asSupervisor = User.IsInRole("Supervisor") && !User.IsInRole("Admin") && !User.IsInRole("Platform");
         if (asSupervisor && User.GetContractId() != id)
             return Forbid();
-        var sent = await contracts.SendBulkSmsAsync(id, body.CampaignTitle, body.MemberIds, User.GetUserId(), asSupervisor, ct);
-        return Ok(new { ok = true, sent });
+        if (body.TemplateId == Guid.Empty)
+            return BadRequest(new { error = "انتخاب قالب پیامک الزامی است." });
+        try
+        {
+            var sent = await contracts.SendBulkSmsAsync(id, body.TemplateId, body.CampaignTitle, body.MemberIds, User.GetUserId(), asSupervisor, ct);
+            return Ok(new { ok = true, sent });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [Authorize(Roles = "Admin,Platform")]
@@ -140,10 +155,10 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
     }
 
     [Authorize(Roles = "Admin,Platform")]
-    [HttpPut("members/{memberId:guid}/package")]
-    public async Task<IActionResult> OverridePackage(Guid memberId, [FromBody] PackageOverrideBody body, CancellationToken ct)
+    [HttpPut("members/{memberId:guid}/pathway")]
+    public async Task<IActionResult> OverridePathway(Guid memberId, [FromBody] PathwayOverrideBody body, CancellationToken ct)
     {
-        await contracts.OverrideMemberPackageAsync(memberId, body.PackageCode, body.PackageTitle, ct);
+        await contracts.OverrideMemberPathwayAsync(memberId, body.PathwayCode, body.PathwayTitle, ct);
         return Ok(new { ok = true });
     }
 
@@ -161,17 +176,22 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
         => Ok(await patients.AdmitContractMemberAsync(memberId, ct));
 
     [Authorize(Roles = "Admin,Platform")]
-    [HttpPut("{id:guid}/package-rules")]
-    public async Task<IActionResult> PackageRules(Guid id, [FromBody] List<PackageRuleBody> body, CancellationToken ct)
+    [HttpPut("{id:guid}/pathway-rules")]
+    public async Task<IActionResult> PathwayRules(
+        Guid id,
+        [FromBody] List<PathwayRuleBody> body,
+        [FromQuery] bool reapplyMembers = true,
+        CancellationToken ct = default)
     {
-        var result = await contracts.SavePackageRulesAsync(id, body.Select(r =>
-            new PackageRuleInput(r.Title, r.Gender, r.MinAge, r.MaxAge, r.JobCategory, r.PackageCode, r.Priority, r.LibraryRuleId)).ToList(), ct);
+        // reapplyMembers=false برای جابه‌جایی فقط‌اولویت؛ اعضا با recheck جابه‌جا می‌شوند
+        var result = await contracts.SavePathwayRulesAsync(id, body.Select(r =>
+            new PathwayRuleInput(r.Title, r.Gender, r.MinAge, r.MaxAge, r.JobCategory, r.PathwayCode, r.Priority, r.LibraryRuleId)).ToList(), reapplyMembers, ct);
         return Ok(new { ok = true, recalculated = result.Recalculated, needsManual = result.NeedsManual });
     }
 
     [Authorize(Roles = "Admin,Platform")]
-    [HttpPost("{id:guid}/package-rules/attach")]
-    public async Task<IActionResult> AttachLibraryRules(Guid id, [FromBody] AttachLibraryRulesBody body, CancellationToken ct)
+    [HttpPost("{id:guid}/pathway-rules/attach")]
+    public async Task<IActionResult> AttachPathwayLibrary(Guid id, [FromBody] AttachPathwayLibraryBody body, CancellationToken ct)
     {
         try
         {
@@ -185,13 +205,42 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
     }
 
     [Authorize(Roles = "Admin,Platform")]
-    [HttpDelete("{id:guid}/package-rules/{ruleId:guid}")]
-    public async Task<IActionResult> DetachPackageRule(Guid id, Guid ruleId, CancellationToken ct)
+    [HttpDelete("{id:guid}/pathway-rules/{ruleId:guid}")]
+    public async Task<IActionResult> DetachPathwayRule(Guid id, Guid ruleId, CancellationToken ct)
     {
         try
         {
-            var result = await contracts.DetachPackageRuleAsync(id, ruleId, ct);
+            var result = await contracts.DetachPathwayRuleAsync(id, ruleId, ct);
             return Ok(new { ok = true, recalculated = result.Recalculated, needsManual = result.NeedsManual });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [Authorize(Roles = "Admin,Platform")]
+    [HttpPost("{id:guid}/pathway-rules/recheck-preview")]
+    public async Task<IActionResult> PathwayRecheckPreview(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await contracts.PreviewPathwayRecheckAsync(id, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [Authorize(Roles = "Admin,Platform")]
+    [HttpPost("{id:guid}/pathway-rules/recheck-apply")]
+    public async Task<IActionResult> PathwayRecheckApply(Guid id, [FromBody] PathwayRecheckApplyRequest body, CancellationToken ct)
+    {
+        try
+        {
+            var result = await contracts.ApplyPathwayRecheckAsync(id, body.MemberIds ?? [], ct);
+            return Ok(new { ok = true, applied = result.Applied, skipped = result.Skipped });
         }
         catch (InvalidOperationException ex)
         {
@@ -217,9 +266,9 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
         return m is null ? NotFound() : Ok(m);
     }
 
-    public record SmsBody(string CampaignTitle, List<Guid>? MemberIds);
+    public record SmsBody(Guid TemplateId, string? CampaignTitle, List<Guid>? MemberIds);
     public record ApiBody(string? ApiEndpoint, string? ApiKey);
-    public record PackageOverrideBody(string PackageCode, string PackageTitle);
-    public record PackageRuleBody(string Title, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PackageCode, int Priority, Guid? LibraryRuleId = null);
-    public record AttachLibraryRulesBody(List<Guid>? LibraryRuleIds);
+    public record PathwayOverrideBody(string PathwayCode, string PathwayTitle);
+    public record PathwayRuleBody(string Title, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PathwayCode, int Priority, Guid? LibraryRuleId = null);
+    public record AttachPathwayLibraryBody(List<Guid>? LibraryRuleIds);
 }

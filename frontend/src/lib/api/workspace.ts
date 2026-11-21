@@ -16,7 +16,7 @@ import {
 } from "@/lib/api/evidence";
 import { fetchClinicForms } from "@/lib/api/forms";
 import { apiFetch } from "@/lib/api/http";
-import { fetchPackageLibraryRules } from "@/lib/api/package-library-rules";
+import { fetchPathwayLibraryRules } from "@/lib/api/pathway-library-rules";
 import { guidToNumericId } from "@/lib/api/roles";
 import { MOCK_DATASET } from "@/lib/mock-dataset";
 import { DEFAULT_OSM_LOCAL, DEFAULT_PLATFORM_SETTINGS } from "@/lib/mock-platform";
@@ -26,7 +26,7 @@ import type {
   FormDefinition,
   FraudCaptureSession,
   FraudReviewStatus,
-  PackageLibraryRule,
+  PathwayLibraryRule,
   PathwayDto,
   GpsPoint,
   PlatformSettings,
@@ -207,6 +207,17 @@ function emptyPlatform(clinic: ClinicDto | null): PlatformState {
             plan: "v1",
             adminContact: "",
             adminPhone: "",
+            preAdmitSupportPhone: clinic.preAdmitSupportPhone ?? "",
+            smsProvider: clinic.smsProvider ?? "None",
+            smsSenderNumber: clinic.smsSenderNumber ?? "",
+            kavenegarApiKey: clinic.kavenegarApiKey ?? undefined,
+            kavenegarApiKeySet: clinic.kavenegarApiKeySet,
+            kavenegarOtpTemplate: clinic.kavenegarOtpTemplate ?? "",
+            toubaUsername: clinic.toubaUsername ?? "",
+            toubaPassword: clinic.toubaPassword ?? undefined,
+            toubaPasswordSet: clinic.toubaPasswordSet,
+            toubaSendUrl: clinic.toubaSendUrl ?? "",
+            toubaOtpMessageTemplate: clinic.toubaOtpMessageTemplate ?? "",
             patientsToday: 0,
             staffCount: 0,
             contractsCount: 0,
@@ -358,7 +369,7 @@ export async function loadWorkspaceSnapshot(): Promise<ClinicSnapshot> {
 
   let contracts: CorporateContract[] = [];
   let forms: FormDefinition[] = [];
-  let packageRuleLibrary: PackageLibraryRule[] = [];
+  let pathwayLibrary: PathwayLibraryRule[] = [];
   if (clinic?.id) {
     if (canListContracts) {
       try {
@@ -375,12 +386,12 @@ export async function loadWorkspaceSnapshot(): Promise<ClinicSnapshot> {
       /* Owner/Admin/Specialist؛ در صورت 403 خالی */
     }
   }
-  // کتابخانه قوانین فقط Admin/Platform — مثل /api/users تا Console پر از 403 نشود
+  // کتابخانه مسیر سلامتی فقط Admin/Platform — مثل /api/users تا Console پر از 403 نشود
   if (canListUsers) {
     try {
-      packageRuleLibrary = await fetchPackageLibraryRules();
+      pathwayLibrary = await fetchPathwayLibraryRules();
     } catch {
-      packageRuleLibrary = [];
+      pathwayLibrary = [];
     }
   }
 
@@ -423,7 +434,7 @@ export async function loadWorkspaceSnapshot(): Promise<ClinicSnapshot> {
       address: clinicAddress,
       city: clinic?.city ?? "تهران",
     },
-    packageRuleLibrary,
+    pathwayLibrary,
     rooms: [],
     links: [],
     // تا API مسیر درمان آماده شود، کاتالوگ FE برای عنوان/ایستگاه‌ها hydrate می‌شود

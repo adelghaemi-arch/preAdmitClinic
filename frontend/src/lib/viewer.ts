@@ -22,35 +22,25 @@ export interface SessionContext {
 
 const ALL_ROLE_IDS = (): WorkspaceRole[] => selectableRoles().map((r) => r.id);
 
+/**
+ * نقش‌های قابل‌نمایش در سوئیچر.
+ * فقط ادمین کل می‌تواند وارد workspace نقش‌های دیگر شود؛
+ * بقیهٔ نقش‌ها (از جمله ادمین کلینیک) کاملاً مستقل و قفل روی همان نقش حساب‌اند.
+ */
 export function allowedRolesFor(user?: AppUserDto | null): WorkspaceRole[] {
   const all = ALL_ROLE_IDS();
   if (!user) return all;
 
-  // ادمین کل بالاتر از ادمین کلینیک است و می‌تواند همه نقش‌های قابل‌انتخاب (شامل admin) را بگیرد
   if (user.primaryRole === "platform") {
     return all;
   }
 
-  // ادمین کلینیک با سوئیچ چندنقشی کلینیکی؛ هرگز به workspace ادمین کل نمی‌رود
-  if (user.canAccessAllRoles && user.primaryRole === "admin") {
-    return all.filter((id) => id !== "platform");
+  const primary = user.primaryRole as WorkspaceRole | undefined;
+  if (primary && all.includes(primary)) {
+    return [primary];
   }
 
-  if (!user.canAccessAllRoles && user.primaryRole === "supervisor") {
-    return ["supervisor"];
-  }
-
-  if (user.primaryRole && all.includes(user.primaryRole as WorkspaceRole)) {
-    // نقش‌های واقعی سرور را اولویت بده؛ سوئیچ آزاد فقط برای حساب‌های چندنقشی بالا
-    if (!user.canAccessAllRoles) return [user.primaryRole as WorkspaceRole];
-  }
-
-  // canAccessAllRoles بدون primary مشخص (دمو قدیمی): همه به‌جز platform مگر خود platform
-  if (user.canAccessAllRoles) {
-    return all.filter((id) => id !== "platform");
-  }
-
-  return all;
+  return [];
 }
 
 export function asRole(value: string | null | undefined): WorkspaceRole | null {
@@ -120,7 +110,7 @@ export async function resolveSession(requestedRole?: string): Promise<SessionCon
   }
 
   const picked = pickAllowedRole(session.user, requestedRole, stored);
-  // نقش ذخیره‌شدهٔ غیرمجاز (مثلاً platform برای ادمین کلینیک) را با fallback بازنویسی کن
+  // نقش ذخیره‌شدهٔ غیرمجاز (مثلاً owner برای ادمین کلینیک) را با fallback بازنویسی کن
   if (picked.sanitized || (stored && stored !== picked.role)) {
     writeStoredRole(picked.role);
   }

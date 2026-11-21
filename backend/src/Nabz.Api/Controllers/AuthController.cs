@@ -1,23 +1,31 @@
 /*
  File: backend/src/Nabz.Api/Controllers/AuthController.cs
- Description: OTP عمومی؛ انتخاب هویت؛ revoke با نشست احرازشده
- Parent Dependencies: IAuthService, CurrentUserExtensions
+ Description: OTP عمومی؛ حالت FixedOtp؛ انتخاب هویت؛ revoke با نشست احرازشده
+ Parent Dependencies: IAuthService, AuthOptions, CurrentUserExtensions
  */
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Nabz.Api.Auth;
 using Nabz.Application.Interfaces;
+using Nabz.Application.Options;
 
 namespace Nabz.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public sealed class AuthController(IAuthService auth) : ControllerBase
+public sealed class AuthController(IAuthService auth, IOptions<AuthOptions> authOptions) : ControllerBase
 {
     public record RequestOtpBody(string Mobile);
     public record VerifyOtpBody(string Mobile, string Code, string? DeviceLabel, string? AppSurface);
     public record SelectIdentityBody(string NationalId);
+
+    /// <summary>پرچم عمومی: آیا OTP ثابت (بدون پیامک) فعال است — بدون افشای خود کد.</summary>
+    [AllowAnonymous]
+    [HttpGet("otp/mode")]
+    public IActionResult OtpMode()
+        => Ok(new { fixedOtpEnabled = authOptions.Value.HasFixedOtp });
 
     [AllowAnonymous]
     [HttpPost("otp/request")]

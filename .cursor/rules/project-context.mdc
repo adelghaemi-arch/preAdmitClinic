@@ -38,11 +38,12 @@ alwaysApply: true
 - Options: `AuthOptions` / `KavenegarOptions` در `Nabz.Application/Options`
 - FixedOtp در Serviceهایی مثل `AuthService` / `ContractService` قبل از تولید کد و قبل از `ISmsSender`
 - اعتماد به `actingUserId` / `AsSupervisor` از body کلاینت ممنوع
+- با FixedOtp برای موبایل ادمین کل: `demoCode` = پایه؛ کد واقعی = پایه + ۱ (`PlatformAdminIdentity`)
 
 ### ادمین کل (قفل)
 
-- موبایل ادمین کل **همیشه** `09133752696` — تغییر بدون تصمیم صریح مالک پروژه ممنوع.
-- در seed اولیه (`Program.cs` / `SeedAsync`) این کاربر با نقش `Platform` باید ایجاد یا نقشش تضمین شود.
+- موبایل ادمین کل **همیشه** `09133752696` (`PlatformAdminIdentity.Mobile`) — تغییر بدون تصمیم صریح مالک پروژه ممنوع.
+- در seed: Person **بدون NID** روی همان موبایل + User با نقش `Platform`؛ نه اولین Person بیمار هم‌شماره.
 - لاگین OTP / پنل پلتفرم / دمو و README با همین شماره هم‌تراز باشند (نه `09120000000`).
 
 ## اسناد و مسیرها
@@ -83,7 +84,7 @@ Deploy: [`docs/shared/server-deploy.md`](../../docs/shared/server-deploy.md)
 | Supervisor | خیر (خواندن + SMS قرارداد خود) | قرارداد خود | خیر | خیر |
 | Owner / Specialist | خیر | خیر | دامنهٔ خود | دامنهٔ خود |
 
-سوئیچ UI به `admin` با JWT فقط-Platform مجاز است؛ API باید Platform را روی اکشن‌های Admin کلینیک بپذیرد (`.cursorrules` §0.3).
+سوئیچ UI نقش فقط برای JWT `Platform` (ادمین کل) است؛ ادمین کلینیک و بقیه نقش‌ها فضای کاری مستقل دارند. API باید Platform را روی اکشن‌های Admin کلینیک بپذیرد (`.cursorrules` §0.3).
 
 ## Server deploy (این ریپو)
 

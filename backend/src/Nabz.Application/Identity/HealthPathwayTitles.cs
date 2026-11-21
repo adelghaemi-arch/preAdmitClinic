@@ -1,13 +1,13 @@
 /*
- File: backend/src/Nabz.Application/Identity/HealthPackageTitles.cs
- Description: نگاشت کد بسته سلامت به عنوان فارسی نمایشی
+ File: backend/src/Nabz.Application/Identity/HealthPathwayTitles.cs
+ Description: نگاشت کد مسیر سلامتی به عنوان فارسی نمایشی
  Parent Dependencies: —
  */
 
 namespace Nabz.Application.Identity;
 
-/// <summary>عنوان نمایشی بسته‌ها — کد انگلیسی در UI ممنوع است.</summary>
-public static class HealthPackageTitles
+/// <summary>عنوان نمایشی مسیرهای سلامتی — کد انگلیسی در UI ممنوع است.</summary>
+public static class HealthPathwayTitles
 {
     public const string FullCheckupCode = "FULL_CHECKUP";
     public const string FullCheckupTitle = "چکاپ جامع";

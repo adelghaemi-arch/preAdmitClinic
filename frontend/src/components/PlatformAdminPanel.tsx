@@ -23,6 +23,7 @@ import {
   Users,
 } from "lucide-react";
 import { AppInput } from "@/components/AppInput";
+import { PlatformSmsTemplatesEditor } from "@/components/PlatformSmsTemplatesEditor";
 import { GpsMapPopup, type GpsMapPoint } from "@/components/GpsMapPopup";
 import { ListPager, slicePage, type ListPageSize } from "@/components/ListPager";
 import { VaultFileThumbGrid } from "@/components/VaultFileThumbGrid";
@@ -1672,6 +1673,8 @@ export function PlatformAdminPanel({
           >
             ذخیره تنظیمات
           </button>
+
+          <PlatformSmsTemplatesEditor busy={busy} />
 
           {userScope === "full" && (
             <div className="mt-8 space-y-3 rounded-2xl border border-rose-200 bg-rose-50/60 p-4">

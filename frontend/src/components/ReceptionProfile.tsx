@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
   ArrowDown,
@@ -220,7 +220,7 @@ export function ReceptionProfile({
           age?: number | null;
           gender?: string | null;
           intakeCompleted: boolean;
-          assignedPackageTitle?: string | null;
+          assignedPathwayTitle?: string | null;
         } | null;
       }>(`/api/patients/by-national-id?clinicId=${encodeURIComponent(clinicId)}&nationalId=${encodeURIComponent(id)}`);
       if (requestVersion !== lookupVersion.current) return;
@@ -245,7 +245,7 @@ export function ReceptionProfile({
               age: data.patient.age ?? 0,
               gender: data.patient.gender ?? "",
               phone: data.patient.phone,
-              pathwayTitle: data.patient.assignedPackageTitle ?? "",
+              pathwayTitle: data.patient.assignedPathwayTitle ?? "",
               allergies: [],
               medications: [],
               intakeCompleted: data.patient.intakeCompleted,

@@ -1,6 +1,6 @@
 /*
  File: frontend/src/lib/__tests__/uc-role-switch.test.ts
- Description: سلسله‌مراتب سوئیچ نقش workspace — Admin بدون platform؛ Platform با admin
+ Description: سوئیچ نقش — فقط ادمین کل؛ بقیه نقش‌ها قفل روی حساب خود
  Parent Dependencies: lib/viewer, types/clinic
  */
 
@@ -20,16 +20,14 @@ function user(partial: Partial<AppUserDto> & Pick<AppUserDto, "primaryRole" | "c
 }
 
 describe("UC-ADM-16", () => {
-  it("ادمین کلینیک با canAccessAllRoles به platform سوئیچ نمی‌کند", () => {
+  it("ادمین کلینیک حتی با canAccessAllRoles فقط نقش admin را می‌بیند", () => {
     const roles = allowedRolesFor(user({ primaryRole: "admin", canAccessAllRoles: true }));
-    expect(roles).toContain("admin");
-    expect(roles).not.toContain("platform");
-    expect(roles.length).toBeGreaterThan(1);
+    expect(roles).toEqual(["admin"]);
   });
 
-  it("نقش ذخیره‌شده platform برای ادمین کلینیک sanitize می‌شود", () => {
-    const admin = user({ primaryRole: "admin", canAccessAllRoles: true });
-    const picked = pickAllowedRole(admin, null, "platform");
+  it("نقش ذخیره‌شدهٔ غیرمجاز برای ادمین کلینیک sanitize می‌شود", () => {
+    const admin = user({ primaryRole: "admin", canAccessAllRoles: false });
+    const picked = pickAllowedRole(admin, null, "owner");
     expect(picked.role).toBe("admin");
     expect(picked.roleAllowed).toBe(false);
     expect(picked.sanitized).toBe(true);
@@ -37,10 +35,13 @@ describe("UC-ADM-16", () => {
 });
 
 describe("UC-PLT-04", () => {
-  it("ادمین کل می‌تواند به نقش ادمین کلینیک سوئیچ کند", () => {
+  it("ادمین کل می‌تواند به همه نقش‌های قابل‌انتخاب از جمله ادمین کلینیک سوئیچ کند", () => {
     const roles = allowedRolesFor(user({ primaryRole: "platform", canAccessAllRoles: true }));
     expect(roles).toContain("platform");
     expect(roles).toContain("admin");
+    expect(roles).toContain("owner");
+    expect(roles).toContain("specialist");
+    expect(roles).toContain("supervisor");
   });
 });
 

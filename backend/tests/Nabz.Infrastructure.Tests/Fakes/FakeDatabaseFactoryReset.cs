@@ -25,8 +25,8 @@ public sealed class FakeDatabaseFactoryReset(InMemoryStore store) : IDatabaseFac
         store.Contracts.Clear();
         store.Members.Clear();
         store.Supervisors.Clear();
-        store.PackageRules.Clear();
-        store.PackageLibraryRules.Clear();
+        store.PathwayRules.Clear();
+        store.PathwayLibraryRules.Clear();
         store.ContractSmsLogs.Clear();
         store.Patients.Clear();
         store.ProfileRevisions.Clear();

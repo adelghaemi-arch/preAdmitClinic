@@ -1,7 +1,7 @@
 /*
- File: backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm05b_PackageLibraryRuleTests.cs
- Description: تست واحد کتابخانه مرکزی قوانین (UC-ADM-05b)
- Parent Dependencies: ServiceHarness, PackageLibraryRuleService, ContractService
+ File: backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm05b_PathwayLibraryRuleTests.cs
+ Description: تست واحد کتابخانه مرکزی مسیر سلامتی (UC-ADM-05b)
+ Parent Dependencies: ServiceHarness, PathwayLibraryRuleService, ContractService
  */
 
 using Nabz.Application.Interfaces;
@@ -10,7 +10,7 @@ using Nabz.Infrastructure.Tests.Support;
 
 namespace Nabz.Infrastructure.Tests.UseCases.Admin;
 
-public sealed class UcAdm05b_PackageLibraryRuleTests
+public sealed class UcAdm05b_PathwayLibraryRuleTests
 {
     [Fact]
     [Trait("UC", "UC-ADM-05b")]
@@ -18,10 +18,10 @@ public sealed class UcAdm05b_PackageLibraryRuleTests
     {
         var h = new ServiceHarness();
         var clinicId = h.SeedClinic();
-        var library = h.CreatePackageLibraryRuleService();
+        var library = h.CreatePathwayLibraryRuleService();
         var contracts = h.CreateContractService();
 
-        var created = await library.CreateAsync(new UpsertPackageLibraryRuleRequest(
+        var created = await library.CreateAsync(new UpsertPathwayLibraryRuleRequest(
             "آقایان اداری زیر ۴۰", "تست", "مرد", 18, 40, "اداری", "PKG-ADMIN"));
 
         Assert.StartsWith("LR-", created.Code);
@@ -51,9 +51,9 @@ public sealed class UcAdm05b_PackageLibraryRuleTests
         Assert.Equal(0, afterComplete!.ActiveMatchedCount);
         Assert.Equal(1, afterComplete.PreviouslyUsedCount);
 
-        await library.UpdateAsync(created.Id, new UpsertPackageLibraryRuleRequest(
+        await library.UpdateAsync(created.Id, new UpsertPathwayLibraryRuleRequest(
             "عنوان جدید قانون", "به‌روز", "مرد", 18, 40, "اداری", "PKG-ADMIN"));
-        var linked = h.Store.PackageRules.Single(r => r.LibraryRuleId == created.Id);
+        var linked = h.Store.PathwayRules.Single(r => r.LibraryRuleId == created.Id);
         Assert.Equal("عنوان جدید قانون", linked.Title);
     }
 
@@ -63,10 +63,10 @@ public sealed class UcAdm05b_PackageLibraryRuleTests
     {
         var h = new ServiceHarness();
         var clinicId = h.SeedClinic();
-        var library = h.CreatePackageLibraryRuleService();
+        var library = h.CreatePathwayLibraryRuleService();
         var contracts = h.CreateContractService();
 
-        var rule = await library.CreateAsync(new UpsertPackageLibraryRuleRequest(
+        var rule = await library.CreateAsync(new UpsertPathwayLibraryRuleRequest(
             "قانون", null, "همه", null, null, "همه", "FULL_CHECKUP"));
         var contract = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
         await contracts.AttachLibraryRulesAsync(contract.Id, [rule.Id]);
@@ -80,19 +80,19 @@ public sealed class UcAdm05b_PackageLibraryRuleTests
     {
         var h = new ServiceHarness();
         var clinicId = h.SeedClinic();
-        var library = h.CreatePackageLibraryRuleService();
+        var library = h.CreatePathwayLibraryRuleService();
         var contracts = h.CreateContractService();
 
-        var rule = await library.CreateAsync(new UpsertPackageLibraryRuleRequest(
+        var rule = await library.CreateAsync(new UpsertPathwayLibraryRuleRequest(
             "قانون", null, "همه", null, null, "همه", "FULL_CHECKUP"));
         var contract = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
         await contracts.AttachLibraryRulesAsync(contract.Id, [rule.Id]);
-        var ruleId = h.Store.PackageRules.Single().Id;
+        var ruleId = h.Store.PathwayRules.Single().Id;
 
-        await contracts.DetachPackageRuleAsync(contract.Id, ruleId);
+        await contracts.DetachPathwayRuleAsync(contract.Id, ruleId);
         await library.DeleteAsync(rule.Id);
 
-        Assert.Empty(h.Store.PackageLibraryRules);
-        Assert.Empty(h.Store.PackageRules);
+        Assert.Empty(h.Store.PathwayLibraryRules);
+        Assert.Empty(h.Store.PathwayRules);
     }
 }

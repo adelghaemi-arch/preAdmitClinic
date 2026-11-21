@@ -1,7 +1,7 @@
 /*
  File: backend/tests/Nabz.Api.Tests/Smoke/AuthOtpSmokeTests.cs
- Description: API smoke برای UC-OWN-01 / UC-OWN-02 — OTP FixedOtp، انتخاب کدملی، snapshot
- Parent Dependencies: NabzApiFactory
+ Description: API smoke برای UC-OWN-01 / UC-OWN-02 / UC-PLT-15 — OTP FixedOtp (+۱ ادمین کل)، انتخاب کدملی
+ Parent Dependencies: NabzApiFactory, SmokeOtp
  */
 
 using System.Net;
@@ -66,6 +66,30 @@ public sealed class AuthOtpSmokeTests : IClassFixture<NabzApiFactory>
     }
 
     [Fact]
+    [Trait("UC", "UC-OWN-01")]
+    [Trait("SMK", "SMK-API-OWN-01")]
+    public async Task OtpMode_WhenFixedOtpConfigured_ReturnsEnabledTrue()
+    {
+        var res = await _client.GetAsync("/api/auth/otp/mode");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        Assert.True(body.GetProperty("fixedOtpEnabled").GetBoolean());
+    }
+
+    [Fact]
+    [Trait("UC", "UC-OWN-01")]
+    [Trait("SMK", "SMK-API-OWN-01")]
+    public async Task OtpMode_WhenSmsMode_ReturnsEnabledFalse()
+    {
+        using var smsFactory = new NabzApiSmsFactory();
+        var client = smsFactory.CreateClient();
+        var res = await client.GetAsync("/api/auth/otp/mode");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = await res.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        Assert.False(body.GetProperty("fixedOtpEnabled").GetBoolean());
+    }
+
+    [Fact]
     [Trait("UC", "UC-OWN-02")]
     [Trait("SMK", "SMK-API-OWN-02")]
     public async Task MeAndIntakeSnapshot_AfterLogin_Succeed()
@@ -83,12 +107,27 @@ public sealed class AuthOtpSmokeTests : IClassFixture<NabzApiFactory>
     }
 
     [Fact]
-    [Trait("UC", "UC-PLT-04")]
-    [Trait("SMK", "SMK-API-PLT-AUTH")]
+    [Trait("UC", "UC-PLT-15")]
+    [Trait("SMK", "SMK-API-PLT-15")]
     public async Task PlatformAdmin_Login_HasPlatformRole()
     {
-        // موبایل ثابت ادمین کل — تک‌کاندیدا
-        var token = await LoginAsync("09133752696");
+        // موبایل ثابت ادمین کل — تک‌کاندیدا؛ کد = FixedOtp+1
+        var mobile = "09133752696";
+        var req = await _client.PostAsJsonAsync("/api/auth/otp/request", new { mobile });
+        Assert.Equal(HttpStatusCode.OK, req.StatusCode);
+        var reqBody = await req.Content.ReadFromJsonAsync<JsonElement>(JsonOpts);
+        Assert.Equal(SmokeOtp.FixedOtp, reqBody.GetProperty("demoCode").GetString());
+
+        var plain = await _client.PostAsJsonAsync("/api/auth/otp/verify", new
+        {
+            mobile,
+            code = SmokeOtp.FixedOtp,
+            deviceLabel = "smoke",
+            appSurface = "clinic_web"
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, plain.StatusCode);
+
+        var token = await LoginAsync(mobile);
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         var me = await _client.GetAsync("/api/auth/me");
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);
@@ -104,7 +143,7 @@ public sealed class AuthOtpSmokeTests : IClassFixture<NabzApiFactory>
         var verify = await _client.PostAsJsonAsync("/api/auth/otp/verify", new
         {
             mobile,
-            code = "12345",
+            code = SmokeOtp.CodeFor(mobile),
             deviceLabel = "smoke",
             appSurface = "clinic_web"
         });

@@ -15,7 +15,7 @@ namespace Nabz.Api.Controllers;
 [ApiController]
 [Authorize(Roles = "Platform")]
 [Route("api/platform")]
-public sealed class PlatformController(IPlatformService platform, IAuthService auth) : ControllerBase
+public sealed class PlatformController(IPlatformService platform, IAuthService auth, ISmsCampaignTemplateService smsTemplates) : ControllerBase
 {
     [HttpPost("clinic-status")]
     public async Task<IActionResult> ClinicStatus([FromBody] ClinicStatusBody body, CancellationToken ct)
@@ -116,6 +116,26 @@ public sealed class PlatformController(IPlatformService platform, IAuthService a
         return Ok(new { ok = true });
     }
 
+    [HttpGet("sms-templates")]
+    public async Task<IActionResult> ListSmsTemplates([FromQuery] bool activeOnly = false, CancellationToken ct = default)
+        => Ok(await smsTemplates.ListAsync(activeOnly, ct));
+
+    [HttpPut("sms-templates")]
+    public async Task<IActionResult> UpsertSmsTemplate([FromBody] UpsertSmsTemplateBody body, CancellationToken ct)
+    {
+        try
+        {
+            var dto = await smsTemplates.UpsertAsync(new UpsertSmsCampaignTemplateRequest(
+                body.Id, body.Code, body.Title, body.BodyPreview, body.ProviderTemplateName,
+                body.TokenKeys ?? [], body.RequiresEmrUrl, body.IsActive, body.SortOrder), ActorName(), ct);
+            return Ok(dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { ok = false, error = ex.Message });
+        }
+    }
+
     [HttpPost("factory-reset/request-otp")]
     public async Task<IActionResult> FactoryResetRequestOtp(CancellationToken ct)
     {
@@ -157,4 +177,14 @@ public sealed class PlatformController(IPlatformService platform, IAuthService a
     public record ActiveBody(bool IsActive);
     public record AuditBody(string Action, string Target, string? Detail);
     public record FactoryResetConfirmBody(string? Code);
+    public record UpsertSmsTemplateBody(
+        Guid? Id,
+        string Code,
+        string Title,
+        string BodyPreview,
+        string ProviderTemplateName,
+        List<string>? TokenKeys,
+        bool RequiresEmrUrl,
+        bool IsActive,
+        int SortOrder);
 }

@@ -86,7 +86,7 @@ public sealed class ContractMembersSmokeTests : IClassFixture<NabzApiFactory>
         var verify = await _client.PostAsJsonAsync("/api/auth/otp/verify", new
         {
             mobile,
-            code = "12345",
+            code = SmokeOtp.CodeFor(mobile),
             deviceLabel = "smoke",
             appSurface = "clinic_web"
         });

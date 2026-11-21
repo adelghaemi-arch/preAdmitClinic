@@ -79,20 +79,20 @@ public interface IContractRepository
     void RemoveMember(ContractMember member);
     Task AddSmsLogAsync(ContractSmsLog log, CancellationToken ct = default);
     Task<ContractSupervisor?> GetSupervisorByPhoneAsync(string phone, CancellationToken ct = default);
-    void RemovePackageRules(IEnumerable<ContractPackageRule> rules);
-    Task<ContractPackageRule?> GetPackageRuleByIdAsync(Guid ruleId, CancellationToken ct = default);
+    void RemovePathwayRules(IEnumerable<ContractPathwayRule> rules);
+    Task<ContractPathwayRule?> GetPathwayRuleByIdAsync(Guid ruleId, CancellationToken ct = default);
     /// <summary>قوانین قرارداد متصل به یک قانون کتابخانه (برای همگام‌سازی ویرایش).</summary>
-    Task<List<ContractPackageRule>> ListPackageRulesByLibraryRuleIdAsync(Guid libraryRuleId, CancellationToken ct = default);
-    Task AddPackageRuleAsync(ContractPackageRule rule, CancellationToken ct = default);
+    Task<List<ContractPathwayRule>> ListPathwayRulesByLibraryRuleIdAsync(Guid libraryRuleId, CancellationToken ct = default);
+    Task AddPathwayRuleAsync(ContractPathwayRule rule, CancellationToken ct = default);
 }
 
-public interface IPackageLibraryRuleRepository
+public interface IPathwayLibraryRuleRepository
 {
-    Task<PackageLibraryRule?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<List<PackageLibraryRule>> ListAsync(string? query, int take, CancellationToken ct = default);
+    Task<PathwayLibraryRule?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<List<PathwayLibraryRule>> ListAsync(string? query, int take, CancellationToken ct = default);
     Task<int> CountAsync(CancellationToken ct = default);
-    Task AddAsync(PackageLibraryRule rule, CancellationToken ct = default);
-    void Remove(PackageLibraryRule rule);
+    Task AddAsync(PathwayLibraryRule rule, CancellationToken ct = default);
+    void Remove(PathwayLibraryRule rule);
     Task<int> CountAttachedContractsAsync(Guid libraryRuleId, CancellationToken ct = default);
     /// <summary>آمار اعضا: فعال (غیر Completed) و قبلاً استفاده‌کرده (Completed) بر اساس match عنوان قانون متصل.</summary>
     Task<(int ActiveMatched, int PreviouslyUsed)> CountMemberUsageAsync(Guid libraryRuleId, CancellationToken ct = default);
@@ -178,4 +178,12 @@ public interface IPlatformRepository
     Task AddSettingsAsync(PlatformSettings settings, CancellationToken ct = default);
     Task AddAuditAsync(PlatformAuditEntry entry, CancellationToken ct = default);
     Task<List<PlatformAuditEntry>> ListAuditAsync(int take, CancellationToken ct = default);
+}
+
+public interface ISmsCampaignTemplateRepository
+{
+    Task<SmsCampaignTemplate?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<SmsCampaignTemplate?> GetByCodeAsync(string code, CancellationToken ct = default);
+    Task<List<SmsCampaignTemplate>> ListAsync(bool activeOnly, CancellationToken ct = default);
+    Task AddAsync(SmsCampaignTemplate template, CancellationToken ct = default);
 }

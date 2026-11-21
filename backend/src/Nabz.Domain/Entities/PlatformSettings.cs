@@ -10,7 +10,7 @@ namespace Nabz.Domain.Entities;
 
 public class PlatformSettings : EntityBase
 {
-    public string BrandName { get; set; } = "نبض کلینیک";
+    public string BrandName { get; set; } = "نفس";
     public string? SupportPhone { get; set; }
     public int OtpLength { get; set; } = 5;
     public int OtpTtlSeconds { get; set; } = 120;

@@ -10,14 +10,21 @@ using Microsoft.Data.SqlClient;
 
 namespace Nabz.Api.Tests.Support;
 
-public sealed class NabzApiFactory : WebApplicationFactory<Program>
+public class NabzApiFactory : WebApplicationFactory<Program>
 {
     // دیتابیس جدا از NabzClinic dev تا موازی‌سازی کلاس‌ها و ایندکس‌های واقعی پوشش داده شود
     private readonly string _dbName = $"NabzClinic_ApiSmoke_{Guid.NewGuid():N}";
     private readonly string _connectionString;
+    private readonly string? _fixedOtp;
 
-    public NabzApiFactory()
+    /// <summary>پیش‌فرض smoke: FixedOtp=12345 (سازنده بدون آرگومان برای IClassFixture).</summary>
+    public NabzApiFactory() : this("12345")
     {
+    }
+
+    protected NabzApiFactory(string? fixedOtp)
+    {
+        _fixedOtp = fixedOtp;
         _connectionString =
             $"Server=localhost;Database={_dbName};Trusted_Connection=True;TrustServerCertificate=True;Encrypt=True;";
     }
@@ -25,7 +32,7 @@ public sealed class NabzApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.UseSetting("Auth:FixedOtp", "12345");
+        builder.UseSetting("Auth:FixedOtp", _fixedOtp ?? "");
         builder.UseSetting("ConnectionStrings:NabzClinic", _connectionString);
         // origins واقعی تا smoke OPTIONS با WithOrigins بشکند اگر CORS حذف شود
         builder.UseSetting("FrontendUrls:My", "https://my.liveteb.ir");
@@ -63,5 +70,13 @@ public sealed class NabzApiFactory : WebApplicationFactory<Program>
         {
             // پاکسازی best-effort؛ شکست drop تست را fail نکند
         }
+    }
+}
+
+/// <summary>همان factory بدون FixedOtp — شبیه‌سازی حالت پیامک واقعی.</summary>
+public sealed class NabzApiSmsFactory : NabzApiFactory
+{
+    public NabzApiSmsFactory() : base(null)
+    {
     }
 }

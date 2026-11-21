@@ -9,7 +9,7 @@ namespace Nabz.Application.Interfaces;
 public record PatientDto(
     Guid Id, string FirstName, string LastName, string FullName,
     string NationalId, string Phone, DateOnly? BirthDate, int? Age, string? Gender, string? MaritalStatus,
-    bool IntakeCompleted, string? AssignedPackageTitle, Guid? OwnerUserId,
+    bool IntakeCompleted, string? AssignedPathwayTitle, Guid? OwnerUserId,
     string? Description = null,
     double? HomeLat = null,
     double? HomeLon = null,
@@ -17,7 +17,10 @@ public record PatientDto(
     string? HomePlaque = null,
     string? HomeUnit = null,
     string? HomePostalCode = null,
-    bool JourneyIntroSeen = false);
+    bool JourneyIntroSeen = false,
+    string? FatherName = null,
+    /// <summary>از عضو قرارداد لینک‌شده؛ بنر پیش‌پذیرش.</summary>
+    DateOnly? ScheduledVisitDate = null);
 
 /// <summary>پلاک در مسیر CompanionHome اختیاری است؛ در فرم دموگرافیک از JSON اجباری می‌شود.</summary>
 public record UpdatePatientHomeAddressRequest(
@@ -89,7 +92,8 @@ public record UpdatePatientProfileRequest(
     string? HomePlaque = null,
     string? HomeUnit = null,
     string? HomePostalCode = null,
-    bool ApplyHome = false);
+    bool ApplyHome = false,
+    string? FatherName = null);
 
 public record PatientProfileRevisionDto(
     Guid Id,

@@ -1,6 +1,6 @@
 ﻿/*
  File: frontend/src/components/LoginForm.tsx
- Description: فرم ورود OTP با گام انتخاب کدملی وقتی موبایل چندنفره است
+ Description: فرم ورود OTP؛ دمو سریع فقط وقتی FixedOtp فعال است
  Parent Dependencies: lib/auth.ts, lib/persian.ts, lib/viewer.ts
  */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -17,10 +17,13 @@ import {
   UserRound,
 } from "lucide-react";
 import {
+  fetchOtpFixedModeEnabled,
   listOtpDemoLogins,
   normalizePhone,
   requestOtp,
   selectOtpIdentity,
+  shouldShowOtpDemoQuickLogin,
+  shouldShowOtpDemoSmsPreview,
   verifyOtp,
 } from "@/lib/auth";
 import type { OtpIdentityCandidate } from "@/lib/api/auth";
@@ -42,9 +45,22 @@ export function LoginForm() {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fixedOtpEnabled, setFixedOtpEnabled] = useState<boolean | null>(null);
   const codeInputRef = useRef<HTMLInputElement | null>(null);
 
   const demos = useMemo(() => listOtpDemoLogins(), []);
+  const showDemoQuickLogin = shouldShowOtpDemoQuickLogin(fixedOtpEnabled);
+  const showDemoSmsPreview = shouldShowOtpDemoSmsPreview(fixedOtpEnabled, demoCode);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchOtpFixedModeEnabled().then((enabled) => {
+      if (!cancelled) setFixedOtpEnabled(enabled);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
@@ -228,21 +244,33 @@ export function LoginForm() {
         </form>
       ) : (
         <form onSubmit={handleVerifySubmit} className="mt-6 space-y-4">
-          <div className="rounded-2xl border border-teal-200 bg-teal-50/70 p-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-teal-900">
-              <MessageSquareText className="h-4 w-4" />
-              پیامک نمایشی نبض کلینیک
+          {showDemoSmsPreview ? (
+            <div className="rounded-2xl border border-teal-200 bg-teal-50/70 p-4" data-testid="otp-demo-sms-preview">
+              <div className="flex items-center gap-2 text-xs font-bold text-teal-900">
+                <MessageSquareText className="h-4 w-4" />
+                پیامک نمایشی نفس
+              </div>
+              <p className="mt-2 text-xs leading-7 text-teal-900">
+                {targetName || "کاربر"} عزیز، کد تأیید ورود شما:
+              </p>
+              <div dir="ltr" className="mt-1 text-center font-mono text-3xl font-extrabold tracking-[0.35em] text-teal-800">
+                {toFaDigits(demoCode)}
+              </div>
+              <p className="mt-1 text-center text-[10px] text-teal-700">
+                (در نسخه واقعی این کد پیامک می‌شود؛ اینجا برای تست نمایش داده شده است)
+              </p>
             </div>
-            <p className="mt-2 text-xs leading-7 text-teal-900">
-              {targetName} عزیز، کد تأیید ورود شما:
-            </p>
-            <div dir="ltr" className="mt-1 text-center font-mono text-3xl font-extrabold tracking-[0.35em] text-teal-800">
-              {toFaDigits(demoCode)}
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4" data-testid="otp-sms-sent-hint">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <MessageSquareText className="h-4 w-4 text-teal-700" />
+                کد تأیید پیامک شد
+              </div>
+              <p className="mt-2 text-[11px] leading-6 text-slate-500">
+                کد پنج‌رقمی به شماره {toFaDigits(normalizePhone(phone))} ارسال شد؛ آن را وارد کنید.
+              </p>
             </div>
-            <p className="mt-1 text-center text-[10px] text-teal-700">
-              (در نسخه واقعی این کد پیامک می‌شود؛ اینجا برای تست نمایش داده شده است)
-            </p>
-          </div>
+          )}
 
           <label htmlFor="otp-code" className="app-label">
             کد پنج‌رقمی ارسال‌شده به {toFaDigits(normalizePhone(phone))}
@@ -320,28 +348,30 @@ export function LoginForm() {
         </form>
       )}
 
-      <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-        <div className="text-[10px] leading-6 text-slate-400">
-          ورود سریع با شماره سلامتجویان نمایشی (کد تأیید بلافاصله نمایش داده می‌شود):
+      {showDemoQuickLogin && (
+        <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3" data-testid="otp-demo-quick-login">
+          <div className="text-[10px] leading-6 text-slate-400">
+            ورود سریع با شماره سلامتجویان نمایشی (کد تأیید بلافاصله نمایش داده می‌شود):
+          </div>
+          <div className="mt-2 grid max-h-44 grid-cols-2 gap-1.5 overflow-y-auto pr-1">
+            {demos.map((item) => (
+              <button
+                key={`${item.kind}-${item.phone}`}
+                type="button"
+                disabled={loading}
+                onClick={() => quickLogin(item.phone)}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-right text-[10px] leading-4 text-slate-600 transition hover:border-teal-300 hover:text-teal-700 disabled:opacity-50"
+              >
+                <span className="block font-semibold">{item.name}</span>
+                <span className="mt-0.5 block text-[9px] text-slate-400">{item.hint}</span>
+                <span dir="ltr" className="mt-0.5 block font-mono text-[9px] text-teal-700">
+                  {item.phone}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="mt-2 grid max-h-44 grid-cols-2 gap-1.5 overflow-y-auto pr-1">
-          {demos.map((item) => (
-            <button
-              key={`${item.kind}-${item.phone}`}
-              type="button"
-              disabled={loading}
-              onClick={() => quickLogin(item.phone)}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-2 text-right text-[10px] leading-4 text-slate-600 transition hover:border-teal-300 hover:text-teal-700 disabled:opacity-50"
-            >
-              <span className="block font-semibold">{item.name}</span>
-              <span className="mt-0.5 block text-[9px] text-slate-400">{item.hint}</span>
-              <span dir="ltr" className="mt-0.5 block font-mono text-[9px] text-teal-700">
-                {item.phone}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

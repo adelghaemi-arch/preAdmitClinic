@@ -1,14 +1,25 @@
-﻿import { useMemo, useState } from "react";
+﻿/*
+ File: frontend/src/components/ClinicDashboard.tsx
+ Description: داشبورد کلینیک؛ برای ادمین KPI قرارداد/مراجعه/پیش‌پذیرش امروز
+ Parent Dependencies: clinic-admin-dashboard, AppInput, clinic types
+ */
+import { useEffect, useMemo, useState } from "react";
 import { AppInput } from "@/components/AppInput";
 import {
   ArrowLeft,
   ArrowUpLeft,
+  Building2,
+  CalendarCheck,
   Check,
   CheckCheck,
+  ClipboardList,
   Clock3,
+  FileCheck2,
   FlaskConical,
   HeartPulse,
+  Hourglass,
   Layers3,
+  Loader2,
   Plus,
   Search,
   ShieldCheck,
@@ -17,7 +28,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import type { AppUserDto, ClinicSnapshot, WorkspaceRole } from "@/types/clinic";
+import type { AppUserDto, ClinicSnapshot, ContractMember, WorkspaceRole } from "@/types/clinic";
 import type { AppPage } from "@/lib/workspace";
 import {
   currentStation,
@@ -26,7 +37,12 @@ import {
   stationLabel,
   totalVisitMinutes,
 } from "@/lib/workspace";
-import { formatFaTime, toFaDigits } from "@/lib/persian";
+import {
+  clinicDashboardTodayIso,
+  computeAdminClinicDashboardStats,
+} from "@/lib/clinic-admin-dashboard";
+import { fetchContractMembersAll } from "@/lib/api/contracts";
+import { formatFaDate, formatFaTime, toFaDigits } from "@/lib/persian";
 import { PatientTable } from "./PatientTable";
 
 interface Props {
@@ -50,13 +66,204 @@ function toneDot(tone: WorkTone) {
           : "bg-slate-400";
 }
 
-export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: Props) {
+function AdminClinicDashboard({ snapshot, user, onNavigate }: Omit<Props, "role">) {
+  const [members, setMembers] = useState<ContractMember[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+
+  const todayIso = clinicDashboardTodayIso(snapshot.serverTime);
+  const stats = useMemo(
+    () => computeAdminClinicDashboardStats(snapshot.contracts, members, todayIso),
+    [snapshot.contracts, members, todayIso]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const ids = snapshot.contracts.map((c) => c.serverId).filter((id): id is string => Boolean(id));
+    if (ids.length === 0) {
+      setMembers([]);
+      setLoadingMembers(false);
+      return;
+    }
+    setLoadingMembers(true);
+    void Promise.all(
+      ids.map((id) =>
+        fetchContractMembersAll(id).catch(() => [] as ContractMember[])
+      )
+    ).then((lists) => {
+      if (cancelled) return;
+      setMembers(lists.flat());
+      setLoadingMembers(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [snapshot.contracts]);
+
+  const visitsToday = useMemo(
+    () => members.filter((m) => (m.scheduledVisitDate ?? "").slice(0, 10) === todayIso),
+    [members, todayIso]
+  );
+
+  const shortName = user.fullName.includes("سعیدی") ? "دکتر سعیدی" : user.fullName;
+  const kpis = [
+    { label: "قرارداد", value: stats.contractsCount, icon: Building2, tone: "teal", page: "contracts" as AppPage },
+    { label: "افراد", value: stats.membersCount, icon: Users, tone: "sky", page: "contracts" as AppPage },
+    { label: "مراجعه امروز", value: stats.visitsToday, icon: CalendarCheck, tone: "violet", page: "contracts" as AppPage },
+    { label: "پیش‌پذیرش امروز", value: stats.preAdmitToday, icon: ClipboardList, tone: "amber", page: "contracts" as AppPage },
+    { label: "تکمیل امروز", value: stats.completionsToday, icon: FileCheck2, tone: "emerald", page: "contracts" as AppPage },
+    { label: "در انتظار تکمیل", value: stats.pendingPreAdmit, icon: Hourglass, tone: "slate", page: "contracts" as AppPage },
+  ];
+
+  const toneClass: Record<string, string> = {
+    teal: "bg-[#edf7f1] text-[#5c9e7d]",
+    sky: "bg-sky-50 text-sky-600",
+    violet: "bg-violet-50 text-violet-600",
+    amber: "bg-amber-50 text-amber-600",
+    emerald: "bg-emerald-50 text-emerald-700",
+    slate: "bg-slate-100 text-slate-500",
+  };
+
+  return (
+    <div className="dashboard-content space-y-4 sm:space-y-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-[20px] font-extrabold tracking-tight text-[#203536] sm:text-[22px]">
+            داشبورد کلینیک
+          </h1>
+          <p className="mt-1 text-[11px] text-slate-400">
+            سلام {shortName} · امروز {toFaDigits(formatFaDate(todayIso))}
+            {loadingMembers ? " · در حال همگام‌سازی…" : ""}
+          </p>
+        </div>
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-2.5 py-1 text-[10px] text-slate-400">
+          <span className="h-1.5 w-1.5 rounded-full bg-teal-500" />
+          {formatFaTime(snapshot.serverTime)}
+          {loadingMembers && <Loader2 className="h-3 w-3 animate-spin text-teal-600" />}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
+        {kpis.map(({ label, value, icon: Icon, tone, page }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => onNavigate(page)}
+            className="group rounded-2xl border border-[#e8eeeb] bg-white px-3.5 py-3.5 text-right transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-[0_8px_20px_-12px_rgba(32,83,68,0.35)]"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${toneClass[tone] ?? toneClass.teal}`}>
+                <Icon className="h-4 w-4 stroke-[1.7]" />
+              </span>
+              <ArrowLeft className="h-3.5 w-3.5 text-slate-200 transition group-hover:text-teal-500" />
+            </div>
+            <strong className="mt-3 block text-[26px] font-bold leading-none tracking-tight text-[#243f3c] tabular-fa">
+              {toFaDigits(value)}
+            </strong>
+            <span className="mt-1.5 block text-[11px] font-medium text-slate-500">{label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <section className="rounded-2xl border border-[#e6ebea] bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 pb-3 sm:px-5">
+            <div className="flex items-center gap-2">
+              <h2 className="text-[13px] font-bold text-[#263e3c]">مراجعات برنامه‌ای امروز</h2>
+              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] text-slate-500">
+                {toFaDigits(visitsToday.length)} نفر
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate("contracts")}
+              className="flex items-center gap-1.5 text-[10px] font-medium text-teal-700"
+            >
+              مدیریت افراد قرارداد
+              <ArrowLeft className="h-3 w-3" />
+            </button>
+          </div>
+          {loadingMembers ? (
+            <p className="flex items-center justify-center gap-2 px-4 py-10 text-[11px] text-slate-400">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              در حال بارگذاری اعضای قرارداد…
+            </p>
+          ) : visitsToday.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/80 mx-4 mb-4 px-4 py-8 text-center text-[11px] text-slate-500">
+              برای امروز تاریخ مراجعه‌ای در رستر ثبت نشده است.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100 px-2 pb-2">
+              {visitsToday.slice(0, 12).map((m) => (
+                <li key={m.serverId ?? m.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+                  <div className="min-w-0">
+                    <div className="truncate text-[12px] font-semibold text-slate-700">{m.fullName}</div>
+                    <div className="mt-0.5 truncate text-[10px] text-slate-400">
+                      {m.department || "—"} · {m.assignedPathwayTitle || m.matchedPathwayTitle || "مسیر نامشخص"}
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-md px-2 py-0.5 text-[9px] font-semibold ${
+                      m.intakeCompleted || m.formStatus === "submitted"
+                        ? "bg-teal-50 text-teal-700"
+                        : m.formStatus === "draft"
+                          ? "bg-amber-50 text-amber-700"
+                          : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {m.intakeCompleted || m.formStatus === "submitted"
+                      ? "تکمیل‌شده"
+                      : m.formStatus === "draft"
+                        ? "پیش‌پذیرش"
+                        : "در انتظار"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-[#e6ebea] bg-white p-4 sm:p-5">
+          <h2 className="text-[12px] font-bold text-[#263e3c]">میان‌برها</h2>
+          <div className="mt-3 space-y-2">
+            {(
+              [
+                ["contracts", "قرارداد"],
+                ["forms", "فرم‌های پیش‌پذیرش"],
+                ["clinic-users", "مدیریت کاربران"],
+              ] as const
+            ).map(([page, label]) => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => onNavigate(page)}
+                className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5 text-right text-[11px] font-semibold text-slate-600 transition hover:border-teal-200 hover:bg-white"
+              >
+                {label}
+                <ArrowLeft className="h-3.5 w-3.5 text-teal-600" />
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div className="flex flex-col gap-2 border-t border-slate-200/70 pt-4 text-[9px] text-slate-400 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <span>نفس • مراقبت پیوسته، مدیریت یکپارچه</span>
+        <span className="flex items-center gap-1">
+          <ShieldCheck className="h-3 w-3 text-teal-500" />
+          آمار امروز از رستر قرارداد و وضعیت پیش‌پذیرش محاسبه می‌شود.
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function OpsClinicDashboard({ snapshot, user, role, onNavigate }: Props) {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
-  const canManageRooms = role === "admin";
+  const canManageRooms = false;
   const canRunOps = role === "platform";
   const diagnosticsPage: AppPage = "diagnostics-upload";
-  const stationsManagePage: AppPage = canManageRooms ? "rooms" : canRunOps ? "flow" : "patients";
+  const stationsManagePage: AppPage = canRunOps ? "flow" : "patients";
 
   const stats = useMemo(() => {
     const active = snapshot.patients.filter((p) => !p.completedAt);
@@ -232,7 +439,6 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
 
   return (
     <div className="dashboard-content space-y-4 sm:space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
           <div className="mb-1 flex items-center gap-2 text-[10px] text-slate-400 sm:mb-1.5 sm:text-[11px]">
@@ -244,7 +450,7 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
             داشبورد کلینیک
           </h1>
           <p className="mt-1 text-[11px] text-slate-400 sm:mt-1.5 sm:text-xs">
-            نبض امروز کلینیک را، یک‌جا ببینید و مدیریت کنید.
+            وضعیت امروز را یک‌جا ببینید و مدیریت کنید.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -265,7 +471,6 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
         </div>
       </div>
 
-      {/* Welcome */}
       <section className="welcome-banner relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-[#dcebe6] bg-[#edf6f1] px-4 py-4 sm:min-h-36 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-5 sm:px-6 sm:py-6">
         <div className="relative z-10 min-w-0 flex-1">
           <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-medium text-[#6b9080] sm:mb-2">
@@ -345,7 +550,6 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
         <div className="pointer-events-none absolute -left-16 -top-36 hidden h-96 w-96 rounded-full border-[35px] border-white/25 sm:block" />
       </section>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-4 xl:grid-cols-4">
         {kpis.map(({ label, value, unit, icon: Icon, color, sub, detail }) => (
           <div
@@ -379,7 +583,6 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
         ))}
       </div>
 
-      {/* Operational workboard — platform admin only while reception/paraclinic are gated */}
       {canRunOps && (
         <section className="rounded-2xl border border-[#e6ebea] bg-white p-3.5 sm:p-5">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
@@ -422,7 +625,6 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
         </section>
       )}
 
-      {/* Patients + side rail */}
       <div className="grid items-start gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <section className="min-w-0 overflow-hidden rounded-2xl border border-[#e6ebea] bg-white">
           <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 pt-4 pb-3 sm:gap-3 sm:px-5 sm:pt-5 sm:pb-4">
@@ -591,7 +793,6 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
         </div>
       </div>
 
-      {/* Stations */}
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -606,7 +807,7 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
             onClick={() => onNavigate(stationsManagePage)}
             className="flex items-center gap-1.5 text-[10px] font-medium text-teal-700"
           >
-            {canManageRooms ? "مدیریت ایستگاه‌ها" : canRunOps ? "مشاهده جریان" : "فهرست سلامتجویان"}
+            {canRunOps ? "مشاهده جریان" : "فهرست سلامتجویان"}
             <ArrowLeft className="h-3 w-3" />
           </button>
         </div>
@@ -615,7 +816,7 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
             <button
               key={room.id}
               type="button"
-              onClick={() => onNavigate(canRunOps ? "flow" : canManageRooms ? "rooms" : "patients")}
+              onClick={() => onNavigate(canRunOps ? "flow" : "patients")}
               className="rounded-xl border border-[#e6ebea] bg-white p-3 text-right transition hover:-translate-y-0.5 hover:border-teal-200 hover:shadow-sm sm:p-3.5"
             >
               <div className="flex items-center justify-between">
@@ -656,7 +857,7 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
       </section>
 
       <div className="flex flex-col gap-2 border-t border-slate-200/70 pt-4 text-[9px] text-slate-400 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <span>نبض • مراقبت پیوسته، مدیریت یکپارچه</span>
+        <span>نفس • مراقبت پیوسته، مدیریت یکپارچه</span>
         <span className="flex items-center gap-1">
           <ShieldCheck className="h-3 w-3 text-teal-500" />
           اطلاعات سلامتجویان در یک پرونده مشترک نگهداری می‌شود.
@@ -664,4 +865,11 @@ export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: 
       </div>
     </div>
   );
+}
+
+export function ClinicDashboard({ snapshot, user, role = "admin", onNavigate }: Props) {
+  if (role === "admin") {
+    return <AdminClinicDashboard snapshot={snapshot} user={user} onNavigate={onNavigate} />;
+  }
+  return <OpsClinicDashboard snapshot={snapshot} user={user} role={role} onNavigate={onNavigate} />;
 }

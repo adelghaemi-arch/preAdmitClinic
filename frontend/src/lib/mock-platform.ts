@@ -45,7 +45,7 @@ export const DEFAULT_OSM_LOCAL: PlatformSettings["osmLocal"] = {
 };
 
 export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
-  brandName: "نبض پلتفرم",
+  brandName: "نفس",
   supportPhone: "02191000000",
   otpLength: 5,
   otpTtlSeconds: 120,
@@ -68,12 +68,13 @@ export function buildSeedPlatformState(): PlatformState {
   const clinics: PlatformClinic[] = [
     {
       id: "clinic-nabz-tehran",
-      name: "کلینیک تخصصی نبض",
+      name: "مرکز نمونه نفس",
       city: "تهران",
       status: "active",
       plan: "سازمانی پلاس",
       adminContact: "دکتر فرهاد سعیدی",
       adminPhone: "09121234501",
+      preAdmitSupportPhone: "02191000000",
       patientsToday: 18,
       staffCount: 12,
       contractsCount: 3,
@@ -394,7 +395,7 @@ export function buildSeedPlatformState(): PlatformState {
     },
     {
       id: "sms-gateway",
-      name: "درگاه پیامک نبض",
+      name: "درگاه پیامک نفس",
       kind: "sms",
       endpoint: "mock://sms-gateway/send",
       apiKeyMasked: "sms_••••92",

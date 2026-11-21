@@ -46,6 +46,15 @@ public enum ClinicStatus
     Suspended = 2
 }
 
+/// <summary>سامانه پیامک فعال کلینیک — None یعنی ارسال واقعی غیرفعال (مگر FixedOtp).</summary>
+public enum ClinicSmsProvider
+{
+    None = 0,
+    Kavenegar = 1,
+    /// <summary>سامانه پیامک طوبی (TSMS — sms.tsms.ir)</summary>
+    Touba = 2
+}
+
 public enum UserPhotoKind
 {
     Portrait = 0,

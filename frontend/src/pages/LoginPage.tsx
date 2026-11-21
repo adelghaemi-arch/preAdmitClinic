@@ -1,4 +1,9 @@
-import { HeartPulse, Check } from "lucide-react";
+/*
+ File: frontend/src/pages/LoginPage.tsx
+ Description: صفحه ورود — برند نفس و آیکن محصول
+ Parent Dependencies: LoginForm
+ */
+import { Check } from "lucide-react";
 import { LoginForm } from "@/components/LoginForm";
 
 export function LoginPage() {
@@ -8,18 +13,18 @@ export function LoginPage() {
         <section className="relative hidden flex-col justify-between overflow-hidden bg-[#1d5545] p-9 text-white md:flex">
           <div>
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
-                <HeartPulse className="h-6 w-6 stroke-[1.5]" />
+              <span className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white/10">
+                <img src="/icon-64x64.png" alt="نفس" className="h-11 w-11 object-cover" />
               </span>
               <div>
-                <strong className="block text-lg font-bold">نبض کلینیک</strong>
-                <span className="mt-1 block text-[10px] text-white/40">پیش‌پذیرش کلینیک</span>
+                <strong className="block text-lg font-bold">نفس</strong>
+                <span className="mt-1 block text-[10px] text-white/40">پیش‌پذیرش سلامت</span>
               </div>
             </div>
             <h1 className="mt-14 text-[28px] leading-[1.8] font-bold">
               یک حساب کاربری،
               <br />
-              یک کلینیک یکپارچه.
+              یک سامانه یکپارچه.
             </h1>
             <p className="mt-4 text-xs leading-8 text-white/50">
               ورود فقط با شماره موبایل و کد تأیید پیامکی (OTP پنج‌رقمی) انجام می‌شود؛ بدون نام کاربری و بدون گذرواژه.
@@ -27,7 +32,6 @@ export function LoginPage() {
           </div>
           <div className="relative z-10 mt-12 space-y-3">
             {["ورود با کد تأیید پیامکی (OTP پنج‌رقمی)", "پرونده مشترک در تمام مراحل درمان", "پایداری داده روی سرور و فایل‌های آپلود"].map(
-
               (t) => (
                 <div key={t} className="flex items-center gap-2 text-[11px] text-white/70">
                   <Check className="h-3.5 w-3.5 text-[#a7d5b3]" />

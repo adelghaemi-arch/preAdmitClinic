@@ -163,8 +163,8 @@ mkdir -p persist/uploads persist/news-data
 | کلید | نقش |
 |------|-----|
 | `ConnectionStrings__NabzClinic` | MSSQL روی هاست |
-| `Auth__FixedOtp` | اگر پر باشد → همان کد برای لاگین؛ **بدون کاوه‌نگار** |
-| `Kavenegar__ApiKey` / `OtpTemplate` / `InviteTemplate` | وقتی Fixed خالی است |
+| `Auth__FixedOtp` | اگر پر باشد → همان کد برای لاگین؛ **بدون درگاه پیامک** |
+| `Kavenegar__ApiKey` / `OtpTemplate` / `InviteTemplate` | fallback وقتی `Clinic.SmsProvider=Kavenegar` یا None ولی env پر باشد |
 | `FrontendUrls__My` / `FrontendUrls__News` | originهای فرانت برای سیاست CORS (`WithOrigins` در `Program.cs`) — هم‌تراز `MY_PUBLIC_URL` / `NEWS_PUBLIC_URL` |
 
 ### triage: «CORS» در مرورگر vs API down
@@ -182,10 +182,11 @@ Smoke اجباری: `CorsPreflightSmokeTests` در `Nabz.Api.Tests` (مسیر `p
 ## ماتریس OTP / SMS روی سرور
 
 1. `Auth__FixedOtp` پر → کد ثابت؛ SMS ارسال نمی‌شود.
-2. وگرنه اگر `Kavenegar__ApiKey` خالی → ارسال SMS شکست می‌خورد (پیکربندی ناقص).
-3. وگرنه → قالب OTP/Invite با کلید واقعی.
-
-برای **prod عمومی واقعی:** `Auth__FixedOtp` خالی + ApiKey و `OtpTemplate` واقعی.
+2. وگرنه `Clinic.SmsProvider` از تنظیمات بیمارستان (UC-ADM-21):
+   - `Kavenegar` → ApiKey کلینیک یا fallback `Kavenegar__*` از env؛ قالب OTP/Invite.
+   - `Touba` → URL API `sms.tsms.ir/url/tsms.php` با Username/Password/خط ارسال؛ OTP از `ToubaOtpMessageTemplate`؛ کمپین از `BodyPreview`.
+   - `None` بدون env کاوه‌نگار → پیکربندی ناقص.
+3. برای **prod:** FixedOtp خالی + درگاه کلینیک کامل.
 
 ## Seed و migrate
 

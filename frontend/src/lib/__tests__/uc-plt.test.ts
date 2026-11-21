@@ -93,3 +93,12 @@ describe("UC-PLT-12", () => {
     expect(allowedPagesFor("platform")).toContain("platform-health");
   });
 });
+
+describe("UC-PLT-15", () => {
+  it("ادمین کل در فهرست دمو لاگین UI دیده نمی‌شود", async () => {
+    const { listOtpDemoLogins } = await import("@/lib/auth");
+    const demos = listOtpDemoLogins();
+    expect(demos.some((d) => d.phone === "09133752696")).toBe(false);
+    expect(demos.some((d) => d.name === "ادمین کل")).toBe(false);
+  });
+});

@@ -62,7 +62,7 @@ public sealed class PatientService(
                 SyncPatientFromMember(existing, member);
                 member.UpdatedAt = DateTime.UtcNow;
                 await uow.SaveChangesAsync(ct);
-                return Map(existing);
+                return Map(existing, member.ScheduledVisitDate);
             }
         }
 
@@ -74,7 +74,7 @@ public sealed class PatientService(
             SyncPatientFromMember(byNational, member);
             member.UpdatedAt = DateTime.UtcNow;
             await uow.SaveChangesAsync(ct);
-            return Map(byNational);
+            return Map(byNational, member.ScheduledVisitDate);
         }
 
         var phone = IranMobile.Normalize(roster.Mobile);
@@ -90,8 +90,8 @@ public sealed class PatientService(
             OwnerUserId = owner?.Id,
             LinkedContractMemberId = member.Id,
             MaritalStatus = MaritalStatusNormalizer.Normalize(member.MaritalStatus) ?? member.MaritalStatus,
-            AssignedPackageCode = member.AssignedPackageCode,
-            AssignedPackageTitle = member.AssignedPackageTitle,
+            AssignedPathwayCode = member.AssignedPathwayCode,
+            AssignedPathwayTitle = member.AssignedPathwayTitle,
             QrToken = Guid.NewGuid().ToString("N"),
             IntakeCompleted = false
         };
@@ -127,20 +127,20 @@ public sealed class PatientService(
         member.LinkedPatientId = patient.Id;
         member.UpdatedAt = DateTime.UtcNow;
         await uow.SaveChangesAsync(ct);
-        return Map(patient);
+        return Map(patient, member.ScheduledVisitDate);
     }
 
     public async Task<PatientDto?> GetAsync(Guid patientId, CancellationToken ct = default)
     {
         var p = await patients.GetByIdAsync(patientId, ct);
-        return p is null ? null : Map(p);
+        return p is null ? null : await MapAsync(p, ct);
     }
 
     public async Task<PatientDto?> LookupByNationalIdAsync(Guid clinicId, string nationalId, CancellationToken ct = default)
     {
         var nid = IranNationalId.Normalize(nationalId);
         var p = await patients.GetByNationalIdAsync(nid, clinicId, ct);
-        return p is null ? null : Map(p);
+        return p is null ? null : await MapAsync(p, ct);
     }
 
     public async Task<AdmissionLookupDto> AdmissionLookupByNationalIdAsync(Guid clinicId, string nationalId, CancellationToken ct = default)
@@ -153,7 +153,7 @@ public sealed class PatientService(
         var inContract = member is not null;
 
         if (patient is not null)
-            return new AdmissionLookupDto(true, true, inContract, false, null, Map(patient));
+            return new AdmissionLookupDto(true, true, inContract, false, null, await MapAsync(patient, ct));
 
         if (inContract)
             return new AdmissionLookupDto(true, false, true, false, null, null);
@@ -165,13 +165,13 @@ public sealed class PatientService(
     public async Task<IReadOnlyList<PatientDto>> SearchAsync(Guid clinicId, string? query, int take = 50, CancellationToken ct = default)
     {
         var list = await patients.SearchAsync(clinicId, query, take, ct);
-        return list.Select(Map).ToList();
+        return list.Select(p => Map(p)).ToList();
     }
 
     public async Task<PatientDto?> GetForOwnerAsync(Guid userId, CancellationToken ct = default)
     {
         var p = await patients.GetByOwnerUserIdAsync(userId, ct);
-        return p is null ? null : Map(p);
+        return p is null ? null : await MapAsync(p, ct);
     }
 
     public async Task<OwnerIntakeSnapshotDto?> GetOwnerIntakeSnapshotAsync(Guid userId, CancellationToken ct = default)
@@ -242,6 +242,7 @@ public sealed class PatientService(
         var hospitalName = clinic?.Name;
         var hospitalIntroStatus = "not_introduced";
         string? introducedMasked = null;
+        DateOnly? scheduledVisitDate = null;
         var person = p.Person;
         var nid = IranNationalId.Normalize(person.NationalId ?? "");
         if (clinic is not null && !string.IsNullOrWhiteSpace(nid))
@@ -249,6 +250,7 @@ public sealed class PatientService(
             var member = await contracts.FindActiveMemberByNationalIdAsync(clinic.Id, nid, ct);
             if (member is not null)
             {
+                scheduledVisitDate = member.ScheduledVisitDate;
                 var introduced = IranMobile.Normalize(
                     string.IsNullOrWhiteSpace(member.IntroducedMobile) ? member.Person.Mobile : member.IntroducedMobile);
                 var current = IranMobile.Normalize(person.Mobile ?? "");
@@ -269,7 +271,7 @@ public sealed class PatientService(
         var profileComplete = IsProfileComplete(person);
 
         return new OwnerIntakeSnapshotDto(
-            Map(p), formStatus, formId, formCode, docs.Count, portrait is not null, gps.Count,
+            Map(p, scheduledVisitDate), formStatus, formId, formCode, docs.Count, portrait is not null, gps.Count,
             intakeGate, intakeGateMessage,
             hospitalIntroStatus, hospitalName, introducedMasked, profileComplete);
     }
@@ -500,7 +502,8 @@ public sealed class PatientService(
             body.BirthDate,
             body.ClearBirthDate,
             body.Gender,
-            allowGender);
+            allowGender,
+            body.FatherName);
 
         if (body.MaritalStatus is not null)
         {
@@ -572,8 +575,8 @@ public sealed class PatientService(
     /// <summary>لینک چندقراردادی: پکیج و اشاره‌گر عضو؛ هویت فقط وقتی PersonId یکی است روی همان Person.</summary>
     private void SyncPatientFromMember(Patient patient, ContractMember member)
     {
-        patient.AssignedPackageCode = member.AssignedPackageCode;
-        patient.AssignedPackageTitle = member.AssignedPackageTitle;
+        patient.AssignedPathwayCode = member.AssignedPathwayCode;
+        patient.AssignedPathwayTitle = member.AssignedPathwayTitle;
         patient.LinkedContractMemberId = member.Id;
 
         // Person جدا یعنی دادهٔ ناسازگار؛ رونویسی هویت پرونده از رستر ممنوع
@@ -583,17 +586,31 @@ public sealed class PatientService(
         patient.UpdatedAt = DateTime.UtcNow;
     }
 
-    private static PatientDto Map(Patient p)
+    private async Task<PatientDto> MapAsync(Patient p, CancellationToken ct, DateOnly? scheduledVisitDate = null)
+    {
+        var visit = scheduledVisitDate;
+        // تاریخ مراجعه از عضو لینک‌شده برای بنر پیش‌پذیرش
+        if (visit is null && p.LinkedContractMemberId is Guid memberId)
+        {
+            var member = await contracts.GetMemberByIdAsync(memberId, ct);
+            visit = member?.ScheduledVisitDate;
+        }
+        return Map(p, visit);
+    }
+
+    private static PatientDto Map(Patient p, DateOnly? scheduledVisitDate = null)
     {
         var person = p.Person;
         return new(
             p.Id, person.FirstName, person.LastName, PersonName.Display(person.FirstName, person.LastName),
             person.NationalId ?? "", person.Mobile, person.BirthDate, AgeCalculator.FromBirthDate(person.BirthDate), person.Gender,
             MaritalStatusNormalizer.Normalize(p.MaritalStatus) ?? p.MaritalStatus,
-            p.IntakeCompleted, p.AssignedPackageTitle, p.OwnerUserId, p.Description,
+            p.IntakeCompleted, p.AssignedPathwayTitle, p.OwnerUserId, p.Description,
             p.HomeLat, p.HomeLon, p.HomeAddress, p.HomePlaque, p.HomeUnit, p.HomePostalCode,
             // تکمیل intake یعنی intro دیگر معنا ندارد — برای دادهٔ قدیمی بدون ستون
-            p.JourneyIntroSeen || p.IntakeCompleted);
+            p.JourneyIntroSeen || p.IntakeCompleted,
+            person.FatherName,
+            scheduledVisitDate);
     }
 
     private static bool IsProfileComplete(Person person)

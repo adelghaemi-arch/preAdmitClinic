@@ -5,7 +5,11 @@
  */
 
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { normalizePhone } from "@/lib/auth";
+import {
+  normalizePhone,
+  shouldShowOtpDemoQuickLogin,
+  shouldShowOtpDemoSmsPreview,
+} from "@/lib/auth";
 import {
   filterNavPagesForGate,
   GATED_OWNER_PAGES,
@@ -67,6 +71,20 @@ describe("UC-OWN-01", () => {
   it("normalizeOtpDigits: ارقام فارسی و جداکننده را حذف می‌کند", () => {
     expect(normalizeOtpDigits("۱۲۳۴۵۶")).toBe("123456");
     expect(normalizeOtpDigits("12-34-56")).toBe("123456");
+  });
+
+  it("بلوک ورود سریع دمو فقط وقتی FixedOtp فعال است دیده می‌شود", () => {
+    expect(shouldShowOtpDemoQuickLogin(true)).toBe(true);
+    expect(shouldShowOtpDemoQuickLogin(false)).toBe(false);
+    expect(shouldShowOtpDemoQuickLogin(null)).toBe(false);
+    expect(shouldShowOtpDemoQuickLogin(undefined)).toBe(false);
+  });
+
+  it("پیامک نمایشی فقط با FixedOtp و demoCode دیده می‌شود", () => {
+    expect(shouldShowOtpDemoSmsPreview(true, "12345")).toBe(true);
+    expect(shouldShowOtpDemoSmsPreview(true, "")).toBe(false);
+    expect(shouldShowOtpDemoSmsPreview(false, "12345")).toBe(false);
+    expect(shouldShowOtpDemoSmsPreview(null, "12345")).toBe(false);
   });
 });
 

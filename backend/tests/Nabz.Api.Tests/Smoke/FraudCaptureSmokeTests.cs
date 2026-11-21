@@ -200,7 +200,7 @@ public sealed class FraudCaptureSmokeTests : IClassFixture<NabzApiFactory>
         var verify = await _client.PostAsJsonAsync("/api/auth/otp/verify", new
         {
             mobile,
-            code = "12345",
+            code = SmokeOtp.CodeFor(mobile),
             deviceLabel = "fraud-smoke",
             appSurface = "clinic_web"
         });

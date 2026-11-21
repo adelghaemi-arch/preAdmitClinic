@@ -7,9 +7,9 @@
 import { apiFetch } from "@/lib/api/http";
 import { guidToNumericId } from "@/lib/api/roles";
 import { ageFromBirthIso, displayFullName } from "@/lib/person-identity";
-import type { ContractMember, ContractPackageRule, CorporateContract } from "@/types/clinic";
+import type { ContractMember, ContractPathwayRule, CorporateContract } from "@/types/clinic";
 
-export interface ApiContractPackageRuleDto {
+export interface ApiContractPathwayRuleDto {
   id: string;
   libraryRuleId?: string | null;
   title: string;
@@ -17,7 +17,7 @@ export interface ApiContractPackageRuleDto {
   minAge?: number | null;
   maxAge?: number | null;
   jobCategory: string;
-  packageCode: string;
+  pathwayCode: string;
   priority: number;
 }
 
@@ -30,8 +30,8 @@ export interface ApiContractDto {
   supervisorPhone?: string | null;
   supervisorName?: string | null;
   memberCount: number;
-  defaultPackageCode?: string | null;
-  packageRules?: ApiContractPackageRuleDto[];
+  defaultPathwayCode?: string | null;
+  pathwayRules?: ApiContractPathwayRuleDto[];
 }
 
 export interface ApiContractMemberDto {
@@ -50,9 +50,10 @@ export interface ApiContractMemberDto {
   jobCategory?: string | null;
   personnelCode?: string | null;
   onboardingStage: string;
-  assignedPackageCode?: string | null;
-  assignedPackageTitle?: string | null;
-  matchedRuleTitle?: string | null;
+  assignedPathwayCode?: string | null;
+  assignedPathwayTitle?: string | null;
+  matchedPathwayTitle?: string | null;
+  manualPathwayOverride?: boolean;
   linkedPatientId?: string | null;
   inviteToken: string;
   smsInviteCount?: number;
@@ -62,6 +63,8 @@ export interface ApiContractMemberDto {
   profileCompletedAt?: string | null;
   formStatus?: string | null;
   intakeCompleted?: boolean;
+  fatherName?: string | null;
+  scheduledVisitDate?: string | null;
 }
 
 export interface ApiContractFunnelStatsDto {
@@ -110,8 +113,8 @@ function emptySupervisor(name?: string | null, phone?: string | null): Corporate
   };
 }
 
-/** عنوان فارسی بسته؛ اگر سرور کد انگلیسی برگرداند (مثل FULL_CHECKUP) جایگزین می‌شود. */
-export function resolvePackageDisplayTitle(code?: string | null, title?: string | null): string {
+/** عنوان فارسی مسیر سلامتی؛ اگر سرور کد انگلیسی برگرداند (مثل FULL_CHECKUP) جایگزین می‌شود. */
+export function resolvePathwayDisplayTitle(code?: string | null, title?: string | null): string {
   const c = (code ?? "").trim();
   const t = (title ?? "").trim();
   if (t && t !== c) return t;
@@ -128,7 +131,7 @@ export function mapApiMember(m: ApiContractMemberDto, contractNumericId: number)
   const birthDate = m.birthDate ? String(m.birthDate).slice(0, 10) : null;
   const age = m.age ?? ageFromBirthIso(birthDate) ?? 0;
   const gender: "مرد" | "زن" = m.gender === "زن" ? "زن" : "مرد";
-  const packageCode = m.assignedPackageCode ?? "";
+  const pathwayCode = m.assignedPathwayCode ?? "";
   return {
     id: guidToNumericId(m.id),
     serverId: m.id,
@@ -137,20 +140,22 @@ export function mapApiMember(m: ApiContractMemberDto, contractNumericId: number)
     personnelCode: m.personnelCode ?? "",
     firstName,
     lastName,
+    fatherName: m.fatherName ?? null,
     fullName: m.fullName || displayFullName(firstName, lastName),
     nationalId: m.nationalId,
     phone: m.phone,
     birthDate,
+    scheduledVisitDate: m.scheduledVisitDate ? String(m.scheduledVisitDate).slice(0, 10) : null,
     age,
     gender,
     maritalStatus: m.maritalStatus ?? null,
     department: m.department ?? "",
     jobCategory: m.jobCategory ?? "",
     source: "api",
-    assignedPathwayCode: packageCode,
-    assignedPathwayTitle: resolvePackageDisplayTitle(packageCode, m.assignedPackageTitle),
-    matchedRuleTitle: m.matchedRuleTitle ?? "",
-    manualPackageOverride: false,
+    assignedPathwayCode: pathwayCode,
+    assignedPathwayTitle: resolvePathwayDisplayTitle(pathwayCode, m.assignedPathwayTitle),
+    matchedPathwayTitle: m.matchedPathwayTitle ?? "",
+    manualPathwayOverride: Boolean(m.manualPathwayOverride),
     onboardingStage: mapOnboarding(m.onboardingStage),
     profileProgressPct: Number(m.profileProgressPct ?? 0),
     abandonedAtStep: m.abandonedAtStep != null ? String(m.abandonedAtStep) : null,
@@ -190,9 +195,9 @@ export function mapApiContract(c: ApiContractDto, members: ApiContractMemberDto[
     apiEndpoint: "",
     apiKey: "",
     lastApiSyncAt: null,
-    defaultPathwayCode: (c.defaultPackageCode ?? "").trim() || "FULL_CHECKUP",
-    packageRules: (c.packageRules ?? []).map(
-      (r, idx): ContractPackageRule => ({
+    defaultPathwayCode: (c.defaultPathwayCode ?? "").trim() || "FULL_CHECKUP",
+    pathwayRules: (c.pathwayRules ?? []).map(
+      (r, idx): ContractPathwayRule => ({
         id: r.id || `api-rule-${c.id}-${idx}`,
         libraryRuleId: r.libraryRuleId ?? null,
         title: r.title,
@@ -200,7 +205,7 @@ export function mapApiContract(c: ApiContractDto, members: ApiContractMemberDto[
         minAge: r.minAge ?? null,
         maxAge: r.maxAge ?? null,
         jobCategory: r.jobCategory || "همه",
-        pathwayCode: r.packageCode,
+        pathwayCode: r.pathwayCode,
         priority: r.priority ?? idx + 1,
       })
     ),

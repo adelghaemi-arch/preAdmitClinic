@@ -1,25 +1,19 @@
+/*
+ File: frontend/src/lib/mock-contracts.ts
+ Description: دادهٔ نمایشی قراردادها؛ قالب پیام با برند نفس
+ Parent Dependencies: clinic types
+ */
 import type {
   ContractAppointmentStatus,
-  PackageLibraryRule,
+  PathwayLibraryRule,
   ContractMember,
-  ContractPackageRule,
+  ContractPathwayRule,
   CorporateContract,
   MockPathwayRow,
   OnboardingStage,
 } from "@/types/clinic";
 import { iranLocalDayOffset } from "@/lib/date-iso";
-import {
-  ageFromBirthIso,
-  displayFullName,
-  isValidIranMobile,
-  isValidIranNationalId,
-  looksLikeScientificNotation,
-  normalizeMobileForImport,
-  normalizeNationalIdForImport,
-  parseShamsiBirthToIso,
-} from "@/lib/person-identity";
-import { normalizeMaritalStatus } from "@/lib/marital-status";
-import { formatFaDateRelative, normalizePersianLetters, toLatinDigits } from "@/lib/persian";
+import { formatFaDateRelative } from "@/lib/persian";
 
 /**
  * Seed/helper قرارداد سازمانی سمت کلاینت (کاتالوگ، Excel، matcher جمعیتی).
@@ -27,7 +21,7 @@ import { formatFaDateRelative, normalizePersianLetters, toLatinDigits } from "@/
  */
 
 /** Central, system-wide package rules — reusable across any number of contracts. */
-export function buildSeededPackageRuleLibrary(): PackageLibraryRule[] {
+export function buildSeededPathwayLibrary(): PathwayLibraryRule[] {
   const now = new Date().toISOString();
   return [
     {
@@ -200,7 +194,7 @@ export const FILL_FORMULA_LABELS: Record<
 /** Evaluates demographic & occupational rules to attach the right health package to a member. */
 export function resolveMemberPackage(
   member: { age: number; gender: "مرد" | "زن"; jobCategory: string },
-  rules: ContractPackageRule[],
+  rules: ContractPathwayRule[],
   defaultPathwayCode: string,
   pathways: Pick<MockPathwayRow, "code" | "title">[]
 ): { pathwayCode: string; pathwayTitle: string; ruleTitle: string } {
@@ -299,7 +293,7 @@ function makeMember(
   id: number,
   contractId: number,
   raw: RawPerson,
-  rules: ContractPackageRule[],
+  rules: ContractPathwayRule[],
   defaultCode: string,
   pathways: Pick<MockPathwayRow, "code" | "title">[]
 ): ContractMember {
@@ -337,8 +331,8 @@ function makeMember(
     source: raw.source,
     assignedPathwayCode: pkg.pathwayCode,
     assignedPathwayTitle: pkg.pathwayTitle,
-    matchedRuleTitle: pkg.ruleTitle,
-    manualPackageOverride: false,
+    matchedPathwayTitle: pkg.ruleTitle,
+    manualPathwayOverride: false,
     onboardingStage: raw.stage,
     profileProgressPct: raw.pct,
     abandonedAtStep: raw.abandonedStep ?? null,
@@ -368,7 +362,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
   const dayAfter = isoDayOffset(2);
 
   /* -------- Contract 1: هلدینگ پتروشیمی پارس‌نفت (28 پرسنل فارسی) -------- */
-  const c1Rules: ContractPackageRule[] = [
+  const c1Rules: ContractPathwayRule[] = [
     {
       id: "r1-exec-senior",
       title: "مدیران و افراد ۴۵ سال به بالا (هر دو جنس)",
@@ -447,7 +441,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
   ];
 
   /* -------- Contract 2: بانک توسعه نوین (10 پرسنل فارسی) -------- */
-  const c2Rules: ContractPackageRule[] = [
+  const c2Rules: ContractPathwayRule[] = [
     {
       id: "r2-senior",
       title: "مدیران شعب و کارکنان بالای ۴۵ سال",
@@ -507,7 +501,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
     apiKey: "PARS-HR-LIVE-9841-K2",
     lastApiSyncAt: hoursAgo(6),
     defaultPathwayCode: "FULL_CHECKUP",
-    packageRules: c1Rules,
+    pathwayRules: c1Rules,
     dayQuotas: [
       {
         id: "q1-today",
@@ -560,7 +554,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
         senderName: "دکتر فرهاد سعیدی (مدیر کلینیک)",
         campaignTitle: "دعوت اولیه تکمیل پروفایل سلامت",
         audienceLabel: "پرسنل دریافت‌شده از API و اکسل",
-        messageTemplate: "همکار گرامی {نام}، پایش سلامت {شرکت} در کلینیک نبض فعال شد. لطفاً پیش از مراجعه پروفایل و سوابق خود را در لینک {لینک} تکمیل فرمایید.",
+        messageTemplate: "همکار گرامی {نام}، پایش سلامت {شرکت} در نفس فعال شد. لطفاً پیش از مراجعه پروفایل و سوابق خود را در لینک {لینک} تکمیل فرمایید.",
         recipientCount: 26,
         recipientPreview: ["عادل مرادی", "محسن کاویانی", "بابک شریعتی", "مینا رستمی"],
       },
@@ -591,7 +585,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
     apiKey: "NOVIN-BANK-API-4420-X9",
     lastApiSyncAt: hoursAgo(18),
     defaultPathwayCode: "CARDIO_PULMO",
-    packageRules: c2Rules,
+    pathwayRules: c2Rules,
     dayQuotas: [
       {
         id: "q2-tomorrow",
@@ -644,15 +638,18 @@ const TEMPLATE_HEADERS = [
   "تاریخ تولد* (شمسی)",
   "جنسیت*",
   "تاهل",
+  "نام پدر",
+  "تاریخ مراجعه (شمسی)",
+  "گروه / کد مسیر",
   "واحد سازمانی",
   "رده شغلی",
   "کد پرسنلی",
 ];
 
 const TEMPLATE_SAMPLE_ROWS = [
-  ["امیرحسین", "رستگار", "0012345679", "09123456781", "1355/02/15", "مرد", "متأهل", "بهره‌برداری", "عملیات و فنی", "PR-2001"],
-  ["نازنین", "شریفی", "0011223340", "09129876542", "1369/08/03", "زن", "مجرد", "امور مالی", "اداری و مالی", "PR-2002"],
-  ["مسعود", "طباطبایی", "0499370899", "09351122334", "1351/11/20", "مرد", "", "مدیریت مهندسی", "مدیریت", "PR-2003"],
+  ["امیرحسین", "رستگار", "0012345679", "09123456781", "1355/02/15", "مرد", "متأهل", "رضا", "1405/09/01", "FULL_CHECKUP", "بهره‌برداری", "عملیات و فنی", "PR-2001"],
+  ["نازنین", "شریفی", "0011223340", "09129876542", "1369/08/03", "زن", "مجرد", "علی", "", "", "امور مالی", "اداری و مالی", "PR-2002"],
+  ["مسعود", "طباطبایی", "0499370899", "09351122334", "1351/11/20", "مرد", "", "حسن", "1405/09/02", "آقایان 40+", "مدیریت مهندسی", "مدیریت", "PR-2003"],
 ];
 
 /** Downloads a real Excel-ready RTL `.xls` template (opens natively in Microsoft Excel & LibreOffice). */
@@ -678,7 +675,7 @@ export function downloadContractExcelTemplate(format: "xls" | "csv" = "xls"): vo
         .map(
           (cell, i) =>
             `<td style="padding:6px 10px;border:1px solid #e2e8f0;${
-              // ستون ۲=کدملی، ۳=موبایل — جلوگیری از حذف صفر پیشوند در Excel
+              // کدملی و موبایل به‌صورت متن تا صفر پیشوند در Excel حذف نشود
               i === 2 || i === 3 ? "mso-number-format:'\\@';" : ""
             }">${cell}</td>`
         )
@@ -701,7 +698,7 @@ export function exportContractReportExcel(contract: CorporateContract): void {
     "سن",
     "جنسیت",
     "واحد سازمانی",
-    "بسته سلامت تخصیص‌یافته",
+    "مسیر سلامتی تخصیص‌یافته",
     "وضعیت پیش‌ثبت‌نام",
     "درصد تکمیل پروفایل",
     "وضعیت نوبت‌دهی",
@@ -746,230 +743,19 @@ function triggerDownload(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function toAsciiDigits(text: string): string {
-  return toLatinDigits(text);
-}
-
-function splitCsvLine(line: string, delimiter: string): string[] {
-  const out: string[] = [];
-  let cur = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        cur += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (ch === delimiter && !inQuotes) {
-      out.push(cur.trim());
-      cur = "";
-    } else {
-      cur += ch;
-    }
-  }
-  out.push(cur.trim());
-  return out;
-}
-
-export type ImportPreviewStatus =
-  | "ready"
-  | "invalid"
-  | "header"
-  | "imported"
-  | "linked"
-  | "duplicate"
-  | "rejected";
-
-export interface ImportPreviewRow {
-  lineNo: number;
-  firstName: string;
-  lastName: string;
-  nationalId: string;
-  phone: string;
-  birthDateIso: string | null;
-  birthDateRaw: string;
-  gender: string;
-  maritalStatus: string;
-  department: string;
-  jobCategory: string;
-  personnelCode: string;
-  status: ImportPreviewStatus;
-  reason: string | null;
-}
-
-/** Parses uploaded `.xls`/`.csv`/paste into per-row status for the preview table. */
-export function parseExcelOrCsvText(rawText: string): {
-  rows: ImportPreviewRow[];
-  readyCount: number;
-  invalidCount: number;
-  skipped: number;
-} {
-  const cleaned = rawText.replace(/^\uFEFF/, "").trim();
-  if (!cleaned) return { rows: [], readyCount: 0, invalidCount: 0, skipped: 0 };
-
-  let rawRows: string[][] = [];
-
-  if (/<table[\s>]/i.test(cleaned) && typeof DOMParser !== "undefined") {
-    const doc = new DOMParser().parseFromString(cleaned, "text/html");
-    doc.querySelectorAll("tr").forEach((tr) => {
-      const cells = Array.from(tr.querySelectorAll("td,th")).map((c) => (c.textContent ?? "").trim());
-      if (cells.some(Boolean)) rawRows.push(cells);
-    });
-  } else {
-    const lines = cleaned.split(/\r?\n/).filter((l) => l.trim().length > 0);
-    const sample = lines[0] ?? "";
-    const delimiter = sample.includes("\t") ? "\t" : sample.includes(";") ? ";" : ",";
-    rawRows = lines.map((line) => splitCsvLine(line, delimiter));
-  }
-
-  const rows: ImportPreviewRow[] = [];
-  rawRows.forEach((cols, index) => {
-    const lineNo = index + 1;
-    const c0 = normalizePersianLetters((cols[0] ?? "").trim());
-    const c1 = normalizePersianLetters((cols[1] ?? "").trim());
-    // هدر تمپلیت جدید یا قدیمی
-    if (
-      index === 0 &&
-      (c0.includes("نام") || c1.includes("نام") || (cols[2] ?? "").includes("ملی") || (cols[1] ?? "").includes("ملی"))
-    ) {
-      rows.push({
-        lineNo,
-        firstName: c0,
-        lastName: c1,
-        nationalId: "",
-        phone: "",
-        birthDateIso: null,
-        birthDateRaw: "",
-        gender: "",
-        maritalStatus: "",
-        department: "",
-        jobCategory: "",
-        personnelCode: "",
-        status: "header",
-        reason: "ردیف عنوان",
-      });
-      return;
-    }
-
-    // سازگاری با تمپلیت قدیمی: یک ستون نام کامل
-    const legacySingleName = cols.length >= 8 && !String(cols[4] ?? "").match(/\d{3,}/);
-    let firstName = c0;
-    let lastName = c1;
-    let nidRaw = cols[2] ?? "";
-    let phoneRaw = cols[3] ?? "";
-    let birthRaw = cols[4] ?? "";
-    let genderRaw = cols[5] ?? "";
-    let maritalRaw = cols[6] ?? "";
-    let deptRaw = cols[7] ?? "";
-    let catRaw = cols[8] ?? "";
-    let codeRaw = cols[9] ?? "";
-
-    if (legacySingleName && (cols[3] ?? "").replace(/\D/g, "").length <= 3) {
-      // نام کامل | کدملی | موبایل | سن | جنسیت | واحد | رده | کد
-      const parts = c0.split(/\s+/);
-      firstName = parts[0] ?? "";
-      lastName = parts.slice(1).join(" ");
-      nidRaw = cols[1] ?? "";
-      phoneRaw = cols[2] ?? "";
-      birthRaw = ""; // سن قدیمی — بدون تاریخ معتبر
-      genderRaw = cols[4] ?? "";
-      maritalRaw = "";
-      deptRaw = cols[5] ?? "";
-      catRaw = cols[6] ?? "";
-      codeRaw = cols[7] ?? "";
-    }
-
-    const nidDigitsRaw = String(nidRaw ?? "").replace(/\D/g, "");
-    const phoneDigitsRaw = String(phoneRaw ?? "").replace(/\D/g, "");
-    if (looksLikeScientificNotation(nidRaw) || looksLikeScientificNotation(phoneRaw)) {
-      rows.push({
-        lineNo,
-        firstName,
-        lastName,
-        nationalId: String(nidRaw ?? ""),
-        phone: String(phoneRaw ?? ""),
-        birthDateIso: null,
-        birthDateRaw: birthRaw.trim(),
-        gender: "",
-        maritalStatus: "",
-        department: "",
-        jobCategory: "",
-        personnelCode: "",
-        status: "invalid",
-        reason: "کدملی/موبایل شبیه نماد علمی اکسل است",
-      });
-      return;
-    }
-    const nationalId = normalizeNationalIdForImport(nidRaw);
-    const phone = normalizeMobileForImport(phoneRaw);
-    const birthParsed = birthRaw.trim() ? parseShamsiBirthToIso(birthRaw) : { ok: false as const, reason: "تاریخ تولد خالی است." };
-    const rawGender = normalizePersianLetters(genderRaw.trim());
-    let gender = "";
-    if (rawGender.includes("زن") || rawGender.includes("خانم") || rawGender.toLowerCase() === "f") gender = "زن";
-    else if (rawGender.includes("مرد") || rawGender.includes("آقا") || rawGender.toLowerCase() === "m") gender = "مرد";
-
-    // هم‌تراز کاتالوگ؛ مطلقه/بیوه → ازدواج‌کرده؛ ناشناخته خالی می‌ماند
-    const maritalStatus = normalizeMaritalStatus(maritalRaw) ?? "";
-    const department = normalizePersianLetters(deptRaw.trim());
-    const rawCat = normalizePersianLetters(catRaw.trim());
-    const jobCategory =
-      JOB_CATEGORIES.find((c) => c !== "همه" && (c === rawCat || c.includes(rawCat))) ||
-      (rawCat.length > 1 ? rawCat : "");
-    const personnelCode = toAsciiDigits(codeRaw).trim();
-
-    const reasons: string[] = [];
-    const notes: string[] = [];
-    // یادداشت ترمیم صفر پیشوند برای ادمین
-    if (nidDigitsRaw.length > 0 && nidDigitsRaw.length < 10 && nationalId.length === 10) {
-      notes.push("صفر پیشوند کدملی ترمیم شد");
-    }
-    if (phoneDigitsRaw.length === 10 && phoneDigitsRaw.startsWith("9") && phone.startsWith("09")) {
-      notes.push("صفر پیشوند موبایل ترمیم شد");
-    }
-    if (firstName.length < 2) reasons.push("نام الزامی است");
-    if (lastName.length < 2) reasons.push("نام‌خانوادگی الزامی است");
-    if (!isValidIranNationalId(nationalId)) reasons.push("کدملی نامعتبر است");
-    if (!isValidIranMobile(phone)) reasons.push("موبایل نامعتبر است");
-    if (!birthParsed.ok) reasons.push(birthParsed.reason);
-    if (gender !== "مرد" && gender !== "زن") reasons.push("جنسیت باید مرد یا زن باشد");
-
-    const birthDateIso = birthParsed.ok ? birthParsed.iso : null;
-    rows.push({
-      lineNo,
-      firstName,
-      lastName,
-      nationalId,
-      phone,
-      birthDateIso,
-      birthDateRaw: birthRaw.trim(),
-      gender,
-      maritalStatus,
-      department,
-      jobCategory,
-      personnelCode,
-      status: reasons.length ? "invalid" : "ready",
-      reason: reasons.length ? reasons.join("؛ ") : notes.length ? notes.join("؛ ") : null,
-    });
-  });
-
-  const readyCount = rows.filter((r) => r.status === "ready").length;
-  const invalidCount = rows.filter((r) => r.status === "invalid").length;
-  return { rows, readyCount, invalidCount, skipped: invalidCount };
-}
-
-/** نگاشت ردیف آماده به شکل قدیمی ExternalApiPerson برای مسیرهای mock باقی‌مانده */
-export function previewRowToExternalPerson(r: ImportPreviewRow): ExternalApiPerson {
-  return {
-    personnelCode: r.personnelCode || `EX-${r.lineNo}`,
-    fullName: displayFullName(r.firstName, r.lastName),
-    nationalId: r.nationalId,
-    phone: r.phone,
-    age: ageFromBirthIso(r.birthDateIso) ?? 0,
-    gender: r.gender === "زن" ? "زن" : "مرد",
-    department: r.department || "عمومی سازمان",
-    jobCategory: r.jobCategory || "اداری و مالی",
-  };
-}
+export type {
+  ImportPreviewStatus,
+  ImportPreviewRow,
+  ParseImportResult,
+  ColumnMapping,
+  ImportFieldKey,
+} from "@/lib/contract-member-import";
+export {
+  parseExcelOrCsvText,
+  parseImportFile,
+  finalizeImportParse,
+  analyzeImportGrid,
+  previewRowToExternalPerson,
+  IMPORT_FIELD_LABELS,
+  REQUIRED_IMPORT_FIELDS,
+} from "@/lib/contract-member-import";

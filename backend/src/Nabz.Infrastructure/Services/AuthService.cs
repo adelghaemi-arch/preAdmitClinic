@@ -1,7 +1,7 @@
 /*
  File: backend/src/Nabz.Infrastructure/Services/AuthService.cs
- Description: OTP با عضو قرارداد/بیمار/ناظر؛ soft-admit؛ انتخاب کدملی؛ FixedOtp یا قالب کاوه‌نگار
- Parent Dependencies: IAuthRepository, IPatientService, ISmsSender, AuthOptions, KavenegarOptions
+ Description: OTP با عضو قرارداد/بیمار/ناظر؛ soft-admit؛ FixedOtp (+۱ ادمین کل) یا قالب کاوه‌نگار
+ Parent Dependencies: IAuthRepository, IPlatformRepository, IPatientService, ISmsSender, AuthOptions, KavenegarOptions, PlatformAdminIdentity
  */
 
 using System.Security.Cryptography;
@@ -26,6 +26,7 @@ public sealed class AuthService(
     IContractRepository contracts,
     IPatientRepository patients,
     IClinicRepository clinics,
+    IPlatformRepository platform,
     IPatientService patientService,
     IUnitOfWork uow,
     ISmsSender sms,
@@ -50,9 +51,35 @@ public sealed class AuthService(
             : await contracts.ListActiveMembersByPhoneAsync(clinic.Id, mobile, ct);
         var supervisor = await contracts.GetSupervisorByPhoneAsync(mobile, ct);
         if (userList.Count == 0 && patientList.Count == 0 && memberList.Count == 0 && supervisor is null)
-            return new OtpRequestResult(false, null, "شماره در سیستم ثبت نشده است.");
+        {
+            // اولویت: تلفن پشتیبانی پیش‌پذیرش کلینیک؛ سپس SupportPhone پلتفرم
+            var settings = await platform.GetSettingsAsync(ct);
+            var supportPhone = FirstNonEmpty(clinic?.PreAdmitSupportPhone, settings?.SupportPhone);
+            return new OtpRequestResult(false, null, FormatUnknownMobileError(supportPhone));
+        }
 
         return await IssueOtpAsync(mobile, OtpPurposes.Login, "ارسال پیامک ورود ناموفق بود.", ct);
+    }
+
+    /// <summary>پیام راهنما برای شماره ثبت‌نشده — با تلفن پشتیبانی پیش‌پذیرش.</summary>
+    public static string FormatUnknownMobileError(string? supportPhone)
+    {
+        const string baseMsg =
+            "شماره موبایل شما در سیستم ثبت نشده است. لطفاً با سازمان یا مجموعهٔ خود پیگیری کنید";
+        var phone = supportPhone?.Trim();
+        if (string.IsNullOrWhiteSpace(phone))
+            return baseMsg + " یا با پشتیبانی پیش‌پذیرش تماس بگیرید.";
+        return baseMsg + $"؛ در صورت نیاز با شماره {phone} تماس بگیرید.";
+    }
+
+    private static string? FirstNonEmpty(params string?[] values)
+    {
+        foreach (var v in values)
+        {
+            if (!string.IsNullOrWhiteSpace(v))
+                return v.Trim();
+        }
+        return null;
     }
 
     public async Task<OtpRequestResult> RequestActionOtpAsync(string mobile, string purpose, CancellationToken ct = default)
@@ -269,6 +296,18 @@ public sealed class AuthService(
 
     private async Task<List<OtpIdentityCandidate>> BuildCandidatesAsync(string mobile, CancellationToken ct)
     {
+        var userRows = await users.ListByMobileAsync(mobile, ct);
+
+        // موبایل قفل ادمین کل: فقط حساب Platform — حتی اگر Patient روی همان شماره باشد
+        var platformUser = userRows.FirstOrDefault(u =>
+            u.IsActive && u.Roles.Any(r => r.Role == AppRole.Platform));
+        if (platformUser is not null && PlatformAdminIdentity.IsPlatformAdminMobile(mobile))
+        {
+            var person = platformUser.Person;
+            var key = "__user:" + platformUser.Id.ToString("N");
+            return [new OtpIdentityCandidate(key, person.FirstName, person.LastName)];
+        }
+
         var map = new Dictionary<string, OtpIdentityCandidate>(StringComparer.Ordinal);
         var clinic = await clinics.GetCurrentAsync(ct);
         if (clinic is not null)
@@ -294,7 +333,6 @@ public sealed class AuthService(
             }
         }
 
-        var userRows = await users.ListByMobileAsync(mobile, ct);
         foreach (var u in userRows.Where(x => x.IsActive))
         {
             var person = u.Person;
@@ -591,25 +629,49 @@ public sealed class AuthService(
         string code;
         string? demoCode = null;
 
-        // بای‌پس: کد ثابت از env — بدون رندم و بدون کاوه‌نگار
+        // بای‌پس: کد ثابت از env — بدون رندم و بدون درگاه پیامک
+        // ادمین کل: نمایش = پایه؛ کد واقعی هش‌شده = پایه + ۱ تا با FixedOtp معمولی نشود وارد شد
         if (authCfg.HasFixedOtp)
         {
-            code = authCfg.FixedOtp!.Trim();
-            demoCode = code;
+            var baseCode = authCfg.FixedOtp!.Trim();
+            demoCode = baseCode;
+            code = PlatformAdminIdentity.IsPlatformAdminMobile(mobile)
+                ? PlatformAdminIdentity.IncrementFixedOtp(baseCode)
+                : baseCode;
         }
         else
         {
             code = RandomNumberGenerator.GetInt32(10000, 99999).ToString();
-            var template = kav.OtpTemplate;
-            if (string.IsNullOrWhiteSpace(template))
-                return new OtpRequestResult(false, null, "قالب OTP کاوه‌نگار پیکربندی نشده است.");
+            var clinic = await clinics.GetCurrentAsync(ct);
+            var provider = clinic?.SmsProvider ?? ClinicSmsProvider.None;
+            if (provider == ClinicSmsProvider.None && kav.IsConfigured)
+                provider = ClinicSmsProvider.Kavenegar;
+
             try
             {
-                await sms.SendTemplateAsync(mobile, template, new[] { code }, ct);
+                if (provider == ClinicSmsProvider.Touba)
+                {
+                    var tpl = clinic?.ToubaOtpMessageTemplate?.Trim();
+                    if (string.IsNullOrWhiteSpace(tpl))
+                        tpl = "کد ورود شما: {code}";
+                    var content = tpl.Replace("{code}", code, StringComparison.OrdinalIgnoreCase);
+                    await sms.SendPlainAsync(mobile, content, ct);
+                }
+                else if (provider == ClinicSmsProvider.Kavenegar)
+                {
+                    var template = FirstNonEmpty(clinic?.KavenegarOtpTemplate, kav.OtpTemplate);
+                    if (string.IsNullOrWhiteSpace(template))
+                        return new OtpRequestResult(false, null, "قالب OTP کاوه‌نگار پیکربندی نشده است.");
+                    await sms.SendTemplateAsync(mobile, template, new[] { code }, ct);
+                }
+                else
+                {
+                    return new OtpRequestResult(false, null, "سامانه پیامک کلینیک پیکربندی نشده است.");
+                }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "ارسال OTP قالبی برای {Mobile} purpose={Purpose} ناموفق", mobile, purpose);
+                logger.LogError(ex, "ارسال OTP برای {Mobile} purpose={Purpose} ناموفق", mobile, purpose);
                 return new OtpRequestResult(false, null, smsFailMessage);
             }
         }

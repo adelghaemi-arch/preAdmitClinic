@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Domain/Entities/CorporateContract.cs
- Description: قرارداد سازمانی، ناظر، اعضا و قوانین بسته (بدون نوبت/سقف روزانه)
+ Description: قرارداد سازمانی، ناظر، اعضا و مسیرهای سلامتی (بدون نوبت/سقف روزانه)
  Parent Dependencies: ContractStatus, OnboardingStage
  */
 
@@ -22,11 +22,11 @@ public class CorporateContract : EntityBase
     public string? ApiEndpoint { get; set; }
     public string? ApiKey { get; set; }
     public DateTime? LastApiSyncAt { get; set; }
-    public string? DefaultPackageCode { get; set; }
+    public string? DefaultPathwayCode { get; set; }
 
     public ContractSupervisor? Supervisor { get; set; }
     public ICollection<ContractMember> Members { get; set; } = new List<ContractMember>();
-    public ICollection<ContractPackageRule> PackageRules { get; set; } = new List<ContractPackageRule>();
+    public ICollection<ContractPathwayRule> PathwayRules { get; set; } = new List<ContractPathwayRule>();
     public ICollection<ContractSmsLog> SmsLogs { get; set; } = new List<ContractSmsLog>();
 }
 
@@ -55,11 +55,11 @@ public class ContractMember : EntityBase
     public string? Department { get; set; }
     public string? JobCategory { get; set; }
     public string Source { get; set; } = "manual";
-    /// <summary>کد بسته سلامت — نه مسیر ایستگاهی.</summary>
-    public string? AssignedPackageCode { get; set; }
-    public string? AssignedPackageTitle { get; set; }
-    public string? MatchedRuleTitle { get; set; }
-    public bool ManualPackageOverride { get; set; }
+    // کد قالب ایستگاهی مسیر سلامتی (مثلاً FULL_CHECKUP)
+    public string? AssignedPathwayCode { get; set; }
+    public string? AssignedPathwayTitle { get; set; }
+    public string? MatchedPathwayTitle { get; set; }
+    public bool ManualPathwayOverride { get; set; }
     public OnboardingStage OnboardingStage { get; set; } = OnboardingStage.NotSent;
     public int ProfileProgressPct { get; set; }
     public string? AbandonedAtStep { get; set; }
@@ -72,9 +72,11 @@ public class ContractMember : EntityBase
     public Guid? LinkedPatientId { get; set; }
     /// <summary>موبایل معرفی در رستر قرارداد — با تغییر بعدی Person.Mobile قاطی نمی‌شود.</summary>
     public string? IntroducedMobile { get; set; }
+    /// <summary>تاریخ مراجعه برنامه‌ریزی‌شده از اکسل/رستر — بنر پیش‌پذیرش Owner.</summary>
+    public DateOnly? ScheduledVisitDate { get; set; }
 }
 
-public class ContractPackageRule : EntityBase
+public class ContractPathwayRule : EntityBase
 {
     public Guid ContractId { get; set; }
     public CorporateContract Contract { get; set; } = null!;
@@ -84,11 +86,11 @@ public class ContractPackageRule : EntityBase
     public int? MinAge { get; set; }
     public int? MaxAge { get; set; }
     public string JobCategory { get; set; } = "همه";
-    public string PackageCode { get; set; } = string.Empty;
+    public string PathwayCode { get; set; } = string.Empty;
     public int Priority { get; set; }
 }
 
-public class PackageLibraryRule : EntityBase
+public class PathwayLibraryRule : EntityBase
 {
     public string Code { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
@@ -97,7 +99,7 @@ public class PackageLibraryRule : EntityBase
     public int? MinAge { get; set; }
     public int? MaxAge { get; set; }
     public string JobCategory { get; set; } = "همه";
-    public string PackageCode { get; set; } = string.Empty;
+    public string PathwayCode { get; set; } = string.Empty;
 }
 
 public class ContractSmsLog : EntityBase

@@ -142,7 +142,7 @@ public sealed class ContractRepository(NabzDbContext db) : IContractRepository
     {
         IQueryable<CorporateContract> q = db.CorporateContracts
             .Include(x => x.Supervisor)!.ThenInclude(s => s!.Person)
-            .Include(x => x.PackageRules);
+            .Include(x => x.PathwayRules);
         if (includeMembers) q = q.Include(x => x.Members).ThenInclude(m => m.Person);
         return q.FirstOrDefaultAsync(x => x.Id == id, ct);
     }
@@ -150,7 +150,7 @@ public sealed class ContractRepository(NabzDbContext db) : IContractRepository
     public Task<List<CorporateContract>> ListByClinicAsync(Guid clinicId, CancellationToken ct = default)
         => db.CorporateContracts
             .Include(x => x.Supervisor)!.ThenInclude(s => s!.Person)
-            .Include(x => x.PackageRules)
+            .Include(x => x.PathwayRules)
             // Members را Include نمی‌کنیم — فقط count جداگانه برای لیست سبک
             .Where(x => x.ClinicId == clinicId).ToListAsync(ct);
 
@@ -277,27 +277,27 @@ public sealed class ContractRepository(NabzDbContext db) : IContractRepository
         => db.ContractSupervisors.Include(x => x.Contract).Include(x => x.Person)
             .FirstOrDefaultAsync(x => x.Person.Mobile == phone && x.IsActive, ct);
 
-    public void RemovePackageRules(IEnumerable<ContractPackageRule> rules)
-        => db.ContractPackageRules.RemoveRange(rules);
+    public void RemovePathwayRules(IEnumerable<ContractPathwayRule> rules)
+        => db.ContractPathwayRules.RemoveRange(rules);
 
-    public Task<ContractPackageRule?> GetPackageRuleByIdAsync(Guid ruleId, CancellationToken ct = default)
-        => db.ContractPackageRules.FirstOrDefaultAsync(x => x.Id == ruleId, ct);
+    public Task<ContractPathwayRule?> GetPathwayRuleByIdAsync(Guid ruleId, CancellationToken ct = default)
+        => db.ContractPathwayRules.FirstOrDefaultAsync(x => x.Id == ruleId, ct);
 
-    public Task<List<ContractPackageRule>> ListPackageRulesByLibraryRuleIdAsync(Guid libraryRuleId, CancellationToken ct = default)
-        => db.ContractPackageRules.Where(x => x.LibraryRuleId == libraryRuleId).ToListAsync(ct);
+    public Task<List<ContractPathwayRule>> ListPathwayRulesByLibraryRuleIdAsync(Guid libraryRuleId, CancellationToken ct = default)
+        => db.ContractPathwayRules.Where(x => x.LibraryRuleId == libraryRuleId).ToListAsync(ct);
 
-    public async Task AddPackageRuleAsync(ContractPackageRule rule, CancellationToken ct = default)
-        => await db.ContractPackageRules.AddAsync(rule, ct);
+    public async Task AddPathwayRuleAsync(ContractPathwayRule rule, CancellationToken ct = default)
+        => await db.ContractPathwayRules.AddAsync(rule, ct);
 }
 
-public sealed class PackageLibraryRuleRepository(NabzDbContext db) : IPackageLibraryRuleRepository
+public sealed class PathwayLibraryRuleRepository(NabzDbContext db) : IPathwayLibraryRuleRepository
 {
-    public Task<PackageLibraryRule?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => db.PackageLibraryRules.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public Task<PathwayLibraryRule?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => db.PathwayLibraryRules.FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task<List<PackageLibraryRule>> ListAsync(string? query, int take, CancellationToken ct = default)
+    public Task<List<PathwayLibraryRule>> ListAsync(string? query, int take, CancellationToken ct = default)
     {
-        var q = db.PackageLibraryRules.AsQueryable();
+        var q = db.PathwayLibraryRules.AsQueryable();
         if (!string.IsNullOrWhiteSpace(query))
         {
             var t = query.Trim();
@@ -305,21 +305,21 @@ public sealed class PackageLibraryRuleRepository(NabzDbContext db) : IPackageLib
                 x.Title.Contains(t) || x.Code.Contains(t)
                 || (x.Description != null && x.Description.Contains(t))
                 || x.JobCategory.Contains(t) || x.Gender.Contains(t)
-                || x.PackageCode.Contains(t));
+                || x.PathwayCode.Contains(t));
         }
         return q.OrderBy(x => x.Code).Take(take).ToListAsync(ct);
     }
 
     public Task<int> CountAsync(CancellationToken ct = default)
-        => db.PackageLibraryRules.CountAsync(ct);
+        => db.PathwayLibraryRules.CountAsync(ct);
 
-    public async Task AddAsync(PackageLibraryRule rule, CancellationToken ct = default)
-        => await db.PackageLibraryRules.AddAsync(rule, ct);
+    public async Task AddAsync(PathwayLibraryRule rule, CancellationToken ct = default)
+        => await db.PathwayLibraryRules.AddAsync(rule, ct);
 
-    public void Remove(PackageLibraryRule rule) => db.PackageLibraryRules.Remove(rule);
+    public void Remove(PathwayLibraryRule rule) => db.PathwayLibraryRules.Remove(rule);
 
     public Task<int> CountAttachedContractsAsync(Guid libraryRuleId, CancellationToken ct = default)
-        => db.ContractPackageRules
+        => db.ContractPathwayRules
             .Where(x => x.LibraryRuleId == libraryRuleId)
             .Select(x => x.ContractId)
             .Distinct()
@@ -327,13 +327,13 @@ public sealed class PackageLibraryRuleRepository(NabzDbContext db) : IPackageLib
 
     public async Task<(int ActiveMatched, int PreviouslyUsed)> CountMemberUsageAsync(Guid libraryRuleId, CancellationToken ct = default)
     {
-        // match با عنوان قانون قرارداد متصل به کتابخانه — هم‌تراز ApplyPackageRules
-        var matched = db.ContractPackageRules
+        // match با عنوان قانون قرارداد متصل به کتابخانه — هم‌تراز ApplyPathwayRules
+        var matched = db.ContractPathwayRules
             .Where(r => r.LibraryRuleId == libraryRuleId)
             .Join(
                 db.ContractMembers,
                 r => new { r.ContractId, Title = r.Title },
-                m => new { m.ContractId, Title = m.MatchedRuleTitle ?? "" },
+                m => new { m.ContractId, Title = m.MatchedPathwayTitle ?? "" },
                 (r, m) => m);
 
         var active = await matched.Where(m => m.OnboardingStage != OnboardingStage.Completed).Select(m => m.Id).Distinct().CountAsync(ct);
@@ -581,4 +581,23 @@ public sealed class PlatformRepository(NabzDbContext db) : IPlatformRepository
 
     public Task<List<PlatformAuditEntry>> ListAuditAsync(int take, CancellationToken ct = default)
         => db.PlatformAuditEntries.OrderByDescending(x => x.At).Take(take).ToListAsync(ct);
+}
+
+public sealed class SmsCampaignTemplateRepository(NabzDbContext db) : ISmsCampaignTemplateRepository
+{
+    public Task<SmsCampaignTemplate?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => db.SmsCampaignTemplates.FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public Task<SmsCampaignTemplate?> GetByCodeAsync(string code, CancellationToken ct = default)
+        => db.SmsCampaignTemplates.FirstOrDefaultAsync(x => x.Code == code, ct);
+
+    public Task<List<SmsCampaignTemplate>> ListAsync(bool activeOnly, CancellationToken ct = default)
+    {
+        var q = db.SmsCampaignTemplates.AsQueryable();
+        if (activeOnly) q = q.Where(x => x.IsActive);
+        return q.OrderBy(x => x.SortOrder).ThenBy(x => x.Title).ToListAsync(ct);
+    }
+
+    public async Task AddAsync(SmsCampaignTemplate template, CancellationToken ct = default)
+        => await db.SmsCampaignTemplates.AddAsync(template, ct);
 }

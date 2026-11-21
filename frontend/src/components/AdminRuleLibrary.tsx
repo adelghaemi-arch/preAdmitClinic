@@ -7,7 +7,7 @@
 import React, { useMemo, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import { BookOpen, Pencil, Plus, Search, Trash2, Users, X } from "lucide-react";
-import type { ClinicSnapshot, PackageLibraryRule } from "@/types/clinic";
+import type { ClinicSnapshot, PathwayLibraryRule } from "@/types/clinic";
 import { JOB_CATEGORIES } from "@/lib/mock-contracts";
 import { toFaDigits } from "@/lib/persian";
 import { normalizeText } from "@/lib/workspace";
@@ -19,10 +19,10 @@ interface Props {
 }
 
 export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
-  const library = snapshot.packageRuleLibrary ?? [];
+  const library = snapshot.pathwayLibrary ?? [];
   const pathways = snapshot.pathways ?? [];
   const [query, setQuery] = useState("");
-  const [editing, setEditing] = useState<PackageLibraryRule | null>(null);
+  const [editing, setEditing] = useState<PathwayLibraryRule | null>(null);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -32,6 +32,7 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
   const [jobCategory, setJobCategory] = useState("همه");
   const [pathwayCode, setPathwayCode] = useState(pathways[0]?.code ?? "FULL_CHECKUP");
   const [flash, setFlash] = useState<string | null>(null);
+  const [expandedContractsRuleId, setExpandedContractsRuleId] = useState<string | null>(null);
 
   const visible = useMemo(() => {
     const q = normalizeText(query.trim());
@@ -41,6 +42,23 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
         normalizeText(`${r.title} ${r.description} ${r.code} ${r.jobCategory} ${r.gender} ${r.pathwayCode}`).includes(q)
     );
   }, [library, query]);
+
+  /** عنوان قراردادهایی که این مسیر کتابخانه را attach کرده‌اند */
+  const attachedTitlesByRuleId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const c of snapshot.contracts ?? []) {
+      const title = c.title?.trim() || c.organizationName?.trim() || c.code;
+      if (!title) continue;
+      for (const r of c.pathwayRules ?? []) {
+        const libId = r.libraryRuleId?.trim();
+        if (!libId) continue;
+        const list = map.get(libId) ?? [];
+        if (!list.includes(title)) list.push(title);
+        map.set(libId, list);
+      }
+    }
+    return map;
+  }, [snapshot.contracts]);
 
   function openCreate() {
     setEditing(null);
@@ -54,7 +72,7 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
     setPathwayCode(pathways[0]?.code ?? "FULL_CHECKUP");
   }
 
-  function openEdit(rule: PackageLibraryRule) {
+  function openEdit(rule: PathwayLibraryRule) {
     setCreating(false);
     setEditing(rule);
     setTitle(rule.title);
@@ -83,22 +101,22 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
       pathwayCode,
     };
     if (editing) {
-      await onAction({ action: "UPSERT_LIBRARY_RULE", rule: { ...rule, id: editing.id } });
-      setFlash(`قانون «${title}» به‌روزرسانی شد.`);
+      await onAction({ action: "UPSERT_PATHWAY_LIBRARY_ITEM", rule: { ...rule, id: editing.id } });
+      setFlash(`مسیر «${title}» به‌روزرسانی شد.`);
     } else {
-      await onAction({ action: "UPSERT_LIBRARY_RULE", rule });
-      setFlash(`قانون «${title}» در کتابخانه ثبت شد.`);
+      await onAction({ action: "UPSERT_PATHWAY_LIBRARY_ITEM", rule });
+      setFlash(`مسیر «${title}» در کتابخانه ثبت شد.`);
     }
     closeForm();
   }
 
-  async function removeRule(rule: PackageLibraryRule) {
+  async function removeRule(rule: PathwayLibraryRule) {
     if ((rule.attachedContractCount ?? 0) > 0) {
-      setFlash("این قانون به قرارداد متصل است؛ ابتدا از قراردادها جدا کنید.");
+      setFlash("این مسیر به قرارداد متصل است؛ ابتدا از قراردادها جدا کنید.");
       return;
     }
-    await onAction({ action: "DELETE_LIBRARY_RULE", id: rule.id });
-    setFlash(`قانون «${rule.title}» حذف شد.`);
+    await onAction({ action: "DELETE_PATHWAY_LIBRARY_ITEM", id: rule.id });
+    setFlash(`مسیر «${rule.title}» حذف شد.`);
   }
 
   const formOpen = creating || editing;
@@ -109,12 +127,12 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
         <div>
           <h1 className="text-base font-bold text-slate-800">کتابخانه مرکزی قوانین</h1>
           <p className="mt-1 text-xs text-slate-500">
-            قوانین قابل استفاده مجدد در همه قراردادها؛ آمار اتصال فعال و استفاده‌های قبلی برای هر قانون.
+            مسیرهای سلامتی قابل استفاده مجدد در همه قراردادها؛ آمار اتصال فعال و استفاده‌های قبلی برای هر مسیر.
           </p>
         </div>
         <button type="button" disabled={busy} onClick={openCreate} className="primary-button">
           <Plus className="h-4 w-4" />
-          قانون جدید
+          مسیر جدید
         </button>
       </div>
 
@@ -140,6 +158,9 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
       <div className="grid gap-3 lg:grid-cols-2">
         {visible.map((rule) => {
           const pkg = pathways.find((p) => p.code === rule.pathwayCode);
+          const attachedTitles = attachedTitlesByRuleId.get(rule.id) ?? [];
+          const attachedCount = Math.max(rule.attachedContractCount ?? 0, attachedTitles.length);
+          const contractsOpen = expandedContractsRuleId === rule.id;
           return (
             <div key={rule.id} className="rounded-2xl border border-slate-200 bg-white p-4 text-xs">
               <div className="flex items-start justify-between gap-2">
@@ -205,13 +226,50 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
                     {toFaDigits(rule.previouslyUsedCount ?? 0)}
                   </div>
                 </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedContractsRuleId((id) => (id === rule.id ? null : rule.id))
+                  }
+                  aria-expanded={contractsOpen}
+                  className={`rounded-xl border px-2.5 py-2 text-right transition ${
+                    contractsOpen
+                      ? "border-teal-300 bg-teal-50 ring-1 ring-teal-200"
+                      : "border-slate-200 bg-slate-50 hover:border-teal-200 hover:bg-teal-50/40"
+                  }`}
+                >
                   <div className="text-[10px] text-slate-500">قرارداد متصل</div>
                   <div className="mt-1 text-base font-bold text-slate-800 tabular-fa">
-                    {toFaDigits(rule.attachedContractCount ?? 0)}
+                    {toFaDigits(attachedCount)}
                   </div>
-                </div>
+                </button>
               </div>
+
+              {contractsOpen && (
+                <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">
+                  <div className="mb-1.5 text-[10px] font-semibold text-slate-600">
+                    قراردادهای متصل ({toFaDigits(attachedTitles.length)})
+                  </div>
+                  {attachedTitles.length === 0 ? (
+                    <p className="text-[11px] text-slate-400">
+                      {attachedCount > 0
+                        ? "عنوان قرارداد در لیست فعلی در دسترس نیست."
+                        : "هنوز به قراردادی متصل نشده است."}
+                    </p>
+                  ) : (
+                    <ul className="max-h-40 space-y-1 overflow-y-auto">
+                      {attachedTitles.map((t) => (
+                        <li
+                          key={t}
+                          className="rounded-lg border border-slate-100 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700"
+                        >
+                          {t}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -219,7 +277,7 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
 
       {visible.length === 0 && (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center text-xs text-slate-500">
-          {library.length === 0 ? "هنوز قانونی در کتابخانه نیست — یک قانون جدید بسازید." : "نتیجه‌ای برای این جست‌وجو یافت نشد."}
+          {library.length === 0 ? "هنوز مسیری در کتابخانه نیست — یک مسیر جدید بسازید." : "نتیجه‌ای برای این جست‌وجو یافت نشد."}
         </div>
       )}
 
@@ -231,13 +289,13 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label={editing ? "ویرایش قانون" : "ساخت قانون"}
+            aria-label={editing ? "ویرایش مسیر" : "ساخت مسیر"}
             onClick={(e) => e.stopPropagation()}
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
           >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-bold text-slate-800">
-                {editing ? `ویرایش: ${editing.title}` : "ساخت قانون جدید"}
+                {editing ? `ویرایش: ${editing.title}` : "ساخت مسیر جدید"}
               </h2>
               <button type="button" onClick={closeForm} aria-label="بستن">
                 <X className="h-4 w-4 text-slate-400" />
@@ -248,7 +306,7 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="عنوان قانون"
+                placeholder="عنوان مسیر سلامتی"
                 className="app-input text-xs"
               />
               <AppTextarea

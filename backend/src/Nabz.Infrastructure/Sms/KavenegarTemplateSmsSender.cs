@@ -1,13 +1,12 @@
 /*
  File: backend/src/Nabz.Infrastructure/Sms/KavenegarTemplateSmsSender.cs
  Description: ارسال قالبی کاوه‌نگار (verify/lookup) بدون متن آزاد
- Parent Dependencies: ISmsSender, KavenegarOptions
+ Parent Dependencies: HttpClient, KavenegarOptions (از بیرون تزریق می‌شود)
  */
 
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Nabz.Application.Abstractions;
 using Nabz.Application.Options;
 
 namespace Nabz.Infrastructure.Sms;
@@ -15,12 +14,23 @@ namespace Nabz.Infrastructure.Sms;
 public sealed class KavenegarTemplateSmsSender(
     HttpClient http,
     IOptions<KavenegarOptions> options,
-    ILogger<KavenegarTemplateSmsSender> logger) : ISmsSender
+    ILogger<KavenegarTemplateSmsSender> logger)
 {
-    public async Task SendTemplateAsync(string mobile, string templateName, IReadOnlyList<string> tokens, CancellationToken ct = default)
+    public Task SendTemplateAsync(string mobile, string templateName, IReadOnlyList<string> tokens, CancellationToken ct = default)
+        => SendTemplateAsync(mobile, templateName, tokens, options.Value.ApiKey, options.Value.Sender, ct);
+
+    public async Task SendTemplateAsync(
+        string mobile,
+        string templateName,
+        IReadOnlyList<string> tokens,
+        string? apiKeyOverride,
+        string? senderOverride,
+        CancellationToken ct = default)
     {
-        var cfg = options.Value;
-        if (string.IsNullOrWhiteSpace(cfg.ApiKey))
+        var apiKey = string.IsNullOrWhiteSpace(apiKeyOverride) ? options.Value.ApiKey : apiKeyOverride;
+        var sender = string.IsNullOrWhiteSpace(senderOverride) ? options.Value.Sender : senderOverride;
+
+        if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("Kavenegar ApiKey پیکربندی نشده است.");
         if (string.IsNullOrWhiteSpace(templateName))
             throw new InvalidOperationException("نام قالب پیامک خالی است.");
@@ -34,11 +44,10 @@ public sealed class KavenegarTemplateSmsSender(
         if (tokens.Count > 0) qs.Add($"token={Uri.EscapeDataString(tokens[0])}");
         if (tokens.Count > 1) qs.Add($"token2={Uri.EscapeDataString(tokens[1])}");
         if (tokens.Count > 2) qs.Add($"token3={Uri.EscapeDataString(tokens[2])}");
-        // برخی قالب‌ها sender می‌خواهند
-        if (!string.IsNullOrWhiteSpace(cfg.Sender))
-            qs.Add($"sender={Uri.EscapeDataString(cfg.Sender)}");
+        if (!string.IsNullOrWhiteSpace(sender))
+            qs.Add($"sender={Uri.EscapeDataString(sender)}");
 
-        var url = $"https://api.kavenegar.com/v1/{cfg.ApiKey}/verify/lookup.json?{string.Join("&", qs)}";
+        var url = $"https://api.kavenegar.com/v1/{apiKey}/verify/lookup.json?{string.Join("&", qs)}";
         using var response = await http.GetAsync(url, ct);
         var body = await response.Content.ReadAsStringAsync(ct);
         if (!response.IsSuccessStatusCode)

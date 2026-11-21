@@ -160,7 +160,7 @@ export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
     })),
     patients: enrichedPatients,
     clinicLocation: { ...clinicLocation },
-    packageRuleLibrary: JSON.parse(JSON.stringify(mockStore.packageRuleLibrary)),
+    pathwayLibrary: JSON.parse(JSON.stringify(mockStore.pathwayLibrary)),
     contracts: JSON.parse(JSON.stringify(mockStore.contracts)),
     forms: JSON.parse(JSON.stringify(mockStore.forms)),
     platform: JSON.parse(JSON.stringify(mockStore.platform)),

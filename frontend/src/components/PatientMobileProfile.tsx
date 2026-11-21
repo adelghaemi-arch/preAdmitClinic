@@ -1,4 +1,9 @@
-﻿import { ResultAttachment } from "./ResultAttachment";
+﻿/*
+ File: frontend/src/components/PatientMobileProfile.tsx
+ Description: پروفایل موبایل سلامتجو؛ برچسب نقشه با برند نفس
+ Parent Dependencies: ResultAttachment, IntakeFileThumbGrid, PreAdmitFormRenderer
+ */
+import { ResultAttachment } from "./ResultAttachment";
 import { IntakeFileThumbGrid } from "./IntakeFileThumbGrid";
 
 import { AppInput, AppTextarea } from "@/components/AppInput";
@@ -29,6 +34,7 @@ import type {
   RoomDto,
 } from "@/types/clinic";
 import {
+  formatFaDate,
   formatFaTime,
   toFaDigits,
 } from "@/lib/persian";
@@ -301,6 +307,19 @@ export function PatientMobileProfile({
             <span className="font-bold">{patient.hospitalName || "کلینیک"}</span> معرفی شده‌اید. با همان
             شماره وارد شوید؛ یا در پنل موبایل خود را تغییر دهید، یا از ادمین کلینیک بخواهید شماره را اصلاح
             کند.
+          </div>
+        )}
+        {/* تاریخ مراجعه از رستر — قبل از تکمیل پیش‌پذیرش هشدار معطل نشدن در بیمارستان */}
+        {patient.scheduledVisitDate && !patient.intakeCompleted && (
+          <div className="border-b border-teal-200 bg-teal-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-teal-950">
+            مراجعه شما در تاریخ{" "}
+            <span className="font-bold">{toFaDigits(formatFaDate(patient.scheduledVisitDate))}</span> است.
+            لطفاً پیش‌پذیرش را قبل از آن روز تکمیل کنید تا در بیمارستان معطل نشوید.
+          </div>
+        )}
+        {patient.scheduledVisitDate && patient.intakeCompleted && (
+          <div className="border-b border-slate-200 bg-slate-50 px-3.5 py-2 text-[11px] text-slate-700">
+            تاریخ مراجعه: {toFaDigits(formatFaDate(patient.scheduledVisitDate))}
           </div>
         )}
 
@@ -772,7 +791,7 @@ export function PatientMobileProfile({
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-3">
                 <div className="mb-2 flex items-center justify-between text-[11px] text-slate-500">
                   <span className="font-bold text-slate-800">
-                    پشته‌نگاری معماری طبقه {toFaDigits(selectedFloor)} کلینیک نبض
+                    پشته‌نگاری معماری طبقه {toFaDigits(selectedFloor)} نفس
                   </span>
                   <span>آسانسور مرکزی ⇆ راهروها</span>
                 </div>

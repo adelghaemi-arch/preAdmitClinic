@@ -1,10 +1,10 @@
-﻿/*
+/*
  File: frontend/src/components/CorporateSupervisorPanel.tsx
  Description: پنل ناظر سازمان — رستر و یادآوری SMS قالبی از طریق SEND_CONTRACT_BULK_SMS
- Parent Dependencies: types/clinic.ts, ClinicOrchestratorApp.tsx
+ Parent Dependencies: types/clinic.ts, ClinicOrchestratorApp.tsx, api/contracts.ts
  */
-import React, { useMemo, useState } from "react";
-import { AppInput, AppTextarea } from "@/components/AppInput";
+import React, { useEffect, useMemo, useState } from "react";
+import { AppInput } from "@/components/AppInput";
 import {
   Building2,
   Calendar,
@@ -16,13 +16,15 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import type { AppUserDto, ClinicSnapshot, CorporateContract } from "@/types/clinic";
+import type { AppUserDto, ClinicSnapshot, ContractMember, CorporateContract } from "@/types/clinic";
 import {
   APPOINTMENT_META,
   exportContractReportExcel,
   isoDayOffset,
   ONBOARDING_META,
 } from "@/lib/mock-contracts";
+import { fetchContractMembersAll } from "@/lib/api/contracts";
+import { fetchSmsTemplates } from "@/lib/api/sms-templates";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
 import { normalizeText } from "@/lib/workspace";
 
@@ -30,6 +32,8 @@ interface CorporateSupervisorPanelProps {
   snapshot: ClinicSnapshot;
   user: AppUserDto;
   initialView?: "overview" | "roster";
+  /** از «مشاهده پنل ناظر» در هاب قرارداد */
+  initialContractId?: number;
   onAction: (payload: Record<string, unknown>) => Promise<unknown>;
   busy: boolean;
 }
@@ -38,6 +42,7 @@ export function CorporateSupervisorPanel({
   snapshot,
   user,
   initialView = "overview",
+  initialContractId,
   onAction,
   busy,
 }: CorporateSupervisorPanelProps) {
@@ -52,17 +57,72 @@ export function CorporateSupervisorPanel({
     return all;
   }, [snapshot.contracts, user]);
 
-  const [selectedId, setSelectedId] = useState<number>(visibleContracts[0]?.id ?? 0);
+  const [selectedId, setSelectedId] = useState<number>(() => {
+    if (initialContractId && visibleContracts.some((c) => c.id === initialContractId)) return initialContractId;
+    return visibleContracts[0]?.id ?? 0;
+  });
+  const [membersOverride, setMembersOverride] = useState<ContractMember[] | null>(null);
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [apptFilter, setApptFilter] = useState<string>("all");
   const [query, setQuery] = useState("");
   const [smsNote, setSmsNote] = useState("");
-  const [smsBody, setSmsBody] = useState(
-    "همکار گرامی {نام}، با هماهنگی واحد رفاه و سلامت سازمان، لطفاً جهت تکمیل پیش‌ثبت‌نام چکاپ دوره‌ای خود به لینک {لینک} مراجعه فرمایید."
-  );
+  const [smsTemplateId, setSmsTemplateId] = useState("");
+  const [smsTemplates, setSmsTemplates] = useState<Awaited<ReturnType<typeof fetchSmsTemplates>>>([]);
 
-  const contract: CorporateContract | undefined =
-    visibleContracts.find((c) => c.id === selectedId) ?? visibleContracts[0];
+  useEffect(() => {
+    let cancelled = false;
+    void fetchSmsTemplates(true)
+      .then((rows) => {
+        if (cancelled) return;
+        const usable = rows.filter((t) => t.availableForSend);
+        setSmsTemplates(usable);
+        setSmsTemplateId(usable.find((t) => t.code === "invite_register")?.id ?? usable[0]?.id ?? "");
+      })
+      .catch(() => {
+        if (!cancelled) setSmsTemplates([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ورود از هاب قرارداد → همان قرارداد را انتخاب کن
+  useEffect(() => {
+    if (initialContractId && visibleContracts.some((c) => c.id === initialContractId)) {
+      setSelectedId(initialContractId);
+    }
+  }, [initialContractId, visibleContracts]);
+
+  useEffect(() => {
+    if (!visibleContracts.length) return;
+    if (!visibleContracts.some((c) => c.id === selectedId)) setSelectedId(visibleContracts[0]!.id);
+  }, [visibleContracts, selectedId]);
+
+  const baseContract = visibleContracts.find((c) => c.id === selectedId) ?? visibleContracts[0];
+
+  useEffect(() => {
+    if (!baseContract?.serverId) {
+      setMembersOverride(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchContractMembersAll(baseContract.serverId)
+      .then((rows) => {
+        if (!cancelled) setMembersOverride(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setMembersOverride(baseContract.members ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [baseContract?.serverId, snapshot.serverTime]);
+
+  const contract: CorporateContract | undefined = useMemo(() => {
+    if (!baseContract) return undefined;
+    const members = membersOverride ?? baseContract.members ?? [];
+    return { ...baseContract, members, memberCount: members.length };
+  }, [baseContract, membersOverride]);
 
   const today = isoDayOffset(0);
 
@@ -182,12 +242,16 @@ export function CorporateSupervisorPanel({
       setSmsNote("هیچ گیرنده‌ای با شناسه سرور یافت نشد.");
       return;
     }
-    // فقط قالب Invite سمت سرور؛ متن UI صرفاً یادداشت محلی است
+    if (!smsTemplateId) {
+      setSmsNote("قالب پیامک انتخاب نشده است.");
+      return;
+    }
     await onAction({
       action: "SEND_CONTRACT_BULK_SMS",
       contractId: contract.id,
       contractServerId: contract.serverId,
       memberServerIds,
+      templateId: smsTemplateId,
       campaignTitle: `یادآوری ناظر سازمان (${contract.organizationName})`,
       audienceLabel: `${toFaDigits(pendingTargets.length)} همکار تکمیل‌نکرده`,
     });
@@ -428,7 +492,7 @@ export function CorporateSupervisorPanel({
               <thead className="sticky top-0 bg-white">
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400">
                   <th className="pb-2">نام کارمند و واحد</th>
-                  <th className="pb-2">بسته سلامت</th>
+                  <th className="pb-2">مسیر سلامتی</th>
                   <th className="pb-2">پیش‌ثبت‌نام</th>
                   <th className="pb-2">نوبت و مراجعه</th>
                 </tr>
@@ -496,13 +560,29 @@ export function CorporateSupervisorPanel({
             <p className="text-[11px] text-slate-500">
               ارسال پیامک یادآوری به {toFaDigits(incompleteInFilter)} نفر از همکاران تکمیل‌نکرده در فهرست فعلی.
             </p>
-            <AppTextarea
-              rows={4}
-              value={smsBody}
-              onChange={(e) => setSmsBody(e.target.value)}
-              disabled={!contract.supervisor.canSendReminders}
-              className="app-input text-xs leading-6"
-            />
+            <label className="app-label text-[11px]">
+              قالب پیامک
+              <select
+                value={smsTemplateId}
+                onChange={(e) => setSmsTemplateId(e.target.value)}
+                disabled={!contract.supervisor.canSendReminders}
+                className="app-select mt-1 w-full text-xs"
+                aria-label="قالب پیامک"
+              >
+                {smsTemplates.length === 0 ? (
+                  <option value="">قالبی تعریف نشده</option>
+                ) : (
+                  smsTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.title}</option>
+                  ))
+                )}
+              </select>
+            </label>
+            {smsTemplates.find((t) => t.id === smsTemplateId)?.bodyPreview && (
+              <p className="rounded-xl bg-slate-50 px-3 py-2 text-[11px] leading-5 text-slate-600">
+                {smsTemplates.find((t) => t.id === smsTemplateId)?.bodyPreview}
+              </p>
+            )}
             <button
               type="submit"
               disabled={busy || !contract.supervisor.canSendReminders || incompleteInFilter === 0}

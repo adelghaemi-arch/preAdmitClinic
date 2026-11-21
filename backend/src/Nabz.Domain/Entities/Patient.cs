@@ -25,8 +25,8 @@ public class Patient : EntityBase
     public DateTime? IntakeCompletedAt { get; set; }
     /// <summary>مقدمهٔ مسیر پیش‌پذیرش دیده/رد شده — منبع حقیقت سرور، نه مرورگر.</summary>
     public bool JourneyIntroSeen { get; set; }
-    public string? AssignedPackageCode { get; set; }
-    public string? AssignedPackageTitle { get; set; }
+    public string? AssignedPathwayCode { get; set; }
+    public string? AssignedPathwayTitle { get; set; }
     public string? QrToken { get; set; }
     public double? HomeLat { get; set; }
     public double? HomeLon { get; set; }

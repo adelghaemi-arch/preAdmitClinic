@@ -50,6 +50,7 @@ public sealed class AuthServiceFactory
             contracts,
             patients,
             clinics,
+            new FakePlatformRepository(Store),
             patientService,
             UnitOfWork,
             Sms,

@@ -49,7 +49,7 @@ import {
 } from "@/lib/form-engine";
 import { fetchMyFormResponse } from "@/lib/api/forms";
 import { normalizeMaritalStatus } from "@/lib/marital-status";
-import { toFaDigits } from "@/lib/persian";
+import { formatFaDate, toFaDigits } from "@/lib/persian";
 import { iranLocalDayOffset } from "@/lib/date-iso";
 import { birthDateBounds, PersianDateField } from "@/components/PersianDateField";
 import { ProvinceCityField } from "@/components/ProvinceCityField";
@@ -1031,6 +1031,14 @@ export function PreAdmitFormRenderer({
 
   return (
     <div ref={formTopRef} className="space-y-3 scroll-mt-3">
+      {/* بنر تاریخ مراجعه — همان پیام داشبورد Owner در ابتدای پرسشنامه */}
+      {patient.scheduledVisitDate && !submitted && (
+        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-teal-950">
+          مراجعه شما در تاریخ{" "}
+          <span className="font-bold">{toFaDigits(formatFaDate(patient.scheduledVisitDate))}</span> است.
+          لطفاً پیش‌پذیرش را قبل از آن روز تکمیل کنید تا در بیمارستان معطل نشوید.
+        </div>
+      )}
       <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">

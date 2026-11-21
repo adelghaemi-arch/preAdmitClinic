@@ -31,6 +31,7 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
   const [lastName, setLastName] = useState(
     patient.lastName ?? patient.fullName.split(/\s+/).slice(1).join(" ")
   );
+  const [fatherName, setFatherName] = useState(patient.fatherName ?? "");
   const [birthDate, setBirthDate] = useState(patient.birthDate ?? "");
   const [maritalStatus, setMaritalStatus] = useState(
     () => normalizeMaritalStatus(patient.maritalStatus) ?? ""
@@ -61,6 +62,7 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
       await updateMyPatientProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
+        fatherName: fatherName.trim() || null,
         birthDate: birthDate || null,
         maritalStatus: maritalStatus || null,
         applyHome,
@@ -74,6 +76,7 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
       const patch: Partial<PatientFullDto> = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
+        fatherName: fatherName.trim() || null,
         fullName: `${firstName.trim()} ${lastName.trim()}`.trim(),
         birthDate: birthDate || null,
         maritalStatus: maritalStatus || null,
@@ -127,6 +130,10 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
             <AppInput required minLength={2} className="app-input mt-1" value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </label>
         </div>
+        <label className="app-label">
+          نام پدر
+          <AppInput className="app-input mt-1" value={fatherName} onChange={(e) => setFatherName(e.target.value)} placeholder="اختیاری" />
+        </label>
         <label className="app-label">
           تاریخ تولد
           <PersianDateField className="mt-1" value={birthDate} onChange={setBirthDate} aria-label="تاریخ تولد" />

@@ -18,6 +18,7 @@ export interface UpdatePatientHomePayload {
 export interface UpdatePatientProfilePayload {
   firstName?: string | null;
   lastName?: string | null;
+  fatherName?: string | null;
   birthDate?: string | null;
   clearBirthDate?: boolean;
   maritalStatus?: string | null;
@@ -54,7 +55,7 @@ export interface OwnerIntakeSnapshotApi {
     gender?: string | null;
     maritalStatus?: string | null;
     intakeCompleted: boolean;
-    assignedPackageTitle?: string | null;
+    assignedPathwayTitle?: string | null;
     ownerUserId?: string | null;
     homeLat?: number | null;
     homeLon?: number | null;
@@ -63,6 +64,8 @@ export interface OwnerIntakeSnapshotApi {
     homeUnit?: string | null;
     homePostalCode?: string | null;
     journeyIntroSeen?: boolean;
+    fatherName?: string | null;
+    scheduledVisitDate?: string | null;
   };
   formStatus?: string | null;
   formId?: string | null;

@@ -1,0 +1,159 @@
+/*
+ File: frontend/src/lib/__tests__/uc-adm-05.pathway-buckets.test.ts
+ Description: UC-ADM-05 — سطل‌های مسیر سلامتی؛ اولویت لیست؛ پیش‌فرض؛ شمارش اعضا؛ reorder
+ Parent Dependencies: contract-pathway-buckets.ts
+ */
+
+import { describe, expect, it } from "vitest";
+import {
+  buildContractPathwayBuckets,
+  contractPathwayOverrideOptions,
+  DEFAULT_PATHWAY_BUCKET_ID,
+  isMemberOnDefaultPathway,
+  membersForPathwayBucket,
+  reorderPathwayRulePriorities,
+  sortedContractPathwayRules,
+} from "@/lib/contract-pathway-buckets";
+import type { ContractMember, ContractPathwayRule, PathwayDto } from "@/types/clinic";
+
+const pathways: PathwayDto[] = [
+  {
+    id: 1,
+    code: "FULL_CHECKUP",
+    title: "چکاپ جامع",
+    description: "",
+    stationCodes: ["LAB"],
+    estimatedTotalMinutes: 60,
+    isActive: true,
+  },
+  {
+    id: 2,
+    code: "PRE_OP",
+    title: "قبل از عمل",
+    description: "",
+    stationCodes: ["CARDIO"],
+    estimatedTotalMinutes: 40,
+    isActive: true,
+  },
+];
+
+function member(partial: Partial<ContractMember> & { id: number; matchedPathwayTitle?: string }): ContractMember {
+  return {
+    id: partial.id,
+    serverId: String(partial.id),
+    contractId: 1,
+    inviteToken: "",
+    personnelCode: "",
+    firstName: "ن",
+    lastName: "م",
+    fullName: partial.fullName ?? `عضو ${partial.id}`,
+    nationalId: "0011223344",
+    phone: "09120000000",
+    birthDate: "1990-01-01",
+    age: 35,
+    gender: "مرد",
+    maritalStatus: null,
+    department: "",
+    jobCategory: "",
+    source: "manual",
+    assignedPathwayCode: partial.assignedPathwayCode ?? "FULL_CHECKUP",
+    assignedPathwayTitle: "چکاپ جامع",
+    matchedPathwayTitle: partial.matchedPathwayTitle ?? "",
+    manualPathwayOverride: false,
+    onboardingStage: "not_sent",
+    profileProgressPct: 0,
+    abandonedAtStep: null,
+    formStatus: "none",
+    intakeCompleted: false,
+    smsInviteCount: 0,
+    lastSmsAt: null,
+    linkOpenedAt: null,
+    loggedInAt: null,
+    lastActivityAt: null,
+    profileCompletedAt: null,
+    draftSymptoms: "",
+    draftAllergies: "",
+    draftMedications: "",
+    appointmentStatus: "unscheduled",
+    scheduledDate: null,
+    scheduledLabel: null,
+    callSentAt: null,
+    linkedPatientId: null,
+  };
+}
+
+describe("UC-ADM-05 pathway buckets", () => {
+  it("مرتب‌سازی اولویت: عدد کمتر بالاتر است", () => {
+    const rules: ContractPathwayRule[] = [
+      { id: "b", title: "دوم", gender: "همه", minAge: null, maxAge: null, jobCategory: "همه", pathwayCode: "PRE_OP", priority: 2 },
+      { id: "a", title: "اول", gender: "همه", minAge: null, maxAge: null, jobCategory: "همه", pathwayCode: "FULL_CHECKUP", priority: 1 },
+    ];
+    expect(sortedContractPathwayRules(rules).map((r) => r.id)).toEqual(["a", "b"]);
+  });
+
+  it("سطل‌ها: قوانین به اولویت سپس مسیر پیش‌فرض", () => {
+    const buckets = buildContractPathwayBuckets(
+      {
+        defaultPathwayCode: "FULL_CHECKUP",
+        pathwayRules: [
+          { id: "r2", title: "عملیاتی", gender: "مرد", minAge: 18, maxAge: 44, jobCategory: "عملیات و فنی", pathwayCode: "PRE_OP", priority: 2 },
+          { id: "r1", title: "سالمند", gender: "همه", minAge: 45, maxAge: null, jobCategory: "همه", pathwayCode: "FULL_CHECKUP", priority: 1 },
+        ],
+      },
+      pathways
+    );
+    expect(buckets.map((b) => b.id)).toEqual(["r1", "r2", DEFAULT_PATHWAY_BUCKET_ID]);
+    expect(buckets.at(-1)?.kind).toBe("default");
+  });
+
+  it("عضو بدون match روی پیش‌فرض است؛ عضو match‌شده روی سطل قانون", () => {
+    const rules: ContractPathwayRule[] = [
+      { id: "r1", title: "سالمند", gender: "همه", minAge: 45, maxAge: null, jobCategory: "همه", pathwayCode: "FULL_CHECKUP", priority: 1 },
+    ];
+    const members = [
+      member({ id: 1, matchedPathwayTitle: "" }),
+      member({ id: 2, matchedPathwayTitle: "سالمند", assignedPathwayCode: "FULL_CHECKUP" }),
+      member({ id: 3, matchedPathwayTitle: "manual_override" }),
+      member({ id: 4, matchedPathwayTitle: "سالمند", assignedPathwayCode: "FULL_CHECKUP" }),
+    ];
+    expect(isMemberOnDefaultPathway(members[0]!, rules)).toBe(true);
+    expect(isMemberOnDefaultPathway(members[1]!, rules)).toBe(false);
+    expect(isMemberOnDefaultPathway(members[2]!, rules)).toBe(true);
+
+    const buckets = buildContractPathwayBuckets(
+      { defaultPathwayCode: "FULL_CHECKUP", pathwayRules: rules },
+      pathways
+    );
+    const defaultBucket = buckets.find((b) => b.kind === "default")!;
+    const ruleBucket = buckets.find((b) => b.id === "r1")!;
+    expect(membersForPathwayBucket(members, defaultBucket, rules).map((m) => m.id)).toEqual([1, 3]);
+    expect(membersForPathwayBucket(members, ruleBucket, rules).map((m) => m.id)).toEqual([2, 4]);
+  });
+
+  it("گزینه override فقط پیش‌فرض + مسیرهای قرارداد است نه کل کاتالوگ", () => {
+    const opts = contractPathwayOverrideOptions(
+      {
+        defaultPathwayCode: "FULL_CHECKUP",
+        pathwayRules: [
+          { id: "r1", title: "عملیاتی", gender: "مرد", minAge: 18, maxAge: 44, jobCategory: "همه", pathwayCode: "PRE_OP", priority: 1 },
+        ],
+      },
+      pathways
+    );
+    expect(opts.map((o) => o.code)).toEqual(["FULL_CHECKUP", "PRE_OP"]);
+    expect(opts.map((o) => o.title)).toEqual(["چکاپ جامع", "عملیاتی"]);
+  });
+
+  it("UC-ADM-05 reorder: جابه‌جایی اولویت همسایه و بازشماره", () => {
+    const rules: ContractPathwayRule[] = [
+      { id: "a", title: "اول", gender: "همه", minAge: null, maxAge: null, jobCategory: "همه", pathwayCode: "FULL_CHECKUP", priority: 1 },
+      { id: "b", title: "دوم", gender: "همه", minAge: null, maxAge: null, jobCategory: "همه", pathwayCode: "PRE_OP", priority: 2 },
+      { id: "c", title: "سوم", gender: "همه", minAge: null, maxAge: null, jobCategory: "همه", pathwayCode: "PRE_OP", priority: 3 },
+    ];
+    const down = reorderPathwayRulePriorities(rules, "a", "down");
+    expect(down.map((r) => r.id)).toEqual(["b", "a", "c"]);
+    expect(down.map((r) => r.priority)).toEqual([1, 2, 3]);
+    const up = reorderPathwayRulePriorities(down, "c", "up");
+    expect(up.map((r) => r.id)).toEqual(["b", "c", "a"]);
+  });
+});

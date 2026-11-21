@@ -28,6 +28,49 @@ public sealed class UcAdm01_08_ContractTests
     }
 
     [Fact]
+    [Trait("UC", "UC-ADM-22")]
+    public async Task UC_ADM_22_HappyPath_UpdateContract()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var contracts = h.CreateContractService();
+        var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد الف", "سازمان الف", "C-001", "FULL_CHECKUP"));
+
+        var updated = await contracts.UpdateAsync(created.Id,
+            new UpdateContractRequest("قرارداد به‌روز", "سازمان به‌روز", "CARDIO_PULMO"));
+
+        Assert.Equal("C-001", updated.Code);
+        Assert.Equal("قرارداد به‌روز", updated.Title);
+        Assert.Equal("سازمان به‌روز", updated.OrganizationName);
+        Assert.Equal("CARDIO_PULMO", updated.DefaultPathwayCode);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-ADM-22")]
+    public async Task UC_ADM_22_1x_RejectsShortTitle()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var contracts = h.CreateContractService();
+        var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد الف", "سازمان الف", null));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            contracts.UpdateAsync(created.Id, new UpdateContractRequest("اب", "سازمان", null)));
+    }
+
+    [Fact]
+    [Trait("UC", "UC-ADM-22")]
+    public async Task UC_ADM_22_2x_MissingContract()
+    {
+        var h = new ServiceHarness();
+        h.SeedClinic();
+        var contracts = h.CreateContractService();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            contracts.UpdateAsync(Guid.NewGuid(), new UpdateContractRequest("عنوان کافی", "سازمان", null)));
+    }
+
+    [Fact]
     [Trait("UC", "UC-ADM-02")]
     public async Task UC_ADM_02_HappyPath_UpdateSupervisor()
     {
@@ -74,6 +117,38 @@ public sealed class UcAdm01_08_ContractTests
 
         Assert.Equal(1, n.Imported);
         Assert.Single(h.Store.Members);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-ADM-04")]
+    public async Task UC_ADM_04_Import_FatherVisit_And_PathwayFromGroupCode()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var contracts = h.CreateContractService();
+        var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null, "FULL_CHECKUP"));
+        var visit = new DateOnly(2026, 11, 22);
+
+        var batch = await contracts.ImportMembersAsync(created.Id,
+        [
+            new ImportMemberRequest(
+                "عضو", "یک", "0499370899", "09120001001", new DateOnly(1998, 1, 1), "مذکر",
+                null, null, null, null, "هرمز", visit, "FULL_CHECKUP"),
+            new ImportMemberRequest(
+                "عضو", "دو", "0011223340", "09120001002", new DateOnly(1999, 1, 1), "مونث",
+                null, null, null, null, "عبدالله", null, "آقایان 40+"),
+        ]);
+
+        Assert.Equal(2, batch.Imported);
+        h.Store.SyncNavigation();
+        var byNid = h.Store.Members.ToDictionary(m => m.Person.NationalId!);
+        Assert.Equal("هرمز", byNid["0499370899"].Person.FatherName);
+        Assert.Equal(visit, byNid["0499370899"].ScheduledVisitDate);
+        Assert.True(byNid["0499370899"].ManualPathwayOverride);
+        Assert.Equal("FULL_CHECKUP", byNid["0499370899"].AssignedPathwayCode);
+        Assert.Equal("زن", byNid["0011223340"].Person.Gender);
+        Assert.False(byNid["0011223340"].ManualPathwayOverride);
+        Assert.Null(byNid["0011223340"].ScheduledVisitDate);
     }
 
     [Fact]
@@ -136,16 +211,16 @@ public sealed class UcAdm01_08_ContractTests
 
     [Fact]
     [Trait("UC", "UC-ADM-05")]
-    public async Task UC_ADM_05_HappyPath_PackageRulesAppliedOnImport()
+    public async Task UC_ADM_05_HappyPath_pathwayRulesAppliedOnImport()
     {
         var h = new ServiceHarness();
         var clinicId = h.SeedClinic();
         var contracts = h.CreateContractService();
         var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
 
-        await contracts.SavePackageRulesAsync(created.Id,
+        await contracts.SavePathwayRulesAsync(created.Id,
         [
-            new PackageRuleInput("بسته جوانان", "مرد", 18, 40, "اداری", "PKG-YOUNG", 1, null)
+            new PathwayRuleInput("بسته جوانان", "مرد", 18, 40, "اداری", "PKG-YOUNG", 1, null)
         ]);
 
         await contracts.ImportMembersAsync(created.Id,
@@ -154,7 +229,7 @@ public sealed class UcAdm01_08_ContractTests
         ]);
 
         var member = h.Store.Members.Single();
-        Assert.Equal("PKG-YOUNG", member.AssignedPackageCode);
+        Assert.Equal("PKG-YOUNG", member.AssignedPathwayCode);
     }
 
     [Fact]
@@ -170,7 +245,8 @@ public sealed class UcAdm01_08_ContractTests
             new ImportMemberRequest("عضو", "تست", "0012345679", "09120001003", new DateOnly(1996, 1, 1), "زن", null, null, null, null)
         ]);
 
-        var sent = await contracts.SendBulkSmsAsync(created.Id, "دعوت گروهی", null, Guid.NewGuid(), asSupervisor: false);
+        var templateId = h.SeedDefaultSmsTemplate();
+        var sent = await contracts.SendBulkSmsAsync(created.Id, templateId, "دعوت گروهی", null, Guid.NewGuid(), asSupervisor: false);
 
         Assert.Equal(1, sent);
         Assert.Empty(h.Sms.SentCalls);
@@ -193,8 +269,9 @@ public sealed class UcAdm01_08_ContractTests
         var targetId = h.Store.Members[0].Id;
 
         // فقط یک عضو از طریق memberIds — مسیر دکمه ردیف قیف
+        var templateId = h.SeedDefaultSmsTemplate();
         var sent = await contracts.SendBulkSmsAsync(
-            created.Id, "دعوت فردی — علی فردی", [targetId], Guid.NewGuid(), asSupervisor: false);
+            created.Id, templateId, "دعوت فردی — علی فردی", [targetId], Guid.NewGuid(), asSupervisor: false);
 
         Assert.Equal(1, sent);
         Assert.Equal(1, h.Store.Members[0].SmsInviteCount);
@@ -269,7 +346,7 @@ public sealed class UcAdm01_08_ContractTests
 
     [Fact]
     [Trait("UC", "UC-ADM-04b")]
-    public async Task UC_ADM_04b_DefaultPackage_UsesPersianTitle()
+    public async Task UC_ADM_04b_DefaultPathway_UsesPersianTitle()
     {
         var h = new ServiceHarness();
         var clinicId = h.SeedClinic();
@@ -282,13 +359,13 @@ public sealed class UcAdm01_08_ContractTests
         ]);
 
         var member = h.Store.Members.Single();
-        Assert.Equal("FULL_CHECKUP", member.AssignedPackageCode);
-        Assert.Equal("چکاپ جامع", member.AssignedPackageTitle);
+        Assert.Equal("FULL_CHECKUP", member.AssignedPathwayCode);
+        Assert.Equal("چکاپ جامع", member.AssignedPathwayTitle);
     }
 
     [Fact]
     [Trait("UC", "UC-ADM-04b")]
-    public async Task UC_ADM_04b_UpdateAndDeleteMember_UnlinksPatient()
+    public async Task UC_ADM_04b_UpdateMember_AfterAdmit_KeepsLink()
     {
         var h = new ServiceHarness();
         var clinicId = h.SeedClinic();
@@ -302,7 +379,6 @@ public sealed class UcAdm01_08_ContractTests
         var memberId = h.Store.Members[0].Id;
         await patients.AdmitContractMemberAsync(memberId);
         Assert.NotNull(h.Store.Members[0].LinkedPatientId);
-        var patientId = h.Store.Members[0].LinkedPatientId!.Value;
 
         await contracts.UpdateMemberAsync(memberId, new ImportMemberRequest(
             "عضو", "ویرایش‌شده", "0499370899", "09120001099", new DateOnly(1997, 5, 5), "مرد", null, "واحد ب", "فنی و مهندسی", "P-1"));
@@ -312,11 +388,65 @@ public sealed class UcAdm01_08_ContractTests
         Assert.Equal("ویرایش‌شده", updated.Person.LastName);
         Assert.Equal("09120001099", updated.Person.Mobile);
         Assert.Equal("واحد ب", updated.Department);
+        Assert.NotNull(updated.LinkedPatientId);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-ADM-04b")]
+    public async Task UC_ADM_04b_DeleteMember_BeforePreadmit_Ok()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var contracts = h.CreateContractService();
+        var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
+        await contracts.ImportMembersAsync(created.Id,
+        [
+            new ImportMemberRequest("عضو", "یک", "0499370899", "09120001001", new DateOnly(1998, 1, 1), "مرد", null, null, null, null)
+        ]);
+        var memberId = h.Store.Members[0].Id;
 
         await contracts.DeleteMemberAsync(memberId);
         Assert.Empty(h.Store.Members);
-        var patient = h.Store.Patients.Single(p => p.Id == patientId);
-        Assert.Null(patient.LinkedContractMemberId);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-ADM-04b")]
+    public async Task UC_ADM_04b_2y_DeleteRejected_AfterLinkOpened()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var contracts = h.CreateContractService();
+        var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
+        await contracts.ImportMembersAsync(created.Id,
+        [
+            new ImportMemberRequest("عضو", "یک", "0499370899", "09120001001", new DateOnly(1998, 1, 1), "مرد", null, null, null, null)
+        ]);
+        var memberId = h.Store.Members[0].Id;
+        await contracts.UpdateMemberOnboardingAsync(memberId,
+            new UpdateOnboardingRequest(OnboardingStage.LinkOpened, null, null));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => contracts.DeleteMemberAsync(memberId));
+        Assert.Single(h.Store.Members);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-ADM-04b")]
+    public async Task UC_ADM_04b_2y_DeleteRejected_AfterAdmit()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var contracts = h.CreateContractService();
+        var patients = h.CreatePatientService();
+        var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
+        await contracts.ImportMembersAsync(created.Id,
+        [
+            new ImportMemberRequest("عضو", "یک", "0499370899", "09120001001", new DateOnly(1998, 1, 1), "مرد", null, null, null, null)
+        ]);
+        var memberId = h.Store.Members[0].Id;
+        await patients.AdmitContractMemberAsync(memberId);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => contracts.DeleteMemberAsync(memberId));
+        Assert.Single(h.Store.Members);
     }
 
     [Fact]
@@ -329,9 +459,9 @@ public sealed class UcAdm01_08_ContractTests
         var patients = h.CreatePatientService();
         var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null, "FULL_CHECKUP"));
 
-        await contracts.SavePackageRulesAsync(created.Id,
+        await contracts.SavePathwayRulesAsync(created.Id,
         [
-            new PackageRuleInput("قانون ویژه", "همه", null, null, "همه", "PKG-SPECIAL", 1, null)
+            new PathwayRuleInput("قانون ویژه", "همه", null, null, "همه", "PKG-SPECIAL", 1, null)
         ]);
         await contracts.ImportMembersAsync(created.Id,
         [
@@ -341,19 +471,80 @@ public sealed class UcAdm01_08_ContractTests
         h.Store.SyncNavigation();
         var free = h.Store.Members.Single(m => m.Person.NationalId == "0499370899");
         var admitted = h.Store.Members.Single(m => m.Person.NationalId == "0011223340");
-        Assert.Equal("PKG-SPECIAL", free.AssignedPackageCode);
-        Assert.Equal("PKG-SPECIAL", admitted.AssignedPackageCode);
+        Assert.Equal("PKG-SPECIAL", free.AssignedPathwayCode);
+        Assert.Equal("PKG-SPECIAL", admitted.AssignedPathwayCode);
 
         await patients.AdmitContractMemberAsync(admitted.Id);
-        var ruleId = h.Store.PackageRules.Single(r => r.ContractId == created.Id).Id;
+        var ruleId = h.Store.PathwayRules.Single(r => r.ContractId == created.Id).Id;
 
-        var result = await contracts.DetachPackageRuleAsync(created.Id, ruleId);
+        var result = await contracts.DetachPathwayRuleAsync(created.Id, ruleId);
 
         Assert.Equal(1, result.Recalculated);
         Assert.Equal(1, result.NeedsManual);
-        Assert.Equal("FULL_CHECKUP", h.Store.Members.Single(m => m.Id == free.Id).AssignedPackageCode);
-        Assert.Equal("چکاپ جامع", h.Store.Members.Single(m => m.Id == free.Id).AssignedPackageTitle);
+        Assert.Equal("FULL_CHECKUP", h.Store.Members.Single(m => m.Id == free.Id).AssignedPathwayCode);
+        Assert.Equal("چکاپ جامع", h.Store.Members.Single(m => m.Id == free.Id).AssignedPathwayTitle);
         // پذیرش‌شده بسته قبلی را نگه می‌دارد تا دستی عوض شود
-        Assert.Equal("PKG-SPECIAL", h.Store.Members.Single(m => m.Id == admitted.Id).AssignedPackageCode);
+        Assert.Equal("PKG-SPECIAL", h.Store.Members.Single(m => m.Id == admitted.Id).AssignedPathwayCode);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-ADM-05")]
+    public async Task UC_ADM_05_Override_SetsMatchedPathwayTitleToSelectedTitle()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var contracts = h.CreateContractService();
+        var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null, "FULL_CHECKUP"));
+        await contracts.ImportMembersAsync(created.Id,
+        [
+            new ImportMemberRequest("عضو", "تست", "0499370899", "09120001001", new DateOnly(1998, 1, 1), "مرد", null, null, null, null)
+        ]);
+        var memberId = h.Store.Members[0].Id;
+
+        await contracts.OverrideMemberPathwayAsync(memberId, "FULL_CHECKUP", "مسیر سالمندان");
+
+        var m = h.Store.Members.Single();
+        Assert.True(m.ManualPathwayOverride);
+        Assert.Equal("مسیر سالمندان", m.MatchedPathwayTitle);
+        Assert.Equal("FULL_CHECKUP", m.AssignedPathwayCode);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-ADM-05")]
+    public async Task UC_ADM_05_RecheckPreviewAndApply_MovesEligibleMembers()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var contracts = h.CreateContractService();
+        var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null, "FULL_CHECKUP"));
+
+        await contracts.ImportMembersAsync(created.Id,
+        [
+            new ImportMemberRequest("علی", "جوان", "0499370899", "09120001001", new DateOnly(2000, 1, 1), "مرد", null, null, null, null)
+        ]);
+        var memberId = h.Store.Members[0].Id;
+        Assert.Equal("FULL_CHECKUP", h.Store.Members[0].AssignedPathwayCode);
+
+        // قانون جدید بدون reapply — عضو روی پیش‌فرض می‌ماند تا recheck
+        await contracts.SavePathwayRulesAsync(created.Id,
+        [
+            new PathwayRuleInput("جوانان", "مرد", 18, 40, "همه", "PKG-YOUNG", 1, null)
+        ], reapplyMembers: false);
+
+        Assert.Equal("FULL_CHECKUP", h.Store.Members[0].AssignedPathwayCode);
+
+        var preview = await contracts.PreviewPathwayRecheckAsync(created.Id);
+        var row = Assert.Single(preview.Rows);
+        Assert.True(row.WouldChange);
+        Assert.True(row.CanApply);
+        Assert.Equal("PKG-YOUNG", row.ProposedPathwayCode);
+        Assert.Equal("جوانان", row.ProposedMatchedTitle);
+
+        var applied = await contracts.ApplyPathwayRecheckAsync(created.Id, [memberId]);
+        Assert.Equal(1, applied.Applied);
+        Assert.Equal(0, applied.Skipped);
+        Assert.False(h.Store.Members[0].ManualPathwayOverride);
+        Assert.Equal("PKG-YOUNG", h.Store.Members[0].AssignedPathwayCode);
+        Assert.Equal("جوانان", h.Store.Members[0].MatchedPathwayTitle);
     }
 }

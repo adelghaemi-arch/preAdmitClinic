@@ -4,6 +4,7 @@
  Parent Dependencies: ServiceHarness
  */
 
+using Nabz.Application.Identity;
 using Nabz.Domain.Entities;
 using Nabz.Domain.Enums;
 using Nabz.Infrastructure.Tests.Fakes;
@@ -44,12 +45,14 @@ public sealed class UcPlt13_FactoryResetTests
         await h.Files.SaveAsync(junk, "x.bin", "application/octet-stream");
 
         const string fixedOtp = "54321";
+        // ادمین کل: نمایش = FixedOtp؛ تأیید واقعی = FixedOtp+1
+        var platformCode = PlatformAdminIdentity.IncrementFixedOtp(fixedOtp);
         var platform = h.CreatePlatformService(fixedOtp);
         var req = await platform.RequestFactoryResetOtpAsync(actor.Id);
         Assert.True(req.Ok);
         Assert.Equal(fixedOtp, req.DemoCode);
 
-        await platform.ConfirmFactoryResetAsync(actor.Id, fixedOtp);
+        await platform.ConfirmFactoryResetAsync(actor.Id, platformCode);
 
         Assert.Equal(1, h.DatabaseReset.WipeCallCount);
         Assert.Equal(1, h.Files.ClearAllCallCount);

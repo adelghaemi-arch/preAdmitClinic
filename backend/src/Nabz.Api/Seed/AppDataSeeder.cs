@@ -1,7 +1,7 @@
-﻿/*
+/*
  File: backend/src/Nabz.Api/Seed/AppDataSeeder.cs
- Description: seed idempotent دامنه و کاتالوگ فرم — startup و ریست فکتوری
- Parent Dependencies: NabzDbContext, IFormService, FormCatalogSeedParser
+ Description: seed idempotent دامنه، کتابخانه قوانین بسته و کاتالوگ فرم — startup و ریست فکتوری
+ Parent Dependencies: NabzDbContext, IFormService, FormCatalogSeedParser, PlatformAdminIdentity
  */
 
 using Microsoft.EntityFrameworkCore;
@@ -28,20 +28,34 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
     {
         db.Clinics.Add(new Clinic
         {
-            Name = "کلینیک نمونه نبض",
+            Name = "مرکز نمونه نفس",
             City = "تهران",
-            Address = "تهران، کلینیک نمونه نبض",
+            Address = "تهران، مرکز نمونه نفس",
             Latitude = 35.7219,
             Longitude = 51.3347,
             Status = ClinicStatus.Active,
             IsCurrentTenant = true,
-            AdminPhone = "02100000000"
+            AdminPhone = "02100000000",
+            PreAdmitSupportPhone = "02191000000"
         });
+    }
+    else
+    {
+        // هم‌ترازی دیتابیس موجود: اگر شماره پشتیبانی پیش‌پذیرش خالی است، مقدار پیش‌فرض بگذار
+        foreach (var seededClinic in await db.Clinics.Where(c => c.PreAdmitSupportPhone == null || c.PreAdmitSupportPhone == "").ToListAsync(ct))
+        {
+            seededClinic.PreAdmitSupportPhone = "02191000000";
+            seededClinic.UpdatedAt = DateTime.UtcNow;
+        }
     }
 
     if (!await db.PlatformSettings.AnyAsync())
     {
-        db.PlatformSettings.Add(new PlatformSettings());
+        db.PlatformSettings.Add(new PlatformSettings
+        {
+            // تلفن پشتیبانی پیش‌فرض برای پیام خطای ورود شماره ثبت‌نشده
+            SupportPhone = "02191000000"
+        });
     }
     else
     {
@@ -53,7 +67,14 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
             existing.FraudAutoCaptureSeconds = 7;
             existing.UpdatedAt = DateTime.UtcNow;
         }
+        if (string.IsNullOrWhiteSpace(existing.SupportPhone))
+        {
+            existing.SupportPhone = "02191000000";
+            existing.UpdatedAt = DateTime.UtcNow;
+        }
     }
+
+    await EnsureSmsCampaignTemplatesAsync(ct);
 
     // کلید هویت Owner = کدملی؛ موبایل می‌تواند با بیمار دیگر مشترک باشد (دو Person، یک Mobile)
     const string ownerNid = "0012345679";
@@ -73,18 +94,8 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
     if (!await db.UserRoleAssignments.AnyAsync(r => r.UserId == doc.Id && r.Role == AppRole.Specialist))
         db.UserRoleAssignments.Add(new UserRoleAssignment { UserId = doc.Id, Role = AppRole.Specialist });
 
-    // ادمین کل همیشه این موبایل است (ثابت پروژه — .cursorrules)
-    const string platformAdminMobile = "09133752696";
-    var platPerson = await db.Persons.FirstOrDefaultAsync(p => p.Mobile == platformAdminMobile, ct)
-        ?? await EnsurePersonAsync(platformAdminMobile, null, "ادمین", "کل", null, null, ct);
-    var plat = await EnsureUserAsync(platPerson, ct);
-    if (!await db.UserRoleAssignments.AnyAsync(r => r.UserId == plat.Id && r.Role == AppRole.Platform))
-        db.UserRoleAssignments.Add(new UserRoleAssignment { UserId = plat.Id, Role = AppRole.Platform });
-    if (!plat.IsActive)
-    {
-        plat.IsActive = true;
-        plat.UpdatedAt = DateTime.UtcNow;
-    }
+    // ادمین کل: فقط Person بدون NID روی موبایل قفل؛ نه اولین Person (ممکن است بیمار باشد)
+    await EnsurePlatformAdminAsync(ct);
 
     await db.SaveChangesAsync(ct);
 
@@ -140,7 +151,7 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
             Title = "قرارداد نمونه سازمانی",
             OrganizationName = "سازمان نمونه",
             Status = ContractStatus.Active,
-            DefaultPackageCode = "FULL_CHECKUP"
+            DefaultPathwayCode = "FULL_CHECKUP"
         };
         db.CorporateContracts.Add(demoContract);
         await db.SaveChangesAsync(ct);
@@ -229,8 +240,8 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
             Department = "اداری",
             JobCategory = "ستادی",
             OnboardingStage = OnboardingStage.LoggedIn,
-            AssignedPackageCode = "FULL_CHECKUP",
-            AssignedPackageTitle = "چکاپ جامع",
+            AssignedPathwayCode = "FULL_CHECKUP",
+            AssignedPathwayTitle = "چکاپ جامع",
             LinkedPatientId = ownerPatient?.Id,
             Source = "seed"
         });
@@ -395,13 +406,127 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
             Department = "فنی و مهندسی",
             JobCategory = "عملیات و فنی",
             OnboardingStage = OnboardingStage.NotSent,
-            AssignedPackageCode = "FULL_CHECKUP",
-            AssignedPackageTitle = "چکاپ جامع",
+            AssignedPathwayCode = "FULL_CHECKUP",
+            AssignedPathwayTitle = "چکاپ جامع",
             Source = "seed"
         });
         await db.SaveChangesAsync(ct);
     }
 
+    // سه مسیر سلامتی مرتبط در کتابخانه — هم‌تراز mock فرانت (LR-001..003)؛ idempotent روی Code
+    await SeedPathwayLibraryRulesAsync(ct);
+    }
+
+    private async Task SeedPathwayLibraryRulesAsync(CancellationToken ct)
+    {
+        // سناریوی مرتبط: سالمندان جامع، بانوان قلب/ریه، مردان عملیاتی قبل از عمل
+        var seeds = new (string Code, string Title, string Description, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PathwayCode)[]
+        {
+            (
+                "LR-001",
+                "پایش سالمندان (بالای ۴۵ سال)",
+                "افراد ۴۵ سال به بالا — چکاپ جامع شامل قلب، ریه، دهان، آزمایشگاه و تصویربرداری",
+                "همه",
+                45,
+                null,
+                "همه",
+                "FULL_CHECKUP"
+            ),
+            (
+                "LR-002",
+                "بانوان زیر ۴۵ سال — پایش قلب و ریه",
+                "بانوان جوان و میانسال — بسته قلب و ریه با آزمایشگاه تخصصی",
+                "زن",
+                18,
+                44,
+                "همه",
+                "CARDIO_PULMO"
+            ),
+            (
+                "LR-003",
+                "مردان عملیات و فنی زیر ۴۵ سال",
+                "نیروهای عملیاتی در معرض گرد و غبار و مواد شیمیایی — پایش ریه، قلب و تاییدیه جراحی",
+                "مرد",
+                18,
+                44,
+                "عملیات و فنی",
+                "PRE_OP"
+            )
+        };
+
+        var added = false;
+        foreach (var s in seeds)
+        {
+            var existing = await db.PathwayLibraryRules.FirstOrDefaultAsync(r => r.Code == s.Code, ct);
+            if (existing is null)
+            {
+                db.PathwayLibraryRules.Add(new PathwayLibraryRule
+                {
+                    Code = s.Code,
+                    Title = s.Title,
+                    Description = s.Description,
+                    Gender = s.Gender,
+                    MinAge = s.MinAge,
+                    MaxAge = s.MaxAge,
+                    JobCategory = s.JobCategory,
+                    PathwayCode = s.PathwayCode
+                });
+                added = true;
+                continue;
+            }
+
+            // هم‌ترازی محتوای seed بدون ساخت ردیف تکراری
+            var touched = false;
+            if (existing.Title != s.Title) { existing.Title = s.Title; touched = true; }
+            if (existing.Description != s.Description) { existing.Description = s.Description; touched = true; }
+            if (existing.Gender != s.Gender) { existing.Gender = s.Gender; touched = true; }
+            if (existing.MinAge != s.MinAge) { existing.MinAge = s.MinAge; touched = true; }
+            if (existing.MaxAge != s.MaxAge) { existing.MaxAge = s.MaxAge; touched = true; }
+            if (existing.JobCategory != s.JobCategory) { existing.JobCategory = s.JobCategory; touched = true; }
+            if (existing.PathwayCode != s.PathwayCode) { existing.PathwayCode = s.PathwayCode; touched = true; }
+            if (touched)
+            {
+                existing.UpdatedAt = DateTime.UtcNow;
+                added = true;
+            }
+        }
+
+        if (added)
+            await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Person بدون NID روی موبایل قفل؛ انتقال نقش Platform از Person/Patient اشتباه؛ حذف Patient روی staff.
+    /// </summary>
+    private async Task EnsurePlatformAdminAsync(CancellationToken ct)
+    {
+        var mobile = PlatformAdminIdentity.Mobile;
+        var platPerson = await EnsurePersonAsync(mobile, null, "ادمین", "کل", null, null, ct);
+        var plat = await EnsureUserAsync(platPerson, ct);
+
+        // نقش Platform روی همان موبایل ولی User اشتباه (مثلاً Person بیمار) را جدا کن
+        var wrongPlatformRoles = await db.UserRoleAssignments
+            .Include(r => r.User).ThenInclude(u => u!.Person)
+            .Where(r => r.Role == AppRole.Platform
+                        && r.UserId != plat.Id
+                        && r.User.Person.Mobile == mobile)
+            .ToListAsync(ct);
+        foreach (var wrong in wrongPlatformRoles)
+            db.UserRoleAssignments.Remove(wrong);
+
+        if (!await db.UserRoleAssignments.AnyAsync(r => r.UserId == plat.Id && r.Role == AppRole.Platform, ct))
+            db.UserRoleAssignments.Add(new UserRoleAssignment { UserId = plat.Id, Role = AppRole.Platform });
+
+        if (!plat.IsActive)
+        {
+            plat.IsActive = true;
+            plat.UpdatedAt = DateTime.UtcNow;
+        }
+
+        // staff ادمین کل نباید پرونده بیمار داشته باشد — مسیر OTP تک‌کاندیدا می‌ماند
+        var strayPatients = await db.Patients.Where(p => p.PersonId == platPerson.Id).ToListAsync(ct);
+        if (strayPatients.Count > 0)
+            db.Patients.RemoveRange(strayPatients);
     }
 
     private async Task<Person> EnsurePersonAsync(
@@ -466,6 +591,46 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
         db.Users.Add(user);
         await db.SaveChangesAsync(ct);
         return user;
+    }
+
+    private async Task EnsureSmsCampaignTemplatesAsync(CancellationToken ct)
+    {
+        // seed قالب‌های پلتفرم؛ ProviderTemplateName را ادمین کل با نام واقعی کاوه‌نگار هم‌تراز می‌کند
+        var seeds = new (string Code, string Title, string Body, string Provider, string TokensJson, bool RequiresEmr, int Order)[]
+        {
+            ("invite_register", "دعوت تکمیل ثبت‌نام پیش‌پذیرش",
+                "سلام {name}، برای تکمیل ثبت‌نام پیش‌پذیرش از لینک اختصاصی استفاده کنید: {invite_url}",
+                "invite", """["invite_token","name"]""", false, 1),
+            ("abandon_followup", "پیگیری رهاکردگان پرسشنامه",
+                "سلام {name}، تکمیل پرسشنامه پیش‌پذیرش شما ناتمام مانده است. ادامه از این لینک: {invite_url}",
+                "invite", """["invite_token","name"]""", false, 2),
+            ("appointment_today", "یادآوری نوبت امروز",
+                "سلام {name}، یادآوری نوبت مراجعهٔ امروز. جزئیات و لینک: {invite_url}",
+                "invite", """["invite_token","name"]""", false, 3),
+            ("emr_view", "لینک مشاهده پرونده الکترونیک",
+                "سلام {name}، برای مشاهده پرونده الکترونیک از این لینک استفاده کنید: {emr_url}",
+                "emr_view", """["name","emr_url"]""", true, 4),
+        };
+
+        foreach (var s in seeds)
+        {
+            var row = await db.SmsCampaignTemplates.FirstOrDefaultAsync(t => t.Code == s.Code, ct);
+            if (row is null)
+            {
+                db.SmsCampaignTemplates.Add(new SmsCampaignTemplate
+                {
+                    Code = s.Code,
+                    Title = s.Title,
+                    BodyPreview = s.Body,
+                    ProviderTemplateName = s.Provider,
+                    TokenKeysJson = s.TokensJson,
+                    RequiresEmrUrl = s.RequiresEmr,
+                    // قالب پرونده تا آماده‌شدن لینک، seed می‌شود ولی IsActive=false
+                    IsActive = !s.RequiresEmr,
+                    SortOrder = s.Order,
+                });
+            }
+        }
     }
 
     private async Task SeedFormCatalogAsync(CancellationToken ct)

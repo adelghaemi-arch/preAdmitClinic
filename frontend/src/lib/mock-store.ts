@@ -1,5 +1,5 @@
 import { MOCK_DATASET, type MockDataset } from "@/lib/mock-dataset";
-import { buildSeededContracts, buildSeededPackageRuleLibrary } from "@/lib/mock-contracts";
+import { buildSeededContracts, buildSeededPathwayLibrary } from "@/lib/mock-contracts";
 import {
   buildDemoSubmittedResponse,
   loadSeedForms,
@@ -14,7 +14,7 @@ import {
   emptyIntakeAnswers,
   type CorporateContract,
   type FormDefinition,
-  type PackageLibraryRule,
+  type PathwayLibraryRule,
   type PlatformState,
   type MockAlertRow,
   type MockLinkRow,
@@ -44,7 +44,7 @@ export interface MockStore {
   links: MockLinkRow[];
   alerts: MockAlertRow[];
   contracts: CorporateContract[];
-  packageRuleLibrary: PackageLibraryRule[];
+  pathwayLibrary: PathwayLibraryRule[];
   forms: FormDefinition[];
   platform: PlatformState;
 }
@@ -195,10 +195,10 @@ function buildStore(): MockStore {
   }
 
   return {
-    ...(dataset as Omit<MockStore, "contracts" | "packageRuleLibrary" | "clinicLocation" | "forms" | "platform">),
+    ...(dataset as Omit<MockStore, "contracts" | "pathwayLibrary" | "clinicLocation" | "forms" | "platform">),
     clinicLocation: { lat: 35.7448, lon: 51.3753, address: "تهران، خیابان کارگر شمالی، بین بهشتی و مجیدیه، پلاک ۱۲۰", city: "تهران" },
     contracts: seededContracts,
-    packageRuleLibrary: buildSeededPackageRuleLibrary(),
+    pathwayLibrary: buildSeededPathwayLibrary(),
     forms: seedForms,
     platform,
   };
@@ -245,11 +245,11 @@ export const mockStore = {
   get links() { return store().links; },
   get alerts() { return store().alerts; },
   get contracts() { return store().contracts; },
-  get packageRuleLibrary() { return store().packageRuleLibrary; },
+  get pathwayLibrary() { return store().pathwayLibrary; },
   get forms() { return store().forms; },
   get platform() { return store().platform; },
   formById(id: string) { return store().forms.find((f) => f.id === id) ?? null; },
-  libraryRuleById(id: string) { return store().packageRuleLibrary.find((r) => r.id === id) ?? null; },
+  libraryRuleById(id: string) { return store().pathwayLibrary.find((r) => r.id === id) ?? null; },
   contractById(id: number) { return store().contracts.find((c) => c.id === id) ?? null; },
 
   userById(id: number) { return store().appUsers.find((u) => u.id === id) ?? null; },
@@ -387,10 +387,10 @@ export function hydrateMockStore(data: Partial<MockStore>): void {
     Array.isArray(data.contracts) && data.contracts.length > 0
       ? data.contracts
       : buildSeededContracts(current.pathways);
-  current.packageRuleLibrary =
-    Array.isArray(data.packageRuleLibrary) && data.packageRuleLibrary.length > 0
-      ? data.packageRuleLibrary
-      : buildSeededPackageRuleLibrary();
+  current.pathwayLibrary =
+    Array.isArray(data.pathwayLibrary) && data.pathwayLibrary.length > 0
+      ? data.pathwayLibrary
+      : buildSeededPathwayLibrary();
   if (!current.clinicLocation) current.clinicLocation = { lat: 35.7448, lon: 51.3753, address: "تهران، خیابان کارگر شمالی، پلاک ۱۲۰", city: "تهران" };
   // Catalog forms always refresh from the bundled seed (titles/structure); keep any extra admin forms.
   {

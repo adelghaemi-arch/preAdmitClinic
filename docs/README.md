@@ -1,6 +1,6 @@
 /*
  File: docs/README.md
- Description: ایندکس ریشه مستندات نبض کلینیک
+ Description: ایندکس ریشه مستندات نفس
  Parent Dependencies: .cursorrules, server/, docs/shared, docs/processes
 */
 

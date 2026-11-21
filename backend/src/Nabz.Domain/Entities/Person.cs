@@ -1,6 +1,6 @@
 /*
  File: backend/src/Nabz.Domain/Entities/Person.cs
- Description: منبع واحد هویت طبیعی — نام، کدملی، موبایل، تولد، جنسیت
+ Description: منبع واحد هویت طبیعی — نام، نام پدر، کدملی، موبایل، تولد، جنسیت
  Parent Dependencies: EntityBase
  */
 
@@ -15,6 +15,8 @@ public class Person : EntityBase
     public string? NationalId { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+    /// <summary>نام پدر — اختیاری؛ از رستر/اکسل سازمانی.</summary>
+    public string? FatherName { get; set; }
     public string? Gender { get; set; }
     public DateOnly? BirthDate { get; set; }
     public string? Email { get; set; }

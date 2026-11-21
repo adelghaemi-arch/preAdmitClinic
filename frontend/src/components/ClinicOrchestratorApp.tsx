@@ -1,4 +1,4 @@
-﻿/*
+/*
  File: frontend/src/components/ClinicOrchestratorApp.tsx
  Description: ارکستراتور کلینیک — نشست پیش‌پذیرش Owner و مخفی‌سازی مسیر
  Parent Dependencies: lib/api/*, CorporateContractsHub, workspace, owner-intake-gate
@@ -21,14 +21,12 @@ import {
   CheckCheck,
   ChevronDown,
   ChevronLeft,
-  CircleHelp,
   ClipboardList,
   Compass,
   FileHeart,
   FileText,
   FlaskConical,
   GitBranch,
-  HeartPulse,
   Hospital,
   LayoutDashboard,
   Link2,
@@ -37,7 +35,6 @@ import {
   LogOut,
   Menu,
   RefreshCw,
-  Search,
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
@@ -62,7 +59,6 @@ import {
   COMPANION_FEATURE_PAGES,
   initials,
   labelFor,
-  matchesPatient,
   PAGE_TITLES,
   permissionLabel,
   relationLabel,
@@ -104,10 +100,10 @@ import { ActiveSessionsPanel } from "@/components/ActiveSessionsPanel";
 import { signOut } from "@/lib/auth";
 import { loadWorkspaceSnapshot } from "@/lib/api/workspace";
 import {
-  createPackageLibraryRule,
-  deletePackageLibraryRule,
-  updatePackageLibraryRule,
-} from "@/lib/api/package-library-rules";
+  createPathwayLibraryRule,
+  deletePathwayLibraryRule,
+  updatePathwayLibraryRule,
+} from "@/lib/api/pathway-library-rules";
 import {
   captureFraudFrame,
   endFraudSession,
@@ -181,6 +177,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const [user, setUser] = useState(initialUser);
   const [role, setRole] = useState<WorkspaceRole>(initialRole);
   const [page, setPage] = useState<AppPage>(initialPage);
+  // از هاب قرارداد: باز کردن رستر همان قرارداد در پنل ناظر
+  const [supervisorFocusContractId, setSupervisorFocusContractId] = useState<number | null>(null);
   const [selectedPatientId, setSelectedPatientId] = useState<number>(initialPatientId ?? initialSnapshot.patients[0]?.id ?? 0);
   const [busy, setBusy] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
@@ -191,8 +189,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState(initialUser.fullName);
   const [profileTitle, setProfileTitle] = useState(initialUser.jobTitle);
-  const [search, setSearch] = useState("");
-  const [listQuery, setListQuery] = useState("");
+  const [listQuery] = useState("");
   const [toast, setToast] = useState<{ text: string; error?: boolean } | null>(null);
   const [recordTip, setRecordTip] = useState<string | null>(null);
   // فقط حافظهٔ نشست — رفرش/بستن دوباره خانهٔ مسیر را نشان می‌دهد
@@ -254,7 +251,6 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const isSelf = role === "owner";
   const canManage = (patientId: number) => snapshot.links.find((l) => l.patientId === patientId && l.userId === user.id)?.permission !== "follow";
   const unread = snapshot.patients.flatMap((p) => p.alerts.filter((a) => !a.isRead).map((a) => ({ ...a, patient: p.fullName })));
-  const suggestions = search.trim() ? snapshot.patients.filter((p) => matchesPatient(p, search)).slice(0, 5) : [];
   const date = new Intl.DateTimeFormat("fa-IR", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Tehran" }).format(new Date(snapshot.serverTime));
   const companionTab = current === "companion-intake" ? "intake" : current === "companion-map" ? "wayfinding" : "emr";
   // روی پیش‌پذیرش مسیر/هیرو نباشد؛ با preAdmitOpen تب‌های دیگر هم قفل می‌مانند
@@ -274,7 +270,6 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
       setPage(coerced);
       if (patientId) setSelectedPatientId(patientId);
       setMobileMenu(false);
-      setSearch("");
       setAccountOpen(false);
       setNotificationsOpen(false);
       const params = new URLSearchParams({ view: coerced });
@@ -355,7 +350,6 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         setHelpOpen(false);
         setProfileOpen(false);
         setMobileMenu(false);
-        setSearch("");
       }
     };
     document.addEventListener("click", close);
@@ -395,19 +389,22 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
       // سوئیچ UI نقش ≠ JWT؛ mutate ادمین کلینیک نیاز به Admin یا Platform در nabz_api_roles دارد
       const adminClinicMutations = new Set([
         "CREATE_CONTRACT",
+        "UPDATE_CONTRACT",
         "IMPORT_CONTRACT_MEMBERS",
         "UPDATE_CONTRACT_SUPERVISOR",
         "UPDATE_CONTRACT_MEMBER",
         "DELETE_CONTRACT_MEMBER",
-        "OVERRIDE_MEMBER_PACKAGE",
+        "OVERRIDE_MEMBER_PATHWAY",
         "ADMIT_CONTRACT_MEMBER_TO_CLINIC",
-        "SAVE_CONTRACT_PACKAGE_RULES",
-        "ATTACH_LIBRARY_RULES",
-        "DETACH_CONTRACT_RULE",
+        "SAVE_CONTRACT_PATHWAY_RULES",
+        "PREVIEW_PATHWAY_RECHECK",
+        "APPLY_PATHWAY_RECHECK",
+        "ATTACH_PATHWAY_LIBRARY",
+        "DETACH_CONTRACT_PATHWAY",
         "UPDATE_PATIENT_DETAILS",
         "UPDATE_PATIENT_PROFILE",
-        "UPSERT_LIBRARY_RULE",
-        "DELETE_LIBRARY_RULE",
+        "UPSERT_PATHWAY_LIBRARY_ITEM",
+        "DELETE_PATHWAY_LIBRARY_ITEM",
         "UPDATE_CLINIC_PROFILE",
       ]);
       if (adminClinicMutations.has(action) && !hasApiRole("Admin", "Platform")) {
@@ -471,6 +468,11 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             department: row.department ? String(row.department).trim() : null,
             jobCategory: row.jobCategory ? String(row.jobCategory).trim() : null,
             personnelCode: row.personnelCode ? String(row.personnelCode).trim() : null,
+            fatherName: row.fatherName ? String(row.fatherName).trim() : null,
+            scheduledVisitDate: row.scheduledVisitDate
+              ? String(row.scheduledVisitDate).slice(0, 10)
+              : null,
+            pathwayCodeOrGroup: row.pathwayCodeOrGroup ? String(row.pathwayCodeOrGroup).trim() : null,
           };
         });
         const result = await apiFetch<{
@@ -546,7 +548,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         const defaultPathwayCode = String(payload.defaultPathwayCode ?? "").trim() || "FULL_CHECKUP";
         const created = await apiFetch<{ id: string }>(`/api/contracts?clinicId=${encodeURIComponent(clinic.id)}`, {
           method: "POST",
-          body: { title, organizationName, code: null, defaultPackageCode: defaultPathwayCode },
+          body: { title, organizationName, code: null, defaultPathwayCode: defaultPathwayCode },
         });
         const supName = String(payload.supervisorName ?? "").trim();
         const supPhone = String(payload.supervisorPhone ?? "").trim();
@@ -569,6 +571,24 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         const createdContractId = snap.contracts.find((c) => c.serverId === created.id)?.id;
         if (!quiet) setToast({ text: "قرارداد سازمانی ثبت شد." });
         return { ok: true, snapshot: snap, createdContractId };
+      }
+      if (action === "UPDATE_CONTRACT") {
+        const serverId = String(payload.contractServerId ?? "").trim();
+        if (!serverId) throw new Error("شناسه سرور قرارداد یافت نشد؛ صفحه را تازه کنید.");
+        const title = String(payload.title ?? "").trim();
+        const organizationName = String(payload.organizationName ?? "").trim();
+        if (title.length < 3 || organizationName.length < 2) {
+          throw new Error("عنوان قرارداد و نام سازمان را وارد کنید.");
+        }
+        const defaultPathwayCode = String(payload.defaultPathwayCode ?? "").trim() || undefined;
+        await apiFetch(`/api/contracts/${serverId}`, {
+          method: "PUT",
+          body: { title, organizationName, defaultPathwayCode: defaultPathwayCode ?? null },
+        });
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        if (!quiet) setToast({ text: "قرارداد به‌روزرسانی شد." });
+        return { ok: true, snapshot: snap };
       }
       if (action === "UPDATE_CONTRACT_SUPERVISOR") {
         // API فقط FirstName/LastName می‌پذیرد؛ fullName تک‌فیلد برای سازگاری UI قدیمی split می‌شود
@@ -953,6 +973,15 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
           address: payload.address != null ? String(payload.address) : null,
           latitude: payload.latitude != null ? Number(payload.latitude) : null,
           longitude: payload.longitude != null ? Number(payload.longitude) : null,
+          preAdmitSupportPhone: payload.preAdmitSupportPhone != null ? String(payload.preAdmitSupportPhone) : null,
+          smsProvider: payload.smsProvider != null ? String(payload.smsProvider) : null,
+          smsSenderNumber: payload.smsSenderNumber != null ? String(payload.smsSenderNumber) : null,
+          kavenegarApiKey: payload.kavenegarApiKey != null ? String(payload.kavenegarApiKey) : null,
+          kavenegarOtpTemplate: payload.kavenegarOtpTemplate != null ? String(payload.kavenegarOtpTemplate) : null,
+          toubaUsername: payload.toubaUsername != null ? String(payload.toubaUsername) : null,
+          toubaPassword: payload.toubaPassword != null ? String(payload.toubaPassword) : null,
+          toubaSendUrl: payload.toubaSendUrl != null ? String(payload.toubaSendUrl) : null,
+          toubaOtpMessageTemplate: payload.toubaOtpMessageTemplate != null ? String(payload.toubaOtpMessageTemplate) : null,
         });
         setSnapshot((prev) => ({
           ...prev,
@@ -965,7 +994,24 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
           platform: {
             ...prev.platform,
             clinics: prev.platform.clinics.map((c) =>
-              c.isCurrentTenant ? { ...c, name: updated.name, city: updated.city ?? c.city } : c
+              c.isCurrentTenant
+                ? {
+                    ...c,
+                    name: updated.name,
+                    city: updated.city ?? c.city,
+                    preAdmitSupportPhone: updated.preAdmitSupportPhone ?? "",
+                    smsProvider: updated.smsProvider ?? c.smsProvider,
+                    smsSenderNumber: updated.smsSenderNumber ?? "",
+                    kavenegarApiKey: updated.kavenegarApiKey ?? undefined,
+                    kavenegarApiKeySet: updated.kavenegarApiKeySet,
+                    kavenegarOtpTemplate: updated.kavenegarOtpTemplate ?? "",
+                    toubaUsername: updated.toubaUsername ?? "",
+                    toubaPassword: updated.toubaPassword ?? undefined,
+                    toubaPasswordSet: updated.toubaPasswordSet,
+                    toubaSendUrl: updated.toubaSendUrl ?? "",
+                    toubaOtpMessageTemplate: updated.toubaOtpMessageTemplate ?? "",
+                  }
+                : c
             ),
           },
         }));
@@ -991,7 +1037,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         await apiFetch("/api/platform/settings", {
           method: "PUT",
           body: {
-            brandName: String(patch.brandName ?? "نبض پلتفرم"),
+            brandName: String(patch.brandName ?? "نفس"),
             otpLength,
             otpTtlSeconds: Number(patch.otpTtlSeconds ?? 120),
             intakeDocumentMaxGroups: current.intakeDocumentMaxGroups ?? 20,
@@ -1068,7 +1114,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         });
         return { ok: true, patient: mapped };
       }
-      if (action === "UPSERT_LIBRARY_RULE") {
+      if (action === "UPSERT_PATHWAY_LIBRARY_ITEM") {
         const rule = (payload.rule ?? {}) as Record<string, unknown>;
         const body = {
           title: String(rule.title ?? "").trim(),
@@ -1077,77 +1123,77 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
           minAge: rule.minAge === "" || rule.minAge == null ? null : Number(rule.minAge),
           maxAge: rule.maxAge === "" || rule.maxAge == null ? null : Number(rule.maxAge),
           jobCategory: String(rule.jobCategory ?? "همه"),
-          packageCode: String(rule.pathwayCode ?? rule.packageCode ?? "").trim(),
+          pathwayCode: String(rule.pathwayCode ?? rule.pathwayCode ?? "").trim(),
         };
-        if (!body.title || !body.packageCode) throw new Error("عنوان قانون و بسته سلامت مقصد را کامل وارد کنید.");
+        if (!body.title || !body.pathwayCode) throw new Error("عنوان مسیر و قالب ایستگاهی مقصد را کامل وارد کنید.");
         const id = rule.id ? String(rule.id) : "";
         const saved = id
-          ? await updatePackageLibraryRule(id, body)
-          : await createPackageLibraryRule(body);
+          ? await updatePathwayLibraryRule(id, body)
+          : await createPathwayLibraryRule(body);
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
-        if (!quiet) setToast({ text: id ? "قانون کتابخانه به‌روزرسانی شد." : "قانون در کتابخانه ثبت شد." });
+        if (!quiet) setToast({ text: id ? "مسیر کتابخانه به‌روزرسانی شد." : "مسیر در کتابخانه ثبت شد." });
         return { ok: true, snapshot: snap, libraryRuleId: saved.id };
       }
-      if (action === "DELETE_LIBRARY_RULE") {
+      if (action === "DELETE_PATHWAY_LIBRARY_ITEM") {
         const id = String(payload.id ?? "").trim();
-        if (!id) throw new Error("شناسه قانون نامعتبر است.");
+        if (!id) throw new Error("شناسه مسیر نامعتبر است.");
         try {
-          await deletePackageLibraryRule(id);
+          await deletePathwayLibraryRule(id);
         } catch (err) {
-          const msg = err instanceof Error ? err.message : "حذف قانون ممکن نیست.";
+          const msg = err instanceof Error ? err.message : "حذف مسیر ممکن نیست.";
           throw new Error(msg);
         }
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
-        if (!quiet) setToast({ text: "قانون از کتابخانه حذف شد." });
+        if (!quiet) setToast({ text: "مسیر از کتابخانه حذف شد." });
         return { ok: true, snapshot: snap };
       }
-      if (action === "ATTACH_LIBRARY_RULES") {
+      if (action === "ATTACH_PATHWAY_LIBRARY") {
         const serverId = String(payload.contractServerId ?? "").trim();
         if (!serverId) throw new Error("شناسه سرور قرارداد یافت نشد؛ صفحه را تازه کنید.");
         const libraryRuleIds = (Array.isArray(payload.libraryRuleIds) ? payload.libraryRuleIds : [])
           .map((x) => String(x))
           .filter(Boolean);
-        if (libraryRuleIds.length === 0) throw new Error("هیچ قانونی برای اتصال انتخاب نشده است.");
+        if (libraryRuleIds.length === 0) throw new Error("هیچ مسیری برای اتصال انتخاب نشده است.");
         const result = await apiFetch<{ recalculated?: number; needsManual?: number }>(
-          `/api/contracts/${serverId}/package-rules/attach`,
+          `/api/contracts/${serverId}/pathway-rules/attach`,
           { method: "POST", body: { libraryRuleIds } }
         );
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
         if (!quiet) {
-          const bits = ["قانون به قرارداد متصل شد"];
+          const bits = ["مسیر به قرارداد متصل شد"];
           if (result.needsManual)
             bits.push(`${result.needsManual} نفر پذیرش‌شده — بسته را در نوبت‌دهی دستی عوض کنید`);
           setToast({ text: `${bits.join("؛ ")}.` });
         }
         return { ok: true, snapshot: snap, ...result };
       }
-      if (action === "DETACH_CONTRACT_RULE") {
+      if (action === "DETACH_CONTRACT_PATHWAY") {
         const serverId = String(payload.contractServerId ?? "").trim();
         const ruleId = String(payload.ruleId ?? "").trim();
         if (!serverId || !ruleId) throw new Error("شناسه قرارداد یا قانون نامعتبر است.");
         const result = await apiFetch<{ recalculated?: number; needsManual?: number }>(
-          `/api/contracts/${serverId}/package-rules/${ruleId}`,
+          `/api/contracts/${serverId}/pathway-rules/${ruleId}`,
           { method: "DELETE" }
         );
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
         if (!quiet) {
-          const bits = ["قانون از قرارداد جدا شد"];
+          const bits = ["مسیر از قرارداد جدا شد"];
           if (result.recalculated)
-            bits.push(`${result.recalculated} نفر قبل از پذیرش → بدون قانون / مسیر پیش‌فرض`);
+            bits.push(`${result.recalculated} نفر قبل از پذیرش → بدون مسیر / مسیر پیش‌فرض`);
           if (result.needsManual)
             bits.push(`${result.needsManual} نفر پذیرش‌شده — بسته را در نوبت‌دهی دستی عوض کنید`);
           setToast({ text: `${bits.join("؛ ")}.` });
         }
         return { ok: true, snapshot: snap, ...result };
       }
-      if (action === "SAVE_CONTRACT_PACKAGE_RULES") {
+      if (action === "SAVE_CONTRACT_PATHWAY_RULES") {
         const serverId = String(payload.contractServerId ?? "").trim();
         if (!serverId) throw new Error("شناسه سرور قرارداد یافت نشد؛ صفحه را تازه کنید.");
-        const rulesRaw = Array.isArray(payload.packageRules) ? payload.packageRules : [];
+        const rulesRaw = Array.isArray(payload.pathwayRules) ? payload.pathwayRules : [];
         const body = rulesRaw.map((r, idx) => {
           const row = r as Record<string, unknown>;
           return {
@@ -1156,24 +1202,61 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             minAge: row.minAge == null || row.minAge === "" ? null : Number(row.minAge),
             maxAge: row.maxAge == null || row.maxAge === "" ? null : Number(row.maxAge),
             jobCategory: String(row.jobCategory ?? "همه"),
-            packageCode: String(row.pathwayCode ?? row.packageCode ?? "").trim(),
+            pathwayCode: String(row.pathwayCode ?? row.pathwayCode ?? "").trim(),
             priority: Number(row.priority ?? idx + 1),
             libraryRuleId: row.libraryRuleId ? String(row.libraryRuleId) : null,
           };
         });
+        // skipMemberReapply فقط اولویت را ذخیره می‌کند؛ جابه‌جایی اعضا با بررسی مجدد
+        const reapply = payload.skipMemberReapply === true ? "false" : "true";
         const result = await apiFetch<{ recalculated?: number; needsManual?: number }>(
-          `/api/contracts/${serverId}/package-rules`,
+          `/api/contracts/${serverId}/pathway-rules?reapplyMembers=${reapply}`,
           { method: "PUT", body }
         );
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
         if (!quiet) {
-          const bits = ["قوانین بسته قرارداد ذخیره شد"];
+          const bits = ["قوانین مسیر قرارداد ذخیره شد"];
           if (result.needsManual)
             bits.push(`${result.needsManual} نفر پذیرش‌شده نیاز به تعیین دستی در نوبت‌دهی دارند`);
           setToast({ text: `${bits.join("؛ ")}.` });
         }
         return { ok: true, snapshot: snap, ...result };
+      }
+      if (action === "PREVIEW_PATHWAY_RECHECK") {
+        const serverId = String(payload.contractServerId ?? "").trim();
+        if (!serverId) throw new Error("شناسه سرور قرارداد یافت نشد؛ صفحه را تازه کنید.");
+        const preview = await apiFetch<{ rows?: Array<Record<string, unknown>> }>(
+          `/api/contracts/${serverId}/pathway-rules/recheck-preview`,
+          { method: "POST", body: {} }
+        );
+        const rows = (Array.isArray(preview.rows) ? preview.rows : []).map((row) => ({
+          memberId: String(row.memberId ?? ""),
+          fullName: String(row.fullName ?? ""),
+          currentPathwayTitle: row.currentPathwayTitle != null ? String(row.currentPathwayTitle) : null,
+          proposedPathwayTitle: row.proposedPathwayTitle != null ? String(row.proposedPathwayTitle) : null,
+          proposedMatchedTitle: row.proposedMatchedTitle != null ? String(row.proposedMatchedTitle) : null,
+          wouldChange: Boolean(row.wouldChange),
+          manualOverride: Boolean(row.manualOverride),
+          admitted: Boolean(row.admitted),
+          canApply: Boolean(row.canApply),
+        }));
+        return { ok: true, rows };
+      }
+      if (action === "APPLY_PATHWAY_RECHECK") {
+        const serverId = String(payload.contractServerId ?? "").trim();
+        if (!serverId) throw new Error("شناسه سرور قرارداد یافت نشد؛ صفحه را تازه کنید.");
+        const memberIds = (Array.isArray(payload.memberIds) ? payload.memberIds : [])
+          .map((x) => String(x).trim())
+          .filter(Boolean);
+        const result = await apiFetch<{ applied?: number; skipped?: number }>(
+          `/api/contracts/${serverId}/pathway-rules/recheck-apply`,
+          { method: "POST", body: { memberIds } }
+        );
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        if (!quiet) setToast({ text: `مسیر برای ${result.applied ?? 0} نفر به‌روز شد.` });
+        return { ok: true, snapshot: snap, applied: result.applied ?? 0, skipped: result.skipped ?? 0 };
       }
       if (action === "UPDATE_CONTRACT_MEMBER") {
         const memberServerId = String(payload.memberServerId ?? "").trim();
@@ -1207,21 +1290,21 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         if (!quiet) setToast({ text: "عضو از قرارداد حذف شد." });
         return { ok: true, snapshot: snap };
       }
-      if (action === "OVERRIDE_MEMBER_PACKAGE") {
+      if (action === "OVERRIDE_MEMBER_PATHWAY") {
         const memberServerId = String(payload.memberServerId ?? "").trim();
-        const pathwayCode = String(payload.pathwayCode ?? payload.packageCode ?? "").trim();
-        if (!memberServerId || !pathwayCode) throw new Error("شناسه عضو یا کد بسته نامعتبر است.");
+        const pathwayCode = String(payload.pathwayCode ?? "").trim();
+        if (!memberServerId || !pathwayCode) throw new Error("شناسه عضو یا کد مسیر نامعتبر است.");
         const pathwayTitle =
-          String(payload.pathwayTitle ?? payload.packageTitle ?? "").trim() ||
+          String(payload.pathwayTitle ?? "").trim() ||
           snapshotRef.current.pathways.find((p) => p.code === pathwayCode)?.title ||
           pathwayCode;
-        await apiFetch(`/api/contracts/members/${memberServerId}/package`, {
+        await apiFetch(`/api/contracts/members/${memberServerId}/pathway`, {
           method: "PUT",
-          body: { packageCode: pathwayCode, packageTitle: pathwayTitle },
+          body: { pathwayCode, pathwayTitle },
         });
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
-        if (!quiet) setToast({ text: "بسته سلامت عضو به‌صورت دستی تنظیم شد." });
+        if (!quiet) setToast({ text: "مسیر سلامتی عضو به‌صورت دستی تنظیم شد." });
         return { ok: true, snapshot: snap };
       }
       if (action === "ADMIT_CONTRACT_MEMBER_TO_CLINIC") {
@@ -1236,10 +1319,12 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         return { ok: true, snapshot: snap, createdPatientId: admitted.id };
       }
       if (action === "SEND_CONTRACT_BULK_SMS") {
-        // فقط قالب Invite سمت سرور؛ memberServerIds از UI (Guid) — نه numeric id محلی
+        // قالب پلتفرم (templateId) + memberServerIds از UI (Guid)
         const contractServerId = String(payload.contractServerId ?? "").trim();
         if (!contractServerId) throw new Error("شناسه سرور قرارداد یافت نشد؛ صفحه را تازه کنید.");
-        const campaignTitle = String(payload.campaignTitle ?? "").trim() || "دعوت پیش‌ثبت‌نام";
+        const templateId = String(payload.templateId ?? "").trim();
+        if (!templateId) throw new Error("انتخاب قالب پیامک الزامی است.");
+        const campaignTitle = String(payload.campaignTitle ?? "").trim() || undefined;
         let memberServerIds = (Array.isArray(payload.memberServerIds) ? payload.memberServerIds : [])
           .map((x) => String(x).trim())
           .filter(Boolean);
@@ -1256,7 +1341,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         if (memberServerIds.length === 0) throw new Error("هیچ گیرنده‌ای برای پیامک انتخاب نشده است.");
         const result = await apiFetch<{ ok?: boolean; sent?: number }>(`/api/contracts/${contractServerId}/sms`, {
           method: "POST",
-          body: { campaignTitle, memberIds: memberServerIds },
+          body: { templateId, campaignTitle, memberIds: memberServerIds },
         });
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
@@ -1283,7 +1368,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     await execute(payload);
   };
 
-  const switchRole = async (next: WorkspaceRole) => {
+  const switchRole = async (next: WorkspaceRole, opts?: { page?: AppPage; contractId?: number }) => {
     setRoleOpen(false);
     // جلوگیری از سوئیچ به نقش خارج از سلسله‌مراتب (مثلاً ادمین کلینیک → ادمین کل)
     if (!allowedRolesFor(user).includes(next)) {
@@ -1293,8 +1378,10 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     setRequestRole(next);
     writeStoredRole(next);
     setRole(next);
+    if (typeof opts?.contractId === "number") setSupervisorFocusContractId(opts.contractId);
     const target = selectableRoles().find((r) => r.id === next) ?? selectableRoles()[0] ?? ROLES[0];
-    navigate(target.page);
+    // از قرارداد: مستقیم به رستر ناظر همان قرارداد
+    navigate(opts?.page ?? target.page);
     setSnapshot(await loadWorkspaceSnapshot());
     setToast({ text: `نقش «${target.label}» فعال شد؛ حساب شما تغییری نکرده است.` });
   };
@@ -1402,7 +1489,16 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
       return <SpecialistProfile key="home-waiting" snapshot={snapshot} initialPatientId={activeId || undefined} onSwitchToPatientMobile={openPatient} onAction={act} busy={busy} initialSection="waiting" embedded sessionUserId={user.id} />;
     }
     if (role === "supervisor") {
-      return <CorporateSupervisorPanel snapshot={snapshot} user={user} initialView="overview" onAction={execute} busy={busy} />;
+      return (
+        <CorporateSupervisorPanel
+          snapshot={snapshot}
+          user={user}
+          initialView="overview"
+          initialContractId={supervisorFocusContractId ?? undefined}
+          onAction={execute}
+          busy={busy}
+        />
+      );
     }
     return <ClinicDashboard snapshot={snapshot} user={user} role={role} onNavigate={navigate} />;
   };
@@ -1419,13 +1515,12 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
 
       <aside className={`app-sidebar fixed inset-y-0 right-0 z-50 flex w-[238px] flex-col border-l border-[#e8eeeb] bg-white transition-transform duration-300 lg:translate-x-0 ${mobileMenu ? "translate-x-0" : "translate-x-full"}`}>
         <button onClick={() => navigate(navConfig.home)} className="flex h-[87px] shrink-0 items-center gap-3 px-6 text-right">
-          <span className="brand-mark flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#20745c] text-white shadow-lg shadow-teal-800/10">
-            <HeartPulse className="h-6 w-6 stroke-[1.8]" />
+          {/* آیکن محصول از icons/web — برند نمایشی نفس */}
+          <span className="brand-mark flex h-11 w-11 items-center justify-center overflow-hidden rounded-[14px] shadow-lg shadow-teal-800/10">
+            <img src="/icon-64x64.png" alt="نفس" className="h-11 w-11 object-cover" />
           </span>
           <span>
-            <strong className="block text-[21px] font-extrabold tracking-tight text-[#234e40]">
-              نبض<span className="mr-1.5 text-[15px] font-medium text-[#415c50]">کلینیک</span>
-            </strong>
+            <strong className="block text-[21px] font-extrabold tracking-tight text-[#234e40]">نفس</strong>
             <span className="mt-1 block text-[9px] tracking-wide text-slate-400">مدیریت هوشمند، مراقبت یکپارچه</span>
           </span>
         </button>
@@ -1465,9 +1560,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                 ))}
                 <div className="m-1 flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-2 text-[9px] text-slate-500">
                   <ShieldCheck className="h-3 w-3 text-teal-600" />
-                  {user.primaryRole === "platform"
-                    ? "نقش‌های قابل‌انتخاب برای حساب شما فعال است."
-                    : "فقط نقش‌های مجاز این حساب در فهرست بالا نمایش داده می‌شود."}
+                  فقط ادمین کل می‌تواند وارد فضای کاری نقش‌های دیگر شود؛ حساب واقعی شما ثابت می‌ماند.
                 </div>
               </div>
             )}
@@ -1502,27 +1595,9 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         </nav>
 
         <div className="shrink-0 border-t border-slate-100 px-4 py-3">
-          <button onClick={() => setHelpOpen(true)} className="flex w-full items-center gap-2.5 rounded-xl bg-[#f8faf8] px-3 py-2.5 text-right">
-            <CircleHelp className="h-4 w-4 text-[#84a28c]" />
-            <span className="flex-1 text-[10px] text-[#829188]">راهنما و پشتیبانی</span>
-            <ArrowLeft className="h-3 w-3 text-[#a0afa5]" />
-          </button>
-          <div className="mt-3 flex items-center justify-between px-1">
-            <span className="flex items-center gap-1.5 text-[9px] text-slate-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              متصل به Nabz.Api
-            </span>
-            <button
-              type="button"
-              onClick={async () => {
-                await refresh();
-                setToast({ text: "داده از سرور تازه شد." });
-              }}
-              className="text-[9px] text-slate-400 hover:text-teal-700"
-            >
-              تازه‌سازی
-            </button>
-          </div>
+          <p className="px-1 text-center text-[10px] text-slate-400">
+            نسخه {toFaDigits(import.meta.env.VITE_APP_VERSION || "2.5.1")}
+          </p>
         </div>
       </aside>
 
@@ -1534,39 +1609,9 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             </button>
             <div className="hidden items-center gap-1.5 whitespace-nowrap text-[10px] text-slate-400 xl:flex">
               <Hospital className="h-3.5 w-3.5" />
-              <span>کلینیک تخصصی نبض</span>
+              <span>نفس</span>
               <ChevronLeft className="h-3 w-3 text-slate-300" />
               <span className="text-slate-600">{role === "patient" && isSelf ? "سلامتجو" : activeRole.label}</span>
-            </div>
-            <div className="relative hidden sm:block">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setListQuery(search);
-                  navigate(role === "patient" || role === "owner" ? "dashboard" : "patients");
-                }}
-                className="flex items-center gap-2 rounded-lg border border-[#edf1ef] bg-[#f8faf9] px-3 py-2"
-              >
-                <Search className="h-3.5 w-3.5 text-slate-400" />
-                <AppInput
-                  aria-label="جستجوی سراسری سلامتجو"
-                  placeholder={role === "patient" || role === "owner" ? "جستجو در پرونده‌های من..." : "جستجوی سلامتجو، کد ملی یا شماره پرونده..."}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-44 bg-transparent text-[10px] text-slate-600 outline-none 2xl:w-60"
-                />
-              </form>
-              {search.trim() && (
-                <div className="absolute top-full right-0 z-50 mt-2 w-80 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                  {suggestions.map((p) => (
-                    <button key={p.id} onClick={() => openPatient(p.id)} className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-right hover:bg-teal-50">
-                      <span className="text-[11px] font-medium text-slate-600">{p.fullName}</span>
-                      <span className="text-[9px] text-slate-400">{toFaDigits(p.nationalId)}</span>
-                    </button>
-                  ))}
-                  {suggestions.length === 0 && <p className="p-3 text-[11px] text-slate-400">پرونده‌ای پیدا نشد.</p>}
-                </div>
-              )}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -1792,7 +1837,9 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               }
               onAction={async (p) => (await execute(p)) as unknown as Record<string, unknown>}
               onOpenPatientRecord={(pid) => navigate("records", pid)}
-              onSwitchToSupervisor={() => void switchRole("supervisor")}
+              onSwitchToSupervisor={(contractId) =>
+                void switchRole("supervisor", { page: "supervisor-roster", contractId })
+              }
               busy={busy}
             />
           )}
@@ -1814,6 +1861,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               snapshot={snapshot}
               user={user}
               initialView="roster"
+              initialContractId={supervisorFocusContractId ?? undefined}
               onAction={execute}
               busy={busy}
             />
@@ -1896,7 +1944,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/30 p-4 backdrop-blur-sm" onClick={() => { setHelpOpen(false); setProfileOpen(false); }}>
           <div role="dialog" aria-modal="true" aria-label={profileOpen ? "تنظیمات حساب" : "راهنمای سامانه"} onClick={(e) => e.stopPropagation()} className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-base font-bold">{profileOpen ? "تنظیمات حساب کاربری" : "راهنمای استفاده از نبض کلینیک"}</h2>
+              <h2 className="text-base font-bold">{profileOpen ? "تنظیمات حساب کاربری" : "راهنمای استفاده از نفس"}</h2>
               <button onClick={() => { setHelpOpen(false); setProfileOpen(false); }} aria-label="بستن">
                 <X className="h-4 w-4 text-slate-400" />
               </button>
@@ -1926,8 +1974,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                   <form onSubmit={saveProfile} className="space-y-4">
                     <p className="rounded-xl bg-teal-50 p-3 text-[11px] leading-6 text-teal-800">
                       {canSwitchRole
-                        ? "نقش‌های مجاز این حساب در سایدبار قابل‌تعویض‌اند و نیازی به ورود مجدد نیست."
-                        : "نقش فعال فضای کاری شما از حساب ورود می‌آید؛ برای چندنقشه بودن باید نقش‌های مجاز روی حساب تعریف شده باشد."}
+                        ? "به‌عنوان ادمین کل می‌توانید از سایدبار وارد فضای کاری نقش‌های دیگر شوید؛ حساب واقعی شما تغییر نمی‌کند."
+                        : "هر نقش فضای کاری مستقل دارد؛ نقش فعال شما از حساب ورود می‌آید و سوئیچ به نقش‌های دیگر فقط برای ادمین کل فعال است."}
                     </p>
                     <label className="app-label">
                       نام و نام خانوادگی
@@ -1959,7 +2007,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                     : []),
                   // فقط وقتی سوئیچر سایدبار واقعاً دیده می‌شود این گام راهنما را نشان بده
                   ...(canSwitchRole
-                    ? [{ n: COMPANION_FEATURE_ENABLED ? "۳" : "۲", title: "نقش کاری را تغییر دهید", text: "اگر بیش از یک نقش مجاز دارید، نقش فعال را از بالای منوی کناری انتخاب کنید (ادمین کلینیک به ادمین کل دسترسی ندارد)." }]
+                    ? [{ n: COMPANION_FEATURE_ENABLED ? "۳" : "۲", title: "نقش کاری را تغییر دهید", text: "فقط ادمین کل می‌تواند از بالای منوی کناری وارد فضای کاری نقش‌های دیگر شود؛ سایر نقش‌ها مستقل‌اند." }]
                     : []),
                 ].map((s) => (
                   <div key={s.n} className="flex items-start gap-3">
