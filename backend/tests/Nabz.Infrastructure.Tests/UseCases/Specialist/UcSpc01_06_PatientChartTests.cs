@@ -41,6 +41,23 @@ public sealed class UcSpc01_06_PatientChartTests
     }
 
     [Fact]
+    [Trait("UC", "UC-SPC-02")]
+    public async Task UC_SPC_02_SearchByMobileAndNationalId()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var (patient, _) = h.SeedPatient(clinicId, "09123334444");
+        var patients = h.CreatePatientService();
+
+        var byMobile = await patients.SearchAsync(clinicId, "09123334444");
+        var byNid = await patients.SearchAsync(clinicId, patient.Person.NationalId);
+
+        Assert.Contains(byMobile, p => p.Id == patient.Id);
+        Assert.Contains(byNid, p => p.Id == patient.Id);
+        Assert.Equal(patient.Person.Mobile, byMobile.First(p => p.Id == patient.Id).Phone);
+    }
+
+    [Fact]
     [Trait("UC", "UC-SPC-03")]
     public async Task UC_SPC_03_HappyPath_LookupUnknownNationalId_ReturnsNull()
     {
@@ -111,5 +128,29 @@ public sealed class UcSpc01_06_PatientChartTests
 
         Assert.NotNull(chart);
         Assert.Single(chart!.Documents);
+    }
+
+    [Fact]
+    [Trait("UC", "UC-SPC-06")]
+    public async Task UC_SPC_06_SpecialistCanDownloadDocumentFile()
+    {
+        var h = new ServiceHarness();
+        h.SeedPlatformSettings();
+        var clinicId = h.SeedClinic();
+        var (patient, owner) = h.SeedPatient(clinicId);
+        var evidence = h.CreateEvidenceService();
+        var group = await evidence.AddDocumentGroupAsync(patient.Id, owner.Id, "lab_urine", "آزمایش ادرار", null, null);
+        const string key = "2026/001/doc-urine.pdf";
+        await evidence.AddDocumentFilesAsync(
+            group.Id, owner.Id,
+            [( "urine.pdf", "application/pdf", key, 1200, null )]);
+
+        var specialistOk = await evidence.CanDownloadStorageKeyAsync(
+            key, Guid.NewGuid(), isPlatform: false, isSpecialist: true);
+        var strangerOk = await evidence.CanDownloadStorageKeyAsync(
+            key, Guid.NewGuid(), isPlatform: false, isSpecialist: false);
+
+        Assert.True(specialistOk);
+        Assert.False(strangerOk);
     }
 }

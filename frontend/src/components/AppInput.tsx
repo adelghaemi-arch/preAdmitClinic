@@ -1,3 +1,8 @@
+/*
+ File: frontend/src/components/AppInput.tsx
+ Description: ورودی متن با نرمال‌سازی حروف فارسی و نمایش ارقام فارسی (state لاتین)
+ Parent Dependencies: lib/persian.ts
+ */
 import {
   forwardRef,
   useCallback,
@@ -13,6 +18,12 @@ function displayValue(value: string | number | readonly string[] | undefined, di
   if (value === undefined || value === null) return "";
   const raw = typeof value === "string" || typeof value === "number" ? String(value) : value.join(",");
   return digits === "fa" ? toFaDigits(raw) : raw;
+}
+
+/** Placeholder هم باید ارقام فارسی ببیند؛ وگرنه hint لاتین می‌ماند حتی وقتی value فارسی است. */
+function displayPlaceholder(placeholder: string | undefined, digits: DigitsMode): string | undefined {
+  if (placeholder === undefined) return undefined;
+  return digits === "fa" ? toFaDigits(placeholder) : placeholder;
 }
 
 function emitNormalized<T extends HTMLInputElement | HTMLTextAreaElement>(
@@ -51,7 +62,7 @@ export type AppInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> 
  * Parent state should store Latin digits; the field always displays Persian digits by default.
  */
 export const AppInput = forwardRef<HTMLInputElement, AppInputProps>(function AppInput(
-  { value, defaultValue, onChange, digits = "fa", type = "text", inputMode, className, readOnly, ...rest },
+  { value, defaultValue, onChange, digits = "fa", type = "text", inputMode, className, readOnly, placeholder, ...rest },
   ref,
 ) {
   const isNumeric = type === "number";
@@ -67,6 +78,7 @@ export const AppInput = forwardRef<HTMLInputElement, AppInputProps>(function App
       type={isNumeric ? "text" : type}
       inputMode={inputMode ?? (isNumeric || type === "tel" ? "numeric" : undefined)}
       readOnly={readOnly}
+      placeholder={displayPlaceholder(placeholder, digits)}
       value={value !== undefined ? displayValue(value, digits) : undefined}
       defaultValue={defaultValue !== undefined ? displayValue(defaultValue, digits) : undefined}
       onChange={handleChange}
@@ -81,7 +93,7 @@ export type AppTextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
 };
 
 export const AppTextarea = forwardRef<HTMLTextAreaElement, AppTextareaProps>(function AppTextarea(
-  { value, defaultValue, onChange, digits = "fa", className, readOnly, ...rest },
+  { value, defaultValue, onChange, digits = "fa", className, readOnly, placeholder, ...rest },
   ref,
 ) {
   const handleChange = useCallback(
@@ -94,6 +106,7 @@ export const AppTextarea = forwardRef<HTMLTextAreaElement, AppTextareaProps>(fun
       {...rest}
       ref={ref}
       readOnly={readOnly}
+      placeholder={displayPlaceholder(placeholder, digits)}
       value={value !== undefined ? displayValue(value, digits) : undefined}
       defaultValue={defaultValue !== undefined ? displayValue(defaultValue, digits) : undefined}
       onChange={handleChange}

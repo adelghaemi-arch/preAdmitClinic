@@ -1,5 +1,5 @@
 diff --git a/node_modules/@jalali-js/react/dist/index.cjs b/node_modules/@jalali-js/react/dist/index.cjs
-index 0d98cff..bb168e1 100644
+index 0d98cff..07f8239 100644
 --- a/node_modules/@jalali-js/react/dist/index.cjs
 +++ b/node_modules/@jalali-js/react/dist/index.cjs
 @@ -27,7 +27,7 @@ function useCalendar(options = {}) {
@@ -11,8 +11,72 @@ index 0d98cff..bb168e1 100644
  function yearPageStart(year) {
    return year - (year % YEARS_PER_PAGE + YEARS_PER_PAGE) % YEARS_PER_PAGE;
  }
+@@ -100,9 +100,18 @@ function Calendar({
+     setView("day");
+   }
+   function pickYear(year) {
++    const maxY = rules?.maxDate?.year;
++    const minY = rules?.minDate?.year;
++    // سال خارج از min/max (مثلاً آینده برای تولد) انتخاب نشود
++    if (typeof maxY === "number" && year > maxY) return;
++    if (typeof minY === "number" && year < minY) return;
+     setDisplayed((current) => ({ ...current, year }));
+     setView("month");
+   }
++  const maxYearBound = typeof rules?.maxDate?.year === "number" ? rules.maxDate.year : null;
++  const minYearBound = typeof rules?.minDate?.year === "number" ? rules.minDate.year : null;
++  const canPrevYears = minYearBound == null || yearPage > minYearBound;
++  const canNextYears = maxYearBound == null || yearPage + YEARS_PER_PAGE <= maxYearBound;
+   return /* @__PURE__ */ jsxRuntime.jsxs(
+     "div",
+     {
+@@ -261,7 +270,12 @@ function Calendar({
+                 type: "button",
+                 "data-jalali-calendar-nav": "previous",
+                 "aria-label": localePack.ui.previousYears,
+-                onClick: () => setYearPage((current) => current - YEARS_PER_PAGE),
++                disabled: !canPrevYears,
++                "aria-disabled": !canPrevYears,
++                onClick: () => {
++                  if (!canPrevYears) return;
++                  setYearPage((current) => current - YEARS_PER_PAGE);
++                },
+                 children: "\u2039"
+               }
+             ),
+@@ -269,7 +283,9 @@ function Calendar({
+               i18n.formatNumber(yearPage, localePack.defaultNumerals, localePack.digits),
+               " \u2013 ",
+               i18n.formatNumber(
+-                yearPage + YEARS_PER_PAGE - 1,
++                maxYearBound != null
++                  ? Math.min(yearPage + YEARS_PER_PAGE - 1, maxYearBound)
++                  : yearPage + YEARS_PER_PAGE - 1,
+                 localePack.defaultNumerals,
+                 localePack.digits
+               )
+@@ -280,12 +296,17 @@ function Calendar({
+                 type: "button",
+                 "data-jalali-calendar-nav": "next",
+                 "aria-label": localePack.ui.nextYears,
+-                onClick: () => setYearPage((current) => current + YEARS_PER_PAGE),
++                disabled: !canNextYears,
++                "aria-disabled": !canNextYears,
++                onClick: () => {
++                  if (!canNextYears) return;
++                  setYearPage((current) => current + YEARS_PER_PAGE);
++                },
+                 children: "\u203A"
+               }
+             )
+           ] }),
+-          /* @__PURE__ */ jsxRuntime.jsx("div", { role: "listbox", "aria-label": localePack.ui.year, "data-jalali-calendar-years": true, children: Array.from({ length: YEARS_PER_PAGE }, (_, index) => yearPage + index).map((year) => {
++          /* @__PURE__ */ jsxRuntime.jsx("div", { role: "listbox", "aria-label": localePack.ui.year, "data-jalali-calendar-years": true, children: Array.from({ length: YEARS_PER_PAGE }, (_, index) => yearPage + index).filter((year) => (minYearBound == null || year >= minYearBound) && (maxYearBound == null || year <= maxYearBound)).map((year) => {
+             const isSelected = displayed.year === year;
+             const isCurrent = today.year === year;
+             return /* @__PURE__ */ jsxRuntime.jsx(
 diff --git a/node_modules/@jalali-js/react/dist/index.js b/node_modules/@jalali-js/react/dist/index.js
-index c304309..f06b521 100644
+index c304309..d4a544d 100644
 --- a/node_modules/@jalali-js/react/dist/index.js
 +++ b/node_modules/@jalali-js/react/dist/index.js
 @@ -27,7 +27,7 @@ function useCalendar(options = {}) {
@@ -24,3 +88,67 @@ index c304309..f06b521 100644
  function yearPageStart(year) {
    return year - (year % YEARS_PER_PAGE + YEARS_PER_PAGE) % YEARS_PER_PAGE;
  }
+@@ -100,9 +100,18 @@ function Calendar({
+     setView("day");
+   }
+   function pickYear(year) {
++    const maxY = rules?.maxDate?.year;
++    const minY = rules?.minDate?.year;
++    // سال خارج از min/max (مثلاً آینده برای تولد) انتخاب نشود
++    if (typeof maxY === "number" && year > maxY) return;
++    if (typeof minY === "number" && year < minY) return;
+     setDisplayed((current) => ({ ...current, year }));
+     setView("month");
+   }
++  const maxYearBound = typeof rules?.maxDate?.year === "number" ? rules.maxDate.year : null;
++  const minYearBound = typeof rules?.minDate?.year === "number" ? rules.minDate.year : null;
++  const canPrevYears = minYearBound == null || yearPage > minYearBound;
++  const canNextYears = maxYearBound == null || yearPage + YEARS_PER_PAGE <= maxYearBound;
+   return /* @__PURE__ */ jsxs(
+     "div",
+     {
+@@ -261,7 +270,12 @@ function Calendar({
+                 type: "button",
+                 "data-jalali-calendar-nav": "previous",
+                 "aria-label": localePack.ui.previousYears,
+-                onClick: () => setYearPage((current) => current - YEARS_PER_PAGE),
++                disabled: !canPrevYears,
++                "aria-disabled": !canPrevYears,
++                onClick: () => {
++                  if (!canPrevYears) return;
++                  setYearPage((current) => current - YEARS_PER_PAGE);
++                },
+                 children: "\u2039"
+               }
+             ),
+@@ -269,7 +283,9 @@ function Calendar({
+               formatNumber(yearPage, localePack.defaultNumerals, localePack.digits),
+               " \u2013 ",
+               formatNumber(
+-                yearPage + YEARS_PER_PAGE - 1,
++                maxYearBound != null
++                  ? Math.min(yearPage + YEARS_PER_PAGE - 1, maxYearBound)
++                  : yearPage + YEARS_PER_PAGE - 1,
+                 localePack.defaultNumerals,
+                 localePack.digits
+               )
+@@ -280,12 +296,17 @@ function Calendar({
+                 type: "button",
+                 "data-jalali-calendar-nav": "next",
+                 "aria-label": localePack.ui.nextYears,
+-                onClick: () => setYearPage((current) => current + YEARS_PER_PAGE),
++                disabled: !canNextYears,
++                "aria-disabled": !canNextYears,
++                onClick: () => {
++                  if (!canNextYears) return;
++                  setYearPage((current) => current + YEARS_PER_PAGE);
++                },
+                 children: "\u203A"
+               }
+             )
+           ] }),
+-          /* @__PURE__ */ jsx("div", { role: "listbox", "aria-label": localePack.ui.year, "data-jalali-calendar-years": true, children: Array.from({ length: YEARS_PER_PAGE }, (_, index) => yearPage + index).map((year) => {
++          /* @__PURE__ */ jsx("div", { role: "listbox", "aria-label": localePack.ui.year, "data-jalali-calendar-years": true, children: Array.from({ length: YEARS_PER_PAGE }, (_, index) => yearPage + index).filter((year) => (minYearBound == null || year >= minYearBound) && (maxYearBound == null || year <= maxYearBound)).map((year) => {
+             const isSelected = displayed.year === year;
+             const isCurrent = today.year === year;
+             return /* @__PURE__ */ jsx(

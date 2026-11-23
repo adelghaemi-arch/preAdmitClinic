@@ -1,14 +1,16 @@
-/*
+﻿/*
  File: frontend/src/components/AdminRuleLibrary.tsx
  Description: مدیریت کامل کتابخانه مرکزی قوانین — CRUD، جستجو و آمار استفاده
- Parent Dependencies: types/clinic, persian, workspace pathways
+ Parent Dependencies: types/clinic, persian, pathway-stations, PathwayStationEditor
  */
 
 import React, { useMemo, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
+import { PathwayStationEditor } from "@/components/PathwayStationEditor";
 import { BookOpen, Pencil, Plus, Search, Trash2, Users, X } from "lucide-react";
-import type { ClinicSnapshot, PathwayLibraryRule } from "@/types/clinic";
+import type { ClinicSnapshot, PathwayDto } from "@/types/clinic";
 import { JOB_CATEGORIES } from "@/lib/mock-contracts";
+import { draftsFromPathway, stationCodesToDrafts, type PathwayStationDraft } from "@/lib/pathway-stations";
 import { toFaDigits } from "@/lib/persian";
 import { normalizeText } from "@/lib/workspace";
 
@@ -20,9 +22,9 @@ interface Props {
 
 export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
   const library = snapshot.pathwayLibrary ?? [];
-  const pathways = snapshot.pathways ?? [];
+  const rooms = snapshot.rooms ?? [];
   const [query, setQuery] = useState("");
-  const [editing, setEditing] = useState<PathwayLibraryRule | null>(null);
+  const [editing, setEditing] = useState<PathwayDto | null>(null);
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -30,7 +32,10 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
   const [minAge, setMinAge] = useState("");
   const [maxAge, setMaxAge] = useState("");
   const [jobCategory, setJobCategory] = useState("همه");
-  const [pathwayCode, setPathwayCode] = useState(pathways[0]?.code ?? "FULL_CHECKUP");
+  const [estimatedMinutes, setEstimatedMinutes] = useState("60");
+  const [stations, setStations] = useState<PathwayStationDraft[]>(() =>
+    stationCodesToDrafts(["LAB"], [], snapshot.rooms ?? [])
+  );
   const [flash, setFlash] = useState<string | null>(null);
   const [expandedContractsRuleId, setExpandedContractsRuleId] = useState<string | null>(null);
 
@@ -39,21 +44,20 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
     return library.filter(
       (r) =>
         !q ||
-        normalizeText(`${r.title} ${r.description} ${r.code} ${r.jobCategory} ${r.gender} ${r.pathwayCode}`).includes(q)
+        normalizeText(`${r.title} ${r.description} ${r.code} ${r.jobCategory} ${r.gender}`).includes(q)
     );
   }, [library, query]);
 
-  /** عنوان قراردادهایی که این مسیر کتابخانه را attach کرده‌اند */
   const attachedTitlesByRuleId = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const c of snapshot.contracts ?? []) {
-      const title = c.title?.trim() || c.organizationName?.trim() || c.code;
-      if (!title) continue;
+      const cTitle = c.title?.trim() || c.organizationName?.trim() || c.code;
+      if (!cTitle) continue;
       for (const r of c.pathwayRules ?? []) {
-        const libId = r.libraryRuleId?.trim();
+        const libId = r.libraryPathwayId?.trim();
         if (!libId) continue;
         const list = map.get(libId) ?? [];
-        if (!list.includes(title)) list.push(title);
+        if (!list.includes(cTitle)) list.push(cTitle);
         map.set(libId, list);
       }
     }
@@ -69,10 +73,11 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
     setMinAge("");
     setMaxAge("");
     setJobCategory("همه");
-    setPathwayCode(pathways[0]?.code ?? "FULL_CHECKUP");
+    setEstimatedMinutes("60");
+    setStations(stationCodesToDrafts(["LAB"], [], rooms));
   }
 
-  function openEdit(rule: PathwayLibraryRule) {
+  function openEdit(rule: PathwayDto) {
     setCreating(false);
     setEditing(rule);
     setTitle(rule.title);
@@ -81,7 +86,8 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
     setMinAge(rule.minAge != null ? String(rule.minAge) : "");
     setMaxAge(rule.maxAge != null ? String(rule.maxAge) : "");
     setJobCategory(rule.jobCategory || "همه");
-    setPathwayCode(rule.pathwayCode);
+    setEstimatedMinutes(String(rule.estimatedTotalMinutes ?? 60));
+    setStations(draftsFromPathway(rule, rooms));
   }
 
   function closeForm() {
@@ -98,7 +104,9 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
       minAge: minAge !== "" ? Number(minAge) : null,
       maxAge: maxAge !== "" ? Number(maxAge) : null,
       jobCategory,
-      pathwayCode,
+      isInLibrary: true,
+      estimatedTotalMinutes: estimatedMinutes !== "" ? Number(estimatedMinutes) : null,
+      stations,
     };
     if (editing) {
       await onAction({ action: "UPSERT_PATHWAY_LIBRARY_ITEM", rule: { ...rule, id: editing.id } });
@@ -110,7 +118,7 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
     closeForm();
   }
 
-  async function removeRule(rule: PathwayLibraryRule) {
+  async function removeRule(rule: PathwayDto) {
     if ((rule.attachedContractCount ?? 0) > 0) {
       setFlash("این مسیر به قرارداد متصل است؛ ابتدا از قراردادها جدا کنید.");
       return;
@@ -125,9 +133,9 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-base font-bold text-slate-800">کتابخانه مرکزی قوانین</h1>
+          <h1 className="text-base font-bold text-slate-800">کتابخانه مرکزی مسیرهای سلامتی</h1>
           <p className="mt-1 text-xs text-slate-500">
-            مسیرهای سلامتی قابل استفاده مجدد در همه قراردادها؛ آمار اتصال فعال و استفاده‌های قبلی برای هر مسیر.
+            مسیرهای قابل استفاده مجدد در همه قراردادها؛ آمار اتصال فعال و استفاده‌های قبلی برای هر مسیر.
           </p>
         </div>
         <button type="button" disabled={busy} onClick={openCreate} className="primary-button">
@@ -157,7 +165,6 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
 
       <div className="grid gap-3 lg:grid-cols-2">
         {visible.map((rule) => {
-          const pkg = pathways.find((p) => p.code === rule.pathwayCode);
           const attachedTitles = attachedTitlesByRuleId.get(rule.id) ?? [];
           const attachedCount = Math.max(rule.attachedContractCount ?? 0, attachedTitles.length);
           const contractsOpen = expandedContractsRuleId === rule.id;
@@ -206,7 +213,7 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
                 </span>
                 <span className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5">شغل: {rule.jobCategory}</span>
                 <span className="rounded border border-teal-100 bg-teal-50 px-2 py-0.5 font-semibold text-teal-800">
-                  بسته: {pkg?.title ?? rule.pathwayCode}
+                  {toFaDigits(rule.stationCodes.length)} ایستگاه
                 </span>
               </div>
 
@@ -228,9 +235,7 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
                 </div>
                 <button
                   type="button"
-                  onClick={() =>
-                    setExpandedContractsRuleId((id) => (id === rule.id ? null : rule.id))
-                  }
+                  onClick={() => setExpandedContractsRuleId((id) => (id === rule.id ? null : rule.id))}
                   aria-expanded={contractsOpen}
                   className={`rounded-xl border px-2.5 py-2 text-right transition ${
                     contractsOpen
@@ -348,13 +353,15 @@ export function AdminRuleLibrary({ snapshot, onAction, busy }: Props) {
                   </option>
                 ))}
               </select>
-              <select value={pathwayCode} onChange={(e) => setPathwayCode(e.target.value)} className="app-select w-full text-xs">
-                {pathways.map((p) => (
-                  <option key={p.code} value={p.code}>
-                    {p.title}
-                  </option>
-                ))}
-              </select>
+              <AppInput
+                type="number"
+                min={5}
+                value={estimatedMinutes}
+                onChange={(e) => setEstimatedMinutes(e.target.value)}
+                placeholder="زمان تقریبی کل (دقیقه)"
+                className="app-input text-xs"
+              />
+              <PathwayStationEditor rooms={rooms} stations={stations} onChange={setStations} disabled={busy} />
               <div className="flex gap-2 pt-1">
                 <button type="submit" disabled={busy} className="primary-button flex-1 justify-center">
                   {editing ? "ذخیره ویرایش" : "ثبت در کتابخانه"}

@@ -34,8 +34,11 @@ public class Clinic : EntityBase
 
     public string? ToubaUsername { get; set; }
     public string? ToubaPassword { get; set; }
-    /// <summary>پیش‌فرض: https://sms.tsms.ir/url/tsms.php</summary>
+    /// <summary>آدرس سرویس SOAP طوبی؛ پیش‌فرض: http://www.tsms.ir/soapWSDL/</summary>
     public string? ToubaSendUrl { get; set; }
     /// <summary>متن OTP طوبی؛ جایگذاری {code}</summary>
     public string? ToubaOtpMessageTemplate { get; set; }
+
+    /// <summary>کلید ذخیرهٔ لوگوی بیمارستان برای PDF/برند (مثلاً clinic-brand/...)</summary>
+    public string? LogoStorageKey { get; set; }
 }

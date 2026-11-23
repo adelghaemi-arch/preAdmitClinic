@@ -237,6 +237,7 @@ export const CONTRACT_ACTION_NAMES = new Set([
   "DETACH_CONTRACT_PATHWAY",
   "CREATE_CONTRACT",
   "UPDATE_CONTRACT",
+  "SET_CONTRACT_STATUS",
   "UPDATE_CONTRACT_API",
   "UPDATE_CONTRACT_SUPERVISOR",
   "SYNC_CONTRACT_FROM_API",
@@ -458,16 +459,32 @@ export function runContractAction(
     const defaultPathwayCode =
       String(body.defaultPathwayCode ?? "").trim() ||
       mockStore.pathways[0]?.code ||
-      "FULL_CHECKUP";
-    const supName = normalizePersianLetters(String(body.supervisorName ?? "").trim());
+      "CORP_MEN_LT40";
+    const firstName =
+      normalizePersianLetters(String(body.supervisorFirstName ?? "").trim()) ||
+      normalizePersianLetters(String(body.supervisorName ?? "").trim()).split(/\s+/).filter(Boolean)[0] ||
+      "";
+    const lastName =
+      normalizePersianLetters(String(body.supervisorLastName ?? "").trim()) ||
+      normalizePersianLetters(String(body.supervisorName ?? "").trim()).split(/\s+/).filter(Boolean).slice(1).join(" ") ||
+      "";
+    const supName = `${firstName} ${lastName}`.trim();
     const supPhone = cleanDigits(body.supervisorPhone);
-    const supTitle = normalizePersianLetters(String(body.supervisorTitle ?? "").trim() || "نماینده و ناظر سلامت سازمان");
+    const supNid = cleanDigits(body.supervisorNationalId ?? body.nationalId);
 
     if (title.length < 3 || organizationName.length < 2) {
       return { ok: false, status: 400, error: "عنوان قرارداد و نام سازمان را وارد کنید." };
     }
-    if (supPhone && !/^09\d{9}$/.test(supPhone)) {
-      return { ok: false, status: 400, error: "شماره موبایل ناظر خارجی باید ۱۱ رقم و با ۰۹ شروع شود." };
+    if (firstName || lastName || supPhone || (supNid && String(supNid).length > 0)) {
+      if (firstName.length < 2 || lastName.length < 2) {
+        return { ok: false, status: 400, error: "نام و نام‌خانوادگی ناظر را جدا وارد کنید." };
+      }
+      if (!/^09\d{9}$/.test(supPhone)) {
+        return { ok: false, status: 400, error: "شماره موبایل ناظر خارجی باید ۱۱ رقم و با ۰۹ شروع شود." };
+      }
+      if (String(supNid).length !== 10) {
+        return { ok: false, status: 400, error: "کدملی ناظر الزامی است." };
+      }
     }
 
     const id = nextContractId();
@@ -477,33 +494,43 @@ export function runContractAction(
       : [
           {
             id: `rule-${id}-1`,
-            title: "افراد ۴۵ سال به بالا (چکاپ جامع)",
-            gender: "همه",
-            minAge: 45,
-            maxAge: null,
+            title: "آقایان زیر ۴۰ سال",
+            gender: "مرد",
+            minAge: null,
+            maxAge: 39,
             jobCategory: "همه",
-            pathwayCode: "FULL_CHECKUP",
+            pathwayCode: "CORP_MEN_LT40",
             priority: 1,
           },
           {
             id: `rule-${id}-2`,
-            title: "بانوان زیر ۴۵ سال (پایش قلب و ریه)",
-            gender: "زن",
-            minAge: 18,
-            maxAge: 44,
+            title: "آقایان ۴۰ سال به بالا",
+            gender: "مرد",
+            minAge: 40,
+            maxAge: null,
             jobCategory: "همه",
-            pathwayCode: "CARDIO_PULMO",
+            pathwayCode: "CORP_MEN_GE40",
             priority: 2,
           },
           {
             id: `rule-${id}-3`,
-            title: "آقایان زیر ۴۵ سال",
-            gender: "مرد",
-            minAge: 18,
-            maxAge: 44,
+            title: "بانوان زیر ۴۰ سال",
+            gender: "زن",
+            minAge: null,
+            maxAge: 39,
             jobCategory: "همه",
-            pathwayCode: defaultPathwayCode,
+            pathwayCode: "CORP_WOMEN_LT40",
             priority: 3,
+          },
+          {
+            id: `rule-${id}-4`,
+            title: "بانوان ۴۰ سال به بالا",
+            gender: "زن",
+            minAge: 40,
+            maxAge: null,
+            jobCategory: "همه",
+            pathwayCode: "CORP_WOMEN_GE40",
+            priority: 4,
           },
         ];
 
@@ -535,10 +562,10 @@ export function runContractAction(
       ],
       supervisor: {
         fullName: supName || "تعریف نشده",
-        title: supTitle,
+        title: "",
         phone: supPhone || "",
-        nationalId: cleanDigits(body.supervisorNationalId),
-        isActive: Boolean(supName && supPhone),
+        nationalId: String(supNid || ""),
+        isActive: Boolean(supName && supPhone && String(supNid || "").length === 10),
         canSendReminders: true,
         assignedAt: now,
         lastSeenAt: null,
@@ -577,6 +604,37 @@ export function runContractAction(
     return { ok: true, status: 200 };
   }
 
+  if (action === "SET_CONTRACT_STATUS") {
+    // UC-ADM-24 — Active ↔ Inactive؛ فعال‌سازی از Draft/Inactive
+    const isActive = body.isActive === true;
+    if (isActive) {
+      if (contract.status !== "inactive" && contract.status !== "draft") {
+        return {
+          ok: false,
+          status: 400,
+          error:
+            contract.status === "active"
+              ? "این قرارداد هم‌اکنون فعال است."
+              : "فقط قراردادهای پیش‌نویس یا غیرفعال را می‌توان فعال کرد.",
+        };
+      }
+      contract.status = "active";
+    } else {
+      if (contract.status !== "active") {
+        return {
+          ok: false,
+          status: 400,
+          error:
+            contract.status === "inactive"
+              ? "این قرارداد هم‌اکنون غیرفعال است."
+              : "فقط قرارداد فعال را می‌توان غیرفعال کرد.",
+        };
+      }
+      contract.status = "inactive";
+    }
+    return { ok: true, status: 200, meta: { status: contract.status } };
+  }
+
   if (action === "UPDATE_CONTRACT_API") {
     const apiKey = String(body.apiKey ?? "").trim();
     const apiEndpoint = String(body.apiEndpoint ?? "").trim();
@@ -587,17 +645,28 @@ export function runContractAction(
   }
 
   if (action === "UPDATE_CONTRACT_SUPERVISOR") {
-    const fullName = normalizePersianLetters(String(body.fullName ?? "").trim());
+    const firstName =
+      normalizePersianLetters(String(body.firstName ?? "").trim()) ||
+      normalizePersianLetters(String(body.fullName ?? "").trim()).split(/\s+/).filter(Boolean)[0] ||
+      "";
+    const lastName =
+      normalizePersianLetters(String(body.lastName ?? "").trim()) ||
+      normalizePersianLetters(String(body.fullName ?? "").trim()).split(/\s+/).filter(Boolean).slice(1).join(" ") ||
+      "";
+    const fullName = `${firstName} ${lastName}`.trim();
     const phone = cleanDigits(body.phone);
-    const title = normalizePersianLetters(String(body.title ?? "").trim() || "ناظر سلامت سازمان");
-    if (fullName.length < 3 || !/^09\d{9}$/.test(phone)) {
-      return { ok: false, status: 400, error: "نام کامل و شماره موبایل معتبر ۱۱ رقمی ناظر خارجی را وارد کنید." };
+    const nationalId = String(cleanDigits(body.nationalId) || "");
+    if (firstName.length < 2 || lastName.length < 2 || !/^09\d{9}$/.test(phone)) {
+      return { ok: false, status: 400, error: "نام، نام‌خانوادگی و موبایل معتبر ناظر را وارد کنید." };
+    }
+    if (nationalId.length !== 10) {
+      return { ok: false, status: 400, error: "کدملی ناظر الزامی است." };
     }
     contract.supervisor = {
       fullName,
-      title,
+      title: "",
       phone,
-      nationalId: cleanDigits(body.nationalId),
+      nationalId,
       isActive: body.isActive !== false,
       canSendReminders: body.canSendReminders !== false,
       assignedAt: now,

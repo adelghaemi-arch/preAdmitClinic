@@ -1,10 +1,82 @@
 /*
  File: frontend/src/lib/api/patients.ts
- Description: API بیمار — آدرس منزل، پروفایل Owner/Admin، سوابق، snapshot پیش‌پذیرش
+ Description: API بیمار — جستجو/chart پزشک، آدرس منزل، پروفایل Owner/Admin، سوابق، snapshot پیش‌پذیرش
  Parent Dependencies: api/http.ts
  */
 
-import { apiFetch } from "@/lib/api/http";
+import { apiFetch, ApiError } from "@/lib/api/http";
+
+/** DTO بیمار از Search/Get (camelCase API) */
+export interface ApiPatientDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  nationalId: string;
+  phone: string;
+  birthDate?: string | null;
+  age?: number | null;
+  gender?: string | null;
+  maritalStatus?: string | null;
+  intakeCompleted: boolean;
+  assignedPathwayTitle?: string | null;
+  ownerUserId?: string | null;
+  fatherName?: string | null;
+  scheduledVisitDate?: string | null;
+}
+
+export interface ApiDocumentGroupSummaryDto {
+  id: string;
+  patientId: string;
+  documentType: string;
+  typeLabelFa: string;
+  fileCount: number;
+}
+
+export interface PatientChartApi {
+  patient: ApiPatientDto;
+  formStatus?: string | null;
+  formId?: string | null;
+  formCode?: string | null;
+  documents: ApiDocumentGroupSummaryDto[];
+  portraitStorageKey?: string | null;
+  recentGps?: unknown[];
+}
+
+/** UC-SPC-01/02 — فهرست/جستجوی بیماران کلینیک برای پزشک */
+export async function searchPatients(clinicId: string, q?: string | null, take = 50) {
+  const params = new URLSearchParams({ clinicId, take: String(take) });
+  const term = (q ?? "").trim();
+  if (term) params.set("q", term);
+  return apiFetch<ApiPatientDto[]>(`/api/patients/search?${params.toString()}`);
+}
+
+/** UC-SPC-04 — chart پزشکی (متا + وضعیت فرم + خلاصه مدارک) */
+export async function fetchPatientChart(patientId: string): Promise<PatientChartApi> {
+  return apiFetch<PatientChartApi>(`/api/patients/${encodeURIComponent(patientId)}/chart`);
+}
+
+/** استعلام کدملی — UC-SPC-03 */
+export async function lookupPatientByNationalId(clinicId: string, nationalId: string) {
+  const params = new URLSearchParams({ clinicId, nationalId: nationalId.trim() });
+  return apiFetch<{
+    ok: boolean;
+    found: boolean;
+    inContract: boolean;
+    blocked: boolean;
+    error?: string | null;
+    patient?: ApiPatientDto | null;
+  }>(`/api/patients/by-national-id?${params.toString()}`);
+}
+
+export async function fetchPatientChartOrNull(patientId: string): Promise<PatientChartApi | null> {
+  try {
+    return await fetchPatientChart(patientId);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
+}
 
 export interface UpdatePatientHomePayload {
   homeLat: number;
@@ -72,6 +144,8 @@ export interface OwnerIntakeSnapshotApi {
   formCode?: string | null;
   documentGroupCount: number;
   hasPortrait: boolean;
+  /** کلید فایل پرتره برای تامنیل اطلاعات پایه */
+  portraitStorageKey?: string | null;
   gpsPointCount: number;
   intakeGate: string;
   intakeGateMessage?: string | null;
@@ -80,6 +154,20 @@ export interface OwnerIntakeSnapshotApi {
   hospitalName?: string | null;
   introducedMobileMasked?: string | null;
   profileComplete?: boolean;
+  /** ایستگاه‌های مسیر تخصیص‌یافته + وضعیت تأیید خوداظهاری (UC-OWN-14) */
+  pathwayItinerary?: PathwayItineraryStationApi[] | null;
+  /** درصد پیشرفت پیش‌نویس پرسشنامه (۰–۱۰۰) */
+  formProgressPct?: number;
+}
+
+export interface PathwayItineraryStationApi {
+  stationDefId: string;
+  roomCode: string;
+  titleFa: string;
+  stepOrder: number;
+  isOptional: boolean;
+  confirmed: boolean;
+  confirmedAt?: string | null;
 }
 
 export async function updatePatientHome(serverPatientId: string, body: UpdatePatientHomePayload) {
@@ -98,6 +186,14 @@ export async function updatePatientHome(serverPatientId: string, body: UpdatePat
 
 export async function fetchOwnerIntakeSnapshot() {
   return apiFetch<OwnerIntakeSnapshotApi>("/api/patients/mine/intake-snapshot");
+}
+
+/** UC-OWN-14 — تأیید حضور در ایستگاه مسیر پس از hold سمت کلاینت */
+export async function confirmPathwayStation(stationDefId: string) {
+  return apiFetch<PathwayItineraryStationApi>(
+    `/api/patients/mine/pathway-stations/${encodeURIComponent(stationDefId)}/confirm`,
+    { method: "POST" },
+  );
 }
 
 /** مایلستون دیدن مقدمهٔ مسیر — persist سرور. */

@@ -28,8 +28,6 @@ public sealed class FakeFileStorage : IFileStorage
         using var ms = new MemoryStream();
         await content.CopyToAsync(ms, ct);
         var bytes = ms.ToArray();
-        var year = DateTime.UtcNow.ToString("yyyy");
-        var prefix = LocalFileStorage.NormalizeNationalIdPrefix(context?.NationalIdPrefix);
         string leaf;
         string storedName;
         if (!string.IsNullOrWhiteSpace(context?.CanonicalFileName))
@@ -42,7 +40,17 @@ public sealed class FakeFileStorage : IFileStorage
             storedName = Path.GetFileName(fileName);
             leaf = $"{Guid.NewGuid():N}_{storedName}";
         }
-        var key = $"{year}/{prefix}/{leaf}";
+        string key;
+        if (!string.IsNullOrWhiteSpace(context?.FolderOverride))
+        {
+            key = $"{context!.FolderOverride!.Trim().Trim('/')}/{leaf}";
+        }
+        else
+        {
+            var year = DateTime.UtcNow.ToString("yyyy");
+            var prefix = LocalFileStorage.NormalizeNationalIdPrefix(context?.NationalIdPrefix);
+            key = $"{year}/{prefix}/{leaf}";
+        }
         _files[key] = (bytes, contentType, storedName);
         return new StoredFileResult(key, storedName, contentType, bytes.Length);
     }

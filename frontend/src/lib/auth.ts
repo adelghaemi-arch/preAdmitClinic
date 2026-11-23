@@ -1,6 +1,6 @@
 /*
  File: frontend/src/lib/auth.ts
- Description: ورود OTP با انتخاب کدملی؛ دمو لاگین فقط در FixedOtp و بدون ادمین کل
+ Description: ورود OTP با انتخاب کدملی؛ دمو لاگین فقط در FixedOtp؛ hint پایه+۱ ادمین کل
  Parent Dependencies: api/auth, api/http, api/roles
  */
 
@@ -151,6 +151,9 @@ export async function selectOtpIdentity(nationalId: string): Promise<OtpVerifyRe
   }
 }
 
+/** موبایل قفل seed ادمین کل — هم‌تراز PlatformAdminIdentity.Mobile بک‌اند. */
+export const PLATFORM_ADMIN_MOBILE = "09133752696";
+
 /** فقط با FixedOtp فعال؛ در حالت پیامک واقعی بلوک ورود سریع مخفی می‌ماند (fail-closed). */
 export function shouldShowOtpDemoQuickLogin(fixedOtpEnabled: boolean | null | undefined): boolean {
   return fixedOtpEnabled === true;
@@ -162,6 +165,18 @@ export function shouldShowOtpDemoSmsPreview(
   demoCode: string | null | undefined
 ): boolean {
   return shouldShowOtpDemoQuickLogin(fixedOtpEnabled) && Boolean(demoCode?.trim());
+}
+
+/**
+ * UC-PLT-15: با FixedOtp، UI همان پایه را نشان می‌دهد ولی verify ادمین کل = پایه + ۱.
+ * در حالت SMS واقعی این hint نباید بیاید.
+ */
+export function shouldShowPlatformFixedOtpPlusOneHint(
+  fixedOtpEnabled: boolean | null | undefined,
+  phoneRaw: string | null | undefined
+): boolean {
+  if (!shouldShowOtpDemoQuickLogin(fixedOtpEnabled)) return false;
+  return normalizePhone(phoneRaw ?? "") === PLATFORM_ADMIN_MOBILE;
 }
 
 /** پرچم FixedOtp از API؛ خطا/قطع شبکه → false تا دمو لو نرود. */
@@ -176,11 +191,12 @@ export async function fetchOtpFixedModeEnabled(): Promise<boolean> {
 
 /** شماره‌های seed بک‌اند برای ورود سریع دمو (نه mock-store). ادمین کل عمداً اینجا نیست. */
 export function listOtpDemoLogins(): Array<{ name: string; phone: string; hint: string; kind: "patient" | "supervisor" }> {
+  // hint فقط فارسی — نام نقش API (Admin/…) به کاربر نشان داده نمی‌شود
   return [
-    { name: "ادمین کلینیک", phone: "09120000001", hint: "نقش Admin", kind: "supervisor" },
-    { name: "پزشک نمونه", phone: "09120000002", hint: "نقش Specialist", kind: "supervisor" },
+    { name: "ادمین کلینیک", phone: "09120000001", hint: "نقش ادمین کلینیک", kind: "supervisor" },
+    { name: "پزشک نمونه", phone: "09120000002", hint: "نقش پزشک متخصص", kind: "supervisor" },
     { name: "موبایل مشترک (انتخاب کدملی)", phone: "09123458910", hint: "دو سلامتجو روی یک شماره", kind: "patient" },
-    { name: "ناظر سازمانی نمونه", phone: "09123409876", hint: "نقش Supervisor", kind: "supervisor" },
+    { name: "ناظر سازمانی نمونه", phone: "09123409876", hint: "نقش ناظر سازمان", kind: "supervisor" },
   ];
 }
 

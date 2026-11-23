@@ -27,8 +27,9 @@ public sealed class ServiceHarness
     public FakeUserRepository Users { get; }
     public FakeAuthRepository Auth { get; }
     public FakeClinicRepository Clinics { get; }
+    public FakeClinicStationRepository ClinicStations { get; }
     public FakeContractRepository Contracts { get; }
-    public FakePathwayLibraryRuleRepository LibraryRules { get; }
+    public FakePathwayCatalogRepository PathwayCatalog { get; }
     public FakePatientRepository Patients { get; }
     public FakePatientProfileRevisionRepository ProfileRevisions { get; }
     public FakeFormRepository Forms { get; }
@@ -43,8 +44,9 @@ public sealed class ServiceHarness
         Users = new FakeUserRepository(Store);
         Auth = new FakeAuthRepository(Store);
         Clinics = new FakeClinicRepository(Store);
+        ClinicStations = new FakeClinicStationRepository(Store);
         Contracts = new FakeContractRepository(Store);
-        LibraryRules = new FakePathwayLibraryRuleRepository(Store);
+        PathwayCatalog = new FakePathwayCatalogRepository(Store);
         Patients = new FakePatientRepository(Store);
         ProfileRevisions = new FakePatientProfileRevisionRepository(Store);
         Forms = new FakeFormRepository(Store);
@@ -120,7 +122,7 @@ public sealed class ServiceHarness
     public EvidenceService CreateEvidenceService() => new(Evidence, Patients, ProfileRevisions, Platform, Files, UnitOfWork);
 
     public PatientService CreatePatientService() =>
-        new(Patients, ProfileRevisions, Contracts, Users, Persons, Forms, Evidence, Clinics, UnitOfWork);
+        new(Patients, ProfileRevisions, Contracts, Users, Persons, Forms, Evidence, Clinics, PathwayCatalog, UnitOfWork);
 
     public ContractService CreateContractService(string fixedOtp = "12345")
     {
@@ -128,21 +130,38 @@ public sealed class ServiceHarness
         var kavenegarOptions = Options.Create(new KavenegarOptions { InviteTemplate = "invite" });
         var frontendUrls = Options.Create(new FrontendUrlsOptions { My = "https://my.example.test" });
         return new ContractService(
-            Contracts, LibraryRules, Patients, Users, Persons, Clinics, SmsTemplates, UnitOfWork, Sms,
+            Contracts, PathwayCatalog, Patients, Users, Persons, Clinics, Forms, SmsTemplates, Files, UnitOfWork, Sms,
             authOptions, kavenegarOptions, frontendUrls, NullLogger<ContractService>.Instance);
+    }
+
+    public (IntakePdfService Service, FakeBrowserPdfRenderer Renderer) CreateIntakePdfService(string fixedOtp = "12345")
+    {
+        var renderer = new FakeBrowserPdfRenderer();
+        var service = new IntakePdfService(
+            CreateContractService(fixedOtp),
+            Contracts,
+            Forms,
+            Clinics,
+            Files,
+            renderer);
+        return (service, renderer);
     }
 
     public ClinicService CreateClinicService()
         => new(
             Clinics,
             UnitOfWork,
+            Files,
             Sms,
             SmsTemplates,
             Options.Create(new KavenegarOptions { InviteTemplate = "invite", ApiKey = "test-key", Sender = "1000" }),
             NullLogger<ClinicService>.Instance);
 
-    public PathwayLibraryRuleService CreatePathwayLibraryRuleService()
-        => new(LibraryRules, Contracts, UnitOfWork);
+    public ClinicStationService CreateClinicStationService()
+        => new(Clinics, ClinicStations, UnitOfWork);
+
+    public PathwayService CreatePathwayService()
+        => new(PathwayCatalog, Contracts, UnitOfWork);
 
     public UserAdminService CreateUserAdminService() => new(Users, Persons, Patients, Contracts, Clinics, Platform, UnitOfWork);
 

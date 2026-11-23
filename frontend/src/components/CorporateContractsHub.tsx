@@ -1,7 +1,7 @@
-/*
+﻿/*
  File: frontend/src/components/CorporateContractsHub.tsx
- Description: هاب قرارداد سازمانی — رستر افراد، مسیر سلامتی (توزیع=مسیر)، نوبت‌دهی، قیف؛ پیامک قالبی
- Parent Dependencies: types/clinic.ts, mock-contracts.ts, contract-pathway-buckets.ts
+ Description: هاب قرارداد سازمانی — رستر افراد، مسیر سلامتی، نوبت‌دهی، قیف؛ PDF پرسشنامه تکمیل‌شده
+ Parent Dependencies: types/clinic.ts, mock-contracts.ts, intake-pdf.ts, PrintableIntakeQuestionnaire
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
@@ -14,12 +14,14 @@ import {
   Eye,
   ExternalLink,
   FileSpreadsheet,
+  Printer,
   Info,
   KeyRound,
   Link2,
   Pencil,
   Pin,
   Plus,
+  Power,
   ChevronDown,
   ChevronUp,
   RefreshCw,
@@ -44,7 +46,6 @@ import type {
 } from "@/types/clinic";
 import {
   APPOINTMENT_META,
-  downloadContractExcelTemplate,
   exportContractReportExcel,
   FILL_FORMULA_LABELS,
   isoDayOffset,
@@ -60,7 +61,21 @@ import {
   type ColumnMapping,
   type ImportFieldKey,
 } from "@/lib/mock-contracts";
-import { fetchContractMembersAll, resolvePathwayDisplayTitle } from "@/lib/api/contracts";
+import {
+  CONTRACT_EXCEL_TEMPLATE_COLUMNS,
+  downloadContractExcelTemplate,
+} from "@/lib/contract-excel-template";
+import {
+  fetchContractMembersAll,
+  fetchMemberSubmittedForm,
+  resolvePathwayDisplayTitle,
+  uploadContractPartnerLogo,
+  type ApiMemberSubmittedFormDto,
+} from "@/lib/api/contracts";
+import { canShowIntakePdfButton } from "@/lib/intake-pdf";
+import { PrintableIntakeQuestionnaire } from "@/components/PrintableIntakeQuestionnaire";
+import { useStorageObjectUrl } from "@/hooks/useStorageObjectUrl";
+import { ApiError } from "@/lib/api/http";
 import {
   buildContractPathwayBuckets,
   contractPathwayOverrideOptions,
@@ -75,12 +90,19 @@ import {
   exactNationalIdDigits,
   isExactIranNationalId,
   isValidIranMobile,
+  isValidIranNationalId,
   normalizeMobile,
 } from "@/lib/person-identity";
 import { ContractSearchSelect } from "@/components/ContractSearchSelect";
 import { IranDigitField } from "@/components/IranDigitField";
 import { ListPager, slicePage, type ListPageSize } from "@/components/ListPager";
 import { canDeleteContractMember } from "@/lib/contract-member-guards";
+import {
+  contractStatusBadgeLabel,
+  filterContractsForPicker,
+  isContractActiveStatus,
+  sortContractsForPicker,
+} from "@/lib/contract-list-sort";
 import { MARITAL_STATUS_OPTIONS } from "@/lib/marital-status";
 import { fetchSmsTemplates, type ApiSmsCampaignTemplateDto } from "@/lib/api/sms-templates";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
@@ -127,8 +149,9 @@ type FunnelFilter =
 type ApptFilter = "all" | "unscheduled" | "scheduled_any" | "today" | "pinned" | "auto_scheduled" | "visited";
 
 const STEPS: Array<{ id: ContractHubTab; n: string; title: string; sub: string }> = [
-  { id: "people", n: "۱", title: "افراد قرارداد", sub: "API خارجی، اکسل و ورود دستی" },
-  { id: "packages", n: "۲", title: "مسیر سلامتی هر فرد", sub: "معیار سن، جنسیت و شغل" },
+  // اول قوانین مسیر؛ بعد ورود افراد تا تطبیق جنسیت/سن روی رستر اعمال شود
+  { id: "packages", n: "۱", title: "مسیر سلامتی هر فرد", sub: "معیار سن، جنسیت و شغل" },
+  { id: "people", n: "۲", title: "افراد قرارداد", sub: "API خارجی، اکسل و ورود دستی" },
   { id: "schedule", n: "۳", title: "نوبت‌دهی و فراخوان", sub: "سقف روزانه و توزیع خودکار" },
   { id: "funnel", n: "۴", title: "پیگیری پیش‌ثبت‌نام", sub: "قیف تکمیل و پیامک گروهی" },
 ];
@@ -141,12 +164,22 @@ const GUIDE: Record<ContractHubTab, string> = {
 };
 
 export function CorporateContractsHub({ snapshot, initialTab = "people", onAction, onOpenPatientRecord, onSwitchToSupervisor, busy }: Props) {
-  const contracts = snapshot.contracts ?? [];
+  // جدیدترین بالا؛ DEMO-ORG / نمونه پایین — هم‌تراز کمبوی انتخاب
+  const contracts = useMemo(() => sortContractsForPicker(snapshot.contracts ?? []), [snapshot.contracts]);
   const library = snapshot.pathwayLibrary ?? [];
   const pathways = snapshot.pathways;
   const today = isoDayOffset(0);
-  const [tab, setTab] = useState<ContractHubTab>(initialTab);
+  // ورود با قرارداد+اعضا → افراد؛ بدون عضو / deep-link مسیر → packages؛ schedule/funnel از initialTab
+  const [tab, setTab] = useState<ContractHubTab>(() => {
+    if (initialTab === "schedule" || initialTab === "funnel" || initialTab === "packages") return initialTab;
+    const first = contracts[0];
+    const peopleCount = first?.memberCount ?? first?.members?.length ?? 0;
+    return peopleCount > 0 ? "people" : "packages";
+  });
   const [selectedContractId, setSelectedContractId] = useState<number>(contracts[0]?.id ?? 0);
+  // UC-ADM-24 — پیش‌فرض فقط Active در کمبو
+  const [showInactive, setShowInactive] = useState(false);
+  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
   const [banner, setBanner] = useState("");
   // راهنمای مرحله فقط با i زیر ریل؛ نه بنر دائمی و نه popover داخل overflow
   const [guideOpen, setGuideOpen] = useState(false);
@@ -163,11 +196,21 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   const [peoplePage, setPeoplePage] = useState(1);
   const [peoplePageSize, setPeoplePageSize] = useState<ListPageSize>(20);
   const [peoplePanel, setPeoplePanel] = useState<PeopleAddPanel>(null);
+  // راهنمای ستون‌های اکسل پیش‌فرض بسته؛ فقط با درخواست اپراتور باز می‌شود
+  const [excelColumnsGuideOpen, setExcelColumnsGuideOpen] = useState(false);
   // بعد از hydrate seed، اگر id قبلی در لیست نبود اولین قرارداد را انتخاب کن
   useEffect(() => {
     if (!contracts.length) return;
     if (!contracts.some((c) => c.id === selectedContractId)) setSelectedContractId(contracts[0].id);
   }, [contracts, selectedContractId]);
+
+  // کمبو: فقط Active مگر تیک؛ قرارداد انتخاب‌شدهٔ جاری همیشه در لیست می‌ماند
+  const pickerContracts = useMemo(() => {
+    const filtered = filterContractsForPicker(contracts, showInactive);
+    if (filtered.some((c) => c.id === selectedContractId)) return filtered;
+    const current = contracts.find((c) => c.id === selectedContractId);
+    return current ? sortContractsForPicker([...filtered, current]) : filtered;
+  }, [contracts, showInactive, selectedContractId]);
 
   useEffect(() => {
     if (!guideOpen) return;
@@ -220,22 +263,28 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
     };
   }, [baseContract, membersOverride, pathwayRulesOverride]);
 
+  // UC-ADM-24 — وضعیت برای دکمه و مودال تأیید
+  const contractIsActive = contract ? isContractActiveStatus(contract.status) : true;
+  const statusBadge = contract ? contractStatusBadgeLabel(contract.status) : null;
+
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newOrg, setNewOrg] = useState("");
-  const [newEndpoint, setNewEndpoint] = useState("https://hr-api.company.ir/v1/health-list");
-  const [newApiKey, setNewApiKey] = useState("CORP-API-1404-7721");
-  const [newDefaultPkg, setNewDefaultPkg] = useState(pathways[0]?.code ?? "FULL_CHECKUP");
+  // API پیش‌فرض خالی؛ دریافت فوری هم خاموش تا ادمین عمداً پر کند
+  const [newEndpoint, setNewEndpoint] = useState("");
+  const [newApiKey, setNewApiKey] = useState("");
+  const [newDefaultPkg, setNewDefaultPkg] = useState(pathways[0]?.code ?? "CORP_MEN_LT40");
   const [newDailyCap, setNewDailyCap] = useState("20");
-  const [newSupName, setNewSupName] = useState("");
-  const [newSupTitle, setNewSupTitle] = useState("مدیر منابع انسانی و رفاه");
+  const [newSupFirstName, setNewSupFirstName] = useState("");
+  const [newSupLastName, setNewSupLastName] = useState("");
+  const [newSupNid, setNewSupNid] = useState("");
   const [newSupPhone, setNewSupPhone] = useState("");
-  const [fetchNowOnCreate, setFetchNowOnCreate] = useState(true);
+  const [fetchNowOnCreate, setFetchNowOnCreate] = useState(false);
   // ویرایش مشخصات پایه قرارداد انتخاب‌شده (Code قفل؛ API/ناظر مسیر جدا)
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editOrg, setEditOrg] = useState("");
-  const [editDefaultPkg, setEditDefaultPkg] = useState(pathways[0]?.code ?? "FULL_CHECKUP");
+  const [editDefaultPkg, setEditDefaultPkg] = useState(pathways[0]?.code ?? "CORP_MEN_LT40");
   const [sendSmsOnImport, setSendSmsOnImport] = useState(true);
   const [pasteText, setPasteText] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -245,7 +294,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   const [supEditOpen, setSupEditOpen] = useState(false);
   const [supFirstName, setSupFirstName] = useState("");
   const [supLastName, setSupLastName] = useState("");
-  const [supTitle, setSupTitle] = useState("");
+  const [supNid, setSupNid] = useState("");
   const [supPhone, setSupPhone] = useState("");
   const [supCanSms, setSupCanSms] = useState(true);
   const [mFirstName, setMFirstName] = useState("");
@@ -261,6 +310,28 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   const [columnMappingDraft, setColumnMappingDraft] = useState<ColumnMapping>({});
   const [importResults, setImportResults] = useState<ImportPreviewRow[] | null>(null);
   const [editingMember, setEditingMember] = useState<ContractMember | null>(null);
+  // UC-ADM-26 — پیش‌نمایش PDF پرسشنامه تکمیل‌شده از قیف
+  const [intakePdfDto, setIntakePdfDto] = useState<ApiMemberSubmittedFormDto | null>(null);
+  const [intakePdfBusy, setIntakePdfBusy] = useState(false);
+  const [partnerLogoBusy, setPartnerLogoBusy] = useState(false);
+  const currentClinic = useMemo(
+    () =>
+      snapshot.platform.clinics.find((c) => c.isCurrentTenant) ??
+      snapshot.platform.clinics[0] ??
+      null,
+    [snapshot.platform.clinics]
+  );
+  const { url: hospitalLogoUrl } = useStorageObjectUrl(currentClinic?.logoStorageKey);
+  const { url: partnerLogoUrl } = useStorageObjectUrl(contract?.partnerLogoStorageKey);
+  const intakePdfBrand = useMemo(
+    () => ({
+      hospitalName: currentClinic?.name?.trim() || "بیمارستان",
+      hospitalLogoUrl,
+      partnerLogoUrl,
+      organizationName: contract?.organizationName ?? null,
+    }),
+    [currentClinic?.name, hospitalLogoUrl, partnerLogoUrl, contract?.organizationName]
+  );
   const [eFirstName, setEFirstName] = useState("");
   const [eLastName, setELastName] = useState("");
   const [eNid, setENid] = useState("");
@@ -278,7 +349,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   const [ruleMinAge, setRuleMinAge] = useState("40");
   const [ruleMaxAge, setRuleMaxAge] = useState("");
   const [ruleJobCat, setRuleJobCat] = useState("همه");
-  const [rulePathway, setRulePathway] = useState(pathways[0]?.code ?? "FULL_CHECKUP");
+  const [rulePathway, setRulePathway] = useState(pathways[0]?.code ?? "CORP_MEN_LT40");
   const [saveToLibrary, setSaveToLibrary] = useState(true);
   const [editingLibRule, setEditingLibRule] = useState<PathwayLibraryRule | null>(null);
   const [libQuery, setLibQuery] = useState("");
@@ -343,6 +414,22 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   };
 
   const flash = (msg: string) => { setBanner(msg); setTimeout(() => setBanner(""), 5500); };
+
+  const openIntakePdf = async (m: ContractMember) => {
+    if (!canShowIntakePdfButton(m) || !contract?.serverId || !m.serverId) {
+      flash("خروجی PDF فقط برای پرسشنامه تکمیل‌شده با پرونده لینک‌شده فعال است.");
+      return;
+    }
+    setIntakePdfBusy(true);
+    try {
+      const dto = await fetchMemberSubmittedForm(contract.serverId, m.serverId);
+      setIntakePdfDto(dto);
+    } catch (e) {
+      flash(e instanceof ApiError || e instanceof Error ? e.message : "دریافت پرسشنامه ناموفق بود.");
+    } finally {
+      setIntakePdfBusy(false);
+    }
+  };
   type ActionResult = {
     ok?: boolean;
     added?: number;
@@ -354,7 +441,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
     totalUnscheduled?: number;
     totalFilled?: number;
     stillUnscheduled?: number;
-    libraryRuleId?: string;
+    libraryRuleId?: string; // meta برگشتی UPSERT — همان id مسیر کتابخانه
     createdContractId?: number;
     createdPatientId?: string | number;
     recalculated?: number;
@@ -554,7 +641,11 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
     [peopleMembers, peoplePage, peoplePageSize]
   );
 
-  const attachedLibraryIds = useMemo(() => new Set((contract?.pathwayRules ?? []).map((r) => r.libraryRuleId).filter(Boolean) as string[]), [contract]);
+  // پس از unify، شناسهٔ کتابخانه روی قانون = libraryPathwayId
+  const attachedLibraryIds = useMemo(
+    () => new Set((contract?.pathwayRules ?? []).map((r) => r.libraryPathwayId).filter(Boolean) as string[]),
+    [contract]
+  );
   const pathwayBuckets = useMemo(
     () => (contract ? buildContractPathwayBuckets(contract, pathways) : []),
     [contract, pathways]
@@ -565,11 +656,11 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
   );
   const visibleLibrary = useMemo(() => {
     const q = normalizeText(libQuery.trim());
-    // code هم جستجو می‌شود تا LR-001 و مشابه در API mode کار کند
+    // code هم جستجو می‌شود تا HP-001 و مشابه در API mode کار کند
     return library.filter(
       (r) =>
         !q ||
-        normalizeText(`${r.title} ${r.description} ${r.code} ${r.jobCategory} ${r.gender} ${r.pathwayCode}`).includes(q)
+        normalizeText(`${r.title} ${r.description} ${r.code} ${r.jobCategory} ${r.gender}`).includes(q)
     );
   }, [library, libQuery]);
 
@@ -584,18 +675,18 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
     );
   }, [viewingRule, contract, ruleMemberQuery]);
 
-  const viewingRuleLib = viewingRule?.libraryRuleId
-    ? library.find((r) => r.id === viewingRule.libraryRuleId)
+  const viewingRuleLib = viewingRule?.libraryPathwayId
+    ? library.find((r) => r.id === viewingRule.libraryPathwayId)
     : undefined;
   const viewingRulePkg = viewingRule
-    ? pathways.find((p) => p.code === viewingRule.pathwayCode)
+    ? pathways.find((p) => p.code === viewingRule.pathwayCode || p.id === viewingRule.libraryPathwayId)
     : undefined;
 
   const openEditContract = () => {
     if (!baseContract) return;
     setEditTitle(baseContract.title);
     setEditOrg(baseContract.organizationName);
-    setEditDefaultPkg(baseContract.defaultPathwayCode || pathways[0]?.code || "FULL_CHECKUP");
+    setEditDefaultPkg(baseContract.defaultPathwayCode || pathways[0]?.code || "CORP_MEN_LT40");
     setEditOpen(true);
   };
 
@@ -603,11 +694,62 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
     <div className="fixed inset-0 z-[85] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" onClick={() => setCreateOpen(false)}>
       <div role="dialog" aria-modal="true" aria-label="تعریف قرارداد سازمانی جدید" onClick={(e) => e.stopPropagation()} className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between"><h2 className="text-base font-bold text-slate-800">تعریف قرارداد سازمانی جدید</h2><button type="button" onClick={() => setCreateOpen(false)} aria-label="بستن"><X className="h-4 w-4 text-slate-400" /></button></div>
-        <form onSubmit={async (e) => { e.preventDefault(); const r = (await run({ action: "CREATE_CONTRACT", title: newTitle, organizationName: newOrg, apiEndpoint: newEndpoint, apiKey: newApiKey, defaultPathwayCode: newDefaultPkg, initialDailyCap: Number(newDailyCap) || 20, supervisorName: newSupName, supervisorTitle: newSupTitle, supervisorPhone: normalizeMobile(newSupPhone), fetchFromApiNow: fetchNowOnCreate })) as { createdContractId?: number }; if (r?.createdContractId) setSelectedContractId(Number(r.createdContractId)); setCreateOpen(false); setNewTitle(""); setNewOrg(""); setNewSupName(""); setNewSupPhone(""); flash(fetchNowOnCreate ? "قرارداد ساخته شد." : "قرارداد جدید ثبت شد."); }} className="space-y-3.5">
+        <form onSubmit={async (e) => {
+          e.preventDefault();
+          try {
+            const r = (await run({
+              action: "CREATE_CONTRACT",
+              title: newTitle,
+              organizationName: newOrg,
+              apiEndpoint: newEndpoint,
+              apiKey: newApiKey,
+              defaultPathwayCode: newDefaultPkg,
+              initialDailyCap: Number(newDailyCap) || 20,
+              supervisorFirstName: newSupFirstName.trim(),
+              supervisorLastName: newSupLastName.trim(),
+              supervisorNationalId: newSupNid.trim(),
+              supervisorPhone: normalizeMobile(newSupPhone),
+              fetchFromApiNow: fetchNowOnCreate,
+            })) as { createdContractId?: number; snapshot?: ClinicSnapshot };
+            // بعد از ایجاد: قرارداد جدید در کمبو + تب «مسیر سلامتی» (گام ۱)
+            const newId = r?.createdContractId != null ? Number(r.createdContractId) : null;
+            if (newId != null && Number.isFinite(newId)) {
+              setSelectedContractId(newId);
+            } else {
+              // fallback: جدیدترین غیرنمونه در snapshot برگشتی
+              const fromSnap = sortContractsForPicker(r?.snapshot?.contracts ?? []).find(
+                (c) => !c.code?.toUpperCase().startsWith("DEMO")
+              );
+              if (fromSnap) setSelectedContractId(fromSnap.id);
+            }
+            setTab("packages");
+            setCreateOpen(false);
+            setNewTitle("");
+            setNewOrg("");
+            setNewSupFirstName("");
+            setNewSupLastName("");
+            setNewSupNid("");
+            setNewSupPhone("");
+            flash(fetchNowOnCreate ? "قرارداد ساخته شد." : "قرارداد جدید ثبت شد.");
+          } catch (err) {
+            flash(err instanceof Error ? err.message : "ایجاد قرارداد ناموفق بود.");
+          }
+        }} className="space-y-3.5">
           <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">نام سازمان<AppInput required value={newOrg} onChange={(e) => setNewOrg(e.target.value)} placeholder="مثلاً: شرکت فولاد مبارکه" className="app-input mt-1 text-xs" /></label><label className="app-label">عنوان قرارداد<AppInput required value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="پایش سلامت سالانه" className="app-input mt-1 text-xs" /></label></div>
           <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">آدرس API خارجی<AppInput dir="ltr" value={newEndpoint} onChange={(e) => setNewEndpoint(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label><label className="app-label">کلید API قرارداد<AppInput dir="ltr" value={newApiKey} onChange={(e) => setNewApiKey(e.target.value)} className="app-input mt-1 font-mono text-left text-xs" /></label></div>
           <div className="grid gap-3 sm:grid-cols-2"><label className="app-label">مسیر پایه پیش‌فرض{pathways.length > 0 ? <select value={newDefaultPkg} onChange={(e) => setNewDefaultPkg(e.target.value)} className="app-select mt-1 w-full text-xs">{pathways.map((p) => <option key={p.code} value={p.code}>{p.title}</option>)}</select> : <AppInput value={newDefaultPkg} onChange={(e) => setNewDefaultPkg(e.target.value)} className="app-input mt-1 text-xs" />}</label><label className="app-label">سقف پذیرش روزانه<AppInput type="number" min={1} value={newDailyCap} onChange={(e) => setNewDailyCap(e.target.value)} className="app-input mt-1 text-xs" /></label></div>
-          <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5"><div className="text-xs font-semibold text-amber-900">ناظر خارجی شرکت</div><div className="grid gap-2 sm:grid-cols-3"><AppInput value={newSupName} onChange={(e) => setNewSupName(e.target.value)} placeholder="نام ناظر" className="app-input text-xs" /><AppInput value={newSupTitle} onChange={(e) => setNewSupTitle(e.target.value)} placeholder="سمت" className="app-input text-xs" /><IranDigitField kind="mobile" value={newSupPhone} onValueChange={setNewSupPhone} placeholder="موبایل: 0912..." className="app-input font-mono text-left text-xs" /></div></div>
+          <div className="space-y-2.5 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5">
+            <div className="text-xs font-semibold text-amber-900">ناظر خارجی شرکت (اختیاری)</div>
+            <p className="text-[10px] text-amber-800/80">اگر ناظر را می‌نویسید، نام، نام‌خانوادگی، کدملی و موبایل همگی لازم‌اند.</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <AppInput value={newSupFirstName} onChange={(e) => setNewSupFirstName(e.target.value)} placeholder="نام ناظر" className="app-input text-xs" />
+              <AppInput value={newSupLastName} onChange={(e) => setNewSupLastName(e.target.value)} placeholder="نام‌خانوادگی ناظر" className="app-input text-xs" />
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <IranDigitField kind="nationalId" value={newSupNid} onValueChange={setNewSupNid} placeholder="کد ملی ۱۰ رقمی" className="app-input font-mono text-left text-xs" />
+              <IranDigitField kind="mobile" value={newSupPhone} onValueChange={setNewSupPhone} placeholder="موبایل: ۰۹۱۲…" className="app-input font-mono text-left text-xs" />
+            </div>
+          </div>
           <label className="flex items-center gap-2 text-xs text-slate-600"><input type="checkbox" checked={fetchNowOnCreate} onChange={(e) => setFetchNowOnCreate(e.target.checked)} className="accent-teal-700" />دریافت فوری لیست افراد از API و ارسال پیامک تکمیل پروفایل (در این موج پس از ایجاد نادیده گرفته می‌شود)</label>
           <button type="submit" disabled={busy} className="primary-button w-full justify-center py-3">ایجاد قرارداد</button>
         </form>
@@ -646,6 +788,49 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
             <label className="app-label">نام سازمان<AppInput required value={editOrg} onChange={(e) => setEditOrg(e.target.value)} className="app-input mt-1 text-xs" /></label>
             <label className="app-label">عنوان قرارداد<AppInput required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="app-input mt-1 text-xs" /></label>
           </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <div className="text-[11px] font-semibold text-slate-700">لوگوی سازمان / بانک (PDF پرسشنامه)</div>
+            <p className="mt-1 text-[10px] leading-5 text-slate-500">PNG، JPEG یا WebP — حداکثر ۲ مگابایت.</p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              {partnerLogoUrl ? (
+                <img src={partnerLogoUrl} alt="لوگوی سازمان" className="h-14 w-auto max-w-[7rem] object-contain" />
+              ) : (
+                <div className="flex h-14 w-28 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white text-[10px] text-slate-400">
+                  بدون لوگو
+                </div>
+              )}
+              <label className="secondary-button cursor-pointer !py-1.5 !text-[11px]">
+                {partnerLogoBusy ? "در حال آپلود…" : "انتخاب فایل"}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  disabled={busy || partnerLogoBusy || !contract.serverId}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file || !contract.serverId) return;
+                    void (async () => {
+                      setPartnerLogoBusy(true);
+                      try {
+                        const res = await uploadContractPartnerLogo(contract.serverId!, file);
+                        await run({
+                          action: "SET_CONTRACT_PARTNER_LOGO",
+                          contractId: contract.id,
+                          partnerLogoStorageKey: res.partnerLogoStorageKey,
+                        });
+                        flash("لوگوی سازمان قرارداد ذخیره شد.");
+                      } catch (err) {
+                        flash(err instanceof Error ? err.message : "آپلود لوگو ناموفق بود.");
+                      } finally {
+                        setPartnerLogoBusy(false);
+                      }
+                    })();
+                  }}
+                />
+              </label>
+            </div>
+          </div>
           <label className="app-label">مسیر پایه پیش‌فرض
             {pathways.length > 0 ? (
               <select value={editDefaultPkg} onChange={(e) => setEditDefaultPkg(e.target.value)} className="app-select mt-1 w-full text-xs">
@@ -661,6 +846,69 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
             <button type="button" onClick={() => setEditOpen(false)} className="secondary-button">انصراف</button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+
+  // مودال تأیید تاکیدی فعال/غیرفعال (بدون تایپ — دکمه خطر)
+  const statusConfirmModal = statusConfirmOpen && contract && (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm" onClick={() => setStatusConfirmOpen(false)}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={contractIsActive ? "تأیید غیرفعال‌سازی قرارداد" : "تأیید فعال‌سازی قرارداد"}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl"
+      >
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <h2 className="text-base font-bold text-slate-800">
+            {contractIsActive ? "غیرفعال‌سازی قرارداد" : "فعال‌سازی قرارداد"}
+          </h2>
+          <button type="button" onClick={() => setStatusConfirmOpen(false)} aria-label="بستن">
+            <X className="h-4 w-4 text-slate-400" />
+          </button>
+        </div>
+        <p className="text-xs leading-6 text-slate-600">
+          {contractIsActive ? (
+            <>
+              قرارداد <strong className="text-slate-800">«{contract.title}»</strong> ({contract.organizationName}) غیرفعال می‌شود.
+              اعضا و ناظر در قیف عملیاتی پیش‌فرض دیده نمی‌شوند تا دوباره فعال شود.
+            </>
+          ) : (
+            <>
+              قرارداد <strong className="text-slate-800">«{contract.title}»</strong> دوباره فعال می‌شود و در لیست پیش‌فرض ظاهر می‌گردد.
+            </>
+          )}
+        </p>
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            className={
+              contractIsActive
+                ? "flex-1 rounded-xl bg-rose-600 px-3 py-2.5 text-xs font-bold text-white transition hover:bg-rose-700 disabled:opacity-60"
+                : "primary-button flex-1 justify-center"
+            }
+            onClick={async () => {
+              const nextActive = !contractIsActive;
+              await run({
+                action: "SET_CONTRACT_STATUS",
+                contractId: contract.id,
+                contractServerId: contract.serverId,
+                isActive: nextActive,
+              });
+              // پس از غیرفعال، تیک نمایش را روشن کن تا از کمبو گم نشود
+              if (!nextActive) setShowInactive(true);
+              setStatusConfirmOpen(false);
+              flash(nextActive ? "قرارداد فعال شد." : "قرارداد غیرفعال شد.");
+            }}
+          >
+            {contractIsActive ? "بله، غیرفعال شود" : "بله، فعال شود"}
+          </button>
+          <button type="button" onClick={() => setStatusConfirmOpen(false)} className="secondary-button">
+            انصراف
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -691,13 +939,20 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
 
   return (
     <div className="module-content space-y-5">
-      <div className="overflow-hidden rounded-2xl border border-[#dce8e1] bg-white shadow-[0_1px_2px_rgba(26,67,48,0.04)]">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#eef3f0] bg-[#f7fbf8] px-4 py-2.5">
+      {/* overflow-visible تا لیست کمبوی قرارداد زیر تب‌های پایین نرود */}
+      <div className="relative z-20 overflow-visible rounded-2xl border border-[#dce8e1] bg-white shadow-[0_1px_2px_rgba(26,67,48,0.04)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-2xl border-b border-[#eef3f0] bg-[#f7fbf8] px-4 py-2.5">
           <div className="flex items-center gap-2 text-[11px] font-semibold text-[#3f6e58]">
             <Building2 className="h-4 w-4 text-teal-600" />
-            قرارداد فعال
+            {contractIsActive ? "قرارداد فعال" : "قرارداد غیرفعال"}
+            {statusBadge ? (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800 ring-1 ring-amber-200">
+                {statusBadge}
+              </span>
+            ) : null}
             <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-slate-500 ring-1 ring-slate-200/80">
-              {toFaDigits(contracts.length)} قرارداد
+              {toFaDigits(pickerContracts.length)}
+              {showInactive ? ` / ${toFaDigits(contracts.length)}` : ""} قرارداد
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -709,6 +964,19 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
               <Pencil className="h-3.5 w-3.5" />
               ویرایش قرارداد
             </button>
+            <button
+              type="button"
+              disabled={busy || (contract.status !== "active" && contract.status !== "inactive" && contract.status !== "draft")}
+              onClick={() => setStatusConfirmOpen(true)}
+              className={
+                contractIsActive
+                  ? "inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 disabled:opacity-50"
+                  : "inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-teal-800 shadow-sm transition hover:border-teal-300 hover:bg-teal-50 disabled:opacity-50"
+              }
+            >
+              <Power className="h-3.5 w-3.5" />
+              {contractIsActive ? "غیرفعال کردن" : "فعال کردن"}
+            </button>
             <button type="button" onClick={() => setCreateOpen(true)} className="primary-button !py-1.5 !text-[11px]">
               <Plus className="h-3.5 w-3.5" />
               قرارداد جدید
@@ -716,10 +984,21 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
           </div>
         </div>
         <div className="space-y-3 px-4 py-3.5">
-          <label className="block">
-            <span className="mb-1.5 block text-[10px] font-semibold tracking-wide text-slate-400">انتخاب سازمان / قرارداد</span>
+          <div className="block">
+            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold tracking-wide text-slate-400">
+              <span>انتخاب سازمان / قرارداد</span>
+              <label className="inline-flex cursor-pointer items-center gap-1.5 font-medium text-slate-500">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                  className="accent-teal-700"
+                />
+                نمایش غیرفعال‌ها
+              </label>
+            </div>
             <ContractSearchSelect
-              contracts={contracts}
+              contracts={pickerContracts}
               value={contract.id}
               onChange={(id) => {
                 setSelectedContractId(id);
@@ -727,7 +1006,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                 setExcelPreview(null);
               }}
             />
-          </label>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-[10px] font-semibold text-slate-600" dir="ltr">
               {contract.code || "—"}
@@ -750,9 +1029,11 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
 
       {banner && <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-900"><span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />{banner}</span><button type="button" onClick={() => setBanner("")} aria-label="بستن"><X className="h-3.5 w-3.5 text-emerald-700" /></button></div>}
 
+      {/* تب‌ها و محتوای مرحله در یک بلوک — بدون فاصلهٔ space-y تا کارت به خط تب بچسبد */}
       <div>
         <div className="flex items-end justify-between gap-3 border-b border-slate-200">
-          <div className="-mb-px min-w-0 flex-1 overflow-x-auto">
+          {/* pt برای جلوگیری از بریدن سایه/حلقهٔ شماره مرحله از لبهٔ بالا */}
+          <div className="-mb-px min-w-0 flex-1 overflow-x-auto pt-1.5">
             <div className="flex min-w-max flex-nowrap items-end gap-5" role="tablist" aria-label="مراحل قرارداد">
               {STEPS.map((step) => {
                 const active = tab === step.id;
@@ -773,8 +1054,8 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                       title={`مرحله ${step.n}`}
                       className={`inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-black leading-none tabular-nums ${
                         active
-                          ? "bg-teal-600 text-white shadow-md shadow-teal-600/30 ring-2 ring-teal-600 ring-offset-2 ring-offset-white"
-                          : "bg-white text-slate-700 ring-2 ring-slate-300"
+                          ? "bg-teal-600 text-white shadow-sm"
+                          : "bg-white text-slate-700 ring-1 ring-slate-300"
                       }`}
                     >
                       {step.n}
@@ -799,20 +1080,21 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
           </div>
         </div>
         {guideOpen && (
-          <div className="mt-2 flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2.5 text-right">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600" />
-            <div className="min-w-0">
-              <div className="text-[11px] font-semibold text-slate-700">{STEPS.find((s) => s.id === tab)?.sub}</div>
-              <p className="mt-0.5 text-[11px] leading-5 text-slate-500">{GUIDE[tab]}</p>
+          <div className="border-b border-slate-100 bg-slate-50 px-3 py-2.5 text-right">
+            <div className="flex items-start gap-2">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-600" />
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold text-slate-700">{STEPS.find((s) => s.id === tab)?.sub}</div>
+                <p className="mt-0.5 text-[11px] leading-5 text-slate-500">{GUIDE[tab]}</p>
+              </div>
             </div>
           </div>
         )}
-      </div>
 
       {/* Step 1 — people: جدول اعضا + افزودن از نوار ابزار */}
       {tab === "people" && (
         <div className="space-y-5">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="rounded-b-2xl border border-t-0 border-slate-200 bg-white p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-bold text-slate-800">افراد این قرارداد</h2>
@@ -967,11 +1249,64 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
             <div>
               <span className="status-badge status-green">ورود گروهی با اکسل</span>
               <h2 className="mt-1.5 text-sm font-bold text-slate-800">تمپلیت آماده اکسل و بارگذاری لیست</h2>
-              <p className="mt-1 text-xs text-slate-500">ترتیب ستون‌ها مهم نیست؛ سیستم از عنوان تشخیص می‌دهد. اگر مبهم بود، مپ دستی می‌آید. گروه فقط وقتی کد مسیر باشد مسیر را ست می‌کند.</p>
+              <p className="mt-1 text-xs text-slate-500">ترتیب ستون‌ها مهم نیست؛ سیستم از عنوان تشخیص می‌دهد. اگر مبهم بود، مپ دستی می‌آید. گروه فقط وقتی کد مسیر باشد مسیر را ست می‌کند. تمپلیت دو ردیف نمونه (مرد / زن) و مقادیر سلول‌های انتخابی دارد.</p>
+            </div>
+            <div className="rounded-xl border border-teal-100 bg-white">
+              <button
+                type="button"
+                aria-expanded={excelColumnsGuideOpen}
+                onClick={() => setExcelColumnsGuideOpen((v) => !v)}
+                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-right text-[11px] font-semibold text-teal-900 hover:bg-teal-50/60"
+              >
+                <span>راهنمای ستون‌ها و نمونه‌ها ({toFaDigits(CONTRACT_EXCEL_TEMPLATE_COLUMNS.length)} فیلد)</span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 shrink-0 transition-transform duration-300 ease-out ${excelColumnsGuideOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {/* کشویی با grid-rows تا ارتفاع واقعی جدول بدون جهش باز/بسته شود */}
+              <div
+                className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                  excelColumnsGuideOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                }`}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div className="overflow-x-auto border-t border-teal-100">
+                    <table className="w-full min-w-[40rem] text-right text-[10px]">
+                      <thead className="bg-teal-50/80 text-teal-900">
+                        <tr>
+                          <th className="px-2 py-1.5 font-semibold">ستون</th>
+                          <th className="px-2 py-1.5 font-semibold">الزام</th>
+                          <th className="px-2 py-1.5 font-semibold">مقادیر مجاز / توضیح</th>
+                          <th className="px-2 py-1.5 font-semibold">نمونه مرد</th>
+                          <th className="px-2 py-1.5 font-semibold">نمونه زن</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {CONTRACT_EXCEL_TEMPLATE_COLUMNS.map((col) => (
+                          <tr key={col.key}>
+                            <td className="px-2 py-1.5 font-medium text-slate-800">{IMPORT_FIELD_LABELS[col.key]}</td>
+                            <td className="px-2 py-1.5">
+                              <span className={`inline-flex rounded-md px-1.5 py-0.5 text-[9px] font-semibold ${col.required ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-600"}`}>
+                                {col.required ? "اجباری" : "اختیاری"}
+                              </span>
+                            </td>
+                            <td className="px-2 py-1.5 text-slate-500" dir={col.selectOptions ? "rtl" : undefined}>
+                              {col.selectOptions ? col.selectOptions.join(" · ") : col.hint}
+                            </td>
+                            <td className="px-2 py-1.5 font-mono text-[9px]" dir="ltr">{col.sampleMale || "—"}</td>
+                            <td className="px-2 py-1.5 font-mono text-[9px]" dir="ltr">{col.sampleFemale || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => downloadContractExcelTemplate("xls")} className="secondary-button border-teal-200 bg-teal-50/60 text-teal-800"><FileSpreadsheet className="h-4 w-4 text-teal-700" />دانلود تمپلیت اکسل (.xls)</button>
-              <button type="button" onClick={() => downloadContractExcelTemplate("csv")} className="secondary-button"><Download className="h-3.5 w-3.5" />دانلود CSV</button>
+              <button type="button" onClick={() => downloadContractExcelTemplate("xlsx")} className="secondary-button border-teal-200 bg-teal-50/60 text-teal-800"><FileSpreadsheet className="h-4 w-4 text-teal-700" />دانلود تمپلیت کامل (.xlsx)</button>
+              <button type="button" onClick={() => downloadContractExcelTemplate("xls")} className="secondary-button"><FileSpreadsheet className="h-3.5 w-3.5" />.xls</button>
+              <button type="button" onClick={() => downloadContractExcelTemplate("csv")} className="secondary-button"><Download className="h-3.5 w-3.5" />CSV</button>
               <button type="button" onClick={() => fileInputRef.current?.click()} className="primary-button mr-auto"><Upload className="h-4 w-4" />بارگذاری فایل اکسل</button>
               <input
                 ref={fileInputRef}
@@ -1082,20 +1417,37 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                         <th className="px-2 py-1.5">موبایل</th>
                         <th className="px-2 py-1.5">تولد</th>
                         <th className="px-2 py-1.5">جنسیت</th>
+                        <th className="px-2 py-1.5">تاریخ مراجعه</th>
+                        <th className="px-2 py-1.5">گروه/مسیر</th>
                         <th className="px-2 py-1.5">وضعیت</th>
                         <th className="px-2 py-1.5">دلیل</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {excelPreview.rows.filter((r) => r.status !== "header" && r.status !== "skipped").map((r) => (
+                      {/* اول نامعتبرها؛ # = ترتیب نمایش (نه شمارهٔ خط فایل) تا بعد از سورت وارونه نشود */}
+                      {excelPreview.rows
+                        .filter((r) => r.status !== "header" && r.status !== "skipped")
+                        .slice()
+                        .sort((a, b) => {
+                          if (a.status === b.status) return a.lineNo - b.lineNo;
+                          return a.status === "invalid" ? -1 : 1;
+                        })
+                        .map((r, displayIdx) => (
                         <tr key={`${r.lineNo}-${r.nationalId}`} className={r.status === "ready" ? "bg-emerald-50/40" : "bg-rose-50/50"}>
-                          <td className="px-2 py-1 tabular-fa">{toFaDigits(r.lineNo)}</td>
+                          <td className="px-2 py-1 tabular-fa">{toFaDigits(displayIdx + 1)}</td>
                           <td className="px-2 py-1">{r.firstName}</td>
                           <td className="px-2 py-1">{r.lastName}</td>
-                          <td className="px-2 py-1 font-mono" dir="ltr">{r.nationalId}</td>
-                          <td className="px-2 py-1 font-mono" dir="ltr">{r.phone}</td>
+                          <td className="px-2 py-1 font-mono" dir="ltr">{toFaDigits(r.nationalId)}</td>
+                          <td className="px-2 py-1 font-mono" dir="ltr">{toFaDigits(r.phone)}</td>
                           <td className="px-2 py-1">{r.birthDateIso ? birthIsoToFaLabel(r.birthDateIso) : r.birthDateRaw || "—"}</td>
                           <td className="px-2 py-1">{r.gender || "—"}</td>
+                          <td className="px-2 py-1">
+                            {/* خالی = در فایل نبوده یا پارس نشده؛ «روز مراجعه» (شنبه/…) عمداً نادیده است */}
+                            {r.scheduledVisitDateIso
+                              ? birthIsoToFaLabel(r.scheduledVisitDateIso)
+                              : r.scheduledVisitDateRaw || "—"}
+                          </td>
+                          <td className="px-2 py-1">{r.pathwayCodeOrGroup || "—"}</td>
                           <td className="px-2 py-1 font-semibold">{r.status === "ready" ? "آماده" : "رد"}</td>
                           <td className="px-2 py-1 text-rose-700">{r.reason ?? "—"}</td>
                         </tr>
@@ -1171,7 +1523,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                       {importResults.map((r) => (
                         <tr key={`res-${r.nationalId}-${r.lineNo}`}>
                           <td className="px-2 py-1">{displayFullName(r.firstName, r.lastName)}</td>
-                          <td className="px-2 py-1 font-mono" dir="ltr">{r.nationalId}</td>
+                          <td className="px-2 py-1 font-mono" dir="ltr">{toFaDigits(r.nationalId)}</td>
                           <td className="px-2 py-1">{r.status === "imported" ? "ثبت شد" : r.status === "linked" ? "وصل به پرونده" : r.status === "duplicate" ? "تکراری" : "ناموفق"}</td>
                           <td className="px-2 py-1">{r.reason ?? "—"}</td>
                         </tr>
@@ -1251,7 +1603,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                 <div>
                   <div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-bold text-slate-800">ناظر خارجی سازمان</h2><span className={`status-badge ${contract.supervisor.isActive ? "status-green" : "status-amber"}`}>{contract.supervisor.isActive ? "فعال" : "تعریف نشده"}</span></div>
                   <p className="mt-1 text-xs text-slate-500">ناظر با شماره موبایل خود وارد پنل نظارت می‌شود و پیشرفت ثبت‌نام، نوبت‌ها و حضور کارکنانش را بدون دیدن جزئیات محرمانه پزشکی رصد می‌کند.</p>
-                  {contract.supervisor.isActive && <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs"><span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">{contract.supervisor.fullName} — {contract.supervisor.title}</span><span className="rounded-lg border border-teal-100 bg-teal-50 px-3 py-1.5 font-mono text-xs font-semibold text-teal-800" dir="ltr">{contract.supervisor.phone}</span></div>}
+                  {contract.supervisor.isActive && <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs"><span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700">{contract.supervisor.fullName}</span><span className="rounded-lg border border-teal-100 bg-teal-50 px-3 py-1.5 font-mono text-xs font-semibold text-teal-800" dir="ltr">{toFaDigits(contract.supervisor.phone)}</span></div>}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1259,7 +1611,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                   const parts = (contract.supervisor.isActive ? contract.supervisor.fullName : "").trim().split(/\s+/).filter(Boolean);
                   setSupFirstName(parts[0] ?? "");
                   setSupLastName(parts.slice(1).join(" "));
-                  setSupTitle(contract.supervisor.title || "مدیر HSE و رفاه کارکنان");
+                  setSupNid(contract.supervisor.nationalId || "");
                   setSupPhone(contract.supervisor.phone || "");
                   setSupCanSms(contract.supervisor.canSendReminders);
                   setSupEditOpen(!supEditOpen);
@@ -1273,25 +1625,46 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                 if (!contract.serverId) { flash("شناسه سرور قرارداد موجود نیست."); return; }
                 const displayName = `${supFirstName.trim()} ${supLastName.trim()}`.trim();
                 const phoneNorm = normalizeMobile(supPhone);
-                await run({
-                  action: "UPDATE_CONTRACT_SUPERVISOR",
-                  contractId: contract.id,
-                  contractServerId: contract.serverId,
-                  firstName: supFirstName.trim(),
-                  lastName: supLastName.trim(),
-                  title: supTitle,
-                  phone: phoneNorm,
-                  canSendReminders: supCanSms,
-                  isActive: true,
-                });
-                setSupEditOpen(false);
-                flash(`ناظر «${displayName}» ثبت شد و ورود با شماره ${toFaDigits(phoneNorm)} فعال گردید.`);
-              }} className="mt-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50/40 p-4 sm:grid-cols-5">
-                <label className="app-label">نام<AppInput required value={supFirstName} onChange={(e) => setSupFirstName(e.target.value)} placeholder="نام" className="app-input mt-1 text-xs" /></label>
-                <label className="app-label">نام‌خانوادگی<AppInput required value={supLastName} onChange={(e) => setSupLastName(e.target.value)} placeholder="نام‌خانوادگی" className="app-input mt-1 text-xs" /></label>
-                <label className="app-label">سمت<AppInput value={supTitle} onChange={(e) => setSupTitle(e.target.value)} placeholder="مدیر منابع انسانی" className="app-input mt-1 text-xs" /></label>
-                <label className="app-label">موبایل (نام کاربری ورود)<IranDigitField kind="mobile" required value={supPhone} onValueChange={setSupPhone} placeholder="0912..." className="app-input mt-1 font-mono text-left text-xs" /></label>
-                <div className="flex flex-col justify-end gap-2"><label className="flex items-center gap-1.5 text-[11px] text-slate-600"><input type="checkbox" checked={supCanSms} onChange={(e) => setSupCanSms(e.target.checked)} className="accent-teal-700" />مجوز یادآوری پیامکی</label><button type="submit" disabled={busy} className="primary-button justify-center">ثبت ناظر</button></div>
+                const nid = supNid.trim();
+                // جلوگیری از PUT با کدملی/موبایل نامعتبر (قبلاً ۵۰۰ خام از API دیده می‌شد)
+                if (!isValidIranNationalId(nid)) {
+                  flash("کدملی ناظر نامعتبر است.");
+                  return;
+                }
+                if (!isValidIranMobile(phoneNorm)) {
+                  flash("شماره موبایل ناظر نامعتبر است.");
+                  return;
+                }
+                try {
+                  await run({
+                    action: "UPDATE_CONTRACT_SUPERVISOR",
+                    contractId: contract.id,
+                    contractServerId: contract.serverId,
+                    firstName: supFirstName.trim(),
+                    lastName: supLastName.trim(),
+                    nationalId: nid,
+                    phone: phoneNorm,
+                    canSendReminders: supCanSms,
+                    isActive: true,
+                  });
+                  setSupEditOpen(false);
+                  flash(`ناظر «${displayName}» ثبت شد و ورود با شماره ${toFaDigits(phoneNorm)} فعال گردید.`);
+                } catch (err) {
+                  flash(err instanceof Error ? err.message : "ثبت ناظر ناموفق بود.");
+                }
+              }} className="mt-4 space-y-3 rounded-xl border border-amber-200 bg-amber-50/40 p-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="app-label">نام<AppInput required value={supFirstName} onChange={(e) => setSupFirstName(e.target.value)} placeholder="نام" className="app-input mt-1 text-xs" /></label>
+                  <label className="app-label">نام‌خانوادگی<AppInput required value={supLastName} onChange={(e) => setSupLastName(e.target.value)} placeholder="نام‌خانوادگی" className="app-input mt-1 text-xs" /></label>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="app-label">کدملی<IranDigitField kind="nationalId" required value={supNid} onValueChange={setSupNid} placeholder="کد ملی ۱۰ رقمی" className="app-input mt-1 font-mono text-left text-xs" /></label>
+                  <label className="app-label">موبایل (نام کاربری ورود)<IranDigitField kind="mobile" required value={supPhone} onValueChange={setSupPhone} placeholder="0912..." className="app-input mt-1 font-mono text-left text-xs" /></label>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label className="flex items-center gap-1.5 text-[11px] text-slate-600"><input type="checkbox" checked={supCanSms} onChange={(e) => setSupCanSms(e.target.checked)} className="accent-teal-700" />مجوز یادآوری پیامکی</label>
+                  <button type="submit" disabled={busy} className="primary-button justify-center">ثبت ناظر</button>
+                </div>
               </form>
             )}
           </div>
@@ -1300,7 +1673,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
 
       {/* Step 2 — package rules */}
       {tab === "packages" && (
-        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="space-y-3 rounded-b-2xl border border-t-0 border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-sm font-bold text-slate-800">مسیرهای سلامتی این قرارداد</h2>
@@ -1344,7 +1717,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                     setRuleMinAge("40");
                     setRuleMaxAge("");
                     setRuleJobCat("همه");
-                    setRulePathway(pathways[0]?.code ?? "FULL_CHECKUP");
+                    setRulePathway(pathways[0]?.code ?? "CORP_MEN_LT40");
                     setSaveToLibrary(true);
                     setRuleFormOpen(true);
                   }}
@@ -1421,7 +1794,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                           aria-label={`اعضای مسیر ${bucket.title}`}
                         >
                           <strong className="block truncate text-slate-800">{bucket.title}</strong>
-                          {bucket.libraryRuleId && (
+                          {bucket.libraryPathwayId && (
                             <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-teal-50 px-1.5 py-0.5 text-[9px] font-semibold text-teal-700">
                               <BookOpen className="h-2.5 w-2.5" />از کتابخانه
                             </span>
@@ -1691,7 +2064,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                             setRuleMinAge(lib.minAge != null ? String(lib.minAge) : "");
                             setRuleMaxAge(lib.maxAge != null ? String(lib.maxAge) : "");
                             setRuleJobCat(lib.jobCategory);
-                            setRulePathway(lib.pathwayCode);
+                            setRulePathway(lib.code);
                             setSaveToLibrary(true);
                             setLibraryPickerOpen(false);
                             setRuleFormOpen(true);
@@ -1731,7 +2104,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                   setRuleMinAge("40");
                   setRuleMaxAge("");
                   setRuleJobCat("همه");
-                  setRulePathway(pathways[0]?.code ?? "FULL_CHECKUP");
+                  setRulePathway(pathways[0]?.code ?? "CORP_MEN_LT40");
                   setSaveToLibrary(true);
                   setRuleFormOpen(true);
                 }}
@@ -1800,7 +2173,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
       {/* Step 3 — schedule */}
       {tab === "schedule" && (
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-b-2xl border border-t-0 border-slate-200 bg-white px-4 py-3">
             <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2 text-[11px]">
               <div className="flex items-baseline gap-1.5">
                 <span className="font-semibold text-rose-700">بدون نوبت</span>
@@ -1929,10 +2302,12 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
 
       {/* Step 4 — funnel + sms */}
       {tab === "funnel" && (
-        <div className="space-y-5">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="space-y-5 rounded-b-2xl border border-t-0 border-slate-200 bg-slate-50/40 p-4">
+          {/* ۸ کارت = دو ردیف۴تایی در lg+؛ پیامک‌نشده مخاطب اصلی دعوت گروهی است */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {([
-              { id: "all" as FunnelFilter, title: "کل افراد قرارداد", count: stats.total, sub: `${toFaDigits(stats.notSent)} بدون پیامک`, cls: "border-slate-200 bg-white" },
+              { id: "all" as FunnelFilter, title: "کل افراد قرارداد", count: stats.total, sub: `${toFaDigits(stats.formSubmitted)} تکمیل پرسشنامه`, cls: "border-slate-200 bg-white" },
+              { id: "not_sent" as FunnelFilter, title: "پیامک‌نشده", count: stats.notSent, sub: "آمادهٔ دعوت تکمیل ثبت‌نام", cls: "border-rose-200 bg-rose-50/50" },
               { id: "sms_sent" as FunnelFilter, title: "پیامک‌شده (باز نکرده)", count: stats.smsSentOnly, sub: "هنوز لینک را باز نکرده‌اند", cls: "border-sky-200 bg-sky-50/50" },
               { id: "opened_any" as FunnelFilter, title: "لینک را باز کرده‌اند", count: stats.openedAny, sub: `${toFaDigits(stats.linkOpenedOnly)} نفر بدون لاگین`, cls: "border-indigo-200 bg-indigo-50/50" },
               { id: "logged_any" as FunnelFilter, title: "لاگین کرده‌اند", count: stats.loggedAny, sub: `${toFaDigits(stats.loggedInOnly)} نفر شروع‌نکرده`, cls: "border-violet-200 bg-violet-50/50" },
@@ -1949,70 +2324,102 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
           </div>
 
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3.5 py-2.5">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
-                <Send className="h-3.5 w-3.5 text-teal-600" />
-                پیامک گروهی
-              </span>
-              <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-800">
-                {toFaDigits(smsRecipients.length)} گیرنده
-                {checkedIds.length > 0 ? " · انتخاب‌شده" : " · فیلتر فعلی"}
-              </span>
-              <div className="flex flex-wrap gap-1">
-                <button type="button" onClick={() => { setFunnelFilter("abandoned"); setApptFilter("all"); setCheckedIds([]); pickSmsTemplateByCode("abandon_followup"); }} className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-800">رهاکردگان ({toFaDigits(stats.abandoned)})</button>
-                <button type="button" onClick={() => { setFunnelFilter("sms_sent"); setApptFilter("all"); setCheckedIds([]); pickSmsTemplateByCode("invite_register"); }} className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-semibold text-sky-800">بازنکردگان ({toFaDigits(stats.smsSentOnly)})</button>
-                <button type="button" onClick={() => { setFunnelFilter("all"); setApptFilter("today"); setCheckedIds([]); pickSmsTemplateByCode("appointment_today"); }} className="rounded-lg border border-teal-200 bg-teal-50 px-2 py-1 text-[10px] font-semibold text-teal-800">نوبت امروز ({toFaDigits(stats.scheduledToday)})</button>
-              </div>
-              <select
-                aria-label="قالب پیامک"
-                value={smsTemplateId}
-                onChange={(e) => setSmsTemplateId(e.target.value)}
-                className="app-select min-w-[14rem] flex-1 !py-1.5 text-[11px]"
-              >
-                {smsTemplates.length === 0 ? (
-                  <option value="">قالبی تعریف نشده</option>
-                ) : (
-                  smsTemplates.map((t) => (
-                    <option key={t.id} value={t.id}>{t.title}</option>
-                  ))
-                )}
-              </select>
-              <button
-                type="button"
-                disabled={!smsTemplateId || smsRecipients.length === 0}
-                onClick={() => setSmsPreviewOpen(true)}
-                className="primary-button !py-1.5 !text-[11px]"
-              >
-                <Eye className="h-3.5 w-3.5" />
-                مشاهده
-              </button>
-              <button
-                type="button"
-                onClick={() => setSmsHistoryOpen((v) => !v)}
-                className="secondary-button !py-1.5 !text-[11px]"
-                aria-expanded={smsHistoryOpen}
-              >
-                تاریخچه ({toFaDigits(contract.smsLogs.length)})
-                {smsHistoryOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-              </button>
-              <p className="basis-full text-[10px] leading-5 text-slate-400">قالب را انتخاب کنید، با «مشاهده» نمونه و تعداد گیرنده را ببینید، سپس ارسال کنید.</p>
-              {smsHistoryOpen && (
-                <div className="basis-full max-h-48 space-y-2 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/80 p-2.5">
-                  {contract.smsLogs.length === 0 ? (
-                    <p className="px-1 py-2 text-[11px] text-slate-400">هنوز پیامک گروهی ثبت نشده است.</p>
-                  ) : (
-                    contract.smsLogs.map((log) => (
-                      <div key={log.id} className="rounded-lg border border-slate-100 bg-white px-3 py-2 text-[11px]">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <strong className="text-slate-700">{log.campaignTitle}</strong>
-                          <span className="text-[10px] text-slate-400">{log.audienceLabel} · {formatFaTime(log.sentAt)} · {toFaDigits(log.recipientCount)} نفر</span>
-                        </div>
-                        {log.messageTemplate && <p className="mt-1 text-[10px] leading-5 text-slate-500">{log.messageTemplate}</p>}
-                      </div>
-                    ))
-                  )}
+            {/* پنل عمل اصلی قیف: جدا از کارت‌های آماری تا دیده و فهمیده شود */}
+            <div className="overflow-hidden rounded-2xl border-2 border-teal-300 bg-gradient-to-l from-teal-50/90 via-white to-white shadow-sm shadow-teal-100/60">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-teal-100 bg-teal-600/95 px-4 py-3.5 text-white">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25">
+                    <Send className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold tracking-tight">ارسال پیامک گروهی</h3>
+                    <p className="mt-0.5 text-[11px] leading-5 text-teal-50/90">
+                      دعوت، پیگیری رهاکردگان و یادآوری نوبت — مخاطب فعلی را انتخاب کنید، قالب بزنید، پیش‌نمایش ببینید و بفرستید.
+                    </p>
+                  </div>
                 </div>
-              )}
+                <div className="rounded-xl bg-white/15 px-3.5 py-2 text-center ring-1 ring-white/20">
+                  <div className="text-[10px] font-medium text-teal-50/80">گیرندهٔ فعلی</div>
+                  <div className="mt-0.5 text-xl font-bold tabular-fa leading-none">{toFaDigits(smsRecipients.length)}</div>
+                  <div className="mt-1 text-[10px] text-teal-50/80">
+                    {checkedIds.length > 0 ? "انتخاب دستی از جدول" : "بر اساس فیلتر قیف"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3.5 p-4">
+                <div>
+                  <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">میان‌بر مخاطب + قالب</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button type="button" onClick={() => { setFunnelFilter("abandoned"); setApptFilter("all"); setCheckedIds([]); pickSmsTemplateByCode("abandon_followup"); }} className="inline-flex h-10 items-center rounded-xl border border-amber-200 bg-amber-50 px-3 text-[11px] font-semibold text-amber-900 hover:border-amber-300 hover:bg-amber-100/80">رهاکردگان ({toFaDigits(stats.abandoned)})</button>
+                    <button type="button" onClick={() => { setFunnelFilter("sms_sent"); setApptFilter("all"); setCheckedIds([]); pickSmsTemplateByCode("invite_register"); }} className="inline-flex h-10 items-center rounded-xl border border-sky-200 bg-sky-50 px-3 text-[11px] font-semibold text-sky-900 hover:border-sky-300 hover:bg-sky-100/80">بازنکردگان ({toFaDigits(stats.smsSentOnly)})</button>
+                    <button type="button" onClick={() => { setFunnelFilter("all"); setApptFilter("today"); setCheckedIds([]); pickSmsTemplateByCode("appointment_today"); }} className="inline-flex h-10 items-center rounded-xl border border-teal-200 bg-teal-50 px-3 text-[11px] font-semibold text-teal-900 hover:border-teal-300 hover:bg-teal-100/80">نوبت امروز ({toFaDigits(stats.scheduledToday)})</button>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                  <label className="min-w-[14rem] flex-1 space-y-1">
+                    <span className="block text-[10px] font-semibold text-slate-500">قالب پیامک</span>
+                    <select
+                      aria-label="قالب پیامک"
+                      value={smsTemplateId}
+                      onChange={(e) => setSmsTemplateId(e.target.value)}
+                      className="app-select w-full text-[12px]"
+                    >
+                      {smsTemplates.length === 0 ? (
+                        <option value="">قالبی تعریف نشده</option>
+                      ) : (
+                        smsTemplates.map((t) => (
+                          <option key={t.id} value={t.id}>{t.title}</option>
+                        ))
+                      )}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    disabled={!smsTemplateId || smsRecipients.length === 0}
+                    onClick={() => setSmsPreviewOpen(true)}
+                    className="primary-button h-11 px-4 text-[12px]"
+                  >
+                    <Eye className="h-4 w-4" />
+                    پیش‌نمایش و ارسال
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSmsHistoryOpen((v) => !v)}
+                    className="secondary-button h-11 px-3 text-[12px]"
+                    aria-expanded={smsHistoryOpen}
+                  >
+                    تاریخچه ({toFaDigits(contract.smsLogs.length)})
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ease-out ${smsHistoryOpen ? "rotate-180" : ""}`} />
+                  </button>
+                </div>
+
+                {/* کشویی تاریخچه هم‌سبک راهنمای اکسل */}
+                <div
+                  className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+                    smsHistoryOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                  }`}
+                >
+                  <div className="min-h-0 overflow-hidden">
+                    <div className="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-teal-100 bg-white p-2.5">
+                      {contract.smsLogs.length === 0 ? (
+                        <p className="px-1 py-2 text-[11px] text-slate-400">هنوز پیامک گروهی ثبت نشده است.</p>
+                      ) : (
+                        contract.smsLogs.map((log) => (
+                          <div key={log.id} className="rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2 text-[11px]">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <strong className="text-slate-700">{log.campaignTitle}</strong>
+                              <span className="text-[10px] text-slate-400">{log.audienceLabel} · {formatFaTime(log.sentAt)} · {toFaDigits(log.recipientCount)} نفر</span>
+                            </div>
+                            {log.messageTemplate && <p className="mt-1 text-[10px] leading-5 text-slate-500">{log.messageTemplate}</p>}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {smsPreviewOpen && selectedSmsTemplate && (
@@ -2082,14 +2489,67 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
             )}
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-bold text-slate-800">جزئیات تک‌به‌تک افراد ({toFaDigits(filteredFunnelMembers.length)} نفر){membersBusy ? " · در حال بارگذاری…" : ""}</h2>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button type="button" onClick={() => exportContractReportExcel(contract)} className="secondary-button py-1 text-[10px]"><Download className="h-3.5 w-3.5" />خروجی اکسل</button>
-                  <select value={funnelFilter} onChange={(e) => setFunnelFilter(e.target.value as FunnelFilter)} className="app-select text-xs"><option value="all">همه مراحل</option><option value="not_sent">پیامک‌نشده ({toFaDigits(stats.notSent)})</option><option value="sms_sent">بازنکرده لینک ({toFaDigits(stats.smsSentOnly)})</option><option value="opened_any">بازکنندگان لینک ({toFaDigits(stats.openedAny)})</option><option value="logged_any">لاگین‌کردگان ({toFaDigits(stats.loggedAny)})</option><option value="form_draft">شروع پرسشنامه ({toFaDigits(stats.formDraft)})</option><option value="abandoned">رهاکردگان وسط کار ({toFaDigits(stats.abandoned)})</option><option value="completed">تکمیل پرسشنامه ({toFaDigits(stats.formSubmitted)})</option></select>
-                  <select value={apptFilter} onChange={(e) => setApptFilter(e.target.value as ApptFilter)} className="app-select text-xs"><option value="all">همه نوبت‌ها</option><option value="unscheduled">فراخوان‌نشده</option><option value="today">نوبت امروز</option><option value="pinned">دستی (پین)</option><option value="auto_scheduled">فراخوان خودکار</option><option value="visited">مراجعه‌کرده</option></select>
-                  <label className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs"><Search className="h-3.5 w-3.5 text-slate-400" /><AppInput value={memberSearch} onChange={(e) => setMemberSearch(e.target.value)} placeholder="نام، کد ملی..." className="w-28 bg-transparent outline-none" /></label>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-bold text-slate-800">جزئیات تک‌به‌تک افراد</h2>
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    {toFaDigits(filteredFunnelMembers.length)} نفر در فیلتر فعلی
+                    {membersBusy ? " · در حال بارگذاری…" : ""}
+                    {checkedIds.length > 0 ? ` · ${toFaDigits(checkedIds.length)} نفر انتخاب‌شده` : ""}
+                  </p>
                 </div>
+                <button type="button" onClick={() => exportContractReportExcel(contract)} className="secondary-button shrink-0">
+                  <Download className="h-3.5 w-3.5" />
+                  خروجی اکسل
+                </button>
+              </div>
+
+              {/* فیلترها جدا از عنوان؛ هر کنترل برچسب و عرض ثابت دارد تا wrap شلوغ نشود */}
+              <div className="mt-3 grid gap-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-3 sm:grid-cols-2 lg:grid-cols-3">
+                <label className="block space-y-1">
+                  <span className="text-[10px] font-semibold text-slate-500">مرحله پیش‌ثبت‌نام</span>
+                  <select
+                    value={funnelFilter}
+                    onChange={(e) => setFunnelFilter(e.target.value as FunnelFilter)}
+                    className="app-select w-full text-xs"
+                  >
+                    <option value="all">همه مراحل</option>
+                    <option value="not_sent">پیامک‌نشده ({toFaDigits(stats.notSent)})</option>
+                    <option value="sms_sent">بازنکرده لینک ({toFaDigits(stats.smsSentOnly)})</option>
+                    <option value="opened_any">بازکنندگان لینک ({toFaDigits(stats.openedAny)})</option>
+                    <option value="logged_any">لاگین‌کردگان ({toFaDigits(stats.loggedAny)})</option>
+                    <option value="form_draft">شروع پرسشنامه ({toFaDigits(stats.formDraft)})</option>
+                    <option value="abandoned">رهاکردگان وسط کار ({toFaDigits(stats.abandoned)})</option>
+                    <option value="completed">تکمیل پرسشنامه ({toFaDigits(stats.formSubmitted)})</option>
+                  </select>
+                </label>
+                <label className="block space-y-1">
+                  <span className="text-[10px] font-semibold text-slate-500">وضعیت نوبت</span>
+                  <select
+                    value={apptFilter}
+                    onChange={(e) => setApptFilter(e.target.value as ApptFilter)}
+                    className="app-select w-full text-xs"
+                  >
+                    <option value="all">همه نوبت‌ها</option>
+                    <option value="unscheduled">فراخوان‌نشده</option>
+                    <option value="today">نوبت امروز</option>
+                    <option value="pinned">دستی (پین)</option>
+                    <option value="auto_scheduled">فراخوان خودکار</option>
+                    <option value="visited">مراجعه‌کرده</option>
+                  </select>
+                </label>
+                <label className="block space-y-1 sm:col-span-2 lg:col-span-1">
+                  <span className="text-[10px] font-semibold text-slate-500">جستجو</span>
+                  <span className="flex h-11 items-center gap-2 rounded-[9px] border border-slate-200 bg-white px-3">
+                    <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                    <AppInput
+                      value={memberSearch}
+                      onChange={(e) => setMemberSearch(e.target.value)}
+                      placeholder="نام، موبایل یا کدملی…"
+                      className="w-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs shadow-none outline-none focus:ring-0"
+                    />
+                  </span>
+                </label>
               </div>
               <div className="mt-4 max-h-[520px] overflow-auto">
                 <table className="w-full text-right text-xs">
@@ -2104,6 +2564,18 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                         <td className="py-2.5"><span className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-medium ${APPOINTMENT_META[m.appointmentStatus].badgeClass}`}>{APPOINTMENT_META[m.appointmentStatus].short}</span>{m.scheduledLabel && <div className="mt-0.5 text-[10px] text-slate-500">{m.scheduledLabel}</div>}</td>
                         <td className="py-2.5"><button type="button" onClick={() => setBanner(`لینک اختصاصی ${m.fullName}: ${m.inviteToken}`)} className="secondary-button !px-1.5 py-1" aria-label={`لینک ${m.fullName}`} title="مشاهده لینک"><Link2 className="h-3.5 w-3.5 text-teal-700" /></button></td>
                         <td className="py-2.5"><div className="flex flex-wrap items-center gap-1">
+                          {canShowIntakePdfButton(m) && (
+                            <button
+                              type="button"
+                              disabled={busy || intakePdfBusy || !contract.serverId}
+                              onClick={() => void openIntakePdf(m)}
+                              className="secondary-button !px-2 py-1.5 text-teal-800 ring-1 ring-teal-200/80 hover:bg-teal-50"
+                              aria-label={`چاپ / PDF پرسشنامه ${m.fullName}`}
+                              title="چاپ / PDF پرسشنامه"
+                            >
+                              <Printer className="h-4 w-4 stroke-[2.25]" aria-hidden />
+                            </button>
+                          )}
                           <button type="button" disabled={busy || !m.serverId || !contract.serverId} onClick={async () => {
                             if (!m.serverId || !contract.serverId) { flash("شناسه سرور عضو یا قرارداد موجود نیست."); return; }
                             if (!smsTemplateId) { flash("ابتدا یک قالب پیامک انتخاب کنید."); return; }
@@ -2138,6 +2610,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
           </div>
         </div>
       )}
+      </div>
 
       {viewingRule && (
         <div
@@ -2156,7 +2629,7 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#20745c] text-[11px] font-bold text-white">{toFaDigits(viewingRule.priority)}</span>
                   <h3 className="text-sm font-bold text-slate-800">{viewingRule.title}</h3>
-                  {viewingRule.libraryRuleId && (
+                  {viewingRule.libraryPathwayId && (
                     <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-1.5 py-0.5 text-[9px] font-semibold text-teal-700">
                       <BookOpen className="h-2.5 w-2.5" />از کتابخانه{viewingRuleLib?.code ? ` · ${viewingRuleLib.code}` : ""}
                     </span>
@@ -2345,6 +2818,16 @@ export function CorporateContractsHub({ snapshot, initialTab = "people", onActio
 
       {createModal}
       {editModal}
+      {statusConfirmModal}
+
+      {intakePdfDto && (
+        <PrintableIntakeQuestionnaire
+          dto={intakePdfDto}
+          forms={snapshot.forms}
+          brand={intakePdfBrand}
+          onClose={() => setIntakePdfDto(null)}
+        />
+      )}
     </div>
   );
 }

@@ -43,10 +43,11 @@
 | [`shared/unit-test-scenarios.md`](shared/unit-test-scenarios.md) | کاتالوگ سناریوهای Unit Test (BE/FE) — ۵۱ UC v1 |
 | [`shared/process-changelog.md`](shared/process-changelog.md) | changelog فرایندی (تاریخ شمسی) |
 | [`shared/CHANGELOG.md`](shared/CHANGELOG.md) | تغییرات نگارش اسناد |
+| [`shared/operational-ready-modules.md`](shared/operational-ready-modules.md) | کاتالوگ بخش‌های عملیاتی پیاده‌سازی‌شده و آماده‌به‌کار v1 |
 | [`shared/platform-strategic-plan.md`](shared/platform-strategic-plan.md) | برنامه استراتژیک پلتفرم پیش‌پذیرش (فعلی + آینده + پیشنهاد) |
 | [`شرط-نمایش-و-مخاطب-پرسشنامه.md`](شرط-نمایش-و-مخاطب-پرسشنامه.md) | ماتریس شرط نمایش سوالات + seed/API و import/export بسته |
 | [`processes/README.md`](processes/README.md) | فرایندهای کاری v1 |
 
 ---
 
-**مرتبط:** [برنامه استراتژیک](shared/platform-strategic-plan.md) · [دیپلوی سرور](shared/server-deploy.md) · [ماتریس تست](shared/pre-release-test-matrix.md) · [Unit Test](shared/unit-test-scenarios.md) · [فرایندها](processes/README.md) · [`.cursorrules`](../.cursorrules)
+**مرتبط:** [بخش‌های عملیاتی آماده](shared/operational-ready-modules.md) · [برنامه استراتژیک](shared/platform-strategic-plan.md) · [دیپلوی سرور](shared/server-deploy.md) · [ماتریس تست](shared/pre-release-test-matrix.md) · [Unit Test](shared/unit-test-scenarios.md) · [فرایندها](processes/README.md) · [`.cursorrules`](../.cursorrules)

@@ -41,6 +41,7 @@ public sealed class AuthServiceFactory
             new FakeFormRepository(Store),
             new FakeEvidenceRepository(Store),
             clinics,
+            new FakePathwayCatalogRepository(Store),
             UnitOfWork);
 
         return new AuthService(

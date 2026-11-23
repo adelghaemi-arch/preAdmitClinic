@@ -138,6 +138,38 @@ public sealed class ClinicRepository(NabzDbContext db) : IClinicRepository
     public async Task AddAsync(Clinic clinic, CancellationToken ct = default) => await db.Clinics.AddAsync(clinic, ct);
 }
 
+public sealed class ClinicStationRepository(NabzDbContext db) : IClinicStationRepository
+{
+    public Task<List<ClinicStation>> ListByClinicAsync(Guid clinicId, bool activeOnly, CancellationToken ct = default)
+    {
+        var q = db.ClinicStations.Where(x => x.ClinicId == clinicId);
+        if (activeOnly) q = q.Where(x => x.IsActive);
+        return q.OrderBy(x => x.SortOrder).ThenBy(x => x.TitleFa).ToListAsync(ct);
+    }
+
+    public Task<ClinicStation?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => db.ClinicStations.FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public Task<ClinicStation?> GetByClinicAndCodeAsync(Guid clinicId, string code, CancellationToken ct = default)
+        => db.ClinicStations.FirstOrDefaultAsync(x => x.ClinicId == clinicId && x.Code == code, ct);
+
+    public async Task AddAsync(ClinicStation station, CancellationToken ct = default)
+        => await db.ClinicStations.AddAsync(station, ct);
+
+    public async Task<int> SyncPathwayStationTitlesAsync(string roomCode, string titleFa, CancellationToken ct = default)
+    {
+        var rows = await db.PathwayStationDefs
+            .Where(x => x.RoomCode == roomCode)
+            .ToListAsync(ct);
+        foreach (var row in rows)
+        {
+            row.TitleFa = titleFa;
+            row.UpdatedAt = DateTime.UtcNow;
+        }
+        return rows.Count;
+    }
+}
+
 public sealed class ContractRepository(NabzDbContext db) : IContractRepository
 {
     public Task<CorporateContract?> GetByIdAsync(Guid id, bool includeMembers = false, CancellationToken ct = default)
@@ -285,53 +317,77 @@ public sealed class ContractRepository(NabzDbContext db) : IContractRepository
     public Task<ContractPathwayRule?> GetPathwayRuleByIdAsync(Guid ruleId, CancellationToken ct = default)
         => db.ContractPathwayRules.FirstOrDefaultAsync(x => x.Id == ruleId, ct);
 
-    public Task<List<ContractPathwayRule>> ListPathwayRulesByLibraryRuleIdAsync(Guid libraryRuleId, CancellationToken ct = default)
-        => db.ContractPathwayRules.Where(x => x.LibraryRuleId == libraryRuleId).ToListAsync(ct);
+    public Task<List<ContractPathwayRule>> ListPathwayRulesByLibraryPathwayIdAsync(Guid libraryPathwayId, CancellationToken ct = default)
+        => db.ContractPathwayRules.Where(x => x.LibraryPathwayId == libraryPathwayId).ToListAsync(ct);
 
     public async Task AddPathwayRuleAsync(ContractPathwayRule rule, CancellationToken ct = default)
         => await db.ContractPathwayRules.AddAsync(rule, ct);
 }
 
-public sealed class PathwayLibraryRuleRepository(NabzDbContext db) : IPathwayLibraryRuleRepository
+public sealed class PathwayCatalogRepository(NabzDbContext db) : IPathwayCatalogRepository
 {
-    public Task<PathwayLibraryRule?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => db.PathwayLibraryRules.FirstOrDefaultAsync(x => x.Id == id, ct);
+    private static IQueryable<PathwayDefinition> WithStations(IQueryable<PathwayDefinition> q, bool includeStations)
+        => includeStations ? q.Include(x => x.Stations) : q;
 
-    public Task<List<PathwayLibraryRule>> ListAsync(string? query, int take, CancellationToken ct = default)
+    public Task<PathwayDefinition?> GetByIdAsync(Guid id, bool includeStations = true, CancellationToken ct = default)
+        => WithStations(db.PathwayDefinitions.AsQueryable(), includeStations)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
+
+    public Task<PathwayDefinition?> GetByCodeAsync(string code, bool includeStations = true, CancellationToken ct = default)
+        => WithStations(db.PathwayDefinitions.AsQueryable(), includeStations)
+            .FirstOrDefaultAsync(x => x.Code == code, ct);
+
+    public Task<PathwayStationDef?> GetStationByIdAsync(Guid stationDefId, CancellationToken ct = default)
+        => db.PathwayStationDefs.FirstOrDefaultAsync(x => x.Id == stationDefId, ct);
+
+    public Task<List<PathwayDefinition>> ListActiveAsync(CancellationToken ct = default)
+        => db.PathwayDefinitions.Include(x => x.Stations)
+            .Where(x => x.IsActive)
+            .OrderBy(x => x.Code)
+            .ToListAsync(ct);
+
+    public Task<List<PathwayDefinition>> ListAsync(string? query, bool libraryOnly, int take, CancellationToken ct = default)
     {
-        var q = db.PathwayLibraryRules.AsQueryable();
+        var q = db.PathwayDefinitions.Include(x => x.Stations).AsQueryable();
+        if (libraryOnly)
+            q = q.Where(x => x.IsInLibrary);
         if (!string.IsNullOrWhiteSpace(query))
         {
             var t = query.Trim();
             q = q.Where(x =>
                 x.Title.Contains(t) || x.Code.Contains(t)
                 || (x.Description != null && x.Description.Contains(t))
-                || x.JobCategory.Contains(t) || x.Gender.Contains(t)
-                || x.PathwayCode.Contains(t));
+                || x.JobCategory.Contains(t) || x.Gender.Contains(t));
         }
         return q.OrderBy(x => x.Code).Take(take).ToListAsync(ct);
     }
 
     public Task<int> CountAsync(CancellationToken ct = default)
-        => db.PathwayLibraryRules.CountAsync(ct);
+        => db.PathwayDefinitions.CountAsync(ct);
 
-    public async Task AddAsync(PathwayLibraryRule rule, CancellationToken ct = default)
-        => await db.PathwayLibraryRules.AddAsync(rule, ct);
+    public async Task AddAsync(PathwayDefinition def, CancellationToken ct = default)
+        => await db.PathwayDefinitions.AddAsync(def, ct);
 
-    public void Remove(PathwayLibraryRule rule) => db.PathwayLibraryRules.Remove(rule);
+    public void Remove(PathwayDefinition def) => db.PathwayDefinitions.Remove(def);
 
-    public Task<int> CountAttachedContractsAsync(Guid libraryRuleId, CancellationToken ct = default)
+    public void RemoveRange(IEnumerable<PathwayDefinition> defs)
+        => db.PathwayDefinitions.RemoveRange(defs);
+
+    public void RemoveStations(IEnumerable<PathwayStationDef> stations)
+        => db.PathwayStationDefs.RemoveRange(stations);
+
+    public Task<int> CountAttachedContractsAsync(Guid pathwayId, CancellationToken ct = default)
         => db.ContractPathwayRules
-            .Where(x => x.LibraryRuleId == libraryRuleId)
+            .Where(x => x.LibraryPathwayId == pathwayId)
             .Select(x => x.ContractId)
             .Distinct()
             .CountAsync(ct);
 
-    public async Task<(int ActiveMatched, int PreviouslyUsed)> CountMemberUsageAsync(Guid libraryRuleId, CancellationToken ct = default)
+    public async Task<(int ActiveMatched, int PreviouslyUsed)> CountMemberUsageAsync(Guid pathwayId, CancellationToken ct = default)
     {
-        // match با عنوان قانون قرارداد متصل به کتابخانه — هم‌تراز ApplyPathwayRules
+        // match با عنوان مسیر قرارداد متصل به کاتالوگ — هم‌تراز ApplyPathwayRules
         var matched = db.ContractPathwayRules
-            .Where(r => r.LibraryRuleId == libraryRuleId)
+            .Where(r => r.LibraryPathwayId == pathwayId)
             .Join(
                 db.ContractMembers,
                 r => new { r.ContractId, Title = r.Title },
@@ -342,6 +398,16 @@ public sealed class PathwayLibraryRuleRepository(NabzDbContext db) : IPathwayLib
         var previously = await matched.Where(m => m.OnboardingStage == OnboardingStage.Completed).Select(m => m.Id).Distinct().CountAsync(ct);
         return (active, previously);
     }
+
+    public Task<List<PatientPathwayStationProgress>> ListProgressByPatientAsync(Guid patientId, CancellationToken ct = default)
+        => db.PatientPathwayStationProgresses.Where(x => x.PatientId == patientId).ToListAsync(ct);
+
+    public Task<PatientPathwayStationProgress?> GetProgressAsync(Guid patientId, Guid stationDefId, CancellationToken ct = default)
+        => db.PatientPathwayStationProgresses
+            .FirstOrDefaultAsync(x => x.PatientId == patientId && x.PathwayStationDefId == stationDefId, ct);
+
+    public async Task AddProgressAsync(PatientPathwayStationProgress progress, CancellationToken ct = default)
+        => await db.PatientPathwayStationProgresses.AddAsync(progress, ct);
 }
 
 public sealed class PatientRepository(NabzDbContext db) : IPatientRepository
@@ -562,8 +628,15 @@ public sealed class EvidenceRepository(NabzDbContext db) : IEvidenceRepository
     }
 
     public Task<PatientPhoto?> FindPhotoByStorageKeyAsync(string storageKey, CancellationToken ct = default)
-        => db.PatientPhotos.Include(x => x.Patient)
-            .FirstOrDefaultAsync(x => x.StorageKey == storageKey, ct);
+    {
+        // یک کلید ممکن است هم پرتره و هم fraud_confirm باشد؛ پرتره اولویت دارد تا Owner بتواند دانلود کند
+        var key = (storageKey ?? "").Replace('\\', '/').Trim();
+        return db.PatientPhotos.Include(x => x.Patient)
+            .Where(x => x.StorageKey == key || x.StorageKey == storageKey)
+            .OrderBy(x => x.Kind == UserPhotoKind.Portrait ? 0 : 1)
+            .ThenByDescending(x => x.CapturedAt)
+            .FirstOrDefaultAsync(ct);
+    }
 
     public Task<IntakeDocumentFile?> FindDocumentFileByStorageKeyAsync(string storageKey, CancellationToken ct = default)
         => db.IntakeDocumentFiles.Include(x => x.Group).ThenInclude(g => g.Patient)

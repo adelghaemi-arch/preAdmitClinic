@@ -10,14 +10,17 @@ using Nabz.Domain.Enums;
 namespace Nabz.Application.Interfaces;
 
 public record ContractPathwayRuleDto(
-    Guid Id, Guid? LibraryRuleId,
+    Guid Id, Guid? LibraryPathwayId,
     string Title, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PathwayCode, int Priority);
 
 public record ContractDto(
     Guid Id, string Code, string Title, string OrganizationName, string Status,
     string? SupervisorPhone, string? SupervisorName, int MemberCount,
     string? DefaultPathwayCode,
-    IReadOnlyList<ContractPathwayRuleDto> PathwayRules);
+    IReadOnlyList<ContractPathwayRuleDto> PathwayRules,
+    string? PartnerLogoStorageKey = null);
+
+public record ContractPartnerLogoUploadResult(string PartnerLogoStorageKey, string FileName, string ContentType, long SizeBytes);
 
 public record ContractMemberDto(
     Guid Id, Guid ContractId,
@@ -39,7 +42,7 @@ public record ContractMemberDto(
     DateOnly? ScheduledVisitDate = null);
 
 public record PathwayRuleInput(
-    string Title, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PathwayCode, int Priority, Guid? LibraryRuleId);
+    string Title, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PathwayCode, int Priority, Guid? LibraryPathwayId);
 
 public record CreateContractRequest(string Title, string OrganizationName, string? Code, string? DefaultPathwayCode = null);
 /// <summary>ویرایش مشخصات پایه؛ Code پس از ایجاد قفل است.</summary>
@@ -85,6 +88,8 @@ public interface IContractService
 {
     Task<ContractDto> CreateAsync(Guid clinicId, CreateContractRequest request, CancellationToken ct = default);
     Task<ContractDto> UpdateAsync(Guid contractId, UpdateContractRequest request, CancellationToken ct = default);
+    /// <summary>UC-ADM-24 — فعال ↔ Inactive؛ فعال‌سازی از Inactive/Draft؛ غیرفعال فقط از Active.</summary>
+    Task<ContractDto> SetStatusAsync(Guid contractId, bool isActive, CancellationToken ct = default);
     Task UpdateSupervisorAsync(Guid contractId, UpdateSupervisorRequest request, CancellationToken ct = default);
     Task UpdateApiAsync(Guid contractId, string? apiEndpoint, string? apiKey, CancellationToken ct = default);
     Task<ImportMembersResult> ImportMembersAsync(Guid contractId, IReadOnlyList<ImportMemberRequest> members, CancellationToken ct = default);
@@ -96,7 +101,7 @@ public interface IContractService
     Task<int> SendBulkSmsAsync(Guid contractId, Guid templateId, string? campaignTitle, IReadOnlyList<Guid>? memberIds, Guid actingUserId, bool asSupervisor, CancellationToken ct = default);
     /// <param name="reapplyMembers">اگر false فقط اولویت/قوانین ذخیره می‌شود؛ جابه‌جایی اعضا با recheck.</param>
     Task<PathwayRulesReapplyResult> SavePathwayRulesAsync(Guid contractId, IReadOnlyList<PathwayRuleInput> rules, bool reapplyMembers = true, CancellationToken ct = default);
-    Task<PathwayRulesReapplyResult> AttachLibraryRulesAsync(Guid contractId, IReadOnlyList<Guid> libraryRuleIds, CancellationToken ct = default);
+    Task<PathwayRulesReapplyResult> AttachLibraryPathwaysAsync(Guid contractId, IReadOnlyList<Guid> libraryPathwayIds, CancellationToken ct = default);
     Task<PathwayRulesReapplyResult> DetachPathwayRuleAsync(Guid contractId, Guid ruleId, CancellationToken ct = default);
     Task<PathwayRecheckPreviewDto> PreviewPathwayRecheckAsync(Guid contractId, CancellationToken ct = default);
     Task<PathwayRecheckApplyResult> ApplyPathwayRecheckAsync(Guid contractId, IReadOnlyList<Guid> memberIds, CancellationToken ct = default);
@@ -108,6 +113,11 @@ public interface IContractService
     Task<ContractMemberDto?> GetMemberByInviteTokenAsync(string inviteToken, CancellationToken ct = default);
     Task<ContractMemberDto?> FindActiveMemberByNationalIdAsync(Guid clinicId, string nationalId, CancellationToken ct = default);
     Task<ContractFunnelStatsDto> GetFunnelStatsAsync(Guid contractId, CancellationToken ct = default);
+    /// <summary>UC-ADM-26 — فقط پاسخ Submitted؛ عضو باید به بیمار لینک شده باشد.</summary>
+    Task<MemberSubmittedFormDto?> GetMemberSubmittedFormAsync(Guid contractId, Guid memberId, CancellationToken ct = default);
+    /// <summary>UC-ADM-22 — آپلود لوگوی سازمان/بانک طرف‌قرارداد.</summary>
+    Task<ContractPartnerLogoUploadResult> UploadPartnerLogoAsync(
+        Guid contractId, Stream content, string fileName, string contentType, CancellationToken ct = default);
 }
 
 public record ContractFunnelStatsDto(
@@ -117,3 +127,19 @@ public record ContractFunnelStatsDto(
     int FormDraft,
     /// <summary>اعضایی که پیش‌پذیرش را تکمیل کرده‌اند.</summary>
     int FormSubmitted);
+
+/// <summary>UC-ADM-26 — پاسخ submitted پرسشنامه برای خروجی PDF از قیف.</summary>
+public record MemberSubmittedFormDto(
+    Guid MemberId,
+    Guid ContractId,
+    Guid PatientId,
+    Guid FormId,
+    string FormCode,
+    string FormTitle,
+    DateTime? SubmittedAt,
+    string FullName,
+    string NationalId,
+    int? Age,
+    string? Gender,
+    string OrganizationName,
+    IReadOnlyList<FormAnswerInput> Answers);

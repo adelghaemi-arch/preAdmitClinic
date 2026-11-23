@@ -34,6 +34,8 @@ interface Props {
   initial?: Partial<LocationPickResult> | null;
   /** Fallback map centre when no initial home coords (e.g. clinic). */
   fallbackCenter?: GeoPoint | null;
+  /** اگر کاربر بیرون از پاپاپ آدرس را دستی نوشته، reverse پین آن را عوض نکند */
+  preserveAddress?: boolean;
   onConfirm: (result: LocationPickResult) => void;
   onClose: () => void;
 }
@@ -45,17 +47,27 @@ const pinIcon = L.divIcon({
   iconAnchor: [9, 9],
 });
 
+function hasFiniteCoords(p?: Partial<LocationPickResult> | GeoPoint | null): p is GeoPoint {
+  return p != null && Number.isFinite(p.lat) && Number.isFinite(p.lon);
+}
+
 function resolveCenter(initial?: Partial<LocationPickResult> | null, fallback?: GeoPoint | null): GeoPoint {
-  if (typeof initial?.lat === "number" && typeof initial?.lon === "number") {
+  if (hasFiniteCoords(initial)) {
     return { lat: initial.lat, lon: initial.lon };
   }
-  if (fallback && Number.isFinite(fallback.lat) && Number.isFinite(fallback.lon)) {
+  if (hasFiniteCoords(fallback)) {
     return { lat: fallback.lat, lon: fallback.lon };
   }
   return TEHRAN_CENTER;
 }
 
-export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClose }: Props) {
+export function LocationPickerPopup({
+  initial,
+  fallbackCenter,
+  preserveAddress = false,
+  onConfirm,
+  onClose,
+}: Props) {
   const mapHostRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -64,12 +76,20 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
 
   const [point, setPoint] = useState<GeoPoint>(() => resolveCenter(initial, fallbackCenter));
   const [address, setAddress] = useState(initial?.address?.trim() || "");
+  // قفل فقط با ویرایش دستی (یا preserve از بیرون) — پر شدن قبلی از OSM مانع reverse جدید نشود
+  const [addressLocked, setAddressLocked] = useState(
+    () => Boolean(preserveAddress && initial?.address?.trim())
+  );
+  const addressLockedRef = useRef(addressLocked);
+  addressLockedRef.current = addressLocked;
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<GeocodeResult[]>([]);
   const [busy, setBusy] = useState(false);
-  const [locating, setLocating] = useState(false);
+  // اگر lat/lon اولیه نیست، از همان باز شدن برای GPS تلاش می‌کنیم
+  const [locating, setLocating] = useState(() => !hasFiniteCoords(initial));
   const [error, setError] = useState("");
   const [geoDeniedKind, setGeoDeniedKind] = useState<PermissionErrorKind | null>(null);
+  const autoLocateTriedRef = useRef(false);
 
   const applyPoint = (next: GeoPoint, opts?: { address?: string; pan?: boolean }) => {
     setPoint(next);
@@ -80,16 +100,22 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
       mapRef.current?.panTo([next.lat, next.lon], { animate: true });
     }
     if (typeof opts?.address === "string") {
+      // انتخاب صریح از جستجو — آدرس جدید عمدی است
       setAddress(opts.address);
+      setAddressLocked(true);
       return;
     }
+    // متن دستی کاربر را با reverse OSM پاک نکن
+    if (addressLockedRef.current) return;
     if (reverseTimerRef.current) window.clearTimeout(reverseTimerRef.current);
     reverseTimerRef.current = window.setTimeout(() => {
       void (async () => {
+        if (addressLockedRef.current) return;
         setBusy(true);
         setError("");
         const result = await reverseGeocode(next);
         setBusy(false);
+        if (addressLockedRef.current) return;
         if (result?.displayName) {
           setAddress(result.displayName);
         } else {
@@ -143,8 +169,8 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
     const t1 = window.setTimeout(() => map.invalidateSize(), 80);
     const t2 = window.setTimeout(() => map.invalidateSize(), 320);
 
-    // Seed reverse geocode when opening without a typed address.
-    if (!initial?.address?.trim()) {
+    // فقط وقتی مختصات اولیه هست reverse کن؛ وگرنه GPS خودکار applyPoint می‌کند و تداخل تهران/GPS پیش نیاید
+    if (hasFiniteCoords(initial) && !initial?.address?.trim()) {
       void (async () => {
         setBusy(true);
         const result = await reverseGeocode(centre);
@@ -181,15 +207,17 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
     mapRef.current?.setView([first.lat, first.lon], 16);
   };
 
-  const useMyLocation = () => {
+  const useMyLocation = (opts?: { quietFail?: boolean }) => {
     setGeoDeniedKind(null);
     if (typeof window !== "undefined" && !window.isSecureContext) {
-      setGeoDeniedKind("insecure");
+      setLocating(false);
+      if (!opts?.quietFail) setGeoDeniedKind("insecure");
       setError("");
       return;
     }
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setGeoDeniedKind("unsupported");
+      setLocating(false);
+      if (!opts?.quietFail) setGeoDeniedKind("unsupported");
       setError("");
       return;
     }
@@ -200,17 +228,33 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
         setLocating(false);
         setGeoDeniedKind(null);
         const next = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        applyPoint(next);
+        applyPointRef.current(next);
         mapRef.current?.setView([next.lat, next.lon], 17);
       },
       (err) => {
         setLocating(false);
-        setGeoDeniedKind(classifyMediaError(err, "geolocation"));
+        // تلاش خودکار هنگام باز شدن: بدون پنل خطا؛ کاربر هنوز «موقعیت من» دارد
+        if (!opts?.quietFail) {
+          setGeoDeniedKind(classifyMediaError(err, "geolocation"));
+        }
         setError("");
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60_000 }
     );
   };
+
+  // بدون مختصات ذخیره‌شده: پیش‌فرض روی موقعیت فعلی دستگاه
+  useEffect(() => {
+    if (autoLocateTriedRef.current) return;
+    if (hasFiniteCoords(initial)) {
+      setLocating(false);
+      return;
+    }
+    autoLocateTriedRef.current = true;
+    useMyLocation({ quietFail: true });
+    // فقط یک‌بار هنگام باز شدن پاپاپ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const confirm = () => {
     const trimmed = address.trim();
@@ -328,7 +372,12 @@ export function LocationPickerPopup({ initial, fallbackCenter, onConfirm, onClos
               آدرس تکمیل‌شده (قابل ویرایش)
               <AppInput
                 value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setAddress(next);
+                  // متن غیرخالی قفل؛ خالی کردن اجازهٔ reverse دوباره می‌دهد
+                  setAddressLocked(next.trim().length > 0);
+                }}
                 className="app-input mt-1 text-xs sm:mt-1.5"
                 placeholder="آدرس از OSM اینجا می‌آید…"
               />

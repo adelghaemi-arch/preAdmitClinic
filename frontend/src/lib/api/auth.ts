@@ -94,9 +94,12 @@ export async function apiGetMe(): Promise<AuthMeDto> {
   return apiFetch<AuthMeDto>("/api/auth/me");
 }
 
+/** Logout بهترین‌تلاش: پس از wipe (ریست فکتوری) یا انقضای توکن، revoke ممکن است ۴۰۱ بدهد. */
 export async function apiRevokeSession(): Promise<void> {
   try {
     await apiFetch("/api/auth/sessions/revoke", { method: "POST" });
+  } catch {
+    // نشست از قبل باطل/منقضی است — خطا را به UI برنمی‌گردانیم
   } finally {
     clearApiSession();
   }

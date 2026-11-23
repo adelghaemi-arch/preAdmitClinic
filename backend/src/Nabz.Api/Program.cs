@@ -12,11 +12,17 @@ using Nabz.Api.Auth;
 using Nabz.Api.Middleware;
 using Nabz.Api.Seed;
 using Nabz.Application.Interfaces;
+using Nabz.Application.Options;
 using Nabz.Application.Time;
 using Nabz.Database.EF.Sql;
 using Nabz.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Production: FixedOtp ممنوع — وگرنه SMS قطع و کد نمایشی ثابت گمراه‌کننده می‌شود
+AuthProductionGuards.EnsureFixedOtpAllowed(
+    builder.Environment.IsProduction(),
+    builder.Configuration["Auth:FixedOtp"]);
 
 builder.Services.AddControllers().AddJsonOptions(o =>
 {

@@ -65,7 +65,8 @@ public static class FormAudienceEvaluator
                 return true;
 
             var marital = ResolveMarital(patient, answersByCode);
-            var age = AgeCalculator.FromBirthDate(patient.Person.BirthDate);
+            // مثل فرانت: تولد پاسخ فرم بر Person اولویت دارد تا draft هم‌نشست visibility درست باشد
+            var age = ResolveAge(patient, answersByCode);
             var gender = patient.Person.Gender ?? "";
 
             foreach (var rule in doc.RootElement.EnumerateArray())
@@ -109,6 +110,23 @@ public static class FormAudienceEvaluator
             .FirstOrDefault(kv => kv.Key.EndsWith("_BASE_maritalStatus", StringComparison.OrdinalIgnoreCase))
             .Value;
         return MaritalStatusNormalizer.Normalize(fromAnswer) ?? fromAnswer;
+    }
+
+    private static int? ResolveAge(Patient patient, IReadOnlyDictionary<string, string?> answersByCode)
+    {
+        var fromAnswer = answersByCode
+            .FirstOrDefault(kv => kv.Key.EndsWith("_BASE_birthDate", StringComparison.OrdinalIgnoreCase))
+            .Value;
+        if (!string.IsNullOrWhiteSpace(fromAnswer))
+        {
+            var raw = fromAnswer.Trim();
+            if (DateOnly.TryParse(raw, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out var iso))
+                return AgeCalculator.FromBirthDate(iso);
+            if (ShamsiBirthDateParser.TryParse(raw, out var shamsi, out _))
+                return AgeCalculator.FromBirthDate(shamsi);
+        }
+        return AgeCalculator.FromBirthDate(patient.Person.BirthDate);
     }
 
     private static bool EvalFieldOpRule(JsonElement rule, string? field, string? marital, int? age, string gender)

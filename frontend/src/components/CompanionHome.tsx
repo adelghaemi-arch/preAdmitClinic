@@ -1,29 +1,22 @@
 ﻿/*
  File: frontend/src/components/CompanionHome.tsx
  Description: خانه مینیمال Owner — فاصله بالای مسیر؛ ورود نشست‌محور به پیش‌پذیرش
- Parent Dependencies: ClinicReachCard, LocationPickerPopup, owner-gps-watch, osm-routing
+ Parent Dependencies: ClinicReachCard, owner-gps-watch, health-roadmap
  */
 
-import { AppInput } from "@/components/AppInput";
 import { ClinicReachCard } from "@/components/ClinicReachCard";
-import { LocationPickerPopup } from "@/components/LocationPickerPopup";
-import { PermissionRetryPanel } from "@/components/PermissionRetryPanel";
-import { useEffect, useMemo, useState } from "react";
-import { classifyMediaError, type PermissionErrorKind } from "@/lib/media-permission";
+import { useState } from "react";
 import { beginOwnerEvidenceGps } from "@/lib/owner-gps-watch";
 import {
   Activity,
   AlertTriangle,
   ArrowLeft,
-  Bell,
   CheckCircle2,
   ClipboardList,
   Clock3,
-  Compass,
   FileText,
   Link2,
   Lock,
-  Map,
   MapPin,
   Navigation,
   Route,
@@ -32,18 +25,12 @@ import {
 } from "lucide-react";
 import type { ClinicSnapshot, RoomDto } from "@/types/clinic";
 import { COMPANION_FEATURE_ENABLED, currentStation, roomStaffDisplay, stationLabel, type AppPage } from "@/lib/workspace";
+import { birthIsoToFaLabel } from "@/lib/person-identity";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
-import {
-  calculateRoute,
-  configureOsmFromSettings,
-  geocodeAddress,
-  osmTileUrlsForRoute,
-  reverseGeocode,
-  type RouteInfo,
-} from "@/lib/osm-routing";
 import {
   buildHealthRoadmap,
   findActiveContractMembership,
+  preAdmitPartialPct,
   roadmapProgress,
   type HealthRoadmapStage,
 } from "@/lib/health-roadmap";
@@ -83,18 +70,6 @@ function MiniRouteMap({ room, floorRooms }: { room: RoomDto; floorRooms: RoomDto
   );
 }
 
-function OsmRouteStrip({ route }: { route: RouteInfo }) {
-  const tiles = osmTileUrlsForRoute(route.from, route.to, 11);
-  return (
-    <div className="grid grid-cols-2 gap-0.5 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-      {tiles.slice(0, 4).map((t, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={i} src={t.url} alt="نقشه مسیر" className="h-20 w-full object-cover" loading="lazy" />
-      ))}
-    </div>
-  );
-}
-
 function stageDotClass(state: HealthRoadmapStage["state"]): string {
   if (state === "done") return "border-emerald-500 bg-emerald-500 text-white shadow-md shadow-emerald-200/60";
   if (state === "active") return "border-[#20745c] bg-[#20745c] text-white shadow-lg shadow-teal-200 scale-110";
@@ -116,102 +91,7 @@ export function CompanionHome({
   const [expandedStep, setExpandedStep] = useState<number | null>(null);
   const [showReport, setShowReport] = useState(false);
   const patient = snapshot.patients.find((p) => p.id === selectedPatientId) ?? snapshot.patients[0];
-
   const clinic = snapshot.clinicLocation;
-  const [route, setRoute] = useState<RouteInfo | null>(null);
-  const [routeLoading, setRouteLoading] = useState(false);
-  const [addressDraft, setAddressDraft] = useState("");
-  const [geoError, setGeoError] = useState("");
-  const [geoDeniedKind, setGeoDeniedKind] = useState<PermissionErrorKind | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [showLocationPicker, setShowLocationPicker] = useState(false);
-
-  useEffect(() => {
-    configureOsmFromSettings(snapshot.platform?.settings);
-  }, [snapshot.platform?.settings]);
-
-  useEffect(() => {
-    if (!patient || !clinic) return;
-    setAddressDraft(patient.homeAddress ?? "");
-    if (typeof patient.homeLat === "number" && typeof patient.homeLon === "number") {
-      setRouteLoading(true);
-      void calculateRoute({ lat: patient.homeLat, lon: patient.homeLon }, { lat: clinic.lat, lon: clinic.lon })
-        .then(setRoute)
-        .finally(() => setRouteLoading(false));
-    } else {
-      setRoute(null);
-    }
-  }, [patient?.id, patient?.homeLat, patient?.homeLon, patient?.homeAddress, clinic?.lat, clinic?.lon]);
-
-  const saveHomeLocation = async (from: { lat: number; lon: number }, address: string) => {
-    if (!clinic || !patient) return;
-    // مسیر جایگزین (نقشه/جستجو) موفق شد — پنل بلاک GPS را بردار
-    setGeoDeniedKind(null);
-    setGeoError("");
-    setAddressDraft(address);
-    setRouteLoading(true);
-    const computed = await calculateRoute(from, { lat: clinic.lat, lon: clinic.lon });
-    setRoute(computed);
-    setRouteLoading(false);
-    await onAction({
-      action: "UPDATE_PATIENT_HOME",
-      patientId: patient.id,
-      serverPatientId: patient.serverId ?? null,
-      homeLat: from.lat,
-      homeLon: from.lon,
-      homeAddress: address,
-      homePlaque: patient.homePlaque ?? null,
-      homeUnit: patient.homeUnit ?? null,
-      homePostalCode: patient.homePostalCode ?? null,
-    });
-  };
-
-  const useMyLocation = () => {
-    setGeoDeniedKind(null);
-    if (typeof window !== "undefined" && !window.isSecureContext) {
-      setGeoDeniedKind("insecure");
-      setGeoError("");
-      return;
-    }
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setGeoDeniedKind("unsupported");
-      setGeoError("");
-      return;
-    }
-    setLocating(true);
-    setGeoError("");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const from = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-        const resolved = await reverseGeocode(from);
-        const address = resolved?.displayName?.trim() || "موقعیت فعلی من";
-        setLocating(false);
-        setGeoDeniedKind(null);
-        await saveHomeLocation(from, address);
-      },
-      (err) => {
-        setLocating(false);
-        setGeoDeniedKind(classifyMediaError(err, "geolocation"));
-        setGeoError("");
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  const searchAddress = async () => {
-    if (!addressDraft.trim()) return;
-    setGeoError("");
-    setRouteLoading(true);
-    const point = await geocodeAddress(addressDraft);
-    if (!point) {
-      setGeoError("آدرس پیدا نشد. لطفاً نام محله یا شهر را دقیق‌تر وارد کنید.");
-      setRouteLoading(false);
-      return;
-    }
-    const address = point.displayName?.trim() || addressDraft.trim();
-    setRouteLoading(false);
-    await saveHomeLocation({ lat: point.lat, lon: point.lon }, address);
-  };
 
   if (!patient || snapshot.links.length === 0) {
     return (
@@ -242,20 +122,35 @@ export function CompanionHome({
   const allDone = total > 0 && done === total;
   const room = snapshot.rooms.find((r) => r.code === current?.roomCode);
   const floorRooms = room ? snapshot.rooms.filter((r) => r.floor === room.floor) : [];
-  const unread = patient.alerts.filter((a) => !a.isRead);
   const nextPending = patient.stations.find((s) => s.status === "pending");
   const nextRoom = snapshot.rooms.find((r) => r.code === nextPending?.roomCode);
 
   const membership = findActiveContractMembership(snapshot.contracts, patient.nationalId);
   const activeContract = membership?.contract ?? null;
   const contractMember = membership?.member ?? null;
-  const stages = buildHealthRoadmap(patient, contractMember);
-  const { done: doneStages, total: stageTotal, pct: roadmapPct } = roadmapProgress(stages);
+  const stages = buildHealthRoadmap(patient, contractMember, {
+    pathways: snapshot.pathways,
+    rooms: snapshot.rooms,
+  });
+  // پیش‌نویس پرسشنامه / عکس را در٪ نقشه راه حساب کن تا بعد از بستن صفر نماند
+  const prePartial = preAdmitPartialPct(patient, contractMember?.profileProgressPct ?? 0);
+  const { done: doneStages, total: stageTotal, pct: roadmapPct } = roadmapProgress(stages, prePartial);
   const activeStage = stages.find((s) => s.state === "active");
   const atStart = activeStage?.id === "pre";
   const preAdmissionDone = patient.intakeCompleted;
   // Owner معمولاً contracts[] ندارد؛ نام بسته/سازمان از pathwayTitle اسنپ‌شات
   const contractLabel = activeContract?.organizationName ?? (patient.pathwayTitle?.trim() || null);
+  // تاریخ مراجعه از عضو قرارداد یا بنر پیش‌پذیرش — برای پیام تشویق تکمیل زودهنگام
+  const visitIso = (
+    contractMember?.scheduledDate ||
+    contractMember?.scheduledVisitDate ||
+    patient.scheduledVisitDate ||
+    ""
+  )
+    .trim()
+    .slice(0, 10);
+  const visitJalali = /^\d{4}-\d{2}-\d{2}$/.test(visitIso) ? birthIsoToFaLabel(visitIso) : "";
+  const hasVisitDate = Boolean(visitJalali || contractMember?.scheduledLabel);
 
   const goActiveStage = () => {
     // در ابتدای مسیر ورود نشست‌محور؛ مراحل بعدی ناوبری عادی
@@ -328,9 +223,17 @@ export function CompanionHome({
                     ? `شما در مرحله «${activeStage.title}» هستید`
                     : "تمام مراحل نقشه راه شما کامل شد"}
               </h2>
-              <p className="mt-1 hidden text-xs leading-7 text-slate-500 sm:mt-2 sm:block">
+              <p
+                className={`mt-1 hidden leading-7 sm:mt-2 sm:block ${
+                  atStart && hasVisitDate
+                    ? "text-[13px] font-semibold text-[#1d3f32]"
+                    : "text-xs text-slate-500"
+                }`}
+              >
                 {atStart
-                  ? "اول پیش‌پذیرش، بعد نوبت‌دهی، مراجعه به کلینیک‌ها، پرونده الکترونیک، تحلیل اطلاعات و پایش مستمر."
+                  ? hasVisitDate
+                    ? `نوبت مراجعه${visitJalali ? ` (${toFaDigits(visitJalali)})` : ""} مشخص است؛ پیش‌پذیرش را سر فرصت همین حالا تکمیل کنید تا روز حضور در بیمارستان وقتتان صرف این کار نشود.`
+                    : "اول پیش‌پذیرش، بعد نوبت‌دهی، مراجعه به کلینیک‌ها، پرونده الکترونیک، تحلیل اطلاعات و پایش مستمر."
                   : `${toFaDigits(doneStages)} از ${toFaDigits(stageTotal)} مرحله تکمیل شده · ${patient.fullName}`}
               </p>
             </div>
@@ -409,63 +312,6 @@ export function CompanionHome({
           </div>
         </div>
       </section>
-
-      {/* آدرس منزل — فقط دسکتاپ تا موبایل مینیمال بماند */}
-      {clinic && patient && (
-        <section className="hidden overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white sm:block">
-          <div className="space-y-3 p-5">
-            <label className="app-label text-[11px]">
-              آدرس محل زندگی شما
-              <div className="mt-1.5 flex flex-wrap gap-2">
-                <AppInput
-                  value={addressDraft}
-                  onChange={(e) => setAddressDraft(e.target.value)}
-                  placeholder="مثلاً: تهران، سعادت‌آباد، بلوار دریا"
-                  className="app-input min-w-56 flex-1 text-xs"
-                />
-                <button type="button" disabled={routeLoading || locating} onClick={() => void searchAddress()} className="primary-button">
-                  {routeLoading ? <RefreshInline /> : <Compass className="h-4 w-4" />}
-                  محاسبه فاصله
-                </button>
-                <button
-                  type="button"
-                  disabled={routeLoading || locating}
-                  onClick={() => {
-                    setShowLocationPicker(true);
-                    beginOwnerEvidenceGps({
-                      enabled: snapshot.platform?.settings?.featureFlags?.gpsTracking !== false,
-                      patientId: patient.id,
-                      serverPatientId: patient.serverId,
-                      initialSource: "map_open",
-                      onAction,
-                    });
-                  }}
-                  className="secondary-button"
-                >
-                  <Map className="h-3.5 w-3.5" />
-                  انتخاب روی نقشه
-                </button>
-                <button type="button" disabled={locating} onClick={useMyLocation} className="secondary-button">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {locating ? "در حال یافتن…" : "استفاده از موقعیت من"}
-                </button>
-              </div>
-            </label>
-
-            {geoDeniedKind && (
-              <PermissionRetryPanel
-                kind="geolocation"
-                errorKind={geoDeniedKind}
-                onRetry={useMyLocation}
-                retryDisabled={locating}
-                compact
-              />
-            )}
-            {geoError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-600">{geoError}</p>}
-            {route && <OsmRouteStrip route={route} />}
-          </div>
-        </section>
-      )}
 
       {/* تایم‌لاین مراجعه — مخفی روی موبایل مینیمال */}
       <section className="hidden overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-gradient-to-b from-white to-[#f7faf8] sm:block">
@@ -683,68 +529,21 @@ export function CompanionHome({
         </div>
       </section>
 
-      <div className="hidden items-start gap-4 sm:grid lg:grid-cols-2">
-        <section className="rounded-2xl border border-slate-200 bg-white p-4">
-          <h3 className="flex items-center gap-2 text-xs font-bold text-slate-700">
-            <Bell className="h-4 w-4 text-teal-600" />
-            اعلان‌ها و فراخوان‌ها
-            {unread.length > 0 && <span className="rounded-md bg-teal-600 px-1.5 py-0.5 text-[9px] text-white">{toFaDigits(unread.length)}</span>}
+      {(isSelf || link?.visibility.allergies) && patient.allergies.length > 0 && (
+        <section className="hidden rounded-2xl border border-red-200 bg-red-50/70 p-4 sm:block">
+          <h3 className="flex items-center gap-2 text-xs font-bold text-red-700">
+            <AlertTriangle className="h-4 w-4" />
+            حساسیت‌های ثبت‌شده (هشدار برای پزشکان)
           </h3>
-          <div className="mt-3 space-y-2">
-            {patient.alerts.slice(0, 3).map((a) => (
-              <div key={a.id} className={`rounded-xl border p-3 ${a.isRead ? "border-slate-100 bg-slate-50/60" : "border-teal-200 bg-teal-50/50"}`}>
-                <div className="flex items-center justify-between text-[10px] text-slate-400">
-                  <span>{a.senderRole}</span>
-                  <span>{formatFaTime(a.createdAt)}</span>
-                </div>
-                <p className="mt-1 whitespace-pre-line text-[11px] leading-6 text-slate-600">{a.message}</p>
-                {!a.isRead && (
-                  <button disabled={busy} onClick={() => run({ action: "MARK_ALERTS_READ", patientId: patient.id }, "اعلان‌ها خوانده شدند.")} className="mt-1.5 text-[10px] font-semibold text-teal-700">
-                    متوجه شدم
-                  </button>
-                )}
-              </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {patient.allergies.map((a) => (
+              <span key={a.id} className="rounded-lg border border-red-100 bg-white px-2.5 py-1 text-[11px] font-semibold text-red-700">{a.substance}</span>
             ))}
-            {patient.alerts.length === 0 && <p className="text-xs text-slate-400">اعلانی ثبت نشده است.</p>}
           </div>
         </section>
-
-        {(isSelf || link?.visibility.allergies) && patient.allergies.length > 0 && (
-          <section className="rounded-2xl border border-red-200 bg-red-50/70 p-4">
-            <h3 className="flex items-center gap-2 text-xs font-bold text-red-700">
-              <AlertTriangle className="h-4 w-4" />
-              حساسیت‌های ثبت‌شده (هشدار برای پزشکان)
-            </h3>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {patient.allergies.map((a) => (
-                <span key={a.id} className="rounded-lg border border-red-100 bg-white px-2.5 py-1 text-[11px] font-semibold text-red-700">{a.substance}</span>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
+      )}
 
       {showReport && <PrintableEmrReport patient={patient} onClose={() => setShowReport(false)} />}
-
-      {showLocationPicker && (
-        <LocationPickerPopup
-          initial={{
-            lat: typeof patient.homeLat === "number" ? patient.homeLat : undefined,
-            lon: typeof patient.homeLon === "number" ? patient.homeLon : undefined,
-            address: addressDraft || patient.homeAddress || undefined,
-          }}
-          fallbackCenter={clinic ? { lat: clinic.lat, lon: clinic.lon } : null}
-          onClose={() => setShowLocationPicker(false)}
-          onConfirm={(result) => {
-            setShowLocationPicker(false);
-            void saveHomeLocation({ lat: result.lat, lon: result.lon }, result.address);
-          }}
-        />
-      )}
     </div>
   );
-}
-
-function RefreshInline() {
-  return <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />;
 }

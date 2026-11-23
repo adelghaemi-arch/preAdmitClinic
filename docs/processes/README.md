@@ -49,6 +49,7 @@ flowchart LR
 
 صف اتاق، نوبت کلینیک، زمان مراجعه، ایستگاه‌ها، چک‌این، فراخوان، پاراکلینیک، پذیرش عملیاتی، همراه — رجوع به [`future/README.md`](future/README.md).
 
+کاتالوگ بخش‌های عملیاتی آماده‌به‌کار: [`../shared/operational-ready-modules.md`](../shared/operational-ready-modules.md).  
 تجمیع استراتژیک (فعلی + آینده + پیشنهاد): [`../shared/platform-strategic-plan.md`](../shared/platform-strategic-plan.md).
 
 ## پیاده‌سازی بک‌اند (وضعیت)

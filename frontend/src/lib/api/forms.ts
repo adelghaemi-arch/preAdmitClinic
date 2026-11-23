@@ -1,6 +1,6 @@
 /*
  File: frontend/src/lib/api/forms.ts
- Description: نگاشت ساختار فرم API + draft/submit + خواندن responses/mine
+ Description: نگاشت ساختار فرم API + draft/submit + خواندن responses (مالک و پزشک)
  Parent Dependencies: api/http, types/clinic
  */
 
@@ -300,6 +300,22 @@ export async function fetchMyFormResponse(
     return mapMyFormResponse(dto);
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
+}
+
+/** UC-SPC-05 — پاسخ submitted برای پزشک؛ draft پنهان است (null). */
+export async function fetchSpecialistFormResponse(
+  patientId: string,
+  formId: string
+): Promise<MyFormResponseMapped | null> {
+  try {
+    const dto = await apiFetch<MyFormResponseApi>(
+      `/api/forms/responses?patientId=${encodeURIComponent(patientId)}&formId=${encodeURIComponent(formId)}`
+    );
+    return mapMyFormResponse(dto);
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 404 || e.status === 204)) return null;
     throw e;
   }
 }

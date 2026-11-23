@@ -43,7 +43,7 @@ describe("buildContext marital fallback", () => {
         },
       ],
     } as FormDefinition;
-    const ctx = buildContext({ gender: "زن", age: 30, maritalStatus: "مطلقه" }, [], form);
+    const ctx = buildContext({ gender: "زن", age: 30, maritalStatus: "مطلقه", birthDate: null }, [], form);
     expect(ctx.maritalStatus).toBe("ازدواج‌کرده");
   });
 });

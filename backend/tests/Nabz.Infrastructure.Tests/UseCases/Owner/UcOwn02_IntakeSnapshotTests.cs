@@ -28,6 +28,7 @@ public sealed class UcOwn02_IntakeSnapshotTests
         Assert.Equal("None", snapshot.FormStatus);
         Assert.Equal(formId, snapshot.FormId);
         Assert.False(snapshot.HasPortrait);
+        Assert.Null(snapshot.PortraitStorageKey);
         Assert.Equal(0, snapshot.DocumentGroupCount);
         Assert.Equal(0, snapshot.GpsPointCount);
         Assert.Equal("needs_form", snapshot.IntakeGate);

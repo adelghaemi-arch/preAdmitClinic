@@ -27,7 +27,10 @@
 **پایان کنسول:** خطا/تست ناموفق → `pause` (پنجره باز). موفقیت → بدون کلید پس از ۲۰ثانیه بسته؛ کلید دیگر = بستن زودتر؛ **Esc = باز بماند** تا با نتیجه کار کنید.
 
 قبل از بیلد production، در `sync.config.bat` مقادیر `MY_PUBLIC_URL` / `NEWS_PUBLIC_URL` / `API_PUBLIC_URL` را به origin عمومی مرورگر تنظیم کنید (نه `localhost`).  
+دامنهٔ رسمی my فعلی: `https://my.nafasmed.ir` (CORS از `FrontendUrls__My` روی **همان هاست**).  
 برای `my`: قبل از `npm run build` مقدار `VITE_API_BASE_URL=%API_PUBLIC_URL%` ست می‌شود (بدون `/api`).
+
+**قرارداد `.env`:** پکیج publish فقط `.env.example` می‌سازد/می‌فرستد؛ روی ویندوز دیگر از example به `.env` کپی نمی‌شود. هر هاست Linux `.env` خودش را یک‌بار از example می‌سازد و نگه می‌دارد — rsync با `deploy-rsync-exclude.txt` هرگز `.env` را overwrite نمی‌کند تا سرورهای متفاوت خراب نشوند.
 
 `init-server-structure.bat` و `sync-deploy.bat` helper داخلی‌اند؛ مسیر اصلی اپراتور فقط `publish.bat` است. بیلد جزئی اختیاری: `sync-deploy.bat my|news|api`.  
 تست جداگانه بدون بیلد: `pre-publish-tests.bat`. بای‌پس اضطراری: `set SKIP_PRE_PUBLISH_TESTS=1` قبل از `publish.bat` (هشدار در لاگ).
@@ -75,7 +78,7 @@ server/
 |--------|------|------------|-----------|---------|
 | news | `frontend/news` (فعلاً اسکلت) | `server/news/dist` + nginx؛ volume `../persist/news-data` | **5436** | `adel-maryam-nabz-clinic-news` |
 | my | `frontend/` | `server/my/dist` + `nginx.conf` (SPA `try_files` → `index.html`) | **5437** | `adel-maryam-nabz-clinic-my` |
-| api | `backend` | `server/api/publish` + Dockerfile؛ volumes `../persist/uploads` و `../persist/news-data` | **5438→8080** | `adel-maryam-nabz-clinic-api` |
+| api | `backend` | `server/api/publish` + Dockerfile (+ `install-playwright-chromium.sh` → `/ms-playwright`)؛ volumes `../persist/uploads` و `../persist/news-data` | **5438→8080** | `adel-maryam-nabz-clinic-api` |
 
 ### Volumeهای پایدار (هاست → کانتینر)
 
@@ -122,7 +125,8 @@ flowchart LR
 
 - قالب‌ها از [`_templates/write-deploy-files.ps1`](../../server/_templates/write-deploy-files.ps1) refresh می‌شوند؛ ویرایش دستی compose/Dockerfile/`nginx.conf` خارج از قالب ممنوع.
 - **SPA fallback:** `my` و `news` هر دو `nginx.conf` با `try_files $uri $uri/ /index.html` دارند تا مسیرهای کلاینت (مثل `/login`) با رفرش مستقیم 404 ندهند.
-- **`.env` موجود API بازنویسی نمی‌شود.** کلید جدید در `.env.example` را دستی به `.env` سرور اضافه کنید.
+- **MIME برای `.mjs`:** هر دو `nginx.conf` برای `*.mjs` صریحاً `Content-Type: application/javascript` می‌گذارند (مثلاً worker `pdf.js`)؛ وگرنه `mime.types` قدیمی فایل را `octet-stream` می‌دهد و مرورگر ماژول را رد می‌کند. بعد از به‌روز کردن فایل روی سرور: `sudo docker compose up -d` در `server/my` (و در صورت نیاز purge کش ابرآروان برای همان asset).
+- **`.env` موجود API بازنویسی نمی‌شود** و در مسیر publish ساخته/ارسال نمی‌شود. کلید جدید در `.env.example` را دستی به `.env` **همان هاست** اضافه کنید (مثلاً `FrontendUrls__My`).
 - اگر `frontend/news` نباشد، sync برای news فقط **placeholder** می‌نویسد تا nginx بالا بیاید.
 - **کپی فقط‌تازه‌تر:** `sync-deploy.bat` برای `my/dist` و `news/dist` از `robocopy /E /XO` بدون wipe مقصد استفاده می‌کند؛ `api/publish` هم قبل از `dotnet publish` پاک نمی‌شود. فقط منبع تازه‌تر از مقصد overwrite می‌شود؛ فایل‌های اضافی/قدیمی dest می‌مانند.
 
@@ -167,6 +171,13 @@ mkdir -p persist/uploads persist/news-data
 | `Kavenegar__ApiKey` / `OtpTemplate` / `InviteTemplate` | fallback وقتی `Clinic.SmsProvider=Kavenegar` یا None ولی env پر باشد |
 | `FrontendUrls__My` / `FrontendUrls__News` | originهای فرانت برای سیاست CORS (`WithOrigins` در `Program.cs`) — هم‌تراز `MY_PUBLIC_URL` / `NEWS_PUBLIC_URL` |
 
+### PDF پرسشنامه (UC-ADM-26) و Chromium
+
+- `sync-deploy` API را با `-r linux-x64` publish می‌کند تا درایور `.playwright/node/linux-x64` (نه win32) داخل `api/publish` بیاید.
+- Dockerfile: درایور `linux-x64` + نصب Chromium **قبل** از `COPY publish/` کامل تا deploy بعدی لایهٔ browser را `CACHED` کند. **بدون** `# syntax=docker/dockerfile` (کشیدن frontend از Docker Hub روی سرور 403 می‌شود).
+- بار اول بعد از تغییر Dockerfile/نسخهٔ Playwright دانلود CDN طبیعی است؛ بدون `--no-cache` مگر عمدی.
+- اسکریپت: [`api/install-playwright-chromium.sh`](../../server/api/install-playwright-chromium.sh). تأیید: `ls /ms-playwright`.
+
 ### triage: «CORS» در مرورگر vs API down
 
 پیام DevTools «blocked by CORS / No Access-Control-Allow-Origin» لزوماً باگ سیاست نیست.
@@ -181,12 +192,12 @@ Smoke اجباری: `CorsPreflightSmokeTests` در `Nabz.Api.Tests` (مسیر `p
 
 ## ماتریس OTP / SMS روی سرور
 
-1. **`Auth__FixedOtp` پر → اولویت مطلق env محلی:** کد ثابت؛ **هیچ** ارسال واقعی (OTP، کمپین، تست UC-ADM-23) حتی اگر ادمین `Clinic.SmsProvider` را کاوه‌نگار/طوبی کرده باشد. قفل در `AuthService` + `ClinicRoutingSmsSender` + `ClinicSmsDispatch`.
+1. **`Auth__FixedOtp` پر → کد ثابت برای لاگین؛ بدون SMS تولیدی** (OTP و کمپین از `AuthService` + `ClinicRoutingSmsSender`). **تست درگاه UC-ADM-23 (`IClinicSmsDispatch`) مستقل است** و با FixedOtp هم واقعی می‌رود. در **Production** استارت API با FixedOtp غیرخالی fail می‌شود.
 2. وگرنه `Clinic.SmsProvider` از تنظیمات بیمارستان (UC-ADM-21):
-   - `Kavenegar` → ApiKey کلینیک یا fallback `Kavenegar__*` از env؛ قالب OTP/Invite.
-   - `Touba` → URL API `sms.tsms.ir/url/tsms.php` با Username/Password/خط ارسال؛ OTP از `ToubaOtpMessageTemplate`؛ کمپین از `BodyPreview`.
+   - `Kavenegar` → ApiKey کلینیک یا fallback `Kavenegar__*` از env؛ قالب OTP/Invite (`%token` در پنل کاوه‌نگار).
+   - `Touba` → SOAP `http://www.tsms.ir/soapWSDL/` (`UserInfo` + `sendSms`) با Username/Password/خط ارسال؛ OTP از `ToubaOtpMessageTemplate` که **باید `{code}` داشته باشد** (عدد ثابت مثل `11111` بدون placeholder رد می‌شود)؛ کمپین از `BodyPreview`.
    - `None` بدون env کاوه‌نگار → پیکربندی ناقص.
-3. برای **prod:** FixedOtp خالی + درگاه کلینیک کامل. برای تست واقعی درگاه روی لوکال، موقتاً FixedOtp را خالی کنید.
+3. برای **prod:** FixedOtp خالی (`GET /api/auth/otp/mode` → `fixedOtpEnabled:false`) + درگاه کلینیک کامل. روی لوکال می‌توان با FixedOtp لاگین کرد و همزمان تست درگاه را زد.
 
 ## Seed و migrate
 

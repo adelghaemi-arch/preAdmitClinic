@@ -1,7 +1,7 @@
 ﻿/*
  File: frontend/src/components/AdminProfile.tsx
- Description: پنل ادمین کلینیک — بسته‌ها و تنظیمات با برند نفس
- Parent Dependencies: AppInput, clinic-actions
+ Description: پنل ادمین کلینیک — بسته‌ها، کاتالوگ ایستگاه (UC-ADM-25) و فرم‌ساز
+ Parent Dependencies: AppInput, clinic-actions, clinic-stations
  */
 import React, { useMemo, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
@@ -20,9 +20,18 @@ import {
   Users,
 } from "lucide-react";
 import type { ClinicSnapshot, PathwayDto, RoomDto } from "@/types/clinic";
+import { activeClinicRooms } from "@/lib/api/clinic-stations";
 import { toFaDigits, toLatinDigits } from "@/lib/persian";
 import { roomStaffDisplay, totalVisitMinutes } from "@/lib/workspace";
 import { AdminFormsBuilder } from "./AdminFormsBuilder";
+
+const STATION_CATEGORIES = [
+  { value: "paraclinic", label: "پاراکلینیک" },
+  { value: "specialist", label: "مطب تخصصی" },
+  { value: "hospitality", label: "پذیرش / رفاهی" },
+  { value: "remote", label: "از راه دور" },
+  { value: "other", label: "سایر" },
+] as const;
 
 type AdminSection = "kpi" | "pathways" | "rooms" | "staff" | "forms";
 
@@ -61,28 +70,23 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
     "DENTAL",
   ]);
 
-  // Room Config Editor State
+  // Room Config Editor State — کاتالوگ ایستگاه (بدون صف)
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number>(
-    snapshot.rooms[1]?.id ?? snapshot.rooms[0]?.id ?? 1
+    snapshot.rooms[0]?.id ?? 0
   );
-  const selectedRoomObj =
-    snapshot.rooms.find((r) => r.id === selectedRoomId) ?? snapshot.rooms[0];
+  const selectedRoomObj = isCreatingRoom
+    ? null
+    : snapshot.rooms.find((r) => r.id === selectedRoomId) ?? snapshot.rooms[0] ?? null;
 
-  const [roomFloor, setRoomFloor] = useState<number>(
-    selectedRoomObj?.floor ?? 2
-  );
-  const [roomNum, setRoomNum] = useState<string>(
-    selectedRoomObj?.roomNumber ?? "۲۰۴"
-  );
-  const [roomPrep, setRoomPrep] = useState<string>(
-    selectedRoomObj?.prepInstructions ?? ""
-  );
-  const [roomSteps, setRoomSteps] = useState<string>(
-    selectedRoomObj?.wayfindingSteps ?? ""
-  );
-  const [roomAvgMins, setRoomAvgMins] = useState<string>(
-    String(selectedRoomObj?.avgServiceMinutes ?? 15)
-  );
+  const [roomCode, setRoomCode] = useState("");
+  const [roomTitle, setRoomTitle] = useState(selectedRoomObj?.name ?? "");
+  const [roomCategory, setRoomCategory] = useState(selectedRoomObj?.category ?? "other");
+  const [roomFloor, setRoomFloor] = useState<number>(selectedRoomObj?.floor ?? 1);
+  const [roomNum, setRoomNum] = useState<string>(selectedRoomObj?.roomNumber ?? "");
+  const [roomPrep, setRoomPrep] = useState<string>(selectedRoomObj?.prepInstructions ?? "");
+  const [roomSteps, setRoomSteps] = useState<string>(selectedRoomObj?.wayfindingSteps ?? "");
+  const [roomActive, setRoomActive] = useState(selectedRoomObj?.isActive !== false);
 
   // Staff Form State
   const [editingStaffId, setEditingStaffId] = useState<number | null>(null);
@@ -163,12 +167,29 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
   }, [snapshot]);
 
   const selectRoomForEdit = (rm: RoomDto) => {
+    setIsCreatingRoom(false);
     setSelectedRoomId(rm.id);
+    setRoomCode(rm.code);
+    setRoomTitle(rm.name);
+    setRoomCategory(rm.category || "other");
     setRoomFloor(rm.floor);
     setRoomNum(rm.roomNumber);
     setRoomPrep(rm.prepInstructions);
     setRoomSteps(rm.wayfindingSteps);
-    setRoomAvgMins(String(rm.avgServiceMinutes));
+    setRoomActive(rm.isActive !== false);
+  };
+
+  const startCreateRoom = () => {
+    setIsCreatingRoom(true);
+    setSelectedRoomId(0);
+    setRoomCode("");
+    setRoomTitle("");
+    setRoomCategory("paraclinic");
+    setRoomFloor(1);
+    setRoomNum("");
+    setRoomPrep("");
+    setRoomSteps("");
+    setRoomActive(true);
   };
 
   const loadPathwayForEdit = (pkg: PathwayDto) => {
@@ -214,22 +235,64 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
 
   const handleSaveRoomConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedRoomObj) return;
-    const display = roomStaffDisplay(selectedRoomObj, snapshot.staff);
+    const title = roomTitle.trim();
+    if (!title) return;
+
+    if (isCreatingRoom) {
+      const code = roomCode.trim().toUpperCase();
+      if (!code) return;
+      await onAction({
+        action: "CREATE_CLINIC_STATION",
+        code,
+        titleFa: title,
+        category: roomCategory,
+        floor: roomFloor,
+        roomNumber: roomNum,
+        prepInstructions: roomPrep,
+        wayfindingSteps: roomSteps,
+        isActive: roomActive,
+      });
+      setIsCreatingRoom(false);
+      setSavedNotice(`ایستگاه «${title}» به کاتالوگ کلینیک اضافه شد.`);
+      setTimeout(() => setSavedNotice(""), 4500);
+      return;
+    }
+
+    if (!selectedRoomObj?.serverId) {
+      setSavedNotice("شناسه سرور ایستگاه موجود نیست؛ صفحه را تازه کنید.");
+      setTimeout(() => setSavedNotice(""), 4500);
+      return;
+    }
     await onAction({
       action: "UPDATE_ROOM_CONFIG",
+      serverId: selectedRoomObj.serverId,
       id: selectedRoomObj.id,
+      titleFa: title,
+      category: roomCategory,
       floor: roomFloor,
       roomNumber: roomNum,
-      // Staff roster is source of truth for station lead; keep room fields synced.
-      specialistName: display.name,
-      specialtyTitle: display.specialty,
       prepInstructions: roomPrep,
       wayfindingSteps: roomSteps,
-      avgServiceMinutes: Number(roomAvgMins) || 15,
+      isActive: roomActive,
     });
     setSavedNotice(
-      `تنظیمات اتاق، طبقه و متن راهنمای آمادگی «${selectedRoomObj.name}» ذخیره شد و در نقشه موبایل سلامتجویان اعمال گردید.`
+      `تنظیمات ایستگاه «${title}» ذخیره شد؛ عنوان در مسیرهای دارای همین کد همگام می‌شود.`
+    );
+    setTimeout(() => setSavedNotice(""), 4500);
+  };
+
+  const handleToggleRoomActive = async (rm: RoomDto, next: boolean) => {
+    if (!rm.serverId) return;
+    await onAction({
+      action: "SET_CLINIC_STATION_ACTIVE",
+      serverId: rm.serverId,
+      isActive: next,
+    });
+    if (selectedRoomObj?.id === rm.id) setRoomActive(next);
+    setSavedNotice(
+      next
+        ? `ایستگاه «${rm.name}» فعال شد.`
+        : `ایستگاه «${rm.name}» غیرفعال شد و از فهرست افزودن فوری پزشک حذف گردید.`
     );
     setTimeout(() => setSavedNotice(""), 4500);
   };
@@ -538,7 +601,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                   انتخاب و تعیین ترتیب پیش‌فرض ایستگاه‌ها:
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {snapshot.rooms.map((rm) => {
+                  {activeClinicRooms(snapshot.rooms).map((rm) => {
                     const idx = pkgStations.indexOf(rm.code);
                     const active = idx !== -1;
                     return (
@@ -578,56 +641,138 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
           </div>
         )}
 
-        {/* ================= 3. ROOMS & WAYFINDING CONFIG ================= */}
-        {section === "rooms" && selectedRoomObj && (
+        {/* ================= 3. ROOMS / STATION CATALOG (UC-ADM-25) ================= */}
+        {section === "rooms" && (
           <div className="grid gap-5 lg:grid-cols-12">
-            {/* Room Selector List */}
             <div className="space-y-2.5 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs lg:col-span-5">
-              <h2 className="text-sm font-extrabold text-slate-900">
-                فهرست اتاق‌ها و ایستگاه‌های کلینیک
-              </h2>
-              {snapshot.rooms.map((rm) => (
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-sm font-extrabold text-slate-900">
+                  کاتالوگ ایستگاه‌ها و اتاق‌ها
+                </h2>
                 <button
-                  key={rm.id}
                   type="button"
-                  onClick={() => selectRoomForEdit(rm)}
-                  className={`flex w-full items-center justify-between rounded-xl border p-3 text-right text-xs transition ${
-                    rm.id === selectedRoomObj.id
-                      ? "border-sky-600 bg-sky-50 font-bold text-sky-950"
-                      : "border-slate-200 bg-slate-50/60 hover:bg-slate-100"
-                  }`}
+                  onClick={startCreateRoom}
+                  className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1.5 text-[11px] font-extrabold text-sky-800 hover:bg-sky-100"
                 >
-                  <div>
-                    <div className="font-extrabold">{rm.name}</div>
-                    <div className="mt-0.5 text-[11px] text-slate-500">
-                      {roomStaffDisplay(rm, snapshot.staff).name}
+                  <Plus className="h-3.5 w-3.5" />
+                  ایستگاه جدید
+                </button>
+              </div>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                فقط ایستگاه‌های فعال در «افزودن فوری» پزشک و نقشه موبایل دیده می‌شوند؛ صف و نوبت در این نسخه نیست.
+              </p>
+              {snapshot.rooms.length === 0 && (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">
+                  هنوز ایستگاهی ثبت نشده است.
+                </div>
+              )}
+              {snapshot.rooms.map((rm) => {
+                const selected = !isCreatingRoom && selectedRoomObj?.id === rm.id;
+                const active = rm.isActive !== false;
+                return (
+                  <div
+                    key={rm.serverId ?? rm.id}
+                    className={`rounded-xl border p-3 text-xs transition ${
+                      selected
+                        ? "border-sky-600 bg-sky-50 font-bold text-sky-950"
+                        : "border-slate-200 bg-slate-50/60"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => selectRoomForEdit(rm)}
+                      className="flex w-full items-center justify-between text-right"
+                    >
+                      <div>
+                        <div className="font-extrabold">{rm.name}</div>
+                        <div className="mt-0.5 text-[11px] font-medium text-slate-500">
+                          {rm.code} · {STATION_CATEGORIES.find((c) => c.value === rm.category)?.label ?? rm.category}
+                        </div>
+                      </div>
+                      <span className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700">
+                        طبقه {toFaDigits(rm.floor)}
+                        {rm.roomNumber ? ` • اتاق ${rm.roomNumber}` : ""}
+                      </span>
+                    </button>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span
+                        className={`rounded-md px-2 py-0.5 text-[10px] font-extrabold ${
+                          active ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        {active ? "فعال" : "غیرفعال"}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={busy || !rm.serverId}
+                        onClick={() => void handleToggleRoomActive(rm, !active)}
+                        className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        {active ? "غیرفعال کردن" : "فعال کردن"}
+                      </button>
                     </div>
                   </div>
-                  <span className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 border border-slate-200">
-                    طبقه {toFaDigits(rm.floor)} • اتاق {rm.roomNumber}
-                  </span>
-                </button>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Room Wayfinding & Prep Form */}
             <form
               onSubmit={handleSaveRoomConfig}
               className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs lg:col-span-7"
             >
               <h2 className="text-base font-extrabold text-slate-900">
-                ویرایش طبقه، اتاق و نکات آمادگی: {selectedRoomObj.name}
+                {isCreatingRoom
+                  ? "ثبت ایستگاه جدید در کاتالوگ"
+                  : `ویرایش ایستگاه: ${selectedRoomObj?.name ?? "—"}`}
               </h2>
               <p className="text-xs text-slate-500">
-                تغییرات این بخش بلافاصله در تب «نقشه و راهنمای کلینیک» موبایل
-                تمام سلامتجویان به‌روزرسانی می‌شود.
+                عنوان فارسی روی مراحل مسیر با همین کد اتاق همگام می‌شود؛ غیرفعال‌ها از فهرست افزودن فوری پزشک حذف می‌شوند.
               </p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">کد پایدار ایستگاه</label>
+                  <AppInput
+                    type="text"
+                    value={roomCode}
+                    onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                    disabled={!isCreatingRoom}
+                    placeholder="مثلاً LAB یا ECG"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold uppercase disabled:bg-slate-50"
+                  />
+                  {!isCreatingRoom && (
+                    <p className="mt-1 text-[10px] text-slate-500">کد پس از ایجاد تغییر نمی‌کند.</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">عنوان فارسی</label>
+                  <AppInput
+                    type="text"
+                    value={roomTitle}
+                    onChange={(e) => setRoomTitle(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs"
+                    required
+                  />
+                </div>
+              </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">
-                    طبقه
-                  </label>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">دسته</label>
+                  <select
+                    value={roomCategory}
+                    onChange={(e) => setRoomCategory(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold"
+                  >
+                    {STATION_CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">طبقه</label>
                   <select
                     value={roomFloor}
                     onChange={(e) => setRoomFloor(Number(e.target.value))}
@@ -636,12 +781,11 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                     <option value={1}>طبقه ۱ (همکف)</option>
                     <option value={2}>طبقه ۲</option>
                     <option value={3}>طبقه ۳</option>
+                    <option value={4}>طبقه ۴</option>
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">
-                    شماره اتاق
-                  </label>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">شماره اتاق</label>
                   <AppInput
                     type="text"
                     value={roomNum}
@@ -649,40 +793,39 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
                     className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs"
                   />
                 </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">
-                    زمان استاندارد خدمت (دقیقه)
-                  </label>
-                  <AppInput
-                    type="number"
-                    value={roomAvgMins}
-                    onChange={(e) => setRoomAvgMins(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs"
-                  />
-                </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">
-                    نام پزشک متخصص / اپراتور مستقر
-                  </label>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800">
-                    {roomStaffDisplay(selectedRoomObj, snapshot.staff).name}
+              <label className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={roomActive}
+                  onChange={(e) => setRoomActive(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                ایستگاه فعال است (نمایش در افزودن فوری و نقشه)
+              </label>
+
+              {!isCreatingRoom && selectedRoomObj && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-slate-700">
+                      نام پزشک / اپراتور مستقر
+                    </label>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800">
+                      {roomStaffDisplay(selectedRoomObj, snapshot.staff).name}
+                    </div>
+                    <p className="mt-1 text-[10px] text-slate-500">
+                      از کادر درمان می‌آید؛ در این نسخه صف اتاق نداریم.
+                    </p>
                   </div>
-                  <p className="mt-1 text-[10px] text-slate-500">
-                    از فهرست «کادر درمان» و اتاق تخصیص‌یافته می‌آید؛ اینجا قابل ویرایش نیست.
-                  </p>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">
-                    عنوان تخصصی
-                  </label>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800">
-                    {roomStaffDisplay(selectedRoomObj, snapshot.staff).specialty}
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-slate-700">عنوان تخصصی</label>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800">
+                      {roomStaffDisplay(selectedRoomObj, snapshot.staff).specialty}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="mb-1 block text-xs font-bold text-slate-700">
@@ -698,8 +841,7 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
 
               <div>
                 <label className="mb-1 block text-xs font-bold text-amber-800">
-                  متن نکات آمادگی الزامی قبل از ورود به اتاق (نمایش در موبایل
-                  سلامتجو)
+                  نکات آمادگی قبل از ورود (نمایش در موبایل سلامتجو)
                 </label>
                 <AppTextarea
                   rows={3}
@@ -711,11 +853,11 @@ export function AdminProfile({ snapshot, onAction, busy, initialSection = "kpi",
 
               <button
                 type="submit"
-                disabled={busy}
+                disabled={busy || !roomTitle.trim() || (isCreatingRoom && !roomCode.trim())}
                 className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-xs font-extrabold text-white hover:bg-sky-700 disabled:opacity-50"
               >
                 <CheckCircle2 className="h-4 w-4" />
-                ذخیره پیکربندی اتاق و راهنمای سلامتجو
+                {isCreatingRoom ? "ثبت ایستگاه جدید" : "ذخیره پیکربندی ایستگاه"}
               </button>
             </form>
           </div>

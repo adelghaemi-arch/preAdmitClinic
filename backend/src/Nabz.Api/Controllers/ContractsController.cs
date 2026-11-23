@@ -52,12 +52,35 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateContractRequest body, CancellationToken ct)
         => Ok(await contracts.UpdateAsync(id, body, ct));
 
+    // UC-ADM-24 — فعال/غیرفعال با تأیید UI؛ Platform⊇Admin
+    [Authorize(Roles = "Admin,Platform")]
+    [HttpPut("{id:guid}/status")]
+    public async Task<IActionResult> SetStatus(Guid id, [FromBody] ContractStatusBody body, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await contracts.SetStatusAsync(id, body.IsActive, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    // UC-ADM-02 — خطای اعتبارسنجی دامنه باید ۴۰۰ باشد نه ۵۰۰ خام
     [Authorize(Roles = "Admin,Platform")]
     [HttpPut("{id:guid}/supervisor")]
     public async Task<IActionResult> Supervisor(Guid id, [FromBody] UpdateSupervisorRequest body, CancellationToken ct)
     {
-        await contracts.UpdateSupervisorAsync(id, body, ct);
-        return Ok(new { ok = true });
+        try
+        {
+            await contracts.UpdateSupervisorAsync(id, body, ct);
+            return Ok(new { ok = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [Authorize(Roles = "Admin,Platform")]
@@ -185,7 +208,7 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
     {
         // reapplyMembers=false برای جابه‌جایی فقط‌اولویت؛ اعضا با recheck جابه‌جا می‌شوند
         var result = await contracts.SavePathwayRulesAsync(id, body.Select(r =>
-            new PathwayRuleInput(r.Title, r.Gender, r.MinAge, r.MaxAge, r.JobCategory, r.PathwayCode, r.Priority, r.LibraryRuleId)).ToList(), reapplyMembers, ct);
+            new PathwayRuleInput(r.Title, r.Gender, r.MinAge, r.MaxAge, r.JobCategory, r.PathwayCode, r.Priority, r.LibraryPathwayId)).ToList(), reapplyMembers, ct);
         return Ok(new { ok = true, recalculated = result.Recalculated, needsManual = result.NeedsManual });
     }
 
@@ -195,7 +218,7 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
     {
         try
         {
-            var result = await contracts.AttachLibraryRulesAsync(id, body.LibraryRuleIds ?? [], ct);
+            var result = await contracts.AttachLibraryPathwaysAsync(id, body.LibraryPathwayIds ?? [], ct);
             return Ok(new { ok = true, recalculated = result.Recalculated, needsManual = result.NeedsManual });
         }
         catch (InvalidOperationException ex)
@@ -258,6 +281,66 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
         return Ok(await contracts.GetFunnelStatsAsync(id, ct));
     }
 
+    /// <summary>UC-ADM-26 — پاسخ submitted پرسشنامه برای PDF از قیف.</summary>
+    [Authorize(Roles = "Admin,Platform")]
+    [HttpGet("{id:guid}/members/{memberId:guid}/submitted-form")]
+    public async Task<IActionResult> MemberSubmittedForm(Guid id, Guid memberId, CancellationToken ct)
+    {
+        try
+        {
+            var dto = await contracts.GetMemberSubmittedFormAsync(id, memberId, ct);
+            return dto is null ? NotFound(new { ok = false, error = "پاسخ تکمیل‌شده یافت نشد." }) : Ok(dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { ok = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>UC-ADM-26 — دانلود PDF واقعی A4 از Chromium.</summary>
+    [Authorize(Roles = "Admin,Platform")]
+    [HttpGet("{id:guid}/members/{memberId:guid}/intake-pdf")]
+    public async Task<IActionResult> MemberIntakePdf(
+        Guid id, Guid memberId, [FromServices] IIntakePdfService intakePdf, CancellationToken ct)
+    {
+        try
+        {
+            var file = await intakePdf.GenerateMemberIntakePdfAsync(id, memberId, ct);
+            return File(file.Content, file.ContentType, file.FileName);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { ok = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>UC-ADM-22 — آپلود لوگوی سازمان/بانک طرف‌قرارداد.</summary>
+    [Authorize(Roles = "Admin,Platform")]
+    [HttpPost("{id:guid}/partner-logo")]
+    [RequestSizeLimit(3_000_000)]
+    public async Task<IActionResult> UploadPartnerLogo(Guid id, IFormFile file, CancellationToken ct)
+    {
+        if (file is null || file.Length == 0)
+            return BadRequest(new { ok = false, error = "فایل لوگو خالی است." });
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            var result = await contracts.UploadPartnerLogoAsync(id, stream, file.FileName, file.ContentType, ct);
+            return Ok(new
+            {
+                ok = true,
+                partnerLogoStorageKey = result.PartnerLogoStorageKey,
+                fileName = result.FileName,
+                contentType = result.ContentType,
+                sizeBytes = result.SizeBytes
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { ok = false, error = ex.Message });
+        }
+    }
+
     [AllowAnonymous]
     [HttpGet("members/by-invite")]
     public async Task<IActionResult> ByInvite([FromQuery] string token, CancellationToken ct)
@@ -269,6 +352,7 @@ public sealed class ContractsController(IContractService contracts, IPatientServ
     public record SmsBody(Guid TemplateId, string? CampaignTitle, List<Guid>? MemberIds);
     public record ApiBody(string? ApiEndpoint, string? ApiKey);
     public record PathwayOverrideBody(string PathwayCode, string PathwayTitle);
-    public record PathwayRuleBody(string Title, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PathwayCode, int Priority, Guid? LibraryRuleId = null);
-    public record AttachPathwayLibraryBody(List<Guid>? LibraryRuleIds);
+    public record PathwayRuleBody(string Title, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PathwayCode, int Priority, Guid? LibraryPathwayId = null);
+    public record AttachPathwayLibraryBody(List<Guid>? LibraryPathwayIds);
+    public record ContractStatusBody(bool IsActive);
 }

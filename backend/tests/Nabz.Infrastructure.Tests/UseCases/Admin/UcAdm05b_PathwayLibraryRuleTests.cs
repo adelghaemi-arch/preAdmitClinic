@@ -1,98 +1,89 @@
-/*
+﻿/*
  File: backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm05b_PathwayLibraryRuleTests.cs
- Description: تست واحد کتابخانه مرکزی مسیر سلامتی (UC-ADM-05b)
- Parent Dependencies: ServiceHarness, PathwayLibraryRuleService, ContractService
+ Description: UC-ADM-05b — مسیر سلامتی واحد در کتابخانه؛ اتصال/همگام‌سازی/حذف
+ Parent Dependencies: ServiceHarness, PathwayService, ContractService
  */
 
 using Nabz.Application.Interfaces;
-using Nabz.Domain.Enums;
 using Nabz.Infrastructure.Tests.Support;
 
 namespace Nabz.Infrastructure.Tests.UseCases.Admin;
 
 public sealed class UcAdm05b_PathwayLibraryRuleTests
 {
+    private static UpsertPathwayRequest SampleRequest(
+        string title = "چکاپ آقایان زیر ۴۰ سال",
+        string gender = "مرد",
+        int? minAge = null,
+        int? maxAge = 39,
+        bool isInLibrary = true) =>
+        new(
+            title,
+            "توضیح مسیر تست",
+            gender,
+            minAge,
+            maxAge,
+            "همه",
+            isInLibrary,
+            70,
+            [new PathwayStationInput("LAB", "آزمایشگاه", 1), new PathwayStationInput("US_ABD", "سونو", 2)]);
+
     [Fact]
-    [Trait("UC", "UC-ADM-05b")]
-    public async Task UC_ADM_05b_HappyPath_CreateSearchUpdateAttachStats()
+    public async Task UcAdm05b_Create_Attach_And_Sync_On_Update()
     {
         var h = new ServiceHarness();
         var clinicId = h.SeedClinic();
-        var library = h.CreatePathwayLibraryRuleService();
+        var pathways = h.CreatePathwayService();
         var contracts = h.CreateContractService();
 
-        var created = await library.CreateAsync(new UpsertPathwayLibraryRuleRequest(
-            "آقایان اداری زیر ۴۰", "تست", "مرد", 18, 40, "اداری", "PKG-ADMIN"));
+        var created = await pathways.CreateAsync(SampleRequest());
+        Assert.Equal("HP-001", created.Code);
+        Assert.Equal(2, created.Stations.Count);
 
-        Assert.StartsWith("LR-", created.Code);
-        Assert.Equal(0, created.AttachedContractCount);
+        var contract = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد تست", "سازمان", null));
+        await contracts.AttachLibraryPathwaysAsync(contract.Id, [created.Id]);
 
-        var found = await library.ListAsync("اداری");
-        Assert.Contains(found, r => r.Id == created.Id);
+        var linked = h.Store.PathwayRules.Single(r => r.LibraryPathwayId == created.Id);
+        Assert.Equal(created.Title, linked.Title);
+        Assert.Equal(created.Code, linked.PathwayCode);
+        Assert.Equal("مرد", linked.Gender);
 
-        var contract = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
-        await contracts.AttachLibraryRulesAsync(contract.Id, [created.Id]);
-
-        await contracts.ImportMembersAsync(contract.Id,
-        [
-            new ImportMemberRequest("عضو", "تست", "0011223340", "09120001002", new DateOnly(2000, 1, 1), "مرد", null, null, "اداری", null)
-        ]);
-
-        var afterAttach = await library.GetAsync(created.Id);
-        Assert.NotNull(afterAttach);
-        Assert.Equal(1, afterAttach!.AttachedContractCount);
-        Assert.Equal(1, afterAttach.ActiveMatchedCount);
-        Assert.Equal(0, afterAttach.PreviouslyUsedCount);
-
-        var memberId = h.Store.Members[0].Id;
-        await contracts.UpdateMemberOnboardingAsync(memberId, new UpdateOnboardingRequest(OnboardingStage.Completed, 100, null));
-
-        var afterComplete = await library.GetAsync(created.Id);
-        Assert.Equal(0, afterComplete!.ActiveMatchedCount);
-        Assert.Equal(1, afterComplete.PreviouslyUsedCount);
-
-        await library.UpdateAsync(created.Id, new UpsertPathwayLibraryRuleRequest(
-            "عنوان جدید قانون", "به‌روز", "مرد", 18, 40, "اداری", "PKG-ADMIN"));
-        var linked = h.Store.PathwayRules.Single(r => r.LibraryRuleId == created.Id);
-        Assert.Equal("عنوان جدید قانون", linked.Title);
+        await pathways.UpdateAsync(created.Id, SampleRequest(title: "چکاپ آقایان به‌روز", maxAge: 45));
+        linked = h.Store.PathwayRules.Single(r => r.LibraryPathwayId == created.Id);
+        Assert.Equal("چکاپ آقایان به‌روز", linked.Title);
+        Assert.Equal(45, linked.MaxAge);
     }
 
     [Fact]
-    [Trait("UC", "UC-ADM-05b")]
-    public async Task UC_ADM_05b_Nx_DeleteWhileAttached_Throws()
+    public async Task UcAdm05b_Delete_Blocked_When_Attached()
     {
         var h = new ServiceHarness();
         var clinicId = h.SeedClinic();
-        var library = h.CreatePathwayLibraryRuleService();
+        var pathways = h.CreatePathwayService();
         var contracts = h.CreateContractService();
 
-        var rule = await library.CreateAsync(new UpsertPathwayLibraryRuleRequest(
-            "قانون", null, "همه", null, null, "همه", "FULL_CHECKUP"));
+        var pathway = await pathways.CreateAsync(SampleRequest());
         var contract = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
-        await contracts.AttachLibraryRulesAsync(contract.Id, [rule.Id]);
+        await contracts.AttachLibraryPathwaysAsync(contract.Id, [pathway.Id]);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => library.DeleteAsync(rule.Id));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => pathways.DeleteAsync(pathway.Id));
     }
 
     [Fact]
-    [Trait("UC", "UC-ADM-05b")]
-    public async Task UC_ADM_05b_HappyPath_DetachThenDelete()
+    public async Task UcAdm05b_Delete_After_Detach()
     {
         var h = new ServiceHarness();
         var clinicId = h.SeedClinic();
-        var library = h.CreatePathwayLibraryRuleService();
+        var pathways = h.CreatePathwayService();
         var contracts = h.CreateContractService();
 
-        var rule = await library.CreateAsync(new UpsertPathwayLibraryRuleRequest(
-            "قانون", null, "همه", null, null, "همه", "FULL_CHECKUP"));
+        var pathway = await pathways.CreateAsync(SampleRequest());
         var contract = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
-        await contracts.AttachLibraryRulesAsync(contract.Id, [rule.Id]);
-        var ruleId = h.Store.PathwayRules.Single().Id;
-
+        await contracts.AttachLibraryPathwaysAsync(contract.Id, [pathway.Id]);
+        var ruleId = h.Store.PathwayRules.Single(r => r.LibraryPathwayId == pathway.Id).Id;
         await contracts.DetachPathwayRuleAsync(contract.Id, ruleId);
-        await library.DeleteAsync(rule.Id);
 
-        Assert.Empty(h.Store.PathwayLibraryRules);
-        Assert.Empty(h.Store.PathwayRules);
+        await pathways.DeleteAsync(pathway.Id);
+        Assert.Empty(h.Store.PathwayDefinitions);
     }
 }

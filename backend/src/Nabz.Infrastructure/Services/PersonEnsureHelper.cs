@@ -40,6 +40,16 @@ public static class PersonEnsureHelper
         if (nid is not null)
             person = await persons.GetByNationalIdAsync(nid, ct);
 
+        // ناظر بدون کدملی: همان موبایل را دوباره Person جدید نکن
+        if (person is null)
+        {
+            var byMobile = await persons.ListByMobileAsync(mobile, ct);
+            person = nid is null
+                ? byMobile.FirstOrDefault(p => string.IsNullOrWhiteSpace(p.NationalId))
+                    ?? byMobile.FirstOrDefault()
+                : byMobile.FirstOrDefault(p => p.NationalId == nid);
+        }
+
         if (person is null)
         {
             person = new Person

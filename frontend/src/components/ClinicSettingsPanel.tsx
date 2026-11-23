@@ -1,6 +1,6 @@
 /*
  File: frontend/src/components/ClinicSettingsPanel.tsx
- Description: تنظیمات بیمارستان — لوکیشن، پشتیبانی، پیکربندی پیامک و تست قبل از فعال‌سازی (UC-ADM-23)
+ Description: تنظیمات بیمارستان — لوکیشن، پشتیبانی، طوبی SOAP (UserInfo/خط) و تست پیامک (UC-ADM-21/23)
  Parent Dependencies: LocationPickerPopup, AppInput, clinic-sms-test, api/clinics, api/sms-templates
  */
 
@@ -11,10 +11,15 @@ import { LocationPickerPopup, type LocationPickResult } from "@/components/Locat
 import { normalizePhone, readUsername } from "@/lib/auth";
 import { apiGetOtpMode } from "@/lib/api/auth";
 import {
+  DEFAULT_TOUBA_SOAP_URL,
+  fetchToubaAccount,
+  mergeToubaSenderOptions,
   testClinicSms,
+  uploadClinicLogo,
   type ClinicSmsProvider,
   type ClinicSmsTestModeApi,
 } from "@/lib/api/clinics";
+import { useStorageObjectUrl } from "@/hooks/useStorageObjectUrl";
 import { fetchSmsTemplates, type ApiSmsCampaignTemplateDto } from "@/lib/api/sms-templates";
 import {
   allowedSmsTestModes,
@@ -41,6 +46,9 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
   const savedSmsProvider = (clinic?.smsProvider as ClinicSmsProvider) || "None";
 
   const [name, setName] = useState(clinic?.name ?? "");
+  const [logoKey, setLogoKey] = useState(clinic?.logoStorageKey ?? null);
+  const { url: logoUrl } = useStorageObjectUrl(logoKey);
+  const [logoBusy, setLogoBusy] = useState(false);
   const [city, setCity] = useState(clinic?.city ?? loc.city ?? "");
   const [address, setAddress] = useState(loc.address ?? "");
   const [supportPhone, setSupportPhone] = useState(clinic?.preAdmitSupportPhone ?? "");
@@ -67,11 +75,15 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
   const [toubaUsername, setToubaUsername] = useState(clinic?.toubaUsername ?? "");
   const [toubaPassword, setToubaPassword] = useState(clinic?.toubaPasswordSet ? SECRET_MASK : "");
   const [toubaSendUrl, setToubaSendUrl] = useState(
-    clinic?.toubaSendUrl ?? "https://sms.tsms.ir/url/tsms.php"
+    clinic?.toubaSendUrl ?? DEFAULT_TOUBA_SOAP_URL
   );
   const [toubaOtpMessageTemplate, setToubaOtpMessageTemplate] = useState(
     clinic?.toubaOtpMessageTemplate ?? "کد ورود شما: {code}"
   );
+  const [toubaCredit, setToubaCredit] = useState<number | null>(null);
+  const [toubaSenderOptions, setToubaSenderOptions] = useState<string[]>([]);
+  const [toubaAccountBusy, setToubaAccountBusy] = useState(false);
+  const [toubaAccountError, setToubaAccountError] = useState("");
 
   const [testTarget, setTestTarget] = useState<ClinicSmsTestTarget>(() => {
     if (savedSmsProvider === "Kavenegar") return "Kavenegar";
@@ -106,6 +118,10 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
   const [testMessage, setTestMessage] = useState("");
   const [testError, setTestError] = useState("");
   const [fixedOtpEnabled, setFixedOtpEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setLogoKey(clinic?.logoStorageKey ?? null);
+  }, [clinic?.logoStorageKey]);
 
   useEffect(() => {
     if (!isSmsTestModeAllowed(effectiveTestProvider, testMode) && allowedModes[0]) {
@@ -182,11 +198,7 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
     setTestError("");
     setTestMessage("");
     try {
-      if (fixedOtpEnabled) {
-        throw new Error(
-          "Auth:FixedOtp فعال است؛ ارسال واقعی غیرفعال است (اولویت env محلی). برای تست درگاه موقتاً FixedOtp را خالی کنید."
-        );
-      }
+      // تست درگاه مستقل از FixedOtp است؛ FixedOtp فقط OTP/کمپین تولید را قطع می‌کند
       if (!isSmsTestModeAllowed(effectiveTestProvider, testMode)) {
         throw new Error(
           smsTestUnavailableHint(savedSmsProvider, testTarget) ?? "این حالت برای درگاه تست مجاز نیست."
@@ -229,6 +241,22 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
 
   const unavailable = smsTestUnavailableHint(savedSmsProvider, testTarget);
 
+  const loadToubaAccount = async () => {
+    setToubaAccountBusy(true);
+    setToubaAccountError("");
+    try {
+      const info = await fetchToubaAccount();
+      setToubaCredit(info.credit);
+      const options = mergeToubaSenderOptions(smsSenderNumber, info.senderNumbers ?? []);
+      setToubaSenderOptions(options);
+      if (!smsSenderNumber.trim() && options[0]) setSmsSenderNumber(options[0]);
+    } catch (e) {
+      setToubaAccountError(e instanceof Error ? e.message : "بارگذاری حساب طوبی ناموفق بود.");
+    } finally {
+      setToubaAccountBusy(false);
+    }
+  };
+
   return (
     <section className="mx-auto max-w-xl space-y-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
       <div>
@@ -242,6 +270,48 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
         نام بیمارستان
         <AppInput value={name} onChange={(e) => setName(e.target.value)} className="app-input mt-1" placeholder="مثلاً عدل" />
       </label>
+
+      <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+        <div className="text-[11px] font-semibold text-slate-700">لوگوی بیمارستان (برای PDF پرسشنامه)</div>
+        <p className="mt-1 text-[10px] leading-5 text-slate-500">PNG، JPEG یا WebP — حداکثر ۲ مگابایت.</p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          {logoUrl ? (
+            <img src={logoUrl} alt="لوگوی بیمارستان" className="h-14 w-auto max-w-[7rem] object-contain" />
+          ) : (
+            <div className="flex h-14 w-28 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-white text-[10px] text-slate-400">
+              بدون لوگو
+            </div>
+          )}
+          <label className="secondary-button cursor-pointer !py-1.5 !text-[11px]">
+            {logoBusy ? "در حال آپلود…" : "انتخاب فایل"}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              disabled={busy || logoBusy || saving}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (!file) return;
+                void (async () => {
+                  setLogoBusy(true);
+                  setError("");
+                  try {
+                    const res = await uploadClinicLogo(file);
+                    setLogoKey(res.logoStorageKey);
+                    await onAction({ action: "SET_CLINIC_LOGO", logoStorageKey: res.logoStorageKey });
+                    setMessage("لوگوی بیمارستان ذخیره شد.");
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : "آپلود لوگو ناموفق بود.");
+                  } finally {
+                    setLogoBusy(false);
+                  }
+                })();
+              }}
+            />
+          </label>
+        </div>
+      </div>
 
       <label className="app-label text-[11px]">
         شهر
@@ -286,18 +356,20 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
           سامانه پیامک
         </div>
         <p className="text-[10px] leading-5 text-teal-800/80">
-          اول اعتبارنامه را ذخیره و تست کنید؛ بعد «درگاه فعال» را برای OTP/کمپین روشن کنید. طوبی = sms.tsms.ir.
+          اول اعتبارنامه را ذخیره و تست کنید؛ بعد «درگاه فعال» را برای OTP/کمپین روشن کنید. طوبی = SOAP نمونه
+          tsms.ir/soapWSDL.
         </p>
         {fixedOtpEnabled && (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] leading-5 text-amber-900">
-            <span className="font-semibold">اولویت env محلی:</span>{" "}
-            <code className="font-mono">Auth:FixedOtp</code> فعال است — OTP/کمپین/تست واقعی ارسال نمی‌شوند حتی اگر درگاه
-            را روشن کنید. برای تست درگاه، موقتاً FixedOtp را در env خالی کنید.
+            <span className="font-semibold">OTP دمو:</span>{" "}
+            <code className="font-mono">Auth:FixedOtp</code> فعال است — ورود با کد ثابت و بدون SMS تولیدی؛{" "}
+            <span className="font-semibold">تست درگاه پایین همچنان مجاز است</span>. OTP/کمپین واقعی فقط وقتی FixedOtp خالی
+            باشد از درگاه فعال می‌روند.
           </p>
         )}
 
         <label className="app-label text-[11px]">
-          درگاه فعال (تولید — فقط وقتی FixedOtp خالی است)
+          درگاه فعال (OTP/کمپین تولید — وقتی FixedOtp خالی است)
           <select
             value={smsProvider}
             onChange={(e) => setSmsProvider(e.target.value as ClinicSmsProvider)}
@@ -325,13 +397,29 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
 
         <label className="app-label text-[11px]">
           شماره / خط ارسال
-          <AppInput
-            value={smsSenderNumber}
-            onChange={(e) => setSmsSenderNumber(e.target.value)}
-            className="app-input mt-1 font-mono"
-            dir="ltr"
-            placeholder="1000…"
-          />
+          {configTarget === "Touba" && toubaSenderOptions.length > 0 ? (
+            <select
+              value={smsSenderNumber}
+              onChange={(e) => setSmsSenderNumber(e.target.value)}
+              className="app-select mt-1 w-full font-mono text-xs"
+              dir="ltr"
+              data-testid="touba-sender-select"
+            >
+              {toubaSenderOptions.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <AppInput
+              value={smsSenderNumber}
+              onChange={(e) => setSmsSenderNumber(e.target.value)}
+              className="app-input mt-1 font-mono"
+              dir="ltr"
+              placeholder="1000…"
+            />
+          )}
         </label>
 
         {configTarget === "Kavenegar" && (
@@ -389,16 +477,41 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
               />
             </label>
             <label className="app-label text-[11px]">
-              آدرس ارسال URL
+              آدرس سرویس SOAP
               <AppInput
                 value={toubaSendUrl}
                 onChange={(e) => setToubaSendUrl(e.target.value)}
                 className="app-input mt-1 font-mono text-[11px]"
                 dir="ltr"
+                placeholder={DEFAULT_TOUBA_SOAP_URL}
               />
             </label>
+            <p className="text-[10px] text-slate-400">
+              پیش‌فرض نمونه: <span className="font-mono">{DEFAULT_TOUBA_SOAP_URL}</span>
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className="app-btn-secondary text-[11px]"
+                disabled={toubaAccountBusy || busy}
+                onClick={() => void loadToubaAccount()}
+                data-testid="touba-load-account"
+              >
+                {toubaAccountBusy ? "در حال بارگذاری…" : "بارگذاری خطوط و اعتبار"}
+              </button>
+              {toubaCredit != null && (
+                <span className="text-[11px] font-semibold text-teal-800" data-testid="touba-credit">
+                  اعتبار: {toubaCredit.toLocaleString("fa-IR")} ریال
+                </span>
+              )}
+            </div>
+            {toubaAccountError && (
+              <p className="text-[10px] text-rose-600" data-testid="touba-account-error">
+                {toubaAccountError}
+              </p>
+            )}
             <label className="app-label text-[11px]">
-              متن OTP (با {"{code}"})
+              متن OTP (باید شامل {"{code}"} باشد)
               <AppTextarea
                 rows={2}
                 value={toubaOtpMessageTemplate}
@@ -407,7 +520,9 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
               />
             </label>
             <p className="text-[10px] text-slate-400">
-              برای کمپین گروهی، متن از پیش‌نمایش قالب پلتفرم با توکن‌ها پر می‌شود و با URL طوبی ارسال می‌گردد.
+              جای خالی کد را با {"{code}"} بنویسید (مثلاً «کد ورود شما: {"{code}"}»). عدد ثابت مثل ۱۱۱۱۱ باعث
+              نامعتبر شدن OTP می‌شود. کمپین/OTP با SOAP sendSms است؛ اول اعتبار را ذخیره کنید، بعد خطوط را از
+              UserInfo بارگذاری کنید.
             </p>
           </div>
         )}
@@ -542,7 +657,7 @@ export function ClinicSettingsPanel({ snapshot, onAction, busy }: Props) {
 
               <button
                 type="button"
-                disabled={busy || testing || !!unavailable || fixedOtpEnabled === true}
+                disabled={busy || testing || !!unavailable}
                 onClick={() => void runSmsTest()}
                 className="secondary-button w-full justify-center"
                 data-testid="sms-test-send"

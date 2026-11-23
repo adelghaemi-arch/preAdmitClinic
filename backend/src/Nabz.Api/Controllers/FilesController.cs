@@ -110,7 +110,12 @@ public sealed class FilesController(IFileStorage storage, IEvidenceService evide
     {
         var key = Uri.UnescapeDataString(storageKey);
         var allowed = await evidence.CanDownloadStorageKeyAsync(
-            key, User.GetUserId(), User.IsInRole("Platform"), ct);
+            key,
+            User.GetUserId(),
+            User.IsInRole("Platform"),
+            User.IsInRole("Specialist"),
+            User.IsInRole("Admin"),
+            ct);
         if (!allowed) return Forbid();
 
         var opened = await storage.OpenReadAsync(key, ct);

@@ -215,6 +215,40 @@ public sealed class FakeClinicRepository(InMemoryStore store) : IClinicRepositor
     }
 }
 
+public sealed class FakeClinicStationRepository(InMemoryStore store) : IClinicStationRepository
+{
+    public Task<List<ClinicStation>> ListByClinicAsync(Guid clinicId, bool activeOnly, CancellationToken ct = default)
+    {
+        var q = store.ClinicStations.Where(x => x.ClinicId == clinicId);
+        if (activeOnly) q = q.Where(x => x.IsActive);
+        return Task.FromResult(
+            q.OrderBy(x => x.SortOrder).ThenBy(x => x.TitleFa).ToList());
+    }
+
+    public Task<ClinicStation?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => Task.FromResult(store.ClinicStations.FirstOrDefault(x => x.Id == id));
+
+    public Task<ClinicStation?> GetByClinicAndCodeAsync(Guid clinicId, string code, CancellationToken ct = default)
+        => Task.FromResult(store.ClinicStations.FirstOrDefault(x => x.ClinicId == clinicId && x.Code == code));
+
+    public Task AddAsync(ClinicStation station, CancellationToken ct = default)
+    {
+        store.ClinicStations.Add(station);
+        return Task.CompletedTask;
+    }
+
+    public Task<int> SyncPathwayStationTitlesAsync(string roomCode, string titleFa, CancellationToken ct = default)
+    {
+        var rows = store.PathwayStationDefs.Where(x => x.RoomCode == roomCode).ToList();
+        foreach (var row in rows)
+        {
+            row.TitleFa = titleFa;
+            row.UpdatedAt = DateTime.UtcNow;
+        }
+        return Task.FromResult(rows.Count);
+    }
+}
+
 public sealed class FakeContractRepository(InMemoryStore store) : IContractRepository
 {
     private void HydratePerson(ContractMember? member)
@@ -450,8 +484,8 @@ public sealed class FakeContractRepository(InMemoryStore store) : IContractRepos
     public Task<ContractPathwayRule?> GetPathwayRuleByIdAsync(Guid ruleId, CancellationToken ct = default)
         => Task.FromResult(store.PathwayRules.FirstOrDefault(x => x.Id == ruleId));
 
-    public Task<List<ContractPathwayRule>> ListPathwayRulesByLibraryRuleIdAsync(Guid libraryRuleId, CancellationToken ct = default)
-        => Task.FromResult(store.PathwayRules.Where(x => x.LibraryRuleId == libraryRuleId).ToList());
+    public Task<List<ContractPathwayRule>> ListPathwayRulesByLibraryPathwayIdAsync(Guid libraryPathwayId, CancellationToken ct = default)
+        => Task.FromResult(store.PathwayRules.Where(x => x.LibraryPathwayId == libraryPathwayId).ToList());
 
     public Task AddPathwayRuleAsync(ContractPathwayRule rule, CancellationToken ct = default)
     {
@@ -461,14 +495,45 @@ public sealed class FakeContractRepository(InMemoryStore store) : IContractRepos
     }
 }
 
-public sealed class FakePathwayLibraryRuleRepository(InMemoryStore store) : IPathwayLibraryRuleRepository
+public sealed class FakePathwayCatalogRepository(InMemoryStore store) : IPathwayCatalogRepository
 {
-    public Task<PathwayLibraryRule?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => Task.FromResult(store.PathwayLibraryRules.FirstOrDefault(x => x.Id == id));
-
-    public Task<List<PathwayLibraryRule>> ListAsync(string? query, int take, CancellationToken ct = default)
+    private void HydrateStations(PathwayDefinition? def)
     {
-        IEnumerable<PathwayLibraryRule> q = store.PathwayLibraryRules;
+        if (def is null) return;
+        def.Stations = store.PathwayStationDefs
+            .Where(s => s.PathwayDefinitionId == def.Id)
+            .OrderBy(s => s.StepOrder)
+            .ToList();
+    }
+
+    public Task<PathwayDefinition?> GetByIdAsync(Guid id, bool includeStations = true, CancellationToken ct = default)
+    {
+        var def = store.PathwayDefinitions.FirstOrDefault(x => x.Id == id);
+        if (includeStations) HydrateStations(def);
+        return Task.FromResult(def);
+    }
+
+    public Task<PathwayDefinition?> GetByCodeAsync(string code, bool includeStations = true, CancellationToken ct = default)
+    {
+        var def = store.PathwayDefinitions.FirstOrDefault(x => x.Code == code);
+        if (includeStations) HydrateStations(def);
+        return Task.FromResult(def);
+    }
+
+    public Task<PathwayStationDef?> GetStationByIdAsync(Guid stationDefId, CancellationToken ct = default)
+        => Task.FromResult(store.PathwayStationDefs.FirstOrDefault(x => x.Id == stationDefId));
+
+    public Task<List<PathwayDefinition>> ListActiveAsync(CancellationToken ct = default)
+    {
+        var list = store.PathwayDefinitions.Where(x => x.IsActive).OrderBy(x => x.Code).ToList();
+        foreach (var def in list) HydrateStations(def);
+        return Task.FromResult(list);
+    }
+
+    public Task<List<PathwayDefinition>> ListAsync(string? query, bool libraryOnly, int take, CancellationToken ct = default)
+    {
+        IEnumerable<PathwayDefinition> q = store.PathwayDefinitions;
+        if (libraryOnly) q = q.Where(x => x.IsInLibrary);
         if (!string.IsNullOrWhiteSpace(query))
         {
             var t = query.Trim();
@@ -477,30 +542,53 @@ public sealed class FakePathwayLibraryRuleRepository(InMemoryStore store) : IPat
                 || x.Code.Contains(t, StringComparison.OrdinalIgnoreCase)
                 || (x.Description?.Contains(t, StringComparison.OrdinalIgnoreCase) ?? false)
                 || x.JobCategory.Contains(t, StringComparison.OrdinalIgnoreCase)
-                || x.Gender.Contains(t, StringComparison.OrdinalIgnoreCase)
-                || x.PathwayCode.Contains(t, StringComparison.OrdinalIgnoreCase));
+                || x.Gender.Contains(t, StringComparison.OrdinalIgnoreCase));
         }
-        return Task.FromResult(q.OrderBy(x => x.Code).Take(take).ToList());
+        var list = q.OrderBy(x => x.Code).Take(take).ToList();
+        foreach (var def in list) HydrateStations(def);
+        return Task.FromResult(list);
     }
 
     public Task<int> CountAsync(CancellationToken ct = default)
-        => Task.FromResult(store.PathwayLibraryRules.Count);
+        => Task.FromResult(store.PathwayDefinitions.Count);
 
-    public Task AddAsync(PathwayLibraryRule rule, CancellationToken ct = default)
+    public Task AddAsync(PathwayDefinition def, CancellationToken ct = default)
     {
-        store.PathwayLibraryRules.Add(rule);
+        store.PathwayDefinitions.Add(def);
+        foreach (var s in def.Stations)
+        {
+            s.PathwayDefinitionId = def.Id;
+            if (!store.PathwayStationDefs.Contains(s))
+                store.PathwayStationDefs.Add(s);
+        }
         return Task.CompletedTask;
     }
 
-    public void Remove(PathwayLibraryRule rule) => store.PathwayLibraryRules.Remove(rule);
+    public void Remove(PathwayDefinition def)
+    {
+        store.PathwayStationDefs.RemoveAll(s => s.PathwayDefinitionId == def.Id);
+        store.PathwayDefinitions.Remove(def);
+    }
 
-    public Task<int> CountAttachedContractsAsync(Guid libraryRuleId, CancellationToken ct = default)
-        => Task.FromResult(store.PathwayRules.Where(x => x.LibraryRuleId == libraryRuleId).Select(x => x.ContractId).Distinct().Count());
+    public void RemoveRange(IEnumerable<PathwayDefinition> defs)
+    {
+        foreach (var def in defs.ToList())
+            Remove(def);
+    }
 
-    public Task<(int ActiveMatched, int PreviouslyUsed)> CountMemberUsageAsync(Guid libraryRuleId, CancellationToken ct = default)
+    public void RemoveStations(IEnumerable<PathwayStationDef> stations)
+    {
+        foreach (var s in stations.ToList())
+            store.PathwayStationDefs.Remove(s);
+    }
+
+    public Task<int> CountAttachedContractsAsync(Guid pathwayId, CancellationToken ct = default)
+        => Task.FromResult(store.PathwayRules.Where(x => x.LibraryPathwayId == pathwayId).Select(x => x.ContractId).Distinct().Count());
+
+    public Task<(int ActiveMatched, int PreviouslyUsed)> CountMemberUsageAsync(Guid pathwayId, CancellationToken ct = default)
     {
         var titlesByContract = store.PathwayRules
-            .Where(r => r.LibraryRuleId == libraryRuleId)
+            .Where(r => r.LibraryPathwayId == pathwayId)
             .GroupBy(r => r.ContractId)
             .ToDictionary(g => g.Key, g => g.Select(r => r.Title).ToHashSet(StringComparer.Ordinal));
 
@@ -512,6 +600,19 @@ public sealed class FakePathwayLibraryRuleRepository(InMemoryStore store) : IPat
         var active = matched.Count(m => m.OnboardingStage != OnboardingStage.Completed);
         var previously = matched.Count(m => m.OnboardingStage == OnboardingStage.Completed);
         return Task.FromResult((active, previously));
+    }
+
+    public Task<List<PatientPathwayStationProgress>> ListProgressByPatientAsync(Guid patientId, CancellationToken ct = default)
+        => Task.FromResult(store.PathwayStationProgress.Where(x => x.PatientId == patientId).ToList());
+
+    public Task<PatientPathwayStationProgress?> GetProgressAsync(Guid patientId, Guid stationDefId, CancellationToken ct = default)
+        => Task.FromResult(store.PathwayStationProgress
+            .FirstOrDefault(x => x.PatientId == patientId && x.PathwayStationDefId == stationDefId));
+
+    public Task AddProgressAsync(PatientPathwayStationProgress progress, CancellationToken ct = default)
+    {
+        store.PathwayStationProgress.Add(progress);
+        return Task.CompletedTask;
     }
 }
 
@@ -888,7 +989,15 @@ public sealed class FakeEvidenceRepository(InMemoryStore store) : IEvidenceRepos
     }
 
     public Task<PatientPhoto?> FindPhotoByStorageKeyAsync(string storageKey, CancellationToken ct = default)
-        => Task.FromResult(store.Photos.FirstOrDefault(x => x.StorageKey == storageKey));
+    {
+        var key = (storageKey ?? "").Replace('\\', '/').Trim();
+        var hit = store.Photos
+            .Where(x => x.StorageKey == key || x.StorageKey == storageKey)
+            .OrderBy(x => x.Kind == UserPhotoKind.Portrait ? 0 : 1)
+            .ThenByDescending(x => x.CapturedAt)
+            .FirstOrDefault();
+        return Task.FromResult(hit);
+    }
 
     public Task<IntakeDocumentFile?> FindDocumentFileByStorageKeyAsync(string storageKey, CancellationToken ct = default)
         => Task.FromResult(store.DocumentFiles.FirstOrDefault(x => x.StorageKey == storageKey));

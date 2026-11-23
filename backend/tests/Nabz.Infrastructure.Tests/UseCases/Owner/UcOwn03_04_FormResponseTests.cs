@@ -274,4 +274,50 @@ public sealed class UcOwn03_04_FormResponseTests
             forms.SaveResponseAsync(
                 patient.Id, formId, FormResponseStatus.Submitted, [], owner.Id));
     }
+
+    /// <summary>تاریخ تکمیل فقط سرور؛ مقدار کلاینت در draft دور ریخته و روی submit مهر ایران می‌خورد.</summary>
+    [Fact]
+    [Trait("UC", "UC-OWN-04")]
+    public async Task UC_OWN_04_FormDate_StampedOnSubmit_IgnoresClientValue()
+    {
+        var h = new ServiceHarness();
+        var clinicId = h.SeedClinic();
+        var (patient, owner) = h.SeedPatient(clinicId);
+        var (formId, _, itemCode) = h.SeedPublishedForm(clinicId);
+        var form = h.Store.Forms.Single(f => f.Id == formId);
+        var section = form.Sections.First();
+        var formDate = new FormItem
+        {
+            FormId = formId,
+            SectionId = section.Id,
+            Code = "CA_M_BASE_formDate",
+            LabelFa = "تاریخ تکمیل پرسشنامه",
+            InputType = "date",
+            Required = true,
+            SortOrder = 99
+        };
+        h.Store.FormItems.Add(formDate);
+        form.Items.Add(formDate);
+        var forms = h.CreateFormService();
+
+        await forms.SaveResponseAsync(
+            patient.Id, formId, FormResponseStatus.Draft,
+            [
+                new FormAnswerInput(itemCode, null, "بله", null, false),
+                new FormAnswerInput(formDate.Code, null, "2099-01-01", null, false)
+            ], owner.Id);
+
+        Assert.DoesNotContain(h.Store.FormAnswers, a => a.ItemCode == formDate.Code);
+
+        var submitted = await forms.SaveResponseAsync(
+            patient.Id, formId, FormResponseStatus.Submitted,
+            [
+                new FormAnswerInput(itemCode, null, "بله", null, false),
+                new FormAnswerInput(formDate.Code, null, "2099-01-01", null, false)
+            ], owner.Id);
+
+        var stamped = Assert.Single(submitted.Answers, a => a.ItemCode == formDate.Code);
+        Assert.Equal(Nabz.Application.Time.IranTime.IranDayKey(DateTime.UtcNow), stamped.ValueRaw);
+        Assert.NotEqual("2099-01-01", stamped.ValueRaw);
+    }
 }

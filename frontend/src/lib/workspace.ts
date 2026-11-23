@@ -77,7 +77,7 @@ export const PAGE_TITLES: Record<AppPage, string> = {
   "supervisor-roster": "پیگیری کارمندان قرارداد",
   reports: "گزارش‌های عملکرد",
   pathways: "مسیرهای درمانی",
-  rooms: "طبقات و اتاق‌ها",
+  rooms: "ایستگاه‌ها و اتاق‌ها",
   team: "کادر درمان و دسترسی‌ها",
   "clinic-users": "مدیریت کاربران",
   forms: "فرم‌های پیش‌پذیرش",
@@ -139,7 +139,7 @@ export const V1_ROLES: WorkspaceRole[] = ["owner", "specialist", "admin", "super
 /** صفحات خارج از v1 که حتی برای ادمین کل هم در ناوبری فعال نیستند. */
 export const NON_V1_PAGES: AppPage[] = [
   ...OPS_PAGES,
-  "rooms",
+  // rooms در v1 به‌عنوان کاتالوگ ایستگاه (بدون صف) فعال است — UC-ADM-25
   "pathways",
   "team",
   "reports",
@@ -309,15 +309,16 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
     home: "dashboard",
     groups: [
       { title: "نمای کلی", pages: ["dashboard", "contracts", "patients", "records"] },
-      { title: "پیکربندی کلینیک", pages: ["clinic-settings", "rule-library", "clinic-users", "forms"] },
+      { title: "پیکربندی کلینیک", pages: ["clinic-settings", "rooms", "rule-library", "clinic-users", "forms"] },
     ],
-    mobile: ["dashboard", "contracts", "clinic-settings", "rule-library", "clinic-users", "forms"],
+    mobile: ["dashboard", "contracts", "clinic-settings", "rooms", "rule-library", "clinic-users", "forms"],
     labels: {
       dashboard: "داشبورد کلینیک",
       contracts: "قرارداد",
       "contract-packages": "بسته‌ها و قوانین قرارداد",
       "contract-funnel": "قیف ثبت‌نام و پیامک گروهی",
       "clinic-settings": "تنظیمات بیمارستان",
+      rooms: "ایستگاه‌ها و اتاق‌ها",
       "rule-library": "کتابخانه مسیر سلامتی",
       patients: "سلامتجویان حاضر",
       records: "پرونده سلامتجو",
@@ -330,6 +331,7 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       "contract-packages": "بسته‌ها",
       "contract-funnel": "قیف و پیامک",
       "clinic-settings": "بیمارستان",
+      rooms: "ایستگاه‌ها",
       "rule-library": "مسیرها",
       "clinic-users": "کاربران",
     },
@@ -339,10 +341,10 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
     groups: [
       { title: "نمای پلتفرم", pages: ["platform-dashboard"] },
       { title: "کاربران و نظارت", pages: ["platform-users", "platform-fraud"] },
-      { title: "فنی و پیکربندی", pages: ["platform-health", "platform-settings", "clinic-settings", "platform-integrations", "platform-audit"] },
+      { title: "فنی و پیکربندی", pages: ["platform-health", "platform-settings", "clinic-settings", "rooms", "platform-integrations", "platform-audit"] },
       { title: "پرونده‌ها", pages: ["patients", "records"] },
     ],
-    mobile: ["platform-dashboard", "platform-users", "platform-fraud", "clinic-settings", "platform-settings"],
+    mobile: ["platform-dashboard", "platform-users", "platform-fraud", "clinic-settings", "rooms", "platform-settings"],
     labels: {
       "platform-dashboard": "داشبورد پلتفرم",
       "platform-users": "مدیریت کاربران",
@@ -350,6 +352,7 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       "platform-health": "سلامت فنی",
       "platform-settings": "تنظیمات پایه",
       "clinic-settings": "تنظیمات بیمارستان",
+      rooms: "ایستگاه‌ها و اتاق‌ها",
       "platform-integrations": "یکپارچه‌سازی",
       "platform-audit": "ممیزی",
       patients: "فهرست سلامتجویان",
@@ -360,6 +363,7 @@ export const ROLE_NAV: Record<WorkspaceRole, RoleNav> = {
       "platform-users": "کاربران",
       "platform-fraud": "ضدتقلب",
       "clinic-settings": "بیمارستان",
+      rooms: "ایستگاه‌ها",
       "platform-settings": "تنظیمات",
     },
   },
@@ -432,7 +436,21 @@ export function roomStaffDisplay(
 }
 
 export function stationLabel(code: string): string {
-  return ({ LAB: "آزمایشگاه", ECG: "نوار قلب", CARDIO: "قلب و عروق", PULMO: "ریه", DENTAL: "دندانپزشکی", RADIO: "تصویربرداری" } as Record<string, string>)[code] ?? code;
+  return ({
+    LAB: "آزمایشگاه",
+    ECG: "نوار قلب",
+    CARDIO: "قلب و عروق",
+    PULMO: "ریه",
+    DENTAL: "دندانپزشکی",
+    RADIO: "تصویربرداری",
+    US_ABD: "سونو شکم و لگن",
+    US_BREAST: "سونو پستان",
+    GYN: "زنان",
+    STRESS: "تست ورزش",
+    PAP: "پاپ اسمیر",
+    HOSP_MEAL: "پذیرایی / صبحانه",
+    REMOTE_REVIEW: "پایش غیرحضوری",
+  } as Record<string, string>)[code] ?? code;
 }
 
 export function patientStatus(patient: PatientFullDto): { label: string; tone: string } {

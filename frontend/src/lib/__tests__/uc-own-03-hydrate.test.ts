@@ -57,6 +57,8 @@ const patient = {
   phone: "09120000000",
   age: 40,
   gender: "مرد",
+  birthDate: "1991-07-31" as string | null,
+  maritalStatus: "متأهل" as string | null,
   homeLat: 35.7,
   homeLon: 51.4,
   homeAddress: "تهران خیابان تست",
@@ -106,35 +108,48 @@ describe("UC-OWN-03 hydrate (UT-FE-OWN-03)", () => {
     expect(submitted.answers[0].valueRaw).toBe("1");
   });
 
-  it("بدون draft → فقط prefill Patient (نام/سکونت)", () => {
+  it("بدون draft → prefill Patient (نام/سکونت/تولد/تاهل)", () => {
     const f = form([
       item({ code: "CA_M_BASE_fullName", prefillFromPatient: "fullName", inputType: "text" }),
       item({ code: "CA_M_BASE_residence", inputType: "residence_address" }),
       item({ code: "CA_M_BASE_birthDate", inputType: "date" }),
+      item({
+        code: "CA_M_BASE_maritalStatus",
+        inputType: "select",
+        selectOptions: ["مجرد", "متأهل", "ازدواج‌کرده", "سایر"],
+      }),
       item({ code: "CA_M_Q_height", inputType: "number" }),
     ]);
     const hydrated = hydrateFormAnswersWithPrefill(f, patient, null);
     expect(hydrated.find((a) => a.itemCode === "CA_M_BASE_fullName")?.valueRaw).toBe("علی تست");
     expect(hydrated.find((a) => a.itemCode === "CA_M_BASE_residence")?.valueRaw).toContain("12");
-    expect(hydrated.find((a) => a.itemCode === "CA_M_BASE_birthDate")?.valueRaw).toBe("");
+    expect(hydrated.find((a) => a.itemCode === "CA_M_BASE_birthDate")?.valueRaw).toBe("1991-07-31");
+    expect(hydrated.find((a) => a.itemCode === "CA_M_BASE_maritalStatus")?.valueRaw).toBe("متأهل");
     expect(hydrated.find((a) => a.itemCode === "CA_M_Q_height")?.valueRaw).toBe("");
   });
 
-  it("answers سرور بر prefill اولویت دارند؛ آیتم غایب همچنان prefill", () => {
+  it("answers سرور بر prefill اولویت دارند؛ آیتم خالی/غایب از Patient پر می‌شود", () => {
     const f = form([
       item({ code: "CA_M_BASE_fullName", prefillFromPatient: "fullName", inputType: "text" }),
       item({ code: "CA_M_BASE_birthDate", inputType: "date" }),
+      item({
+        code: "CA_M_BASE_maritalStatus",
+        inputType: "select",
+        selectOptions: ["مجرد", "متأهل", "ازدواج‌کرده", "سایر"],
+      }),
       item({ code: "CA_M_Q_height", inputType: "number" }),
       item({ code: "CA_M_Q_waist", inputType: "number" }),
     ]);
     const server: FormAnswer[] = [
-      { itemCode: "CA_M_BASE_birthDate", valueCode: null, valueRaw: "1370-05-10", notes: "" },
+      { itemCode: "CA_M_BASE_birthDate", valueCode: null, valueRaw: "1990-05-10", notes: "" },
+      { itemCode: "CA_M_BASE_maritalStatus", valueCode: null, valueRaw: "", notes: "" },
       { itemCode: "CA_M_Q_height", valueCode: null, valueRaw: "180", notes: "" },
       { itemCode: "CA_M_Q_waist", valueCode: null, valueRaw: "90", notes: "" },
     ];
     const hydrated = hydrateFormAnswersWithPrefill(f, patient, server);
     expect(hydrated.find((a) => a.itemCode === "CA_M_BASE_fullName")?.valueRaw).toBe("علی تست");
-    expect(hydrated.find((a) => a.itemCode === "CA_M_BASE_birthDate")?.valueRaw).toBe("1370-05-10");
+    expect(hydrated.find((a) => a.itemCode === "CA_M_BASE_birthDate")?.valueRaw).toBe("1990-05-10");
+    expect(hydrated.find((a) => a.itemCode === "CA_M_BASE_maritalStatus")?.valueRaw).toBe("متأهل");
     expect(hydrated.find((a) => a.itemCode === "CA_M_Q_height")?.valueRaw).toBe("180");
     expect(hydrated.find((a) => a.itemCode === "CA_M_Q_waist")?.valueRaw).toBe("90");
   });

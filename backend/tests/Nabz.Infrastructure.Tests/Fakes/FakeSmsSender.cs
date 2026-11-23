@@ -54,4 +54,20 @@ public sealed class FakeSmsSender : ISmsSender, IClinicSmsDispatch
         string? sender,
         CancellationToken ct = default)
         => SendTemplateAsync(mobile, templateName, tokens, ct);
+
+    public int ToubaCredit { get; set; } = 12_000;
+    public IReadOnlyList<string> ToubaSenderNumbers { get; set; } = ["10001234", "30001234"];
+    public List<(string Username, string Password, string? ServiceUrl)> ToubaAccountCalls { get; } = [];
+
+    public Task<ToubaAccountInfoResult> GetToubaAccountInfoAsync(
+        string username,
+        string password,
+        string? serviceUrl,
+        CancellationToken ct = default)
+    {
+        ToubaAccountCalls.Add((username, password, serviceUrl));
+        if (ThrowOnSend)
+            throw new InvalidOperationException("FakeSmsSender.ThrowOnSend is enabled.");
+        return Task.FromResult(new ToubaAccountInfoResult(ToubaCredit, ToubaSenderNumbers));
+    }
 }

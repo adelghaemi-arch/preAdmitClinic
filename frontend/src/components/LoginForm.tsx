@@ -1,6 +1,6 @@
 ﻿/*
  File: frontend/src/components/LoginForm.tsx
- Description: فرم ورود OTP؛ دمو سریع فقط وقتی FixedOtp فعال است
+ Description: فرم ورود OTP؛ دمو سریع فقط وقتی FixedOtp فعال است؛ hint پایه+۱ ادمین کل
  Parent Dependencies: lib/auth.ts, lib/persian.ts, lib/viewer.ts
  */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -24,6 +24,7 @@ import {
   selectOtpIdentity,
   shouldShowOtpDemoQuickLogin,
   shouldShowOtpDemoSmsPreview,
+  shouldShowPlatformFixedOtpPlusOneHint,
   verifyOtp,
 } from "@/lib/auth";
 import type { OtpIdentityCandidate } from "@/lib/api/auth";
@@ -51,6 +52,8 @@ export function LoginForm() {
   const demos = useMemo(() => listOtpDemoLogins(), []);
   const showDemoQuickLogin = shouldShowOtpDemoQuickLogin(fixedOtpEnabled);
   const showDemoSmsPreview = shouldShowOtpDemoSmsPreview(fixedOtpEnabled, demoCode);
+  // UC-PLT-15: نمایش پایه گمراه‌کننده است؛ فقط در FixedOtp برای موبایل ادمین کل
+  const showPlatformPlusOneHint = shouldShowPlatformFixedOtpPlusOneHint(fixedOtpEnabled, phone);
 
   useEffect(() => {
     let cancelled = false;
@@ -259,6 +262,14 @@ export function LoginForm() {
               <p className="mt-1 text-center text-[10px] text-teal-700">
                 (در نسخه واقعی این کد پیامک می‌شود؛ اینجا برای تست نمایش داده شده است)
               </p>
+              {showPlatformPlusOneHint && (
+                <p
+                  data-testid="otp-platform-plus-one-hint"
+                  className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-6 text-amber-900"
+                >
+                  برای ادمین کل کد ورود = کد نمایشی + ۱ (مثلاً اگر پایه ۱۱۱۱۱ است، ۱۱۱۱۲ را وارد کنید).
+                </p>
+              )}
             </div>
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4" data-testid="otp-sms-sent-hint">
@@ -365,7 +376,8 @@ export function LoginForm() {
                 <span className="block font-semibold">{item.name}</span>
                 <span className="mt-0.5 block text-[9px] text-slate-400">{item.hint}</span>
                 <span dir="ltr" className="mt-0.5 block font-mono text-[9px] text-teal-700">
-                  {item.phone}
+                  {/* نمایش فارسی؛ quickLogin همچنان روی state لاتین می‌ماند */}
+                  {toFaDigits(item.phone)}
                 </span>
               </button>
             ))}

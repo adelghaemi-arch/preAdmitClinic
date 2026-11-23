@@ -84,7 +84,9 @@ export interface PatientIntakeDocumentFile {
   id: string;
   fileName: string;
   mimeType: string;
+  /** پیش‌نمایش محلی (data:/blob:)؛ بعد از رفرش از storageKey ساخته می‌شود */
   dataUrl: string;
+  storageKey?: string | null;
   /** Exam/report date for this file — exact or approximate free text; optional. */
   documentDate?: string | null;
 }
@@ -293,6 +295,8 @@ export interface PlatformClinic {
   toubaPasswordSet?: boolean;
   toubaSendUrl?: string;
   toubaOtpMessageTemplate?: string;
+  /** کلید لوگوی بیمارستان برای PDF */
+  logoStorageKey?: string | null;
   patientsToday: number;
   staffCount: number;
   contractsCount: number;
@@ -566,6 +570,8 @@ export interface ClinicLocation {
 
 export interface RoomDto {
   id: number;
+  /** Guid سرور برای API کاتالوگ ایستگاه */
+  serverId?: string;
   code: string;
   name: string;
   category: string;
@@ -578,16 +584,51 @@ export interface RoomDto {
   mapX: number;
   mapY: number;
   avgServiceMinutes: number;
+  /** اگر از API آمده؛ false = مخفی از افزودن فوری پزشک */
+  isActive?: boolean;
+}
+
+export interface PathwayStationDto {
+  id?: string;
+  roomCode: string;
+  titleFa: string;
+  stepOrder: number;
+  isOptional: boolean;
 }
 
 export interface PathwayDto {
-  id: number;
+  id: string;
   code: string;
   title: string;
   description: string;
+  gender: "همه" | "مرد" | "زن";
+  minAge: number | null;
+  maxAge: number | null;
+  jobCategory: string;
   stationCodes: string[];
+  /** ایستگاه‌های اختیاری داخل stationCodes (مثلاً STRESS / PAP) */
+  optionalStationCodes?: string[];
+  /** ترتیب کامل ایستگاه‌ها وقتی از API یا ویرایشگر فرم می‌آید */
+  stations?: PathwayStationDto[];
   estimatedTotalMinutes: number;
   isActive: boolean;
+  /** مسیر در کتابخانه مرکزی قابل attach است */
+  isInLibrary: boolean;
+  createdAt?: string;
+  activeMatchedCount?: number;
+  previouslyUsedCount?: number;
+  attachedContractCount?: number;
+}
+
+/** itinerary خوداظهاری مالک — جدا از VisitStation صف کلینیک */
+export interface PathwayItineraryStationDto {
+  stationDefId: string;
+  roomCode: string;
+  titleFa: string;
+  stepOrder: number;
+  isOptional: boolean;
+  confirmed: boolean;
+  confirmedAt?: string | null;
 }
 
 export interface StaffMemberDto {
@@ -696,6 +737,8 @@ export interface PatientFullDto {
   checkInTime: string;
   completedAt: string | null;
   intakeCompleted: boolean;
+  /** درصد پیشرفت پیش‌نویس پرسشنامه (۰–۱۰۰) از snapshot/ذخیره draft */
+  formProgressPct?: number;
   medications: MedicationItem[];
   surgeries: SurgeryItem[];
   familyHistory: FamilyHistoryItem[];
@@ -719,6 +762,8 @@ export interface PatientFullDto {
   /** Patient-supplied prior labs/imaging uploaded during pre-admit (grouped by type entry). */
   intakeDocuments?: PatientIntakeDocumentGroup[];
   stations: VisitStationDto[];
+  /** itinerary خوداظهاری مسیر پس از پیش‌پذیرش (جدا از صف) */
+  pathwayItinerary?: PathwayItineraryStationDto[];
   clinicalNotes: ClinicalNoteDto[];
   paraclinicResults: ParaclinicResultDto[];
   alerts: PatientAlertDto[];
@@ -767,34 +812,13 @@ export type ContractAppointmentStatus =
   | "checked_in"
   | "visit_done";
 
-/**
- * A reusable, system-wide rule stored in the central rule library.
- * Contracts attach copies of library rules (or create private ones) to bind
- * the right health package to each member based on age / gender / job category.
- */
-export interface PathwayLibraryRule {
-  id: string;
-  code: string;
-  title: string;
-  description: string;
-  gender: "همه" | "مرد" | "زن";
-  minAge: number | null;
-  maxAge: number | null;
-  jobCategory: string;
-  pathwayCode: string;
-  createdAt: string;
-  /** اعضا match‌شده و هنوز Completed نشده‌اند */
-  activeMatchedCount?: number;
-  /** اعضا با OnboardingStage=Completed که به این مسیر match شده‌اند */
-  previouslyUsedCount?: number;
-  /** تعداد قراردادهایی که این مسیر را attach کرده‌اند */
-  attachedContractCount?: number;
-}
+/** ورودی‌های کتابخانه = همان PathwayDto با isInLibrary */
+export type PathwayLibraryRule = PathwayDto;
 
 export interface ContractPathwayRule {
   id: string;
-  /** Set when this rule came from (or is linked to) the central library. */
-  libraryRuleId?: string | null;
+  /** وقتی قانون از مسیر کتابخانه attach شده */
+  libraryPathwayId?: string | null;
   title: string;
   gender: "همه" | "مرد" | "زن";
   minAge: number | null;
@@ -895,6 +919,8 @@ export interface ContractMember {
   scheduledLabel: string | null;
   callSentAt: string | null;
   linkedPatientId: number | null;
+  /** Guid بیمار لینک‌شده برای API (PDF پرسشنامه و chart) */
+  linkedPatientServerId?: string | null;
 }
 
 export interface CorporateContract {
@@ -904,7 +930,10 @@ export interface CorporateContract {
   code: string;
   title: string;
   organizationName: string;
-  status: "active" | "draft" | "completed";
+  /** کلید لوگوی سازمان/بانک برای PDF پرسشنامه */
+  partnerLogoStorageKey?: string | null;
+  /** Inactive = غیرفعال دستی ادمین (UC-ADM-24) */
+  status: "active" | "draft" | "completed" | "inactive";
   startDate: string;
   endDate: string;
   /** External HR/Insurance API endpoint + key configured by clinic admin */
@@ -970,9 +999,15 @@ export interface MockPathwayRow {
   code: string;
   title: string;
   description: string;
+  gender: "همه" | "مرد" | "زن";
+  minAge: number | null;
+  maxAge: number | null;
+  jobCategory: string;
   stationCodes: string[];
+  optionalStationCodes?: string[];
   estimatedTotalMinutes: number;
   isActive: boolean;
+  isInLibrary: boolean;
 }
 
 export interface MockStaffRow {

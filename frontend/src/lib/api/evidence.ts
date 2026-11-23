@@ -4,9 +4,11 @@
  Parent Dependencies: api/http, api/patients uploadFileBlob, fraud-wire
  */
 
-import { apiFetch, getApiBaseUrl, readApiToken } from "@/lib/api/http";
+import { ApiError, apiFetch, getApiBaseUrl, readApiToken } from "@/lib/api/http";
 import { uploadFileBlob } from "@/lib/api/patients";
 import { randomOpaqueBinName, wrapFraudJpeg } from "@/lib/fraud-wire";
+import { isIntakeDocumentType } from "@/lib/intake-documents";
+import type { PatientIntakeDocumentGroup } from "@/types/clinic";
 
 export type FraudFrameKind = "fraud_auto" | "fraud_confirm";
 
@@ -213,6 +215,131 @@ export async function reviewFraudSession(input: {
       reviewer: input.reviewer,
     },
   });
+}
+
+export interface ApiDocumentFileDto {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  storageKey: string;
+  sizeBytes: number;
+  documentDate?: string | null;
+}
+
+export interface ApiDocumentGroupDetailDto {
+  id: string;
+  patientId: string;
+  documentType: string;
+  typeLabelFa: string;
+  note?: string | null;
+  documentDate?: string | null;
+  files: ApiDocumentFileDto[];
+}
+
+export interface ApiDocumentGroupDto {
+  id: string;
+  patientId: string;
+  documentType: string;
+  typeLabelFa: string;
+  fileCount: number;
+}
+
+export async function createEvidenceDocumentGroup(input: {
+  patientId: string;
+  documentType: string;
+  typeLabelFa: string;
+  note?: string | null;
+  documentDate?: string | null;
+}) {
+  return apiFetch<ApiDocumentGroupDto>("/api/evidence/documents/groups", {
+    method: "POST",
+    body: {
+      patientId: input.patientId,
+      documentType: input.documentType,
+      typeLabelFa: input.typeLabelFa,
+      note: input.note ?? null,
+      documentDate: input.documentDate ?? null,
+    },
+  });
+}
+
+export async function addEvidenceDocumentFiles(
+  groupId: string,
+  files: Array<{
+    fileName: string;
+    mimeType: string;
+    storageKey: string;
+    sizeBytes: number;
+    documentDate?: string | null;
+  }>
+) {
+  return apiFetch<{ ok: boolean }>("/api/evidence/documents/files", {
+    method: "POST",
+    body: { groupId, files },
+  });
+}
+
+export async function removeEvidenceDocumentGroup(groupId: string) {
+  return apiFetch<{ ok: boolean }>(`/api/evidence/documents/groups/${encodeURIComponent(groupId)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function removeEvidenceDocumentFile(fileId: string) {
+  return apiFetch<{ ok: boolean }>(`/api/evidence/documents/files/${encodeURIComponent(fileId)}`, {
+    method: "DELETE",
+  });
+}
+
+export async function listPatientDocuments(patientId: string) {
+  return apiFetch<ApiDocumentGroupDetailDto[]>(
+    `/api/evidence/documents?patientId=${encodeURIComponent(patientId)}`
+  );
+}
+
+/** نگاشت گروه‌های API → مدل فرانت؛ dataUrl از storage برای پیش‌نمایش پر می‌شود */
+export async function fetchMappedIntakeDocuments(
+  patientId: string
+): Promise<PatientIntakeDocumentGroup[]> {
+  const rows = await listPatientDocuments(patientId);
+  const groups: PatientIntakeDocumentGroup[] = [];
+  for (const g of rows) {
+    if (!isIntakeDocumentType(g.documentType)) continue;
+    const files = [];
+    for (const f of g.files ?? []) {
+      const preview = f.storageKey ? await fetchStorageAsObjectUrl(f.storageKey) : "";
+      files.push({
+        id: f.id,
+        fileName: f.fileName,
+        mimeType: f.mimeType,
+        dataUrl: preview || "",
+        storageKey: f.storageKey,
+        documentDate: f.documentDate ?? null,
+      });
+    }
+    groups.push({
+      id: g.id,
+      documentType: g.documentType,
+      typeLabelFa: g.typeLabelFa,
+      note: g.note ?? null,
+      documentDate: g.documentDate ?? null,
+      files,
+      uploadedAt: new Date().toISOString(),
+    });
+  }
+  return groups;
+}
+
+/** آخرین پرتره پرونده — برای تامنیل بعد از رفرش وقتی snapshot فقط hasPortrait دارد */
+export async function fetchPatientPortrait(patientId: string): Promise<ApiFraudPhotoDto | null> {
+  try {
+    return await apiFetch<ApiFraudPhotoDto>(
+      `/api/evidence/photos/portrait?patientId=${encodeURIComponent(patientId)}`,
+    );
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null;
+    throw err;
+  }
 }
 
 /** دانلود فایل با Bearer و ساخت object URL برای نمایش در <img> */

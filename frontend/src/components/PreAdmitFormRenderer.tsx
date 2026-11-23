@@ -1,7 +1,7 @@
 /*
  File: frontend/src/components/PreAdmitFormRenderer.tsx
- Description: پرسشنامه پیش‌پذیرش؛ hydrate draft از mine قبل از photo gate؛ draft فقط در سطح بخش
- Parent Dependencies: form-engine, api/forms, clinic types, ApiError
+ Description: پرسشنامه پیش‌پذیرش؛ Enter/Next به فیلد بعدی؛ بدون formDate سیستمی
+ Parent Dependencies: form-engine, focus-next-field, api/forms, clinic types
  */
 
 import { AppInput, AppTextarea } from "@/components/AppInput";
@@ -33,9 +33,10 @@ import {
   buildContext,
   getAnswer,
   hydrateFormAnswersWithPrefill,
-  isFormDateItem,
   isItemComplete,
   isItemVisible,
+  isPersistableFormItem,
+  isUserFacingFormItem,
   itemsOfSection,
   latestResponseForForm,
   overallProgress,
@@ -48,8 +49,9 @@ import {
   visibleSections,
 } from "@/lib/form-engine";
 import { fetchMyFormResponse } from "@/lib/api/forms";
+import { handleEnterToNextField } from "@/lib/focus-next-field";
 import { normalizeMaritalStatus } from "@/lib/marital-status";
-import { formatFaDate, toFaDigits } from "@/lib/persian";
+import { toFaDigits } from "@/lib/persian";
 import { iranLocalDayOffset } from "@/lib/date-iso";
 import { birthDateBounds, PersianDateField } from "@/components/PersianDateField";
 import { ProvinceCityField } from "@/components/ProvinceCityField";
@@ -57,6 +59,7 @@ import { ResidenceAddressField } from "@/components/ResidenceAddressField";
 import { PatientPhotoCapture } from "@/components/PatientPhotoCapture";
 import { PreAdmitDocumentsPanel } from "@/components/PreAdmitDocumentsPanel";
 import { ContextualIntakeUpload } from "@/components/ContextualIntakeUpload";
+import { usePatientPortraitUrl } from "@/hooks/usePatientPortraitUrl";
 import { screeningDocumentPromptsForItem } from "@/lib/intake-documents";
 
 /** Screening / vaccination sections rendered as a final dossier phase, not in the main stepper. */
@@ -135,19 +138,17 @@ type BaseLayoutRow =
   | { kind: "full"; item: FormItemDefinition }
   | { kind: "pair"; items: [FormItemDefinition, FormItemDefinition] };
 
-function isBaseInfoSection(sectionCode: string): boolean {
-  return sectionCode.endsWith("_SEC_BASE") || sectionCode.endsWith("_SEC_DEMO");
+function isBaseInfoSection(sectionCode: string, sectionTitle?: string): boolean {
+  if (sectionCode.endsWith("_SEC_BASE") || sectionCode.endsWith("_SEC_DEMO")) return true;
+  // عنوان فارسی seed — اگر کد بخش عوض شده باشد تامنیل همچنان روی اطلاعات پایه بماند
+  return Boolean(sectionTitle && /اطلاعات\s*پایه/.test(sectionTitle));
 }
 
 /** Pair related/readonly base-info (demographic) fields; leave long controls full-width. */
 function layoutBaseItems(items: FormItemDefinition[]): BaseLayoutRow[] {
   const bySuffix = (suffix: string) =>
     items.find((i) => i.code.endsWith(suffix) || i.code.endsWith(suffix.replace("_BASE_", "_DEMO_")));
-  const fullName = bySuffix("_BASE_fullName");
-  const nationalId = bySuffix("_BASE_nationalId");
-  const phone = bySuffix("_BASE_phone");
   const birthDate = bySuffix("_BASE_birthDate");
-  const formDate = bySuffix("_BASE_formDate");
   const heightCm = bySuffix("_BASE_heightCm");
   const weightKg = bySuffix("_BASE_weightKg");
   const waistCm = bySuffix("_BASE_waistCm");
@@ -169,17 +170,7 @@ function layoutBaseItems(items: FormItemDefinition[]): BaseLayoutRow[] {
     }
   };
 
-  // Long name stays full-width.
-  const name = take(fullName);
-  if (name) rows.push({ kind: "full", item: name });
-
-  // Read-only demographics together.
-  pushPairOrFull(take(nationalId), take(phone));
-
-  // Remaining locked form-date alone (do not pair with editable fields).
-  const formDt = take(formDate);
-  if (formDt) rows.push({ kind: "full", item: formDt });
-
+  // نام/کدملی/موبایل در UI نیستند (هویت پروفایل)
   const birth = take(birthDate);
   if (birth) rows.push({ kind: "full", item: birth });
 
@@ -205,6 +196,7 @@ function ItemField({
   onChange,
   fallbackCenter,
   onEvidenceGpsStart,
+  enterKeyHint = "next",
 }: {
   item: FormItemDefinition;
   answer: FormAnswer;
@@ -213,6 +205,8 @@ function ItemField({
   onChange: (next: FormAnswer) => void;
   fallbackCenter?: { lat: number; lon: number } | null;
   onEvidenceGpsStart?: () => void;
+  /** کلید Next موبایل / Enter دسکتاپ */
+  enterKeyHint?: "next" | "done";
 }) {
   const [focusNotes, setFocusNotes] = useState(false);
 
@@ -250,6 +244,7 @@ function ItemField({
               onChange={(e) => onChange({ ...answer, notes: e.target.value })}
               className="mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs"
               placeholder="مثلاً از ۲ ماه پیش، شدت متوسط"
+              enterKeyHint={enterKeyHint}
             />
           </label>
         )}
@@ -265,6 +260,7 @@ function ItemField({
         onChange={(e) =>
           onChange({ ...answer, itemCode: item.code, valueRaw: e.target.value, valueCode: null, skippedByRule: false })
         }
+        enterKeyHint={enterKeyHint}
         className={`mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs ${
           readOnlyPrefill ? "app-field--readonly" : "bg-white disabled:bg-slate-50"
         }`}
@@ -348,6 +344,7 @@ function ItemField({
       }
       className="app-input mt-1 w-full rounded-xl border border-slate-200 p-2 text-xs disabled:bg-slate-50"
       placeholder={item.helpText || item.labelFa}
+      enterKeyHint={enterKeyHint}
     />
   );
 }
@@ -378,6 +375,10 @@ export function PreAdmitFormRenderer({
   const [saveHint, setSaveHint] = useState("");
   const [invalidCodes, setInvalidCodes] = useState<string[]>([]);
   const [localPhotoUrl, setLocalPhotoUrl] = useState<string | null>(null);
+  // پرترهٔ سرور بعد از رفرش (storageKey یا GET portrait)
+  const storedPortrait = usePatientPortraitUrl(
+    localPhotoUrl ? { ...patient, photoDataUrl: localPhotoUrl } : patient
+  );
   // تا پاسخ mine نیاید، prefill خالی flash نشود (مخصوصاً دستگاه دوم)
   const [draftHydrating, setDraftHydrating] = useState(false);
   const answersRef = useRef<FormAnswer[]>([]);
@@ -585,6 +586,9 @@ export function PreAdmitFormRenderer({
     setSaving(true);
     if (!quiet) setError("");
     try {
+      // پیشرفت کل فرم (نه فقط بخش) برای نوار نقشه راه بعد از ترک صفحه
+      const draftCtx = buildContext(patient, answersRef.current, form);
+      const draftPct = overallProgress(form, answersRef.current, draftCtx).pct;
       await onAction({
         action: "SAVE_FORM_RESPONSE",
         patientId: patient.id,
@@ -593,6 +597,7 @@ export function PreAdmitFormRenderer({
         serverFormId: form.id,
         mode: "draft",
         answers: sectionAnswers,
+        progressPct: draftPct,
         silent: true,
       });
       setSaveHint("");
@@ -732,7 +737,7 @@ export function PreAdmitFormRenderer({
     if (onScreeningPhase) {
       if (screeningSection) {
         const items = itemsOfSection(form, screeningSection.id).filter(
-          (i) => isItemVisible(i, ctx) && !i.code.includes("_SIG_")
+          (i) => isItemVisible(i, ctx) && isUserFacingFormItem(i)
         );
         const missing = missingCodesForItems(items);
         if (missing.length) {
@@ -746,7 +751,7 @@ export function PreAdmitFormRenderer({
     }
     if (currentSection) {
       const items = itemsOfSection(form, currentSection.id).filter(
-        (i) => isItemVisible(i, ctx) && !i.code.includes("_SIG_")
+        (i) => isItemVisible(i, ctx) && isUserFacingFormItem(i)
       );
       const missing = missingCodesForItems(items);
       if (missing.length) {
@@ -834,7 +839,12 @@ export function PreAdmitFormRenderer({
         formId: form.id,
         serverFormId: form.id,
         mode: "submit",
-        answers,
+        progressPct: 100,
+        // formDate را کلاینت نمی‌فرستد؛ هویت پروفایل (نام/کدملی/موبایل) در payload می‌ماند
+        answers: answers.filter((a) => {
+          const item = form.items.find((i) => i.code === a.itemCode);
+          return !item || isPersistableFormItem(item);
+        }),
       });
       setMessage("پرسشنامه با موفقیت ثبت شد و برای پزشک ارسال گردید.");
       setSaveHint("ثبت نهایی انجام شد");
@@ -963,7 +973,7 @@ export function PreAdmitFormRenderer({
     );
   }
 
-  const resolvedPhoto = localPhotoUrl || patient.photoDataUrl || null;
+  const resolvedPhoto = storedPortrait.url || localPhotoUrl || null;
   // بدون پرتره قبلی، ورود به پیش‌پذیرش همیشه عکس را اجباری می‌کند (مستقل از journeyIntroSeen)
   const needsPhotoGate =
     !readOnly && !submitted && !resolvedPhoto && !patient.hasPortrait;
@@ -1006,12 +1016,17 @@ export function PreAdmitFormRenderer({
     );
   }
 
+  // formDate سیستمی است — در UI دیده نمی‌شود (مهر سمت سرور هنگام submit)
   const sectionItems = currentSection
-    ? itemsOfSection(form, currentSection.id).filter((i) => isItemVisible(i, ctx) && !i.code.includes("_SIG_"))
+    ? itemsOfSection(form, currentSection.id).filter(
+        (i) => isItemVisible(i, ctx) && isUserFacingFormItem(i)
+      )
     : [];
   const secProg = currentSection ? sectionProgress(form, currentSection.id, answers, ctx) : { total: 0, done: 0 };
   const screeningItems = screeningSection
-    ? itemsOfSection(form, screeningSection.id).filter((i) => isItemVisible(i, ctx) && !i.code.includes("_SIG_"))
+    ? itemsOfSection(form, screeningSection.id).filter(
+        (i) => isItemVisible(i, ctx) && isUserFacingFormItem(i)
+      )
     : [];
   const activeSection = onScreeningPhase ? screeningSection : currentSection;
   const activeSectionItems = onScreeningPhase ? screeningItems : sectionItems;
@@ -1031,14 +1046,7 @@ export function PreAdmitFormRenderer({
 
   return (
     <div ref={formTopRef} className="space-y-3 scroll-mt-3">
-      {/* بنر تاریخ مراجعه — همان پیام داشبورد Owner در ابتدای پرسشنامه */}
-      {patient.scheduledVisitDate && !submitted && (
-        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-teal-950">
-          مراجعه شما در تاریخ{" "}
-          <span className="font-bold">{toFaDigits(formatFaDate(patient.scheduledVisitDate))}</span> است.
-          لطفاً پیش‌پذیرش را قبل از آن روز تکمیل کنید تا در بیمارستان معطل نشوید.
-        </div>
-      )}
+      {/* بنر تاریخ مراجعه فقط در هدر PatientMobileProfile — اینجا تکرار نشود */}
       <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
@@ -1165,10 +1173,20 @@ export function PreAdmitFormRenderer({
       ) : activeSection && (
           <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
             {(() => {
-              const isBaseSection = isBaseInfoSection(activeSection.code);
+              const isBaseSection = isBaseInfoSection(activeSection.code, activeSection.title);
               const showHeaderPhoto = Boolean(isBaseSection && resolvedPhoto);
               return (
                 <div className={`mb-2.5 ${showHeaderPhoto ? "flex items-start gap-2.5" : ""}`}>
+                  {/* در RTL اول = جلوی خط عنوان */}
+                  {showHeaderPhoto && (
+                    <div className="h-14 w-11 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 shadow-sm">
+                      <img
+                        src={resolvedPhoto!}
+                        alt="عکس پرونده سلامت الکترونیک"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <h3 className="text-sm font-semibold text-slate-900">{activeSection.title}</h3>
                     {activeSection.guideText && (
@@ -1178,22 +1196,20 @@ export function PreAdmitFormRenderer({
                       تکمیل این بخش: {toFaDigits(activeSecProg.done)}/{toFaDigits(activeSecProg.total)}
                     </p>
                   </div>
-                  {showHeaderPhoto && (
-                    <div className="h-16 w-12 shrink-0 overflow-hidden rounded border border-slate-200 bg-slate-50">
-                      <img
-                        src={resolvedPhoto!}
-                        alt="عکس پرونده سلامت الکترونیک"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })()}
 
-            <div className="space-y-1.5">
+            <div
+              className="space-y-1.5"
+              data-preadmit-fields
+              onKeyDown={(e) => {
+                handleEnterToNextField(e);
+              }}
+            >
               {(() => {
-                const isBaseSection = isBaseInfoSection(activeSection.code);
+                const isBaseSection = isBaseInfoSection(activeSection.code, activeSection.title);
+                const lastCode = activeSectionItems[activeSectionItems.length - 1]?.code;
                 const renderItem = (item: FormItemDefinition, opts?: { tight?: boolean }) => {
                   const answer = getAnswer(answers, item.code);
                   const locked = Boolean(item.readOnlyIfPrefill && prefillValue(item, patient));
@@ -1221,6 +1237,7 @@ export function PreAdmitFormRenderer({
                         answer={answer}
                         disabled={readOnly || submitted || busy}
                         readOnlyPrefill={locked}
+                        enterKeyHint={item.code === lastCode ? "done" : "next"}
                         fallbackCenter={
                           clinicLocation
                             ? { lat: clinicLocation.lat, lon: clinicLocation.lon }

@@ -94,7 +94,7 @@ VITE_API_BASE_URL=$apiUrl
         # بدون try_files، مسیرهای کلاینت مثل /login با رفرش مستقیم 404 می‌دهند
         $nginxConf = @'
 # File: server/my/nginx.conf
-# Description: سرو استاتیک SPA کلینیک با fallback به index.html
+# Description: سرو استاتیک SPA کلینیک با fallback به index.html؛ MIME درست برای .mjs (pdf.js worker)
 worker_processes auto;
 error_log /var/log/nginx/error.log warn;
 pid /var/run/nginx.pid;
@@ -110,6 +110,11 @@ http {
         server_name _;
         root /usr/share/nginx/html;
         index index.html;
+        # mime.types قدیمی .mjs ندارد؛ بدون این مرورگر ماژول ES را با octet-stream رد می‌کند
+        location ~* \.mjs$ {
+            default_type application/javascript;
+            try_files $uri =404;
+        }
         location / { try_files $uri $uri/ /index.html; }
     }
 }
@@ -171,7 +176,7 @@ VITE_API_URL=$apiUrl
 
         $nginxConf = @'
 # File: server/news/nginx.conf
-# Description: سرو استاتیک news با محدودیت متد روی /data
+# Description: سرو استاتیک news با محدودیت متد روی /data؛ MIME درست برای .mjs
 worker_processes auto;
 error_log /var/log/nginx/error.log warn;
 pid /var/run/nginx.pid;
@@ -187,6 +192,11 @@ http {
         server_name _;
         root /usr/share/nginx/html;
         index index.html;
+        # mime.types قدیمی .mjs ندارد؛ بدون این مرورگر ماژول ES را با octet-stream رد می‌کند
+        location ~* \.mjs$ {
+            default_type application/javascript;
+            try_files $uri =404;
+        }
         location /data/ {
             autoindex off;
             limit_except GET HEAD { deny all; }
@@ -229,12 +239,40 @@ uploads/
     }
     'api' {
         $dest = Join-Path $ServerRoot 'api'
+        # اسکریپت نصب Chromium جدا از here-string تا backtickهای bash در PowerShell خراب نشوند
+        $installScriptSrc = Join-Path $PSScriptRoot 'install-playwright-chromium.sh'
+        $installScriptDest = Join-Path $dest 'install-playwright-chromium.sh'
+        if (-not (Test-Path $installScriptSrc)) {
+            throw "Missing template: $installScriptSrc"
+        }
+        Copy-Item -Force $installScriptSrc $installScriptDest
+        # جلوگیری از CRLF ویندوز که shebang را به bash\r تبدیل می‌کند
+        $shText = [System.IO.File]::ReadAllText($installScriptDest) -replace "`r`n", "`n" -replace "`r", "`n"
+        $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+        [System.IO.File]::WriteAllText($installScriptDest, $shText, $utf8NoBom)
+
         $dockerfile = @"
-# runtime-only: خروجی publish از sync-deploy.bat
+# runtime-only: خروجی publish از sync-deploy.bat + Chromium برای PDF پرسشنامه (UC-ADM-26)
+# apt/Chromium قبل از COPY کامل؛ بدون # syntax=docker/dockerfile (Docker Hub روی سرور 403)
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
-COPY publish/ .
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl unzip fonts-liberation \
+    libasound2t64 libatk-bridge2.0-0 libatk1.0-0 libcups2 libdbus-1-3 libdrm2 \
+    libgbm1 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 libcairo2 \
+    libx11-xcb1 libxcomposite1 libxcursor1 libxdamage1 libxfixes3 libxkbcommon0 libxrandr2 \
+    && rm -rf /var/lib/apt/lists/*
 ENV ASPNETCORE_URLS=http://+:$apiContainerPort
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+COPY publish/.playwright/package /app/.playwright/package
+COPY publish/.playwright/node/linux-x64/node /app/.playwright/node/linux-x64/node
+COPY install-playwright-chromium.sh /tmp/install-playwright-chromium.sh
+RUN sed -i 's/\r`$//' /tmp/install-playwright-chromium.sh \
+    && chmod +x /tmp/install-playwright-chromium.sh \
+    && chmod +x /app/.playwright/node/linux-x64/node \
+    && /bin/bash /tmp/install-playwright-chromium.sh \
+    && rm -f /tmp/install-playwright-chromium.sh
+COPY publish/ .
 EXPOSE $apiContainerPort
 ENTRYPOINT ["dotnet", "Nabz.Api.dll"]
 "@
@@ -252,6 +290,8 @@ services:
       ASPNETCORE_URLS: "http://+:${apiContainerPort}"
       # قفل روی bind mount حتی اگر .env قدیمی بدون Storage__Root باشد
       Storage__Root: "/app/wwwroot/uploads"
+      # مسیر browserهای Playwright داخل image (نصب در Dockerfile)
+      PLAYWRIGHT_BROWSERS_PATH: "/ms-playwright"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -292,8 +332,12 @@ ApiAbuse__LastSeenMinIntervalSeconds=60
 Storage__Root=/app/wwwroot/uploads
 # ویترین آینده روی هاست: server/persist/news-data → /app/news-vitrine
 # URLهای فرانت — وارد سیاست CORS در Program.cs می‌شوند (WithOrigins)
+# فقط نمونهٔ پکیج — روی هر هاست Linux در api/.env همان سرور ست کنید (publish هرگز .env نمی‌فرستد)
 FrontendUrls__My=$myUrl
 FrontendUrls__News=$newsUrl
+
+# مسیر اختیاری Chromium برای PDF پرسشنامه (خالی = browser مدیریت‌شدهٔ Playwright)
+Playwright__ExecutablePath=
 "@
         Write-Utf8NoBom (Join-Path $dest 'Dockerfile') $dockerfile
         Write-Utf8NoBom (Join-Path $dest 'docker-compose.yml') $compose

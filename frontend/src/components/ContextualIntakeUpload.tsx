@@ -116,8 +116,8 @@ export function ContextualIntakeUpload({
           files,
         });
       }
-    } catch {
-      setError("ذخیره مدرک انجام نشد. دوباره تلاش کنید.");
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "ذخیره مدرک انجام نشد. دوباره تلاش کنید.");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";

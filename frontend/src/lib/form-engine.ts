@@ -1,12 +1,13 @@
 /*
  File: frontend/src/lib/form-engine.ts
- Description: موتور پرسشنامه؛ visibility، پیشرفت، hydrate draft+prefill، answersForSection
- Parent Dependencies: types/clinic, residence-address, marital-status
+ Description: موتور پرسشنامه؛ visibility، پیشرفت، hydrate؛ formDate سیستمی (بدون UI)
+ Parent Dependencies: types/clinic, residence-address, marital-status, person-identity
  */
 
 import catalogSeed from "@/lib/form-catalog.seed.json";
-import { iranLocalDayOffset } from "@/lib/date-iso";
+import { iranLocalDayOffset, isIsoDay } from "@/lib/date-iso";
 import { normalizeMaritalStatus } from "@/lib/marital-status";
+import { ageFromBirthIso } from "@/lib/person-identity";
 import { buildResidenceFromPatient, isResidenceAddressComplete } from "@/lib/residence-address";
 import type {
   FormAnswer,
@@ -159,20 +160,59 @@ export function itemsOfSection(form: FormDefinition, sectionId: string): FormIte
   return form.items.filter((i) => i.sectionId === sectionId).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
+export function isFormDateItem(item: FormItemDefinition): boolean {
+  return item.code.includes("formDate") || Boolean(item.coding?.aiTags?.includes("formDate"));
+}
+
+/** هویت قفل‌شده روی Person — در UI پرسشنامه دیده نمی‌شود (نام/کدملی/موبایل). */
+export function isProfileIdentityItem(item: FormItemDefinition): boolean {
+  if (item.prefillFromPatient === "fullName" || item.prefillFromPatient === "nationalId" || item.prefillFromPatient === "phone") {
+    return true;
+  }
+  return (
+    /_BASE_fullName$|_DEMO_fullName$|_BASE_nationalId$|_DEMO_nationalId$|_BASE_phone$|_DEMO_phone$/i.test(
+      item.code
+    ) ||
+    Boolean(
+      item.coding?.aiTags?.some((t) => t === "fullName" || t === "nationalId" || t === "phone")
+    )
+  );
+}
+
+/** فیلدهایی که در UI/progress/validate مالک دیده می‌شوند. */
+export function isUserFacingFormItem(item: FormItemDefinition): boolean {
+  if (item.code.includes("_SIG_")) return false;
+  if (isFormDateItem(item)) return false;
+  if (isProfileIdentityItem(item)) return false;
+  return true;
+}
+
+/** برای draft/submit: همه به‌جز formDate سیستمی (هویت پروفایل باید در payload بماند). */
+export function isPersistableFormItem(item: FormItemDefinition): boolean {
+  if (item.code.includes("_SIG_")) return false;
+  if (isFormDateItem(item)) return false;
+  return true;
+}
+
 /** پاسخ‌های متعلق به یک بخش — برای draft بخش‌محور (نه کل فرم). */
 export function answersForSection(
   form: FormDefinition,
   sectionId: string,
   answers: FormAnswer[]
 ): FormAnswer[] {
-  const codes = new Set(itemsOfSection(form, sectionId).map((i) => i.code));
+  // formDate را به draft نفرست — فقط سرور هنگام submit مهر می‌زند؛ هویت پروفایل می‌ماند
+  const codes = new Set(
+    itemsOfSection(form, sectionId)
+      .filter(isPersistableFormItem)
+      .map((i) => i.code)
+  );
   return answers.filter((a) => codes.has(a.itemCode));
 }
 
 /** Sections that still have at least one visible non-signature item for this audience. */
 export function visibleSections(form: FormDefinition, ctx: AudienceContext): FormSectionDefinition[] {
   return sectionsOf(form).filter((section) =>
-    itemsOfSection(form, section.id).some((item) => !item.code.includes("_SIG_") && isItemVisible(item, ctx))
+    itemsOfSection(form, section.id).some((item) => isUserFacingFormItem(item) && isItemVisible(item, ctx))
   );
 }
 
@@ -181,7 +221,9 @@ export function sectionHasVisibleItems(
   sectionId: string,
   ctx: AudienceContext
 ): boolean {
-  return itemsOfSection(form, sectionId).some((item) => !item.code.includes("_SIG_") && isItemVisible(item, ctx));
+  return itemsOfSection(form, sectionId).some(
+    (item) => isUserFacingFormItem(item) && isItemVisible(item, ctx)
+  );
 }
 
 export function visibleItems(form: FormDefinition, ctx: AudienceContext): FormItemDefinition[] {
@@ -246,23 +288,53 @@ export function migrateDemoItemCodesInAnswers(answers: FormAnswer[]): FormAnswer
   });
 }
 
+function isBirthDateItem(item: FormItemDefinition): boolean {
+  return (
+    item.code.includes("birthDate") ||
+    Boolean(item.coding?.aiTags?.includes("birthDate")) ||
+    item.prefillFromPatient === "birthDate"
+  );
+}
+
+/** سن از پاسخ تولد فرم — برای visibility هم‌زمان با پر کردن بخش پایه. */
+export function deriveAgeFromAnswers(answers: FormAnswer[], form: FormDefinition): number | null {
+  const birthItem = form.items.find(isBirthDateItem);
+  if (!birthItem) return null;
+  let raw = getAnswer(answers, birthItem.code).valueRaw.trim();
+  if (!raw) {
+    const legacyCode = birthItem.code.replace("_BASE_", "_DEMO_");
+    if (legacyCode !== birthItem.code) {
+      raw = getAnswer(answers, legacyCode).valueRaw.trim();
+    }
+  }
+  if (!raw) return null;
+  return ageFromBirthIso(raw.slice(0, 10));
+}
+
 export function buildContext(
-  patient: Pick<PatientFullDto, "gender" | "age" | "maritalStatus">,
+  patient: Pick<PatientFullDto, "gender" | "age" | "maritalStatus" | "birthDate">,
   answers: FormAnswer[],
   form: FormDefinition
 ): AudienceContext {
   const fromForm = deriveMaritalStatus(answers, form);
   const fromPatient = normalizeMaritalStatus(patient.maritalStatus) ?? patient.maritalStatus?.trim() ?? "";
+  const ageFromForm = deriveAgeFromAnswers(answers, form);
+  const ageFromProfile = ageFromBirthIso(patient.birthDate?.trim().slice(0, 10) ?? null);
   return {
     gender: patient.gender,
-    age: patient.age,
+    // patient.age ممکن است بعد از ویرایش تولد کهنه بماند؛ تولد فرم/پروفایل مرجع visibility است
+    age: ageFromForm ?? ageFromProfile ?? patient.age ?? 0,
     // پاسخ فرم اولویت دارد؛ وگرنه پروفایل نرمال‌شده
     maritalStatus: fromForm || fromPatient || "",
   };
 }
 
-export function isFormDateItem(item: FormItemDefinition): boolean {
-  return item.code.includes("formDate") || Boolean(item.coding?.aiTags?.includes("formDate"));
+function isMaritalStatusItem(item: FormItemDefinition): boolean {
+  return (
+    item.code.includes("maritalStatus") ||
+    Boolean(item.coding?.aiTags?.includes("maritalStatus")) ||
+    item.prefillFromPatient === "maritalStatus"
+  );
 }
 
 export function prefillValue(
@@ -274,6 +346,8 @@ export function prefillValue(
     | "phone"
     | "age"
     | "gender"
+    | "birthDate"
+    | "maritalStatus"
     | "homeLat"
     | "homeLon"
     | "homeAddress"
@@ -282,16 +356,32 @@ export function prefillValue(
     | "homePostalCode"
   >
 ): string {
-  if (isFormDateItem(item)) return iranLocalDayOffset(0);
+  // تاریخ تکمیل فقط سمت سرور هنگام submit — کلاینت prefill نکند
+  if (isFormDateItem(item)) return "";
   // آدرس سکونت از ستون‌های Patient — حتی بدون prefillFromPatient صریح
   if (item.inputType === "residence_address") {
     return buildResidenceFromPatient(patient);
+  }
+  // تولد/تاهل از پروفایل Person/Patient — کاتالوگ ممکن است prefillFromPatient خالی بگذارد
+  if (isBirthDateItem(item)) {
+    const raw = patient.birthDate?.trim() ?? "";
+    return isIsoDay(raw) ? raw.slice(0, 10) : "";
+  }
+  if (isMaritalStatusItem(item)) {
+    return normalizeMaritalStatus(patient.maritalStatus) ?? patient.maritalStatus?.trim() ?? "";
   }
   const key = item.prefillFromPatient;
   if (!key) return "";
   if (key === "fullName") return patient.fullName ?? "";
   if (key === "nationalId") return patient.nationalId ?? "";
   if (key === "phone") return patient.phone ?? "";
+  if (key === "birthDate") {
+    const raw = patient.birthDate?.trim() ?? "";
+    return isIsoDay(raw) ? raw.slice(0, 10) : "";
+  }
+  if (key === "maritalStatus") {
+    return normalizeMaritalStatus(patient.maritalStatus) ?? patient.maritalStatus?.trim() ?? "";
+  }
   if (key === "homeAddress" || key === "residence") {
     return buildResidenceFromPatient(patient);
   }
@@ -299,8 +389,8 @@ export function prefillValue(
 }
 
 /**
- * answers سرور اولویت دارند؛ آیتم بدون answer سرور prefill می‌گیرد (مثلاً نام قفل).
- * تاریخ فرم خالی از سرور با امروز پر می‌شود.
+ * answers سرور اولویت دارند؛ آیتم بدون answer سرور (یا خالی) prefill می‌گیرد.
+ * formDate سیستم‌ی است — از سرور فقط پس از submit می‌آید؛ prefill امروز ممنوع.
  */
 export function hydrateFormAnswersWithPrefill(
   form: FormDefinition,
@@ -310,14 +400,17 @@ export function hydrateFormAnswersWithPrefill(
   const byCode = new Map((serverAnswers ?? []).map((a) => [a.itemCode, a]));
   return form.items.map((item) => {
     const fromServer = byCode.get(item.code);
+    const pref = prefillValue(item, patient);
     if (fromServer) {
-      const valueRaw =
-        !fromServer.valueRaw?.trim() && isFormDateItem(item)
-          ? prefillValue(item, patient)
-          : fromServer.valueRaw ?? "";
+      const serverRaw = fromServer.valueRaw?.trim() || fromServer.valueCode?.trim() || "";
+      // draft خالی نباید تولد/تاهل پروفایل را بپوشاند
+      const valueRaw = serverRaw || pref;
+      const valueCode =
+        fromServer.valueCode?.trim() ||
+        (isMaritalStatusItem(item) && valueRaw ? valueRaw : null);
       return {
         itemCode: item.code,
-        valueCode: fromServer.valueCode ?? null,
+        valueCode,
         valueRaw,
         notes: fromServer.notes ?? "",
         skippedByRule: fromServer.skippedByRule,
@@ -325,8 +418,8 @@ export function hydrateFormAnswersWithPrefill(
     }
     return {
       itemCode: item.code,
-      valueCode: null,
-      valueRaw: prefillValue(item, patient),
+      valueCode: isMaritalStatusItem(item) && pref ? pref : null,
+      valueRaw: pref,
       notes: "",
     };
   });
@@ -334,6 +427,8 @@ export function hydrateFormAnswersWithPrefill(
 
 export function isItemComplete(item: FormItemDefinition, answer: FormAnswer, visible: boolean): boolean {
   if (!visible) return true;
+  // تاریخ تکمیل سروری / هویت پروفایل — در UI نیستند؛ progress را بلوکه نکنند
+  if (isFormDateItem(item) || isProfileIdentityItem(item)) return true;
   if (!item.required) return true;
   if (item.inputType === "yn_unk") {
     if (!answer.valueCode) return false;
@@ -353,7 +448,7 @@ export function validateForm(
 ): { ok: boolean; missingCodes: string[]; message: string } {
   const missing: string[] = [];
   for (const item of form.items) {
-    if (item.code.includes("_SIG_")) continue;
+    if (!isUserFacingFormItem(item)) continue;
     const visible = isItemVisible(item, ctx);
     const ans = getAnswer(answers, item.code);
     if (visible && !isItemComplete(item, ans, true)) missing.push(item.code);
@@ -398,7 +493,9 @@ export function sectionProgress(
   answers: FormAnswer[],
   ctx: AudienceContext
 ): { total: number; done: number } {
-  const items = itemsOfSection(form, sectionId).filter((i) => isItemVisible(i, ctx));
+  const items = itemsOfSection(form, sectionId).filter(
+    (i) => isUserFacingFormItem(i) && isItemVisible(i, ctx)
+  );
   const done = items.filter((i) => isItemComplete(i, getAnswer(answers, i.code), true)).length;
   return { total: items.length, done };
 }
@@ -408,7 +505,7 @@ export function overallProgress(
   answers: FormAnswer[],
   ctx: AudienceContext
 ): { total: number; done: number; pct: number } {
-  const items = visibleItems(form, ctx);
+  const items = visibleItems(form, ctx).filter(isUserFacingFormItem);
   const done = items.filter((i) => isItemComplete(i, getAnswer(answers, i.code), true)).length;
   const total = items.length;
   return { total, done, pct: total ? Math.round((done / total) * 100) : 0 };

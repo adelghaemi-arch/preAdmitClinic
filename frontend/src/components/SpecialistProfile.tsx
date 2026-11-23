@@ -1,16 +1,23 @@
-﻿import { ResultAttachment } from "./ResultAttachment";
+﻿/*
+ File: frontend/src/components/SpecialistProfile.tsx
+ Description: فهرست همهٔ بیماران کلینیک + پروندهٔ اولویت‌دار (مثبت/توضیح) و مدارک برای پزشک
+ Parent Dependencies: FormResponseSummary, specialist-patient-map, ClinicOrchestratorApp
+ */
+import { ResultAttachment } from "./ResultAttachment";
 
 import { AppInput, AppTextarea } from "@/components/AppInput";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
   ClipboardCheck,
   FilePlus2,
   FlaskConical,
+  FolderOpen,
   Navigation,
   Pill,
   Plus,
+  Search,
   ShieldAlert,
   Smartphone,
   Sparkles,
@@ -18,17 +25,20 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
-import type { ClinicSnapshot, PatientFullDto } from "@/types/clinic";
+import type { ClinicSnapshot, PatientFullDto, PatientIntakeDocumentGroup } from "@/types/clinic";
 import type { PrescriptionItem } from "@/types/clinic";
 import { formatFaTime, toFaDigits } from "@/lib/persian";
 import { FormResponseSummary } from "./FormResponseSummary";
+import { IntakeFileThumbGrid } from "./IntakeFileThumbGrid";
+import type { SpecialistDirectoryRow } from "@/lib/specialist-patient-map";
+import { intakeDocumentLabelFa, isIntakeDocumentType } from "@/lib/intake-documents";
 
 type SpecialistSection = "waiting" | "brief" | "notes" | "complete";
 
 interface SpecialistProfileProps {
   snapshot: ClinicSnapshot;
   onSwitchToPatientMobile: (patientId: number) => void;
-  onAction: (payload: Record<string, unknown>) => Promise<void>;
+  onAction: (payload: Record<string, unknown>) => Promise<unknown>;
   busy: boolean;
   embedded?: boolean;
   initialSection?: SpecialistSection;
@@ -36,6 +46,17 @@ interface SpecialistProfileProps {
   initialPatientId?: number;
   /** Logged-in app user id — used to default the doctor desk from staff.appUserId. */
   sessionUserId?: number;
+}
+
+function groupDocumentsByType(docs: PatientIntakeDocumentGroup[] | undefined) {
+  const map = new Map<string, PatientIntakeDocumentGroup[]>();
+  for (const g of docs ?? []) {
+    const key = g.typeLabelFa || (isIntakeDocumentType(g.documentType) ? intakeDocumentLabelFa(g.documentType) : g.documentType);
+    const list = map.get(key) ?? [];
+    list.push(g);
+    map.set(key, list);
+  }
+  return [...map.entries()];
 }
 
 export function SpecialistProfile({
@@ -81,8 +102,15 @@ export function SpecialistProfile({
   const [activeStaffId, setActiveStaffId] = useState<number>(
     defaultDoc?.id ?? 1
   );
-  const [section, setLocalSection] = useState<SpecialistSection>(initialSection);
-  const setSection = (next: SpecialistSection) => { setLocalSection(next); onSectionChange?.(next); };
+  // اتمام ویزیت صف‌محور فعلاً خارج از دامنه است
+  const [section, setLocalSection] = useState<SpecialistSection>(
+    initialSection === "complete" ? "waiting" : initialSection
+  );
+  const setSection = (next: SpecialistSection) => {
+    const safe = next === "complete" ? "waiting" : next;
+    setLocalSection(safe);
+    onSectionChange?.(safe);
+  };
 
   const activeDoctor =
     specialistStaff.find((s) => s.id === activeStaffId) ?? specialistStaff[0];
@@ -123,11 +151,113 @@ export function SpecialistProfile({
             x.myStation.status === "in_progress"
         )?.patient.id ??
         myPatients[0]?.patient.id ??
-        1)
+        initialPatientId ??
+        0)
   );
 
-  const activeEntry =
-    myPatients.find((x) => x.patient.id === selectedPatientId) ?? myPatients[0];
+  const [directory, setDirectory] = useState<SpecialistDirectoryRow[]>([]);
+  const [directoryQuery, setDirectoryQuery] = useState("");
+  const [onlyMyRoomToday, setOnlyMyRoomToday] = useState(false);
+  const [directoryBusy, setDirectoryBusy] = useState(false);
+  const [directoryError, setDirectoryError] = useState("");
+  const [chartBusy, setChartBusy] = useState(false);
+
+  const clinicId =
+    snapshot.platform.clinics.find((c) => c.isCurrentTenant)?.id ??
+    snapshot.platform.clinics[0]?.id ??
+    "";
+
+  const loadDirectory = useCallback(
+    async (q: string) => {
+      setDirectoryBusy(true);
+      setDirectoryError("");
+      try {
+        const data = (await onAction({
+          action: "SEARCH_SPECIALIST_PATIENTS",
+          clinicId,
+          query: q,
+          take: 50,
+          silent: true,
+        })) as { ok?: boolean; candidates?: SpecialistDirectoryRow[] };
+        setDirectory(Array.isArray(data?.candidates) ? data.candidates : []);
+      } catch (e) {
+        setDirectory([]);
+        setDirectoryError(e instanceof Error ? e.message : "بارگذاری فهرست بیماران انجام نشد.");
+      } finally {
+        setDirectoryBusy(false);
+      }
+    },
+    [clinicId, onAction]
+  );
+
+  useEffect(() => {
+    if (section !== "waiting") return;
+    void loadDirectory(directoryQuery);
+    // فقط ورود به تب فهرست — جستجوی بعدی با دکمه
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section]);
+
+  const roomTodayIds = useMemo(() => new Set(myPatients.map((x) => x.patient.id)), [myPatients]);
+
+  const visibleDirectory = useMemo(() => {
+    if (!onlyMyRoomToday) return directory;
+    // فیلتر اختیاری: فقط کسانی که امروز در صف اتاق این پزشک هستند
+    return directory.filter((row) => roomTodayIds.has(row.localId));
+  }, [directory, onlyMyRoomToday, roomTodayIds]);
+
+  const hydratedPatient =
+    snapshot.patients.find((p) => p.id === selectedPatientId) ??
+    snapshot.patients.find((p) => p.serverId && directory.some((d) => d.serverId === p.serverId && d.localId === selectedPatientId));
+
+  const queueEntry = myPatients.find((x) => x.patient.id === selectedPatientId);
+
+  // پرونده hydrate‌شده از API اولویت دارد؛ صف اتاق فقط برای فراخوان/اتمام
+  const activePatient: PatientFullDto | undefined =
+    hydratedPatient ?? queueEntry?.patient ?? myPatients[0]?.patient;
+
+  const activeEntry = activePatient
+    ? {
+        patient: activePatient,
+        myStation:
+          queueEntry?.myStation ??
+          activePatient.stations.find((s) => s.roomCode === doctorRoomCode) ??
+          activePatient.stations[0] ?? {
+            id: 0,
+            patientId: activePatient.id,
+            roomCode: doctorRoomCode,
+            roomName: activeDoctor?.specialtyOrDept ?? "مطب",
+            category: "specialist",
+            stepOrder: 1,
+            status: "pending" as const,
+            enteredQueueAt: null,
+            checkedInAt: null,
+            startedAt: null,
+            completedAt: null,
+            spentMinutes: 0,
+            addedByDoctor: null,
+            queueRank: 0,
+            queueAhead: 0,
+            estimatedWaitMinutes: 0,
+          },
+      }
+    : undefined;
+
+  const openChart = async (row: SpecialistDirectoryRow) => {
+    setChartBusy(true);
+    try {
+      const data = (await onAction({
+        action: "OPEN_SPECIALIST_CHART",
+        serverPatientId: row.serverId,
+      })) as { ok?: boolean; patientId?: number };
+      const nextId = Number(data?.patientId ?? row.localId);
+      setSelectedPatientId(nextId);
+      setSection("brief");
+    } catch {
+      // toast از orchestrator
+    } finally {
+      setChartBusy(false);
+    }
+  };
 
   // Clinical Note Form State
   const [chiefComplaint, setChiefComplaint] = useState(
@@ -216,6 +346,8 @@ export function SpecialistProfile({
         : "معاینه، تشخیص و نسخه دارویی در پرونده لحظه‌ای سلامتجو ثبت گردید."
     );
     setUrgentRoomCode("");
+    // بدون صف/اتمام ویزیت: بعد از ثبت به فهرست بیماران برگرد
+    setSection("waiting");
     setTimeout(() => setFeedbackBanner(""), 4500);
   };
 
@@ -265,11 +397,17 @@ export function SpecialistProfile({
       <section className="min-w-0 space-y-5">
         <div className="module-toolbar">
           <div className={embedded ? "hidden" : "section-tabs"}>
-            {([['waiting', 'لیست انتظار'], ['brief', 'خلاصه پرونده'], ['notes', 'معاینه و نسخه'], ['complete', 'اتمام ویزیت']] as const).map(([id, title]) => <button type="button" key={id} onClick={() => setSection(id)} className={section === id ? 'active' : ''}>{title}</button>)}
+            {([['waiting', 'فهرست بیماران'], ['brief', 'خلاصه پرونده'], ['notes', 'معاینه و نسخه']] as const).map(([id, title]) => <button type="button" key={id} onClick={() => setSection(id)} className={section === id ? 'active' : ''}>{title}</button>)}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <select aria-label="پزشک معالج" value={activeDoctor?.id} onChange={(e) => handleDoctorSwitch(Number(e.target.value))} className="app-select max-w-60">{specialistStaff.map((d) => <option key={d.id} value={d.id}>{d.fullName} · {d.specialtyOrDept}</option>)}</select>
-            <select aria-label="سلامتجو ویزیت" value={activeEntry?.patient.id ?? ''} onChange={(e) => setSelectedPatientId(Number(e.target.value))} className="app-select max-w-52">{myPatients.map(({patient: p}) => <option key={p.id} value={p.id}>{p.fullName}</option>)}</select>
+            {specialistStaff.length > 0 && (
+              <select aria-label="پزشک معالج" value={activeDoctor?.id} onChange={(e) => handleDoctorSwitch(Number(e.target.value))} className="app-select max-w-60">{specialistStaff.map((d) => <option key={d.id} value={d.id}>{d.fullName} · {d.specialtyOrDept}</option>)}</select>
+            )}
+            {activePatient && (
+              <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-bold text-slate-700">
+                پرونده: {activePatient.fullName}
+              </span>
+            )}
           </div>
         </div>
 
@@ -291,142 +429,151 @@ export function SpecialistProfile({
           </div>
         )}
 
-        {/* ================= 1. MY WAITING ROOM ================= */}
+        {/* ================= 1. PATIENT DIRECTORY (UC-SPC-01/02) ================= */}
         {section === "waiting" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs">
-            <h1 className="text-lg font-extrabold text-slate-900">
-              لیست انتظار مطب {activeDoctor?.fullName} ({activeDoctor?.specialtyOrDept})
-            </h1>
+            <h1 className="text-lg font-extrabold text-slate-900">فهرست بیماران</h1>
             <p className="mt-0.5 text-xs text-slate-500">
-              تفکیک لحظه‌ای سلامتجویان ارجاع‌شده امروز بر اساس وضعیت حضور، تکمیل پرسشنامه
-              و انجام تست‌های پیش‌نیاز
+              همهٔ بیماران ثبت‌شدهٔ کلینیک — فیلتر با نام، کد ملی یا موبایل؛ باز کردن پروندهٔ کامل با اولویت موارد مثبت و توضیحات
             </p>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {myPatients.map(({ patient: p, myStation }) => {
-                const activeOtherStation = p.stations.find(
-                  (s) =>
-                    s.id !== myStation.id &&
-                    (s.status === "waiting" ||
-                      s.status === "checked_in" ||
-                      s.status === "in_progress")
-                );
+            <form
+              className="mt-4 flex flex-wrap items-center gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void loadDirectory(directoryQuery);
+              }}
+            >
+              <AppInput
+                aria-label="جستجوی بیمار"
+                value={directoryQuery}
+                onChange={(e) => setDirectoryQuery(e.target.value)}
+                placeholder="نام، کد ملی یا موبایل"
+                className="app-input min-w-56 flex-1"
+              />
+              <button
+                type="submit"
+                disabled={busy || directoryBusy}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-sky-700 disabled:opacity-50"
+              >
+                <Search className="h-3.5 w-3.5" />
+                {directoryBusy ? "در حال جستجو…" : "جستجو"}
+              </button>
+              <button
+                type="button"
+                disabled={busy || directoryBusy}
+                onClick={() => {
+                  setDirectoryQuery("");
+                  void loadDirectory("");
+                }}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                همه
+              </button>
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={onlyMyRoomToday}
+                  onChange={(e) => setOnlyMyRoomToday(e.target.checked)}
+                  className="rounded border-slate-300"
+                />
+                فقط امروز در مطب من
+              </label>
+            </form>
 
-                return (
-                  <div
-                    key={p.id}
-                    className={`rounded-2xl border p-4 transition ${
-                      myStation.status === "checked_in"
-                        ? "border-emerald-400 bg-emerald-50/40"
-                        : myStation.status === "waiting"
-                          ? "border-sky-300 bg-sky-50/40"
-                          : "border-slate-200 bg-slate-50/50"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-sm font-extrabold text-slate-900">
-                          {p.fullName}{" "}
-                          <span className="text-xs font-normal text-slate-500">
-                            ({toFaDigits(p.age)} ساله)
+            {directoryError && (
+              <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                {directoryError}
+              </p>
+            )}
+
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[640px] border-collapse text-right text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 text-[11px] text-slate-500">
+                    <th className="px-2 py-2 font-semibold">نام</th>
+                    <th className="px-2 py-2 font-semibold">کد ملی</th>
+                    <th className="px-2 py-2 font-semibold">موبایل</th>
+                    <th className="px-2 py-2 font-semibold">پیش‌پذیرش</th>
+                    <th className="px-2 py-2 font-semibold">بسته</th>
+                    <th className="px-2 py-2 font-semibold" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleDirectory.length === 0 && !directoryBusy ? (
+                    <tr>
+                      <td colSpan={6} className="px-2 py-8 text-center text-slate-500">
+                        {onlyMyRoomToday
+                          ? "بیماری با فیلتر «امروز در مطب من» یافت نشد."
+                          : "بیماری در فهرست نیست؛ عبارت جستجو را تغییر دهید یا «همه» را بزنید."}
+                      </td>
+                    </tr>
+                  ) : (
+                    visibleDirectory.map((row) => (
+                      <tr key={row.serverId} className="border-b border-slate-100 hover:bg-slate-50/80">
+                        <td className="px-2 py-2.5 font-bold text-slate-900">
+                          {row.fullName}
+                          {row.age > 0 && (
+                            <span className="mr-1 font-normal text-slate-500">({toFaDigits(row.age)} ساله)</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-2.5 font-mono text-slate-700" dir="ltr">
+                          {toFaDigits(row.nationalId || "—")}
+                        </td>
+                        <td className="px-2 py-2.5 font-mono text-slate-700" dir="ltr">
+                          {toFaDigits(row.phone || "—")}
+                        </td>
+                        <td className="px-2 py-2.5">
+                          <span
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                              row.intakeCompleted
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {row.intakeCompleted ? "تکمیل‌شده" : "ناتمام"}
                           </span>
-                        </div>
-                        <div className="mt-0.5 text-xs text-slate-600">
-                          {p.pathwayTitle}
-                        </div>
-                      </div>
-
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                          myStation.status === "checked_in"
-                            ? "bg-emerald-600 text-white"
-                            : myStation.status === "waiting" ||
-                                myStation.status === "in_progress"
-                              ? "bg-sky-600 text-white"
-                              : myStation.status === "completed"
-                                ? "bg-slate-200 text-slate-700"
-                                : "bg-amber-100 text-amber-900"
-                        }`}
-                      >
-                        {myStation.status === "checked_in"
-                          ? "پشت درب مطب"
-                          : myStation.status === "in_progress"
-                            ? "در حال معاینه"
-                            : myStation.status === "waiting"
-                              ? "در نوبت ورود به مطب"
-                              : myStation.status === "completed"
-                                ? "ویزیت انجام شد"
-                                : activeOtherStation
-                                  ? `در حال انجام تست (${activeOtherStation.roomName})`
-                                  : "در انتظار مراحل قبل"}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
-                      <span
-                        className={`rounded-md px-2 py-0.5 font-bold ${
-                          p.intakeCompleted
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
-                      >
-                        {p.intakeCompleted
-                          ? "✓ پرسشنامه پیش‌پذیرش تکمیل شده"
-                          : "⧗ در حال تکمیل پرسشنامه پیش‌پذیرش"}
-                      </span>
-
-                      {p.allergies.length > 0 && (
-                        <span className="rounded-md bg-red-100 px-2 py-0.5 font-bold text-red-700">
-                          ⚠ دارای حساسیت دارویی ({toFaDigits(p.allergies.length)})
-                        </span>
-                      )}
-
-                      <span className="rounded-md bg-white px-2 py-0.5 text-slate-600">
-                        نتایج پاراکلینیک:{" "}
-                        {toFaDigits(p.paraclinicResults.length)} مورد
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {(myStation.status === "waiting" || myStation.status === "checked_in") && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => handleCallPatientIn(p.id, myStation.id)}
-                          className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
-                        >
-                          فراخوان به داخل مطب
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedPatientId(p.id);
-                          setSection("brief");
-                        }}
-                        className="flex-1 rounded-xl bg-sky-600 py-2 text-xs font-bold text-white hover:bg-sky-700"
-                      >
-                        باز کردن خلاصه هوشمند سلامتجو
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedPatientId(p.id);
-                          setSection("notes");
-                        }}
-                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
-                      >
-                        ثبت معاینه
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                        </td>
+                        <td className="px-2 py-2.5 text-slate-600">{row.pathwayTitle || "—"}</td>
+                        <td className="px-2 py-2.5">
+                          <button
+                            type="button"
+                            disabled={busy || chartBusy}
+                            onClick={() => void openChart(row)}
+                            className="rounded-xl bg-sky-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-sky-700 disabled:opacity-50"
+                          >
+                            باز کردن پرونده
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
+            {(directoryBusy || chartBusy) && (
+              <p className="mt-3 text-[11px] text-slate-500">
+                {chartBusy ? "در حال بارگذاری پرونده…" : "در حال بارگذاری فهرست…"}
+              </p>
+            )}
           </div>
         )}
 
         {/* ================= 2. SMART PATIENT BRIEF ================= */}
+        {section === "brief" && !activeEntry && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-600 shadow-2xs">
+            هنوز پرونده‌ای انتخاب نشده است. از «فهرست بیماران» یک نفر را باز کنید.
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setSection("waiting")}
+                className="rounded-xl bg-sky-600 px-4 py-2 text-xs font-bold text-white hover:bg-sky-700"
+              >
+                رفتن به فهرست بیماران
+              </button>
+            </div>
+          </div>
+        )}
         {section === "brief" && activeEntry && (
           <div className="space-y-4">
             {/* Patient Header Strip */}
@@ -434,7 +581,7 @@ export function SpecialistProfile({
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-extrabold text-slate-900">
-                    خلاصه هوشمند یک‌صفحه‌ای: {activeEntry.patient.fullName}
+                    خلاصه پرونده: {activeEntry.patient.fullName}
                   </h1>
                   <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">
                     {toFaDigits(activeEntry.patient.age)} ساله •{" "}
@@ -442,12 +589,20 @@ export function SpecialistProfile({
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  پکیج: {activeEntry.patient.pathwayTitle} • کد ملی:{" "}
-                  {toFaDigits(activeEntry.patient.nationalId)}
+                  پکیج: {activeEntry.patient.pathwayTitle || "—"} • کد ملی:{" "}
+                  {toFaDigits(activeEntry.patient.nationalId)} • موبایل:{" "}
+                  {toFaDigits(activeEntry.patient.phone)}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSection("waiting")}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  بازگشت به فهرست
+                </button>
                 <button
                   type="button"
                   onClick={() => setSection("notes")}
@@ -455,14 +610,8 @@ export function SpecialistProfile({
                 >
                   ثبت معاینه و نسخه جدید
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setSection("complete")}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-extrabold text-white hover:bg-emerald-700"
-                >
-                  اتمام ویزیت و هدایت سلامتجو
-                </button>
               </div>
+              {/* اتمام ویزیت صف‌محور فعلاً مخفی است */}
             </div>
 
             {/* PROMINENT RED ALLERGY ALERT BANNER */}
@@ -499,25 +648,46 @@ export function SpecialistProfile({
               </div>
             )}
 
+            {/* اولویت بالینی: flags پیش‌فرض؛ سپس پرسشنامه کامل و مدارک */}
             <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-4">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-extrabold text-teal-900">پرسشنامه پیش‌پذیرش (پشتیبانی تصمیم)</h2>
-                <span className="rounded-lg bg-white px-2 py-1 text-[10px] text-teal-700">
-                  {doctorRoomCode === "CARDIO"
-                    ? "قلب و عروق"
-                    : doctorRoomCode === "PULMO"
-                      ? "ریه و تنفس"
-                      : doctorRoomCode === "DENTAL"
-                        ? "دندانپزشکی"
-                        : "ویزیت تخصصی"}
-                </span>
+              <div className="mb-3">
+                <h2 className="text-sm font-extrabold text-teal-900">
+                  اولویت بالینی — موارد مثبت، توضیحات و هشدارها
+                </h2>
               </div>
               <FormResponseSummary
                 patient={activeEntry.patient}
                 forms={snapshot.forms ?? []}
                 enableViewToggle
-                showAiPayloadToggle
               />
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-slate-900">
+                <FolderOpen className="h-4 w-4 text-slate-600" />
+                مدارک پیش‌پذیرش
+              </h2>
+              {!(activeEntry.patient.intakeDocuments?.length) ? (
+                <p className="text-xs text-slate-500">هنوز مدرکی در پرونده ثبت نشده است.</p>
+              ) : (
+                <div className="space-y-5">
+                  {groupDocumentsByType(activeEntry.patient.intakeDocuments).map(([label, groups]) => {
+                    const files = groups.flatMap((g) => g.files ?? []);
+                    if (!files.length) return null;
+                    return (
+                      <div key={label}>
+                        <div className="mb-2 text-[11px] font-bold text-slate-700">{label}</div>
+                        <IntakeFileThumbGrid
+                          files={files}
+                          title={label}
+                          fallbackDocumentDate={groups[0]?.documentDate}
+                          disabled
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             {/* 2-Column Unified Brief: Left = Fellow Specialists + Paraclinic | Right = Patient Intake */}
             <div className="grid gap-4 lg:grid-cols-12">
@@ -959,7 +1129,8 @@ export function SpecialistProfile({
               >
                 <option value="">بدون افزودن ایستگاه جدید</option>
                 {snapshot.rooms
-                  .filter((r) => r.code !== doctorRoomCode)
+                  // فقط ایستگاه‌های فعال کاتالوگ (UC-ADM-25)
+                  .filter((r) => r.isActive !== false && r.code !== doctorRoomCode)
                   .map((r) => (
                     <option key={r.code} value={r.code}>
                       افزودن فوری: {r.name} (طبقه {toFaDigits(r.floor)}، اتاق{" "}
@@ -979,17 +1150,17 @@ export function SpecialistProfile({
               </button>
               <button
                 type="button"
-                onClick={() => setSection("complete")}
-                className="rounded-xl border border-emerald-600 bg-emerald-50 px-5 py-3 text-xs font-extrabold text-emerald-800 hover:bg-emerald-100"
+                onClick={() => setSection("waiting")}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-extrabold text-slate-700 hover:bg-slate-50"
               >
-                ادامه به مرحله تایید اتمام ویزیت ←
+                بازگشت به فهرست بیماران
               </button>
             </div>
           </form>
         )}
 
-        {/* ================= 4. COMPLETE STATION & AUTO-WAYFINDING ================= */}
-        {section === "complete" && activeEntry && (
+        {/* اتمام ویزیت / نقشه ایستگاه بعد — فعلاً خارج از دامنه (بدون صف) */}
+        {false && section === "complete" && activeEntry && (
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs">
             <div className="mx-auto max-w-2xl text-center">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">

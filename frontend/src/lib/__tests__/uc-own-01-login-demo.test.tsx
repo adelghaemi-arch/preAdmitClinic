@@ -43,6 +43,33 @@ describe("UC-OWN-01", () => {
     expect(screen.queryByText("ادمین کل")).toBeNull();
   });
 
+  it("UC-OWN-01: شمارهٔ دمو در UI با ارقام فارسی است (state کلیک لاتین می‌ماند)", async () => {
+    fetchOtpFixedModeEnabled.mockResolvedValue(true);
+    render(
+      <MemoryRouter>
+        <LoginForm />
+      </MemoryRouter>,
+    );
+    const block = await screen.findByTestId("otp-demo-quick-login");
+    // پزشک نمونه = 09120000002 در auth.ts؛ نمایش باید ۰۹۱۲۰۰۰۰۰۰۲ باشد
+    expect(block.textContent).toContain("۰۹۱۲۰۰۰۰۰۰۲");
+    expect(block.textContent).not.toContain("09120000002");
+  });
+
+  it("UC-OWN-01: hint نقش دمو فقط فارسی است", async () => {
+    fetchOtpFixedModeEnabled.mockResolvedValue(true);
+    render(
+      <MemoryRouter>
+        <LoginForm />
+      </MemoryRouter>,
+    );
+    const block = await screen.findByTestId("otp-demo-quick-login");
+    expect(block.textContent).toContain("نقش ادمین کلینیک");
+    expect(block.textContent).toContain("نقش پزشک متخصص");
+    expect(block.textContent).toContain("نقش ناظر سازمان");
+    expect(block.textContent).not.toMatch(/\b(Admin|Specialist|Supervisor)\b/);
+  });
+
   it("با حالت پیامک (FixedOtp خاموش)، بلوک ورود سریع دیده نمی‌شود", async () => {
     fetchOtpFixedModeEnabled.mockResolvedValue(false);
     render(

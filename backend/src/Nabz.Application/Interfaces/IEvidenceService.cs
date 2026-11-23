@@ -84,8 +84,14 @@ public interface IEvidenceService
     Task<PhotoDto?> GetPortraitAsync(Guid patientId, CancellationToken ct = default);
     Task<IReadOnlyList<PhotoDto>> ListPhotosByPatientAsync(Guid patientId, CancellationToken ct = default);
     /// <summary>
-    /// گیت دانلود فایل: Platform همه؛ Owner فقط پروندهٔ خود؛ فریم تقلب فقط Platform.
+    /// گیت دانلود فایل: Platform همه؛ Owner پروندهٔ خود؛ Specialist مدارک/پرتره (نه فریم تقلب).
     /// کلید ناشناس در DB → false.
     /// </summary>
-    Task<bool> CanDownloadStorageKeyAsync(string storageKey, Guid actingUserId, bool isPlatform, CancellationToken ct = default);
+    Task<bool> CanDownloadStorageKeyAsync(
+        string storageKey,
+        Guid actingUserId,
+        bool isPlatform,
+        bool isSpecialist = false,
+        bool isAdmin = false,
+        CancellationToken ct = default);
 }

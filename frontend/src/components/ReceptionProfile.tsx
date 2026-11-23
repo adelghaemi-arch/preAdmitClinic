@@ -1,3 +1,8 @@
+/*
+ File: frontend/src/components/ReceptionProfile.tsx
+ Description: میز پذیرش — lookup، پذیرش، صف اتاق‌ها، اعلان با نمایش ارقام فارسی
+ Parent Dependencies: lib/persian.ts, lib/client-db.ts, components/IranDigitField.tsx
+ */
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import {
@@ -1126,7 +1131,7 @@ export function ReceptionProfile({
                   >
                     {snapshot.patients.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.fullName} ({p.phone})
+                        {p.fullName} ({toFaDigits(p.phone)})
                       </option>
                     ))}
                   </select>

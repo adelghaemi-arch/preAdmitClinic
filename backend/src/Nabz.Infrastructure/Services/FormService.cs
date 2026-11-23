@@ -1,7 +1,7 @@
 /*
  File: backend/src/Nabz.Infrastructure/Services/FormService.cs
- Description: تعریف/انتشار/ساختار فرم؛ upsert پاسخ؛ sync پیشرفت عضو قرارداد
- Parent Dependencies: IFormRepository, IContractRepository, FormAudienceEvaluator
+ Description: تعریف/انتشار/ساختار فرم؛ upsert پاسخ؛ مهر formDate سمت سرور هنگام submit
+ Parent Dependencies: IFormRepository, IContractRepository, FormAudienceEvaluator, IranTime
  */
 
 using System.Globalization;
@@ -11,6 +11,7 @@ using Nabz.Application.Identity;
 using Nabz.Application.Interfaces;
 using Nabz.Application.Interfaces.Repositories;
 using Nabz.Application.Patients;
+using Nabz.Application.Time;
 using Nabz.Domain.Entities;
 using Nabz.Domain.Enums;
 using Nabz.Infrastructure.Forms;
@@ -433,6 +434,9 @@ public sealed class FormService(
         if (form.Status != FormPublishStatus.Published && status == FormResponseStatus.Submitted)
             throw new InvalidOperationException("فرم منتشر نشده است.");
 
+        // تاریخ تکمیل پرسشنامه فقط سرور؛ مقدار کلاینت دور ریخته می‌شود و فقط روی submit مهر می‌خورد
+        answers = ApplyServerManagedFormDates(form, answers, stamp: status == FormResponseStatus.Submitted);
+
         if (status == FormResponseStatus.Submitted)
         {
             if (!FormAudienceEvaluator.MatchesFormAudience(form, patient, out var reason))
@@ -441,6 +445,7 @@ public sealed class FormService(
             var answerMap = answers.ToDictionary(a => a.ItemCode, a => a.ValueCode ?? a.ValueRaw, StringComparer.OrdinalIgnoreCase);
             foreach (var item in form.Items)
             {
+                if (IsFormDateItem(item)) continue;
                 if (!FormAudienceEvaluator.IsItemVisible(item, patient, answerMap)) continue;
                 if (!item.Required) continue;
                 if (!answerMap.TryGetValue(item.Code, out var val) || string.IsNullOrWhiteSpace(val))
@@ -658,6 +663,39 @@ public sealed class FormService(
             lastSection = form.Sections.FirstOrDefault(s => s.Id == item.SectionId);
         }
         return lastSection?.Code ?? lastSection?.Title;
+    }
+
+    private static bool IsFormDateItem(FormItem item) =>
+        item.Code.Contains("formDate", StringComparison.OrdinalIgnoreCase)
+        // هم‌تراز FE: aiTags شامل formDate در CodingJson
+        || (!string.IsNullOrEmpty(item.CodingJson)
+            && item.CodingJson.Contains("\"formDate\"", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// formDate را از payload کلاینت حذف می‌کند؛ روی submit با روز مدنی ایران مهر می‌زند.
+    /// </summary>
+    private static IReadOnlyList<FormAnswerInput> ApplyServerManagedFormDates(
+        FormDefinition form,
+        IReadOnlyList<FormAnswerInput> answers,
+        bool stamp)
+    {
+        var formDateCodes = form.Items
+            .Where(IsFormDateItem)
+            .Select(i => i.Code)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (formDateCodes.Count == 0)
+            return answers;
+
+        var cleaned = answers
+            .Where(a => !formDateCodes.Contains(a.ItemCode))
+            .ToList();
+        if (!stamp)
+            return cleaned;
+
+        var dayKey = IranTime.IranDayKey(DateTime.UtcNow);
+        foreach (var code in formDateCodes)
+            cleaned.Add(new FormAnswerInput(code, null, dayKey, null, false));
+        return cleaned;
     }
 
     /// <summary>بر اساس ItemCode: موجود → به‌روزرسانی؛ نبود → درج با AddAnswer صریح.</summary>

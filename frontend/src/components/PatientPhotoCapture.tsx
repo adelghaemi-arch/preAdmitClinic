@@ -1,6 +1,6 @@
 /*
  File: frontend/src/components/PatientPhotoCapture.tsx
- Description: عکس پرونده (دوربین/گالری با زوم) + فریم ضدتقلب؛ ensure-stream بدون ریست adjust/preview
+ Description: عکس پرونده (دوربین/گالری؛ پینچ Pointer+wheel) + فریم ضدتقلب؛ ensure-stream بدون ریست adjust/preview
  Parent Dependencies: portrait-face.ts, portrait-gallery.ts, PermissionRetryPanel, media-permission.ts
  */
 
@@ -33,7 +33,7 @@ import {
   scaleGalleryPan,
 } from "@/lib/portrait-gallery";
 
-type Phase = "live" | "adjust" | "preview";
+type Phase = "live" | "adjust" | "preview" | "done";
 
 export interface FraudSessionStart {
   sessionId: string;
@@ -140,9 +140,13 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
     originPanX: number;
     originPanY: number;
   } | null>(null);
+  // نقاط فعال برای پینچ دو انگشت (Pointer Events روی وب و موبایل)
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{ startDist: number; startZoom: number; startPanX: number; startPanY: number } | null>(null);
   const zoomRef = useRef(1);
   const panRef = useRef({ x: 0, y: 0 });
+  const gallerySizeRef = useRef<{ w: number; h: number } | null>(null);
+  const frameSizeRef = useRef({ w: 210, h: 280 });
 
   const [phase, setPhase] = useState<Phase>("live");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -154,6 +158,8 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
   const [panY, setPanY] = useState(0);
   zoomRef.current = zoom;
   panRef.current = { x: panX, y: panY };
+  gallerySizeRef.current = gallerySize;
+  frameSizeRef.current = frameSize;
   const [cameraError, setCameraError] = useState("");
   const [cameraErrorKind, setCameraErrorKind] = useState<PermissionErrorKind | null>(null);
   const [faceError, setFaceError] = useState("");
@@ -161,6 +167,7 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
   const [starting, setStarting] = useState(true);
   const [validating, setValidating] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [confirmError, setConfirmError] = useState("");
 
   // fraudWatch از ref خوانده می‌شود تا تغییر هویت props استریم/فاز گالری را ریست نکند
   const fraudWatchRef = useRef(fraudWatch);
@@ -191,6 +198,42 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(sync) : null;
     ro?.observe(el);
     return () => ro?.disconnect();
+  }, [phase, gallerySrc]);
+
+  // پینچ ترک‌پد/وب: Chrome و Safari به‌صورت ctrl/meta + wheel می‌فرستند؛ باید passive:false باشد
+  useEffect(() => {
+    if (phase !== "adjust") {
+      pointersRef.current.clear();
+      pinchRef.current = null;
+      dragRef.current = null;
+      return;
+    }
+    const el = frameRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || !gallerySizeRef.current) return;
+      e.preventDefault();
+      const frame = frameSizeRef.current;
+      const size = gallerySizeRef.current;
+      // deltaY منفی = زوم داخل؛ ضریب ملایم برای ترک‌پد و چرخ ماوس
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? frame.h : 1;
+      const factor = Math.exp((-e.deltaY * unit) / 220);
+      const next = panAfterZoom(
+        size.w,
+        size.h,
+        frame.w,
+        frame.h,
+        zoomRef.current,
+        zoomRef.current * factor,
+        panRef.current.x,
+        panRef.current.y
+      );
+      setZoom(next.zoom);
+      setPanX(next.panX);
+      setPanY(next.panY);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
   }, [phase, gallerySrc]);
 
   /** روشن کردن استریم؛ فقط با resetPortraitFlow فاز adjust/preview پاک می‌شود */
@@ -509,6 +552,7 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
     resetGalleryTransform();
     setPhase("live");
     setFaceError("");
+    setConfirmError("");
     setFaceInOval(false);
     void startCamera();
   };
@@ -573,57 +617,17 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
     reader.readAsDataURL(file);
   };
 
-  const onAdjustPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (phase !== "adjust" || !gallerySize || e.button !== 0) return;
-    // pinch دو انگشت: درگ تک‌انگشتی را قطع نکن مگر قبلاً capture شده
-    if (pinchRef.current) return;
-    dragRef.current = {
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-      originPanX: panX,
-      originPanY: panY,
-    };
-    e.currentTarget.setPointerCapture(e.pointerId);
+  const pointerPairDist = () => {
+    const pts = [...pointersRef.current.values()];
+    if (pts.length < 2) return 0;
+    const a = pts[0]!;
+    const b = pts[1]!;
+    return Math.hypot(a.x - b.x, a.y - b.y);
   };
 
-  const onAdjustPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== e.pointerId || !gallerySize) return;
-    const dx = e.clientX - drag.startX;
-    const dy = e.clientY - drag.startY;
-    const next = clampGalleryPan(
-      gallerySize.w,
-      gallerySize.h,
-      frameSize.w,
-      frameSize.h,
-      zoom,
-      drag.originPanX + dx,
-      drag.originPanY + dy
-    );
-    setPanX(next.panX);
-    setPanY(next.panY);
-  };
-
-  const onAdjustPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.pointerId === e.pointerId) {
-      dragRef.current = null;
-      try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {
-        /* already released */
-      }
-    }
-  };
-
-  const onAdjustTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (phase !== "adjust" || e.touches.length !== 2) {
-      if (e.touches.length < 2) pinchRef.current = null;
-      return;
-    }
-    const a = e.touches[0]!;
-    const b = e.touches[1]!;
-    const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const beginPinchFromPointers = () => {
+    const dist = pointerPairDist();
+    if (dist < 1) return;
     pinchRef.current = {
       startDist: dist,
       startZoom: zoomRef.current,
@@ -633,20 +637,19 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
     dragRef.current = null;
   };
 
-  const onAdjustTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+  const applyPinchFromPointers = () => {
     const pinch = pinchRef.current;
-    if (!pinch || e.touches.length !== 2 || !gallerySize) return;
-    e.preventDefault();
-    const a = e.touches[0]!;
-    const b = e.touches[1]!;
-    const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-    if (pinch.startDist < 1) return;
+    const size = gallerySizeRef.current;
+    if (!pinch || !size || pinch.startDist < 1) return;
+    const dist = pointerPairDist();
+    if (dist < 1) return;
+    const frame = frameSizeRef.current;
     const nextZoom = clampGalleryZoom(pinch.startZoom * (dist / pinch.startDist));
     const next = panAfterZoom(
-      gallerySize.w,
-      gallerySize.h,
-      frameSize.w,
-      frameSize.h,
+      size.w,
+      size.h,
+      frame.w,
+      frame.h,
       pinch.startZoom,
       nextZoom,
       pinch.startPanX,
@@ -657,14 +660,83 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
     setPanY(next.panY);
   };
 
-  const onAdjustTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length < 2) pinchRef.current = null;
+  const onAdjustPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (phase !== "adjust" || !gallerySize) return;
+    // فقط لمس/قلم/ماوس اصلی؛ دکمهٔ راست درگ نکند
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    if (pointersRef.current.size >= 2) {
+      beginPinchFromPointers();
+      return;
+    }
+    if (pinchRef.current) return;
+    dragRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      originPanX: panRef.current.x,
+      originPanY: panRef.current.y,
+    };
+  };
+
+  const onAdjustPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (phase !== "adjust" || !gallerySize) return;
+    if (!pointersRef.current.has(e.pointerId)) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersRef.current.size >= 2) {
+      if (!pinchRef.current) beginPinchFromPointers();
+      applyPinchFromPointers();
+      return;
+    }
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    const next = clampGalleryPan(
+      gallerySize.w,
+      gallerySize.h,
+      frameSize.w,
+      frameSize.h,
+      zoomRef.current,
+      drag.originPanX + dx,
+      drag.originPanY + dy
+    );
+    setPanX(next.panX);
+    setPanY(next.panY);
+  };
+
+  const onAdjustPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(e.pointerId);
+    if (dragRef.current?.pointerId === e.pointerId) dragRef.current = null;
+    if (pointersRef.current.size < 2) pinchRef.current = null;
+    // اگر یک انگشت مانده، درگ را از موقعیت فعلی از سر بگیر
+    if (pointersRef.current.size === 1) {
+      const [id, pt] = [...pointersRef.current.entries()][0]!;
+      dragRef.current = {
+        pointerId: id,
+        startX: pt.x,
+        startY: pt.y,
+        originPanX: panRef.current.x,
+        originPanY: panRef.current.y,
+      };
+    }
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* already released */
+    }
   };
 
   const confirm = async () => {
     if (!previewUrl || confirming || busy || validating) return;
     setConfirming(true);
     setFaceError("");
+    setConfirmError("");
     try {
       const check = await validatePortraitDataUrl(previewUrl);
       if (!check.ok) {
@@ -686,6 +758,10 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
       streamRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
       await endFraudSession();
+      // تا parent آن‌ماونت نکند، بازخورد صریح «ثبت شد» بماند (مثل ویرایش پروفایل)
+      setPhase("done");
+    } catch (err) {
+      setConfirmError(err instanceof Error ? err.message : "ثبت عکس انجام نشد؛ دوباره تلاش کنید.");
     } finally {
       setConfirming(false);
     }
@@ -707,9 +783,11 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
         <h2 className="mt-1 text-sm font-semibold text-slate-900">عکس پرونده سلامت الکترونیک</h2>
         <p className="mt-1.5 text-[11px] leading-5 text-slate-500">
           {patientName ? `${patientName}، ` : ""}
-          {phase === "adjust"
-            ? "عکس را بکشید یا با دکمه‌ها جابه‌جا کنید؛ قبل یا بعد از زوم می‌توانید بخش دلخواه را داخل کادر بگذارید."
-            : "این عکس ۳×۴ بخشی از پرونده سلامت الکترونیک شماست. چهره را داخل کادر قرار دهید، عکس بگیرید و تأیید کنید."}
+          {phase === "done"
+            ? "عکس تأیید شد. در صورت نیاز می‌توانید تعویض کنید."
+            : phase === "adjust"
+              ? "عکس را بکشید یا با دکمه‌ها جابه‌جا کنید؛ قبل یا بعد از زوم می‌توانید بخش دلخواه را داخل کادر بگذارید."
+              : "این عکس ۳×۴ بخشی از پرونده سلامت الکترونیک شماست. چهره را داخل کادر قرار دهید، عکس بگیرید و تأیید کنید."}
         </p>
         <p className="mt-1 text-[10px] leading-5 text-slate-400">
           عکس باید متعلق به خود سلامتجو باشد و بدون عینک دودی، کلاه و ماسک گرفته شود.
@@ -775,9 +853,6 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
           onPointerMove={phase === "adjust" ? onAdjustPointerMove : undefined}
           onPointerUp={phase === "adjust" ? onAdjustPointerUp : undefined}
           onPointerCancel={phase === "adjust" ? onAdjustPointerUp : undefined}
-          onTouchStart={phase === "adjust" ? onAdjustTouchStart : undefined}
-          onTouchMove={phase === "adjust" ? onAdjustTouchMove : undefined}
-          onTouchEnd={phase === "adjust" ? onAdjustTouchEnd : undefined}
         >
           {/* Keep video mounted (possibly hidden) so fraud frames continue after capture/adjust. */}
           {!cameraError && (
@@ -807,7 +882,7 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
               }}
             />
           )}
-          {phase === "preview" && previewUrl && (
+          {(phase === "preview" || phase === "done") && previewUrl && (
             <img src={previewUrl} alt="پیش‌نمایش عکس پرونده سلامت الکترونیک" className="relative z-[1] h-full w-full object-cover" />
           )}
           {(starting || validating) && (phase === "live" || phase === "adjust") && !(cameraError && phase === "live") && (
@@ -847,6 +922,11 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
       {faceError && (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-[11px] leading-5 text-amber-900" role="alert">
           {faceError}
+        </p>
+      )}
+      {confirmError && (
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-center text-[11px] leading-5 text-rose-800" role="alert">
+          {confirmError}
         </p>
       )}
 
@@ -903,7 +983,7 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
             />
           </label>
           <p className="text-center text-[10px] leading-4 text-slate-400">
-            بکشید تا جابه‌جا شود (قبل یا بعد از زوم)؛ روی لمس با دو انگشت هم می‌توانید زوم کنید.
+            بکشید تا جابه‌جا شود؛ با دو انگشت روی لمس یا پینچ ترک‌پد (زوم صفحه) داخل/خارج زوم کنید.
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -945,7 +1025,31 @@ export function PatientPhotoCapture({ patientName, busy = false, onConfirm, frau
             className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-3 py-2.5 text-xs font-medium text-white disabled:opacity-50"
           >
             {confirming || busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-            تأیید و ادامه
+            {confirming || busy ? "در حال ثبت…" : "تأیید و ادامه"}
+          </button>
+        </div>
+      )}
+
+      {phase === "done" && previewUrl && (
+        <div className="space-y-3">
+          <div
+            className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-center text-[11px] leading-5 text-emerald-900"
+            role="status"
+          >
+            <span className="inline-flex items-center justify-center gap-1.5 font-semibold">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              عکس تأیید شد
+            </span>
+            <p className="mt-1 text-emerald-800/90">عکس روی پرونده ثبت شد و بعد از تازه‌سازی صفحه هم می‌ماند.</p>
+          </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={retake}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 disabled:opacity-50"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            تعویض عکس
           </button>
         </div>
       )}

@@ -12,7 +12,11 @@ public record StoredFileResult(string StorageKey, string FileName, string Conten
 /// زمینهٔ شارد مسیر: سال UTC + سه رقم اول کدملی.
 /// اگر <see cref="CanonicalFileName"/> ست باشد، همان نام داخلی (بدون نام کلاینت) روی دیسک می‌رود.
 /// </summary>
-public record StorageSaveContext(string? NationalIdPrefix = null, string? CanonicalFileName = null);
+/// <param name="FolderOverride">اگر ست باشد مسیر کلید = folder/file (بدون سال/کدملی) — برای برند کلینیک/قرارداد.</param>
+public record StorageSaveContext(
+    string? NationalIdPrefix = null,
+    string? CanonicalFileName = null,
+    string? FolderOverride = null);
 
 public interface IFileStorage
 {

@@ -96,21 +96,11 @@ export function ClinicReachCard({ clinic, clinicName, compact, onStartEvidenceGp
         compact ? "rounded-2xl" : "rounded-[1.5rem]"
       }`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#e8f0eb] px-4 py-3.5 sm:px-5">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold text-[#3f7b60]">مرکز درمانی شما</p>
-          <h3 className="mt-0.5 truncate text-sm font-extrabold text-[#1d3f32] sm:text-base">{title}</h3>
-          <p className="mt-1 text-[11px] leading-5 text-slate-500">{clinic.address}</p>
-          {clinic.city ? <p className="text-[10px] text-slate-400">{clinic.city}</p> : null}
-        </div>
-        <button
-          type="button"
-          onClick={() => openOsmMap({ lat: clinic.lat, lon: clinic.lon })}
-          className="secondary-button shrink-0"
-        >
-          <MapPin className="h-3.5 w-3.5" />
-          نقشه
-        </button>
+      <div className="border-b border-[#e8f0eb] px-4 py-3.5 sm:px-5">
+        <p className="text-[10px] font-semibold text-[#3f7b60]">مرکز درمانی شما</p>
+        <h3 className="mt-0.5 truncate text-sm font-extrabold text-[#1d3f32] sm:text-base">{title}</h3>
+        <p className="mt-1 text-[11px] leading-5 text-slate-500">{clinic.address}</p>
+        {clinic.city ? <p className="text-[10px] text-slate-400">{clinic.city}</p> : null}
       </div>
 
       <div className="space-y-3 px-4 py-3.5 sm:px-5">
@@ -178,6 +168,7 @@ export function ClinicReachCard({ clinic, clinicName, compact, onStartEvidenceGp
               </div>
             </div>
 
+            {/* نقشه فقط بعد از فاصله، کنار مسیریابی */}
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
@@ -187,6 +178,14 @@ export function ClinicReachCard({ clinic, clinicName, compact, onStartEvidenceGp
               >
                 <Navigation className="h-4 w-4" />
                 مسیریابی
+              </button>
+              <button
+                type="button"
+                onClick={() => openOsmMap({ lat: clinic.lat, lon: clinic.lon })}
+                className="secondary-button"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                نقشه
               </button>
               <button
                 type="button"

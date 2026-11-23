@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal EnableExtensions EnableDelayedExpansion
 REM /*
 REM  File: server/publish.bat
-REM  Description: نقطهٔ ورود واحد انتشار — تست قبل‌از‌انتشار سپس اسکلت، بیلد، rsync اختیاری؛ در خطا pause؛ در موفقیت خلاصه + ۲۰ثانیه (Esc=باز بماند)
+REM  Description: نقطهٔ ورود واحد انتشار — تست، اسکلت، بیلد، rsync بدون .env پرشده؛ در خطا pause؛ در موفقیت خلاصه + ۲۰ثانیه (Esc=باز بماند)
 REM  Parent Dependencies: sync.config.bat, pre-publish-tests.bat, init-server-structure.bat, sync-deploy.bat, deploy-rsync-exclude.txt
 REM */
 
@@ -51,6 +51,10 @@ if errorlevel 1 (
 echo.
 
 echo --- [3/4] copy to Linux ---
+REM .env پرشده هرگز در پکیج نیست؛ اگر لوکال مانده، rsync exclude می‌کند تا سرور دیگر خراب نشود
+if exist "%SERVER_ROOT%\api\.env" echo [WARN] local api\.env exists - excluded from rsync ^(per-host only^)
+if exist "%SERVER_ROOT%\my\.env" echo [WARN] local my\.env exists - excluded from rsync
+if exist "%SERVER_ROOT%\news\.env" echo [WARN] local news\.env exists - excluded from rsync
 if defined DEPLOY_REMOTE if not "%DEPLOY_REMOTE%"=="" (
   where rsync >nul 2>&1
   if errorlevel 1 (
@@ -78,6 +82,10 @@ echo   خلاصهٔ انتشار — موفق
 echo ========================================
 echo [OK] publish pipeline finished
 echo URLs: my=%MY_PUBLIC_URL%  news=%NEWS_PUBLIC_URL%  api=%API_PUBLIC_URL%
+echo.
+echo Package ships .env.example only — never a filled .env.
+echo On each Linux host: keep that host's api\.env ^(FrontendUrls / MSSQL^); publish will not overwrite it.
+echo If CORS origin changed: edit FrontendUrls__My on THAT host then restart api container.
 echo.
 echo === On Linux host ^(after copy^) ===
 echo   cd api  ^&^& sudo docker compose up -d --build

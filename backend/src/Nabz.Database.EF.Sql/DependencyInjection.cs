@@ -25,8 +25,9 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IClinicRepository, ClinicRepository>();
+        services.AddScoped<IClinicStationRepository, ClinicStationRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();
-        services.AddScoped<IPathwayLibraryRuleRepository, PathwayLibraryRuleRepository>();
+        services.AddScoped<IPathwayCatalogRepository, PathwayCatalogRepository>();
         services.AddScoped<IPatientRepository, PatientRepository>();
         services.AddScoped<IPatientProfileRevisionRepository, PatientProfileRevisionRepository>();
         services.AddScoped<IFormRepository, FormRepository>();

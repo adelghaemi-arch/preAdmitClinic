@@ -1,7 +1,7 @@
 /*
  File: backend/src/Nabz.Infrastructure/DependencyInjection.cs
  Description: ثبت سرویس‌های دامنه، SMS چندسامانه‌ای و Options
- Parent Dependencies: ClinicRoutingSmsSender, ClinicSmsDispatch, KavenegarTemplateSmsSender, ToubaUrlSmsSender
+ Parent Dependencies: ClinicRoutingSmsSender, ClinicSmsDispatch, KavenegarTemplateSmsSender, ToubaSoapSmsSender
  */
 
 using Microsoft.Extensions.Configuration;
@@ -10,6 +10,7 @@ using Nabz.Application.Abstractions;
 using Nabz.Application.Interfaces;
 using Nabz.Application.Options;
 using Nabz.Infrastructure.Abuse;
+using Nabz.Infrastructure.Pdf;
 using Nabz.Infrastructure.Services;
 using Nabz.Infrastructure.Sms;
 using Nabz.Infrastructure.Storage;
@@ -24,18 +25,22 @@ public static class DependencyInjection
         services.Configure<KavenegarOptions>(configuration.GetSection(KavenegarOptions.SectionName));
         services.Configure<FrontendUrlsOptions>(configuration.GetSection(FrontendUrlsOptions.SectionName));
         services.Configure<ApiAbuseOptions>(configuration.GetSection(ApiAbuseOptions.SectionName));
+        services.Configure<PlaywrightPdfOptions>(configuration.GetSection(PlaywrightPdfOptions.SectionName));
 
         services.AddHttpClient<KavenegarTemplateSmsSender>();
-        services.AddHttpClient<ToubaUrlSmsSender>();
+        services.AddSingleton<ToubaSoapSmsSender>();
         services.AddScoped<ISmsSender, ClinicRoutingSmsSender>();
         services.AddScoped<IClinicSmsDispatch, ClinicSmsDispatch>();
 
         services.AddSingleton<IApiAbuseMemoryStore, ApiAbuseMemoryStore>();
         services.AddScoped<IApiAbuseGuardService, ApiAbuseGuardService>();
         services.AddScoped<IClinicService, ClinicService>();
+        services.AddScoped<IClinicStationService, ClinicStationService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IContractService, ContractService>();
-        services.AddScoped<IPathwayLibraryRuleService, PathwayLibraryRuleService>();
+        services.AddScoped<IIntakePdfService, IntakePdfService>();
+        services.AddSingleton<IBrowserPdfRenderer, PlaywrightBrowserPdfRenderer>();
+        services.AddScoped<IPathwayService, PathwayService>();
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IFormService, FormService>();
         services.AddScoped<IEvidenceService, EvidenceService>();

@@ -95,6 +95,7 @@ const FIELD_ALIASES: Record<ImportFieldKey, string[]> = {
   pathwayCodeOrGroup: ["گروه", "کد مسیر", "مسیر سلامتی", "pathway", "pathwaycode", "package"],
 };
 
+/** «روز مراجعه» در فایل‌های HR معمولاً نام روز هفته است (شنبه/…)، نه تاریخ — نادیده گرفته می‌شود. */
 const IGNORE_HEADER_ALIASES = ["ردیف", "row", "ردیف ", "#", "شماره", "روز مراجعه"];
 
 export interface ImportPreviewRow {

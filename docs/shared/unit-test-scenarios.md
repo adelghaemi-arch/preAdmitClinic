@@ -33,7 +33,7 @@
 
 ---
 
-## ۱ — Owner (سلامتجو) — ۱۱ UC
+## ۱ — Owner (سلامتجو)
 
 مرجع: [`01-owner.md`](../processes/use-cases/01-owner.md)
 
@@ -41,8 +41,8 @@
 |-------|-------|-------|---------|----------|------------------------|---------------------------|
 | UC-OWN-01 | UT-BE-OWN-01 | UT-FE-OWN-01 | SMK-API-OWN-01 | اصلی؛ **2x** شماره ثبت‌نشده؛ **4x** کد غلط/منقضی؛ UI دمو فقط با FixedOtp (`otp/mode`) | `…/Owner/UcOwn01_AuthOtpTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
 | UC-OWN-02 | UT-BE-OWN-02 | UT-FE-OWN-02 | SMK-API-OWN-02 | اصلی (snapshot وضعیت ثبت/پیش‌پذیرش) | `…/Owner/UcOwn02_IntakeSnapshotTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
-| UC-OWN-03 | UT-BE-OWN-03 | UT-FE-OWN-03 | — | اصلی؛ **2x** زیر ageMin؛ **2a** بدون draft→prefill؛ hydrate سرور بر prefill؛ **3x** غیر-self؛ فیلتر تاهل/سن≥۵۰ | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn03_04_FormResponseTests.cs` (+ ADM-19 evaluator) | `frontend/src/lib/__tests__/uc-form-engine.test.ts`؛ `frontend/src/lib/__tests__/uc-own-03-hydrate.test.ts` |
-| UC-OWN-04 | UT-BE-OWN-04 | UT-FE-OWN-04 | — | اصلی؛ **3x** شکست اعتبارسنجی submit | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn04_FormSubmitTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
+| UC-OWN-03 | UT-BE-OWN-03 | UT-FE-OWN-03 | — | اصلی؛ **2x** زیر ageMin؛ **2a** بدون draft→prefill (نام/سکونت/تولد/تاهل)؛ hydrate سرور بر prefill؛ draft خالی پروفایل را نپوشاند؛ **3x** غیر-self؛ فیلتر تاهل/سن≥۵۰ | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn03_04_FormResponseTests.cs` (+ ADM-19 evaluator) | `frontend/src/lib/__tests__/uc-form-engine.test.ts`؛ `frontend/src/lib/__tests__/uc-own-03-hydrate.test.ts` |
+| UC-OWN-04 | UT-BE-OWN-04 | UT-FE-OWN-04 | — | اصلی؛ **3x** شکست اعتبارسنجی؛ مهر سروری `formDate` + نادیده گرفتن مقدار کلاینت | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn03_04_FormResponseTests.cs` | `frontend/src/lib/__tests__/uc-form-engine.test.ts`؛ `frontend/src/lib/__tests__/uc-own.test.ts` |
 | UC-OWN-05 | UT-BE-OWN-05 | UT-FE-OWN-05 | — | اصلی؛ گالری بدون capture + زوم/layout؛ **2a** هم‌زمان ضدتقلب (UC-OWN-09)؛ hydrate قبل از photo gate؛ حفظ adjust با تغییر fraudWatch | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn05_PatientPhotoTests.cs` | `frontend/src/lib/__tests__/uc-own-05-portrait-gallery.test.tsx`؛ `frontend/src/lib/__tests__/uc-own-05-photo-gate-hydrate.test.tsx` |
 | UC-OWN-06 | UT-BE-OWN-06 | UT-FE-OWN-06 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn06_IntakeDocGroupTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
 | UC-OWN-07 | UT-BE-OWN-07 | UT-FE-OWN-07 | — | اصلی؛ **1x** سقف فایل | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn07_IntakeDocFilesTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
@@ -50,6 +50,7 @@
 | UC-OWN-09 | UT-BE-OWN-09 | UT-FE-OWN-09 | SMK-API-OWN-09 | اصلی + پوشش NBZ1 / blob الزامی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn05_11_EvidenceAndSessionTests.cs` · `Security/FraudFrameWireCodecTests.cs` | `frontend/src/lib/__tests__/uc-own-09-fraud-wire.test.ts` |
 | UC-OWN-10 | UT-BE-OWN-10 | UT-FE-OWN-10 | — | اصلی RecordGps؛ آستانه/دو تریگر/idempotent در FE | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn05_11_EvidenceAndSessionTests.cs` (`UC_OWN_10_*`) | `frontend/src/lib/__tests__/owner-gps-watch.test.ts` |
 | UC-OWN-11 | UT-BE-OWN-11 | UT-FE-OWN-11 | — | اصلی (revoke خود / سایر نشست‌ها) | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Owner/UcOwn11_RevokeSessionTests.cs` | `frontend/src/lib/__tests__/uc-own.test.ts` |
+| UC-OWN-14 | UT-BE-OWN-14 | UT-FE-OWN-14 | — | itinerary در snapshot؛ confirm خارج از ترتیب؛ idempotent؛ **Na1** پیش‌پذیرش ناقص | `…/Owner/UcOwn14_PathwayItineraryTests.cs` | `frontend/src/lib/__tests__/uc-own-14.pathway-itinerary.test.ts` |
 
 **Smoke مشترک Owner/SUP:** `backend/tests/Nabz.Api.Tests/Smoke/AuthOtpSmokeTests.cs` (MSSQL لوکال + Migrate + FixedOtp؛ بدون SMS)
 
@@ -61,12 +62,12 @@
 
 | UC-ID | UT-BE | UT-FE | SMK-API | سناریوها | فایل تست بک (expected) | فایل تست فرانت (expected) |
 |-------|-------|-------|---------|----------|------------------------|---------------------------|
-| UC-SPC-01 | UT-BE-SPC-01 | UT-FE-SPC-01 | — | اصلی؛ **2a** فهرست خالی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc01_PatientListTests.cs` | `frontend/src/lib/__tests__/uc-spc.test.ts` |
-| UC-SPC-02 | UT-BE-SPC-02 | UT-FE-SPC-02 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc02_SearchPatientTests.cs` | `frontend/src/lib/__tests__/uc-spc.test.ts` |
-| UC-SPC-03 | UT-BE-SPC-03 | UT-FE-SPC-03 | — | اصلی؛ **2a** عدم یافت با کد ملی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc03_NationalIdLookupTests.cs` | `frontend/src/lib/__tests__/uc-spc.test.ts` |
-| UC-SPC-04 | UT-BE-SPC-04 | UT-FE-SPC-04 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc04_OpenChartTests.cs` | `frontend/src/lib/__tests__/uc-spc.test.ts` |
-| UC-SPC-05 | UT-BE-SPC-05 | UT-FE-SPC-05 | — | اصلی؛ **2a** پیش‌پذیرش هنوز submitted نیست | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc05_IntakeResponsesTests.cs` | `frontend/src/lib/__tests__/uc-spc.test.ts` |
-| UC-SPC-06 | UT-BE-SPC-06 | UT-FE-SPC-06 | — | اصلی؛ **2a** بدون مدرک/عکس | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc06_IntakeMediaTests.cs` | `frontend/src/lib/__tests__/uc-spc.test.ts` |
+| UC-SPC-01 | UT-BE-SPC-01 | UT-FE-SPC-01 | — | اصلی؛ **2a** فهرست خالی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc01_06_PatientChartTests.cs` | `frontend/src/lib/__tests__/uc-spc.test.ts` + `uc-spc-directory-chart.test.ts` |
+| UC-SPC-02 | UT-BE-SPC-02 | UT-FE-SPC-02 | — | اصلی؛ موبایل/کدملی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc01_06_PatientChartTests.cs` | `frontend/src/lib/__tests__/uc-spc-directory-chart.test.ts` |
+| UC-SPC-03 | UT-BE-SPC-03 | UT-FE-SPC-03 | — | اصلی؛ **2a** عدم یافت با کد ملی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc01_06_PatientChartTests.cs` | `frontend/src/lib/__tests__/uc-spc.test.ts` |
+| UC-SPC-04 | UT-BE-SPC-04 | UT-FE-SPC-04 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc01_06_PatientChartTests.cs` | `frontend/src/lib/__tests__/uc-spc-directory-chart.test.ts` |
+| UC-SPC-05 | UT-BE-SPC-05 | UT-FE-SPC-05 | — | اصلی؛ **2a** draft پنهان؛ اولویت flags | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc01_06_PatientChartTests.cs` | `frontend/src/lib/__tests__/uc-spc-directory-chart.test.ts` |
+| UC-SPC-06 | UT-BE-SPC-06 | UT-FE-SPC-06 | — | اصلی؛ **2a** بدون مدرک/عکس | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Specialist/UcSpc01_06_PatientChartTests.cs` | `frontend/src/lib/__tests__/uc-spc-directory-chart.test.ts` |
 
 ---
 
@@ -77,11 +78,14 @@
 | UC-ID | UT-BE | UT-FE | SMK-API | سناریوها | فایل تست بک (expected) | فایل تست فرانت (expected) |
 |-------|-------|-------|---------|----------|------------------------|---------------------------|
 | UC-ADM-01 | UT-BE-ADM-01 | UT-FE-ADM-01 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm01_CreateContractTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
-| UC-ADM-22 | UT-BE-ADM-22 | UT-FE-ADM-22 | — | اصلی؛ **1x** عنوان کوتاه؛ **2x** قرارداد ناموجود | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm01_08_ContractTests.cs` | `frontend/src/lib/__tests__/uc-adm-22.update-contract.test.ts` |
-| UC-ADM-02 | UT-BE-ADM-02 | UT-FE-ADM-02 | — | اصلی | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm02_ContractSupervisorTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
+| UC-ADM-22 | UT-BE-ADM-22 | UT-FE-ADM-22 | — | اصلی؛ **1x** عنوان کوتاه؛ **2x** قرارداد ناموجود؛ آپلود لوگوی شریک + رد MIME | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm01_08_ContractTests.cs` | `frontend/src/lib/__tests__/uc-adm-22.update-contract.test.ts` |
+| UC-ADM-24 | UT-BE-ADM-24 | UT-FE-ADM-24 | — | Active↔Inactive؛ فعال از Draft؛ **1x** ناموجود؛ **2x** وضعیت غیرمجاز؛ فیلتر لیست FE | `…/Admin/UcAdm24_SetContractStatusTests.cs` | `frontend/src/lib/__tests__/uc-adm-24.contract-status.test.ts` |
+| UC-ADM-25 | UT-BE-ADM-25 | UT-FE-ADM-25 | — | ایجاد/ویرایش/غیرفعال؛ sync عنوان مسیر؛ **1x** کد تکراری/عنوان خالی؛ **2x** کلینیک دیگر؛ ناوبری rooms + فیلتر فعال FE | `…/Admin/UcAdm25_ClinicStationCatalogTests.cs` | `frontend/src/lib/__tests__/uc-adm-25.clinic-stations.test.ts` |
+| UC-ADM-26 | UT-BE-ADM-26 | UT-FE-ADM-26 | — | submitted-form + PDF با fake Chromium؛ HTML بدون همکار سازمانی؛ **1x/2x/3x**؛ گیت دکمه FE؛ brand | `…/Admin/UcAdm26_MemberSubmittedFormTests.cs` + `UcAdm26_IntakePdfChromiumTests.cs` | `frontend/src/lib/__tests__/uc-adm-26.intake-pdf.test.ts` |
+| UC-ADM-02 | UT-BE-ADM-02 | UT-FE-ADM-02 | — | اصلی؛ **1x** بدون کدملی؛ **1x** کدملی نامعتبر | `…/Admin/UcAdm01_08_ContractTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-03 | UT-BE-ADM-03 | UT-FE-ADM-03 | — | اصلی؛ **2x** خطای منبع sync | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm03_ContractApiSyncTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-04 | UT-BE-ADM-04 | UT-FE-ADM-04 | — | اصلی؛ **2a** تکراری؛ نام پدر/بازدید؛ گروه=کد مسیر؛ مپ هدر FE | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm01_08_ContractTests.cs` | `frontend/src/lib/__tests__/uc-adm-04.excel-header-map.test.ts` |
-| UC-ADM-04b | UT-BE-ADM-04b | UT-FE-ADM-04b | — | حذف قبل از پیش‌پذیرش؛ **2y** رد پس از لینک/پذیرش | `…/Admin/UcAdm01_08_ContractTests.cs` | `frontend/src/lib/__tests__/uc-adm-04b.member-delete-guard.test.ts` |
+| UC-ADM-04b | UT-BE-ADM-04b | UT-FE-ADM-04b | — | حذف قبل از پیش‌پذیرش؛ **2y** رد پس از لینک/پذیرش؛ خروجی گزارش `.xlsx` + تاریخ شمسی + کدملی/موبایل متن | `…/Admin/UcAdm01_08_ContractTests.cs` | `frontend/src/lib/__tests__/uc-adm-04b.member-delete-guard.test.ts` · `uc-adm-04b.contract-report-excel.test.ts` |
 | UC-ADM-05 | UT-BE-ADM-05 | UT-FE-ADM-05 | — | اصلی؛ اولویت؛ پیش‌فرض؛ override matched؛ recheck preview/apply؛ reorder FE | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm01_08_ContractTests.cs` (مسیر سلامتی) | `frontend/src/lib/__tests__/uc-adm-05.pathway-buckets.test.ts` |
 | UC-ADM-05b | UT-BE-ADM-05b | UT-FE-ADM-05b | — | کتابخانه مسیر؛ attach/stats/delete گارد | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm05b_PathwayLibraryRuleTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-06 | UT-BE-ADM-06 | UT-FE-ADM-06 | — | اصلی (دعوت گروهی؛ FixedOtp بدون SMS) | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm06_BulkInviteSmsTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
@@ -98,7 +102,7 @@
 | UC-ADM-17 | UT-BE-ADM-17 | UT-FE-ADM-17 | — | اصلی؛ **1x** هدف platform | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm17_SetUserActiveTests.cs` | `frontend/src/lib/__tests__/uc-adm.test.ts` |
 | UC-ADM-18 | UT-BE-ADM-18 | UT-FE-ADM-18 | SMK-API-ADM-18 | اصلی round-trip؛ **1x** بسته خالی؛ **3x** gender نامعتبر | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm18_FormPackageIoTests.cs` | `frontend/src/lib/__tests__/uc-adm-18.form-package.test.ts` |
 | UC-ADM-19 | UT-BE-ADM-19 | UT-FE-ADM-19 | — | اصلی import کاتالوگ CA؛ evaluator gender همه / marital / age | `backend/tests/Nabz.Infrastructure.Tests/UseCases/Admin/UcAdm19_FormMatrixCatalogTests.cs` | `frontend/src/lib/__tests__/uc-form-engine.test.ts` |
-| UC-ADM-21 | UT-BE-ADM-21 | — | — | ماسک secret؛ اعتبارسنجی طوبی | `…/Admin/UcAdm21_ClinicSmsSettingsTests.cs` | — |
+| UC-ADM-21 | UT-BE-ADM-21 | UT-FE-ADM-21 | — | ماسک secret؛ اعتبارسنجی طوبی؛ SOAP resolve؛ UserInfo حساب؛ آپلود لوگو؛ merge خطوط | `…/Admin/UcAdm21_ClinicSmsSettingsTests.cs` | `uc-adm-21.touba-account.test.ts` |
 | UC-ADM-23 | UT-BE-ADM-23 | UT-FE-ADM-23 | — | AppTemplate/Direct/ProviderTemplate؛ تست با None+`provider`؛ **1x** بدون Provider؛ **3x** mismatch حالت؛ **7x** مغایرت provider | `…/Admin/UcAdm23_ClinicSmsTestTests.cs` | `frontend/src/lib/__tests__/uc-adm-23.sms-test-gates.test.ts` |
 
 ---

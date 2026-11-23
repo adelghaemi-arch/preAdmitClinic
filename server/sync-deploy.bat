@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal EnableExtensions EnableDelayedExpansion
 REM /*
 REM  File: server/sync-deploy.bat
-REM  Description: بیلد/پابلیش و همگام‌سازی افزایشی به server/{my,news,api}؛ فقط منبع تازه‌تر overwrite؛ persist دست نخورده
+REM  Description: بیلد/پابلیش و همگام‌سازی افزایشی به server/{my,news,api}؛ فقط .env.example؛ persist/.env پرشده دست نخورده
 REM  Parent Dependencies: publish.bat, sync.config.bat, frontend, backend, _templates/write-deploy-files.ps1
 REM */
 
@@ -133,25 +133,24 @@ if exist "%SERVER_ROOT%\api\dist" (
 REM پوشهٔ publish را wipe نکن؛ dotnet فایل‌های تازه‌تر را به‌روز می‌کند و قدیمی‌های اضافی می‌مانند
 if not exist "%SERVER_ROOT%\api\publish" mkdir "%SERVER_ROOT%\api\publish" >nul 2>&1
 
-echo Publishing Nabz.Api ...
+echo Publishing Nabz.Api for linux-x64 Docker (Playwright linux drivers) ...
 pushd "%REPO_ROOT%\backend"
-dotnet publish "src\Nabz.Api\Nabz.Api.csproj" -c Release -o "%SERVER_ROOT%\api\publish" --nologo
+REM RID لینوکس لازم است تا .playwright/node/linux-x64 داخل publish بیاید (نه فقط win32)
+dotnet publish "src\Nabz.Api\Nabz.Api.csproj" -c Release -r linux-x64 --self-contained false -o "%SERVER_ROOT%\api\publish" --nologo
 set "PUB_ERR=!errorlevel!"
 popd
 if not "!PUB_ERR!"=="0" (
   echo [ERROR] dotnet publish failed
   exit /b 1
 )
-
-REM اگر .env وجود ندارد، از example کپی اولیه بساز (بدون بازنویسی سکرت موجود)
-if not exist "%SERVER_ROOT%\api\.env" (
-  if exist "%SERVER_ROOT%\api\.env.example" (
-    copy /y "%SERVER_ROOT%\api\.env.example" "%SERVER_ROOT%\api\.env" >nul
-    echo [INFO] created server\api\.env from .env.example - fill MSSQL credentials before docker compose up
-  )
+if not exist "%SERVER_ROOT%\api\publish\.playwright\node\linux-x64\node" (
+  echo [WARN] linux-x64 Playwright node missing after publish — Docker install script will fetch from NuGet
 ) else (
-  echo [INFO] kept existing server\api\.env
+  echo [OK] Playwright linux-x64 driver present in publish
 )
+
+REM پکیج فقط .env.example دارد؛ .env پرشده روی ویندوز ساخته نمی‌شود تا سرورهای مختلف خراب نشوند
+echo [INFO] api/.env is NOT created here - on each Linux host copy .env.example once and edit that host only
 
 set "DID_API=1"
 echo [OK] api -^> server\api\publish
@@ -174,7 +173,7 @@ if exist "%SERVER_ROOT%\api\uploads" echo [WARN] legacy server\api\uploads - mig
 if exist "%SERVER_ROOT%\news\data" echo [WARN] legacy server\news\data - migrate to persist\news-data
 echo On Linux ^(per folder^): sudo docker compose up -d --build
 echo Copy with: rsync -avu --exclude-from=deploy-rsync-exclude.txt
-echo API: never overwrite a filled .env; copy from .env.example once and set User Id/Password.
+echo API: package ships .env.example only; each host keeps its own .env ^(FrontendUrls / MSSQL^).
 exit /b 0
 
 :write_deploy

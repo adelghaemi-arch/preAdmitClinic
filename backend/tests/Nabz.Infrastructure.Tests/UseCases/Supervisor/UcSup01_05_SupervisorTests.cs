@@ -25,7 +25,7 @@ public sealed class UcSup01_05_SupervisorTests
         var contracts = h.CreateContractService(FixedOtp);
         var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", "SUP-1"));
         await contracts.UpdateSupervisorAsync(created.Id,
-            new UpdateSupervisorRequest("ناظر", "ناظر", SupervisorPhone, null, null, true));
+            new UpdateSupervisorRequest("ناظر", "ناظر", SupervisorPhone, null, "0012345679", true));
 
         var auth = h.CreateAuthService(FixedOtp);
         await auth.RequestOtpAsync(SupervisorPhone);
@@ -77,7 +77,7 @@ public sealed class UcSup01_05_SupervisorTests
         var contracts = h.CreateContractService(FixedOtp);
         var created = await contracts.CreateAsync(clinicId, new CreateContractRequest("قرارداد", "سازمان", null));
         await contracts.UpdateSupervisorAsync(created.Id,
-            new UpdateSupervisorRequest("ناظر", "ناظر", SupervisorPhone, null, null, true));
+            new UpdateSupervisorRequest("ناظر", "ناظر", SupervisorPhone, null, "0012345679", true));
         await contracts.ImportMembersAsync(created.Id,
         [
             new ImportMemberRequest("عضو", "تست", "0013542419", "09120002002", new DateOnly(1985, 1, 1), "زن", null, null, null, null)

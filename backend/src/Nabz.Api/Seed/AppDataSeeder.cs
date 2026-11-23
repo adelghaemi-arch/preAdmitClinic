@@ -1,7 +1,7 @@
 /*
  File: backend/src/Nabz.Api/Seed/AppDataSeeder.cs
- Description: seed idempotent دامنه، کتابخانه قوانین بسته و کاتالوگ فرم — startup و ریست فکتوری
- Parent Dependencies: NabzDbContext, IFormService, FormCatalogSeedParser, PlatformAdminIdentity
+ Description: seed دامنه، کاتالوگ مسیر سازمانی، کتابخانه قوانین و کاتالوگ فرم — startup و ریست فکتوری
+ Parent Dependencies: NabzDbContext, IFormService, FormCatalogSeedParser, PlatformAdminIdentity, HealthPathwayTitles, CorporatePathwayStationCatalog
  */
 
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +100,7 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
     await db.SaveChangesAsync(ct);
 
     var clinic = await db.Clinics.FirstAsync(c => c.IsCurrentTenant);
+    await EnsureClinicStationsAsync(clinic.Id, ct);
     if (!await db.Patients.AnyAsync(p => p.ClinicId == clinic.Id && p.PersonId == ownerPerson.Id))
     {
         db.Patients.Add(new Patient
@@ -151,7 +152,7 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
             Title = "قرارداد نمونه سازمانی",
             OrganizationName = "سازمان نمونه",
             Status = ContractStatus.Active,
-            DefaultPathwayCode = "FULL_CHECKUP"
+            DefaultPathwayCode = HealthPathwayTitles.DefaultCode
         };
         db.CorporateContracts.Add(demoContract);
         await db.SaveChangesAsync(ct);
@@ -240,8 +241,8 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
             Department = "اداری",
             JobCategory = "ستادی",
             OnboardingStage = OnboardingStage.LoggedIn,
-            AssignedPathwayCode = "FULL_CHECKUP",
-            AssignedPathwayTitle = "چکاپ جامع",
+            AssignedPathwayCode = HealthPathwayTitles.CorpWomenLt40,
+            AssignedPathwayTitle = HealthPathwayTitles.Resolve(HealthPathwayTitles.CorpWomenLt40),
             LinkedPatientId = ownerPatient?.Id,
             Source = "seed"
         });
@@ -406,93 +407,209 @@ public sealed class AppDataSeeder(NabzDbContext db, IFormService forms) : IAppDa
             Department = "فنی و مهندسی",
             JobCategory = "عملیات و فنی",
             OnboardingStage = OnboardingStage.NotSent,
-            AssignedPathwayCode = "FULL_CHECKUP",
-            AssignedPathwayTitle = "چکاپ جامع",
+            AssignedPathwayCode = HealthPathwayTitles.CorpMenGe40,
+            AssignedPathwayTitle = HealthPathwayTitles.Resolve(HealthPathwayTitles.CorpMenGe40),
             Source = "seed"
         });
         await db.SaveChangesAsync(ct);
     }
 
-    // سه مسیر سلامتی مرتبط در کتابخانه — هم‌تراز mock فرانت (LR-001..003)؛ idempotent روی Code
-    await SeedPathwayLibraryRulesAsync(ct);
+    // wipe + چهار قالب سازمانی و قوانین جنسیت×سن
+    await SeedCorporatePathwaysAsync(ct);
     }
 
-    private async Task SeedPathwayLibraryRulesAsync(CancellationToken ct)
+    private async Task SeedCorporatePathwaysAsync(CancellationToken ct)
     {
-        // سناریوی مرتبط: سالمندان جامع، بانوان قلب/ریه، مردان عملیاتی قبل از عمل
-        var seeds = new (string Code, string Title, string Description, string Gender, int? MinAge, int? MaxAge, string JobCategory, string PathwayCode)[]
+        // idempotent بر اساس Code — کتابخانه = خود PathwayDefinition؛ ایستگاه‌ها reconcile روی RoomCode
+        foreach (var c in CorporatePathwayStationCatalog.Entries)
         {
-            (
-                "LR-001",
-                "پایش سالمندان (بالای ۴۵ سال)",
-                "افراد ۴۵ سال به بالا — چکاپ جامع شامل قلب، ریه، دهان، آزمایشگاه و تصویربرداری",
-                "همه",
-                45,
-                null,
-                "همه",
-                "FULL_CHECKUP"
-            ),
-            (
-                "LR-002",
-                "بانوان زیر ۴۵ سال — پایش قلب و ریه",
-                "بانوان جوان و میانسال — بسته قلب و ریه با آزمایشگاه تخصصی",
-                "زن",
-                18,
-                44,
-                "همه",
-                "CARDIO_PULMO"
-            ),
-            (
-                "LR-003",
-                "مردان عملیات و فنی زیر ۴۵ سال",
-                "نیروهای عملیاتی در معرض گرد و غبار و مواد شیمیایی — پایش ریه، قلب و تاییدیه جراحی",
-                "مرد",
-                18,
-                44,
-                "عملیات و فنی",
-                "PRE_OP"
-            )
-        };
-
-        var added = false;
-        foreach (var s in seeds)
-        {
-            var existing = await db.PathwayLibraryRules.FirstOrDefaultAsync(r => r.Code == s.Code, ct);
-            if (existing is null)
+            var title = HealthPathwayTitles.Resolve(c.Code);
+            var def = await db.PathwayDefinitions.Include(x => x.Stations)
+                .FirstOrDefaultAsync(x => x.Code == c.Code, ct);
+            if (def is null)
             {
-                db.PathwayLibraryRules.Add(new PathwayLibraryRule
+                def = new PathwayDefinition
                 {
-                    Code = s.Code,
-                    Title = s.Title,
-                    Description = s.Description,
-                    Gender = s.Gender,
-                    MinAge = s.MinAge,
-                    MaxAge = s.MaxAge,
-                    JobCategory = s.JobCategory,
-                    PathwayCode = s.PathwayCode
-                });
-                added = true;
-                continue;
+                    Code = c.Code,
+                    Title = title,
+                    Description = c.Description,
+                    EstimatedTotalMinutes = c.EstimatedTotalMinutes,
+                    IsActive = true,
+                    IsInLibrary = true,
+                    Gender = c.Gender,
+                    MinAge = c.MinAge,
+                    MaxAge = c.MaxAge,
+                    JobCategory = "همه",
+                };
+                foreach (var s in c.Stations.OrderBy(x => x.StepOrder))
+                {
+                    def.Stations.Add(new PathwayStationDef
+                    {
+                        PathwayDefinitionId = def.Id,
+                        RoomCode = s.RoomCode,
+                        TitleFa = s.TitleFa,
+                        StepOrder = s.StepOrder,
+                        IsOptional = s.IsOptional,
+                    });
+                }
+                db.PathwayDefinitions.Add(def);
             }
-
-            // هم‌ترازی محتوای seed بدون ساخت ردیف تکراری
-            var touched = false;
-            if (existing.Title != s.Title) { existing.Title = s.Title; touched = true; }
-            if (existing.Description != s.Description) { existing.Description = s.Description; touched = true; }
-            if (existing.Gender != s.Gender) { existing.Gender = s.Gender; touched = true; }
-            if (existing.MinAge != s.MinAge) { existing.MinAge = s.MinAge; touched = true; }
-            if (existing.MaxAge != s.MaxAge) { existing.MaxAge = s.MaxAge; touched = true; }
-            if (existing.JobCategory != s.JobCategory) { existing.JobCategory = s.JobCategory; touched = true; }
-            if (existing.PathwayCode != s.PathwayCode) { existing.PathwayCode = s.PathwayCode; touched = true; }
-            if (touched)
+            else
             {
-                existing.UpdatedAt = DateTime.UtcNow;
-                added = true;
+                def.Title = title;
+                def.Description = c.Description;
+                def.EstimatedTotalMinutes = c.EstimatedTotalMinutes;
+                def.IsActive = true;
+                def.IsInLibrary = true;
+                def.Gender = c.Gender;
+                def.MinAge = c.MinAge;
+                def.MaxAge = c.MaxAge;
+                def.JobCategory = "همه";
+                def.UpdatedAt = DateTime.UtcNow;
+                await ReconcileCorporateStationsAsync(def, c.Stations, ct);
             }
         }
 
-        if (added)
-            await db.SaveChangesAsync(ct);
+        // قرارداد دمو: پیش‌فرض + هم‌ترازی کد مسیر اعضای seed
+        var demo = await db.CorporateContracts.FirstOrDefaultAsync(c => c.Code == "DEMO-ORG", ct);
+        if (demo is not null)
+        {
+            demo.DefaultPathwayCode = HealthPathwayTitles.DefaultCode;
+            demo.UpdatedAt = DateTime.UtcNow;
+            var members = await db.ContractMembers.Include(m => m.Person)
+                .Where(m => m.ContractId == demo.Id).ToListAsync(ct);
+            foreach (var m in members)
+            {
+                var age = AgeCalculator.FromBirthDate(m.Person.BirthDate);
+                var gender = m.Person.Gender ?? "";
+                string code;
+                if (gender == "زن")
+                    code = age is >= 40 ? HealthPathwayTitles.CorpWomenGe40 : HealthPathwayTitles.CorpWomenLt40;
+                else
+                    code = age is >= 40 ? HealthPathwayTitles.CorpMenGe40 : HealthPathwayTitles.CorpMenLt40;
+                m.AssignedPathwayCode = code;
+                m.AssignedPathwayTitle = HealthPathwayTitles.Resolve(code);
+                m.MatchedPathwayTitle = null;
+                m.UpdatedAt = DateTime.UtcNow;
+                if (m.LinkedPatientId is Guid pid)
+                {
+                    var patient = await db.Patients.FirstOrDefaultAsync(p => p.Id == pid, ct);
+                    if (patient is not null)
+                    {
+                        patient.AssignedPathwayCode = code;
+                        patient.AssignedPathwayTitle = HealthPathwayTitles.Resolve(code);
+                        patient.UpdatedAt = DateTime.UtcNow;
+                    }
+                }
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>UC-ADM-25 — کاتالوگ ایستگاه کلینیک از کدهای مسیر سازمانی + مطب‌های نمونه.</summary>
+    private async Task EnsureClinicStationsAsync(Guid clinicId, CancellationToken ct)
+    {
+        var catalog = new Dictionary<string, (string Title, string Category, int Floor, string RoomNumber)>(
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var entry in CorporatePathwayStationCatalog.Entries)
+        {
+            foreach (var s in entry.Stations)
+            {
+                if (catalog.ContainsKey(s.RoomCode)) continue;
+                var category = s.RoomCode switch
+                {
+                    "LAB" or "ECG" or "US_ABD" or "US_BREAST" or "STRESS" or "PAP" or "RADIO" => "paraclinic",
+                    "HOSP_MEAL" => "hospitality",
+                    "REMOTE_REVIEW" => "remote",
+                    _ => "specialist",
+                };
+                catalog[s.RoomCode] = (s.TitleFa, category, 1, "");
+            }
+        }
+
+        // مطب‌های نمونهٔ mock که در مسیر سازمانی نیستند
+        catalog.TryAdd("PULMO", ("مطب فوق‌تخصصی ریه", "specialist", 2, "۲۰۶"));
+        catalog.TryAdd("DENTAL", ("کلینیک دندانپزشکی", "specialist", 3, "۳۰۲"));
+        catalog.TryAdd("RADIO", ("رادیولوژی و تصویربرداری دیجیتال", "paraclinic", 1, "۱۰۵"));
+        catalog.TryAdd("CARDIO", ("مطب تخصصی قلب و عروق", "specialist", 2, "۲۰۱"));
+        catalog.TryAdd("LAB", ("آزمایشگاه تشخیص طبی", "paraclinic", 1, "۱۰۲"));
+        catalog.TryAdd("ECG", ("نوار قلب (ECG)", "paraclinic", 2, "۲۰۴"));
+
+        var existing = await db.ClinicStations.Where(x => x.ClinicId == clinicId).ToListAsync(ct);
+        var byCode = existing.ToDictionary(x => x.Code, StringComparer.OrdinalIgnoreCase);
+        var sort = 1;
+        foreach (var (code, meta) in catalog.OrderBy(kv => kv.Key))
+        {
+            if (byCode.ContainsKey(code)) continue;
+            db.ClinicStations.Add(new ClinicStation
+            {
+                ClinicId = clinicId,
+                Code = code.ToUpperInvariant(),
+                TitleFa = meta.Title,
+                Category = meta.Category,
+                Floor = meta.Floor,
+                RoomNumber = meta.RoomNumber,
+                IsActive = true,
+                SortOrder = sort++,
+            });
+        }
+
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// هم‌ترازی ایستگاه‌ها با کاتالوگ: upsert روی RoomCode، حذف اضافه‌ها پس از پاک کردن progress وابسته.
+    /// Guid تعریف مسیر حفظ می‌شود تا LibraryPathwayId قرارداد نشکند.
+    /// </summary>
+    private async Task ReconcileCorporateStationsAsync(
+        PathwayDefinition def,
+        IReadOnlyList<CorporatePathwayStationSpec> desired,
+        CancellationToken ct)
+    {
+        var desiredCodes = desired.Select(s => s.RoomCode).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var existingByCode = def.Stations
+            .GroupBy(s => s.RoomCode, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+
+        var toRemove = def.Stations
+            .Where(s => !desiredCodes.Contains(s.RoomCode))
+            .ToList();
+        if (toRemove.Count > 0)
+        {
+            var removeIds = toRemove.Select(s => s.Id).ToList();
+            var orphanProgress = await db.PatientPathwayStationProgresses
+                .Where(p => removeIds.Contains(p.PathwayStationDefId))
+                .ToListAsync(ct);
+            if (orphanProgress.Count > 0)
+                db.PatientPathwayStationProgresses.RemoveRange(orphanProgress);
+            db.PathwayStationDefs.RemoveRange(toRemove);
+            foreach (var s in toRemove)
+                def.Stations.Remove(s);
+        }
+
+        foreach (var spec in desired.OrderBy(s => s.StepOrder))
+        {
+            if (existingByCode.TryGetValue(spec.RoomCode, out var row))
+            {
+                row.TitleFa = spec.TitleFa;
+                row.StepOrder = spec.StepOrder;
+                row.IsOptional = spec.IsOptional;
+                row.UpdatedAt = DateTime.UtcNow;
+            }
+            else
+            {
+                def.Stations.Add(new PathwayStationDef
+                {
+                    PathwayDefinitionId = def.Id,
+                    RoomCode = spec.RoomCode,
+                    TitleFa = spec.TitleFa,
+                    StepOrder = spec.StepOrder,
+                    IsOptional = spec.IsOptional,
+                });
+            }
+        }
     }
 
     /// <summary>

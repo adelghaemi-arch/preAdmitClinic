@@ -1,13 +1,14 @@
 ﻿/*
  File: backend/src/Nabz.Infrastructure/Services/ContractService.cs
- Description: قرارداد (ایجاد/ویرایش پایه)، اعضا، قیف onboarding + formStatus پیشرفت پرسشنامه
- Parent Dependencies: IContractRepository, IPatientRepository, IUserRepository, IPersonRepository, ISmsSender, AuthOptions
+ Description: قرارداد (ایجاد/ویرایش پایه)، اعضا، قیف onboarding + formStatus + PDF پرسشنامه submitted
+ Parent Dependencies: IContractRepository, IFormRepository, IPatientRepository, ISmsSender, AuthOptions
  */
 
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nabz.Application.Abstractions;
+using Nabz.Application.Brand;
 using Nabz.Application.Common;
 using Nabz.Application.Identity;
 using Nabz.Application.Interfaces;
@@ -21,12 +22,14 @@ namespace Nabz.Infrastructure.Services;
 
 public sealed class ContractService(
     IContractRepository contracts,
-    IPathwayLibraryRuleRepository libraryRules,
+    IPathwayCatalogRepository pathwayCatalog,
     IPatientRepository patients,
     IUserRepository users,
     IPersonRepository persons,
     IClinicRepository clinics,
+    IFormRepository forms,
     ISmsCampaignTemplateRepository smsTemplates,
+    IFileStorage files,
     IUnitOfWork uow,
     ISmsSender sms,
     IOptions<AuthOptions> authOptions,
@@ -41,7 +44,7 @@ public sealed class ContractService(
             : request.Code!.Trim();
         // بدون قانون، همه اعضا همین مسیر اصلی را می‌گیرند
         var defaultPkg = string.IsNullOrWhiteSpace(request.DefaultPathwayCode)
-            ? "FULL_CHECKUP"
+            ? HealthPathwayTitles.DefaultCode
             : request.DefaultPathwayCode!.Trim();
         var entity = new CorporateContract
         {
@@ -77,30 +80,78 @@ public sealed class ContractService(
         return Map(contract);
     }
 
+    public async Task<ContractDto> SetStatusAsync(Guid contractId, bool isActive, CancellationToken ct = default)
+    {
+        var contract = await contracts.GetByIdAsync(contractId, ct: ct)
+            ?? throw new InvalidOperationException("قرارداد یافت نشد.");
+        if (isActive)
+        {
+            // فعال‌سازی فقط از Inactive یا Draft
+            if (contract.Status is not (ContractStatus.Inactive or ContractStatus.Draft))
+                throw new InvalidOperationException(
+                    contract.Status == ContractStatus.Active
+                        ? "این قرارداد هم‌اکنون فعال است."
+                        : "فقط قراردادهای پیش‌نویس یا غیرفعال را می‌توان فعال کرد.");
+            contract.Status = ContractStatus.Active;
+        }
+        else
+        {
+            // غیرفعال فقط از Active → Completed دست نخورده می‌ماند
+            if (contract.Status != ContractStatus.Active)
+                throw new InvalidOperationException(
+                    contract.Status == ContractStatus.Inactive
+                        ? "این قرارداد هم‌اکنون غیرفعال است."
+                        : "فقط قرارداد فعال را می‌توان غیرفعال کرد.");
+            contract.Status = ContractStatus.Inactive;
+        }
+        contract.UpdatedAt = DateTime.UtcNow;
+        await uow.SaveChangesAsync(ct);
+        return Map(contract);
+    }
+
     public async Task UpdateSupervisorAsync(Guid contractId, UpdateSupervisorRequest request, CancellationToken ct = default)
     {
         var contract = await contracts.GetByIdAsync(contractId, ct: ct)
             ?? throw new InvalidOperationException("قرارداد یافت نشد.");
+        var first = (request.FirstName ?? "").Trim();
+        var last = (request.LastName ?? "").Trim();
+        if (first.Length < 2 || last.Length < 2)
+            throw new InvalidOperationException("نام و نام‌خانوادگی ناظر را وارد کنید.");
         var supPhone = IranMobile.Normalize(request.Phone);
         if (!IranMobile.IsValid(supPhone))
             throw new InvalidOperationException("شماره موبایل ناظر نامعتبر است.");
-        var supNid = string.IsNullOrWhiteSpace(request.NationalId)
-            ? null
-            : IranNationalId.Normalize(request.NationalId);
+        // کدملی ناظر اجباری است (UC-ADM-02) — بدون آن Person مبهم می‌شود
+        if (string.IsNullOrWhiteSpace(request.NationalId))
+            throw new InvalidOperationException("کدملی ناظر الزامی است.");
+        var supNid = IranNationalId.Normalize(request.NationalId);
+        if (!IranNationalId.IsValid(supNid))
+            throw new InvalidOperationException("کدملی ناظر نامعتبر است.");
         var supPerson = await PersonEnsureHelper.EnsurePersonAsync(persons, new PersonEnsureHelper.IdentityInput(
-            supPhone, supNid, request.FirstName.Trim(), request.LastName.Trim(), null, null), ct);
+            supPhone, supNid, first, last, null, null), ct);
 
+        // PersonId از ابتدا ست شود؛ Guid.Empty + بعداً Person nav → DbUpdateConcurrencyException (۰ ردیف)
         if (contract.Supervisor is null)
         {
-            contract.Supervisor = new ContractSupervisor { ContractId = contract.Id };
+            contract.Supervisor = new ContractSupervisor
+            {
+                ContractId = contract.Id,
+                PersonId = supPerson.Id,
+                Title = request.Title,
+                CanSendReminders = request.CanSendReminders,
+                IsActive = true,
+                AssignedAt = DateTime.UtcNow,
+            };
         }
-        contract.Supervisor.PersonId = supPerson.Id;
-        contract.Supervisor.Person = supPerson;
-        contract.Supervisor.Title = request.Title;
-        contract.Supervisor.CanSendReminders = request.CanSendReminders;
-        contract.Supervisor.IsActive = true;
-        contract.Supervisor.AssignedAt = DateTime.UtcNow;
-        contract.Supervisor.UpdatedAt = DateTime.UtcNow;
+        else
+        {
+            // فقط FK؛ navigation لودشده را دست نزن تا EF UPDATE اشتباه روی Person نزند
+            contract.Supervisor.PersonId = supPerson.Id;
+            contract.Supervisor.Title = request.Title;
+            contract.Supervisor.CanSendReminders = request.CanSendReminders;
+            contract.Supervisor.IsActive = true;
+            contract.Supervisor.AssignedAt = DateTime.UtcNow;
+            contract.Supervisor.UpdatedAt = DateTime.UtcNow;
+        }
         contract.UpdatedAt = DateTime.UtcNow;
         await uow.SaveChangesAsync(ct);
     }
@@ -332,7 +383,7 @@ public sealed class ContractService(
     {
         var member = await contracts.GetMemberByIdAsync(memberId, ct)
             ?? throw new InvalidOperationException("عضو یافت نشد.");
-        var code = string.IsNullOrWhiteSpace(pathwayCode) ? HealthPathwayTitles.FullCheckupCode : pathwayCode.Trim();
+        var code = string.IsNullOrWhiteSpace(pathwayCode) ? HealthPathwayTitles.DefaultCode : pathwayCode.Trim();
         var title = string.IsNullOrWhiteSpace(pathwayTitle) ? null : pathwayTitle.Trim();
         member.AssignedPathwayCode = code;
         member.AssignedPathwayTitle = HealthPathwayTitles.Resolve(code, title);
@@ -533,7 +584,7 @@ public sealed class ContractService(
             contract.PathwayRules.Add(new ContractPathwayRule
             {
                 ContractId = contractId,
-                LibraryRuleId = r.LibraryRuleId,
+                LibraryPathwayId = r.LibraryPathwayId,
                 Title = r.Title,
                 Gender = r.Gender,
                 MinAge = r.MinAge,
@@ -552,33 +603,35 @@ public sealed class ContractService(
         return result;
     }
 
-    public async Task<PathwayRulesReapplyResult> AttachLibraryRulesAsync(Guid contractId, IReadOnlyList<Guid> libraryRuleIds, CancellationToken ct = default)
+    public async Task<PathwayRulesReapplyResult> AttachLibraryPathwaysAsync(Guid contractId, IReadOnlyList<Guid> libraryPathwayIds, CancellationToken ct = default)
     {
         var contract = await contracts.GetByIdAsync(contractId, includeMembers: true, ct)
             ?? throw new InvalidOperationException("قرارداد یافت نشد.");
         var existingLibIds = contract.PathwayRules
-            .Where(r => r.LibraryRuleId.HasValue)
-            .Select(r => r.LibraryRuleId!.Value)
+            .Where(r => r.LibraryPathwayId.HasValue)
+            .Select(r => r.LibraryPathwayId!.Value)
             .ToHashSet();
         var nextPriority = contract.PathwayRules.Count == 0
             ? 1
             : contract.PathwayRules.Max(r => r.Priority) + 1;
 
-        foreach (var libId in libraryRuleIds.Distinct())
+        foreach (var libId in libraryPathwayIds.Distinct())
         {
             if (existingLibIds.Contains(libId)) continue;
-            var lib = await libraryRules.GetByIdAsync(libId, ct)
-                ?? throw new InvalidOperationException("قانون کتابخانه یافت نشد.");
+            var lib = await pathwayCatalog.GetByIdAsync(libId, includeStations: false, ct)
+                ?? throw new InvalidOperationException("مسیر کتابخانه یافت نشد.");
+            if (!lib.IsInLibrary || !lib.IsActive)
+                throw new InvalidOperationException("این مسیر در کتابخانه فعال نیست.");
             var rule = new ContractPathwayRule
             {
                 ContractId = contractId,
-                LibraryRuleId = lib.Id,
+                LibraryPathwayId = lib.Id,
                 Title = lib.Title,
                 Gender = lib.Gender,
                 MinAge = lib.MinAge,
                 MaxAge = lib.MaxAge,
                 JobCategory = lib.JobCategory,
-                PathwayCode = lib.PathwayCode,
+                PathwayCode = lib.Code,
                 Priority = nextPriority++
             };
             await contracts.AddPathwayRuleAsync(rule, ct);
@@ -754,7 +807,7 @@ public sealed class ContractService(
         var code = (raw ?? "").Trim();
         if (code.Length == 0) return false;
 
-        var known = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { HealthPathwayTitles.FullCheckupCode };
+        var known = new HashSet<string>(HealthPathwayTitles.Titles.Keys, StringComparer.OrdinalIgnoreCase);
         if (!string.IsNullOrWhiteSpace(contract.DefaultPathwayCode))
             known.Add(contract.DefaultPathwayCode.Trim());
         foreach (var rule in contract.PathwayRules ?? Array.Empty<ContractPathwayRule>())
@@ -801,6 +854,60 @@ public sealed class ContractService(
             members.Count(m => m.LinkedPatientId.HasValue),
             formStatuses.Count(s => s == "Draft"),
             formStatuses.Count(s => s == "Submitted"));
+    }
+
+    public async Task<MemberSubmittedFormDto?> GetMemberSubmittedFormAsync(
+        Guid contractId, Guid memberId, CancellationToken ct = default)
+    {
+        var member = await contracts.GetMemberByIdAsync(memberId, ct);
+        // عضو باید دقیقاً متعلق به همان قرارداد باشد
+        if (member is null || member.ContractId != contractId)
+            return null;
+
+        if (member.LinkedPatientId is not Guid patientId)
+            throw new InvalidOperationException("این عضو هنوز به پرونده بیمار لینک نشده است.");
+
+        var contract = member.Contract
+            ?? await contracts.GetByIdAsync(contractId, includeMembers: false, ct)
+            ?? throw new InvalidOperationException("قرارداد یافت نشد.");
+
+        var formList = await forms.ListByClinicAsync(contract.ClinicId, ct);
+        var publishedForms = formList.Where(f => f.Status == FormPublishStatus.Published).ToList();
+        if (publishedForms.Count == 0)
+            return null;
+
+        // چند فرم Published (مثلاً مرد/زن): اولین پاسخ Submitted را برمی‌گردانیم
+        FormDefinition? matchedForm = null;
+        FormResponse? response = null;
+        foreach (var form in publishedForms)
+        {
+            var candidate = await forms.GetResponseAsync(patientId, form.Id, ct);
+            if (candidate is null || candidate.Status != FormResponseStatus.Submitted)
+                continue;
+            matchedForm = form;
+            response = candidate;
+            break;
+        }
+        if (matchedForm is null || response is null)
+            return null;
+
+        var person = member.Person;
+        return new MemberSubmittedFormDto(
+            member.Id,
+            contractId,
+            patientId,
+            matchedForm.Id,
+            matchedForm.Code,
+            matchedForm.Title,
+            response.SubmittedAt,
+            PersonName.Display(person.FirstName, person.LastName),
+            person.NationalId ?? "",
+            AgeCalculator.FromBirthDate(person.BirthDate),
+            person.Gender,
+            contract.OrganizationName,
+            response.Answers
+                .Select(a => new FormAnswerInput(a.ItemCode, a.ValueCode, a.ValueRaw, a.Notes, a.SkippedByRule))
+                .ToList());
     }
 
     /// <summary>
@@ -865,7 +972,7 @@ public sealed class ContractService(
         if (rule is null)
         {
             var code = string.IsNullOrWhiteSpace(contract.DefaultPathwayCode)
-                ? HealthPathwayTitles.FullCheckupCode
+                ? HealthPathwayTitles.DefaultCode
                 : contract.DefaultPathwayCode!;
             var title = HealthPathwayTitles.Resolve(code);
             return new ProposedPathway(code, title, null);
@@ -884,6 +991,42 @@ public sealed class ContractService(
         member.MatchedPathwayTitle = proposed.MatchedTitle;
     }
 
+    public async Task<ContractPartnerLogoUploadResult> UploadPartnerLogoAsync(
+        Guid contractId, Stream content, string fileName, string contentType, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        await using var ms = new MemoryStream();
+        await content.CopyToAsync(ms, ct);
+        BrandLogoRules.EnsureValidUpload(contentType, ms.Length);
+        ms.Position = 0;
+
+        var contract = await contracts.GetByIdAsync(contractId, ct: ct)
+            ?? throw new InvalidOperationException("قرارداد یافت نشد.");
+
+        var ext = BrandLogoRules.NormalizeExtension(contentType, fileName);
+        var canonical = $"partner-logo{ext}";
+        var stored = await files.SaveAsync(
+            ms,
+            fileName,
+            contentType,
+            new StorageSaveContext(
+                FolderOverride: BrandLogoRules.ContractFolder(contractId),
+                CanonicalFileName: canonical),
+            ct);
+
+        if (!string.IsNullOrWhiteSpace(contract.PartnerLogoStorageKey)
+            && !string.Equals(contract.PartnerLogoStorageKey, stored.StorageKey, StringComparison.Ordinal))
+        {
+            try { await files.DeleteAsync(contract.PartnerLogoStorageKey, ct); }
+            catch { /* بهترین‌تلاش */ }
+        }
+
+        contract.PartnerLogoStorageKey = stored.StorageKey;
+        contract.UpdatedAt = DateTime.UtcNow;
+        await uow.SaveChangesAsync(ct);
+        return new ContractPartnerLogoUploadResult(stored.StorageKey, stored.FileName, stored.ContentType, stored.SizeBytes);
+    }
+
     private static ContractDto Map(CorporateContract c, int? memberCount = null) => new(
         c.Id, c.Code, c.Title, c.OrganizationName, c.Status.ToString(),
         c.Supervisor?.Person.Mobile,
@@ -893,7 +1036,8 @@ public sealed class ContractService(
         (c.PathwayRules ?? Array.Empty<ContractPathwayRule>())
             .OrderBy(r => r.Priority)
             .Select(r => new ContractPathwayRuleDto(
-                r.Id, r.LibraryRuleId,
+                r.Id, r.LibraryPathwayId,
                 r.Title, r.Gender, r.MinAge, r.MaxAge, r.JobCategory, r.PathwayCode, r.Priority))
-            .ToList());
+            .ToList(),
+        c.PartnerLogoStorageKey);
 }

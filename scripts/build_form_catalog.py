@@ -206,7 +206,7 @@ def demographic_items(prefix: str, form_id: str, section_id: str):
     specs = [
         ("fullName", "نام و نام خانوادگی", "text", True, True),
         ("nationalId", "کدملی", "text", True, True),
-        ("birthDate", "تاریخ تولد", "date", False, False),
+        ("birthDate", "تاریخ تولد", "date", True, False),
         ("formDate", "تاریخ تکمیل پرسشنامه", "date", False, False),
         ("heightCm", "قد (سانتی‌متر)", "number", False, False),
         ("weightKg", "وزن (کیلوگرم)", "number", False, False),
@@ -215,7 +215,7 @@ def demographic_items(prefix: str, form_id: str, section_id: str):
         ("city", "شهر محل سکونت", "province_city", False, False),
         # آدرس ژئوکد + پلاک؛ جدا از province_city اداری
         ("residence", "آدرس محل سکونت (نقشه، پلاک، واحد، کد پستی)", "residence_address", True, False),
-        ("maritalStatus", "وضعیت تاهل", "select", False, False),
+        ("maritalStatus", "وضعیت تاهل", "select", True, False),
     ]
     items = []
     for i, (code, label, itype, prefill, readonly) in enumerate(specs, start=1):

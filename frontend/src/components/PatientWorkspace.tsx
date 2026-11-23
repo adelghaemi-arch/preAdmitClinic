@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { AppInput } from "@/components/AppInput";
 import { IranDigitField } from "@/components/IranDigitField";
-import { PersianDateField } from "@/components/PersianDateField";
+import { birthDateBounds, PersianDateField } from "@/components/PersianDateField";
 import {
   Check,
   Clipboard,
@@ -363,7 +363,14 @@ export function PatientWorkspace({ snapshot, selectedPatientId, onSelectPatient,
                   </label>
                   <label className="app-label col-span-2">
                     تاریخ تولد
-                    <PersianDateField className="mt-2" value={birthDate} onChange={setBirthDate} aria-label="تاریخ تولد" />
+                    <PersianDateField
+                      className="mt-2"
+                      value={birthDate}
+                      onChange={setBirthDate}
+                      minDate={birthDateBounds().minDate}
+                      maxDate={birthDateBounds().maxDate}
+                      aria-label="تاریخ تولد"
+                    />
                   </label>
                   <label className="app-label">
                     تأهل

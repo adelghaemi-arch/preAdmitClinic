@@ -38,7 +38,7 @@ describe("UC-ADM-22", () => {
         contractId: target.id,
         title: "عنوان ویرایش‌شده تست",
         organizationName: "سازمان ویرایش‌شده تست",
-        defaultPathwayCode: "CARDIO_PULMO",
+        defaultPathwayCode: "CORP_WOMEN_LT40",
       },
       "admin"
     );
@@ -47,7 +47,7 @@ describe("UC-ADM-22", () => {
     expect(target.code).toBe(codeBefore);
     expect(target.title).toBe("عنوان ویرایش‌شده تست");
     expect(target.organizationName).toBe("سازمان ویرایش‌شده تست");
-    expect(target.defaultPathwayCode).toBe("CARDIO_PULMO");
+    expect(target.defaultPathwayCode).toBe("CORP_WOMEN_LT40");
   });
 
   it("1x عنوان کوتاه را رد می‌کند", () => {

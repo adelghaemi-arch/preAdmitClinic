@@ -36,4 +36,10 @@ describe("UC-ADM-23", () => {
     expect(smsTestUnavailableHint("None", null)).toMatch(/تست/);
     expect(resolveSmsTestProviderParam("None", null)).toBeUndefined();
   });
+
+  it("Nb — گیت تست به FixedOtp وابسته نیست (فقط provider/target)", () => {
+    // دکمهٔ UI دیگر با fixedOtpEnabled قفل نمی‌شود؛ hint فقط از درگاه تست می‌آید
+    expect(smsTestUnavailableHint("None", "Touba")).toBeNull();
+    expect(resolveSmsTestProviderParam("Touba", "Kavenegar")).toBe("Touba");
+  });
 });

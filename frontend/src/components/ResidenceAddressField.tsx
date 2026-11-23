@@ -42,6 +42,8 @@ export function ResidenceAddressField({
   onEvidenceGpsStart,
 }: Props) {
   const [openMap, setOpenMap] = useState(false);
+  // اگر کاربر آدرس را دستی عوض کرده، تأیید نقشه نباید متن OSM را جایگزین کند
+  const [addressEdited, setAddressEdited] = useState(false);
   // draft بدون اجباری بودن پلاک تا بعد از نقشه مختصات از دست نرود
   const parsed = useMemo(() => parseResidenceAddressDraft(value), [value]);
   const draft: ResidenceAddressValue = parsed ?? {
@@ -87,6 +89,7 @@ export function ResidenceAddressField({
   };
 
   const onMapConfirm = (result: LocationPickResult) => {
+    // آدرس نهایی از پاپاپ می‌آید (قفل دستی آنجا اعمال شده؛ draft والد را دوباره تحمیل نکن)
     patch({ lat: result.lat, lon: result.lon, address: result.address });
     setOpenMap(false);
   };
@@ -131,6 +134,7 @@ export function ResidenceAddressField({
             className="app-input mt-1 text-xs"
             placeholder="مثلاً ۱۲"
             required={required}
+            enterKeyHint="next"
           />
         </label>
         <label className="app-label text-[11px]">
@@ -141,6 +145,7 @@ export function ResidenceAddressField({
             onChange={(e) => patch({ unit: e.target.value })}
             className="app-input mt-1 text-xs"
             placeholder="اختیاری"
+            enterKeyHint="next"
           />
         </label>
         <label className="app-label text-[11px]">
@@ -152,6 +157,7 @@ export function ResidenceAddressField({
             onValueChange={(v) => patch({ postalCode: v })}
             className="app-input mt-1 text-xs"
             placeholder="۱۰ رقم — برای ارسال جواب/آزمایش"
+            enterKeyHint="next"
           />
         </label>
       </div>
@@ -161,9 +167,13 @@ export function ResidenceAddressField({
         <AppInput
           value={draft.address}
           disabled={locked}
-          onChange={(e) => patch({ address: e.target.value })}
+          onChange={(e) => {
+            setAddressEdited(true);
+            patch({ address: e.target.value });
+          }}
           className="app-input mt-1 text-xs"
           placeholder="پس از انتخاب نقشه از OSM پر می‌شود"
+          enterKeyHint="next"
         />
       </label>
 
@@ -176,8 +186,12 @@ export function ResidenceAddressField({
       {openMap && !locked && (
         <LocationPickerPopup
           initial={
-            hasMapPoint ? { lat: draft.lat, lon: draft.lon, address: draft.address } : null
+            hasMapPoint || draft.address.trim()
+              ? { lat: draft.lat, lon: draft.lon, address: draft.address }
+              : null
           }
+          // متن موجود (دستی یا پس از رفرش) با reverse پین بازنویسی نشود؛ خالی‌کردن در پاپاپ قفل را باز می‌کند
+          preserveAddress={addressEdited || Boolean(draft.address.trim())}
           fallbackCenter={fallbackCenter}
           onConfirm={onMapConfirm}
           onClose={() => setOpenMap(false)}

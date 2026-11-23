@@ -1,19 +1,20 @@
 /*
  File: frontend/src/components/OwnerProfileForm.tsx
- Description: ویرایش پروفایل سلامتجو — دموگرافیک + عکس محلی تا ذخیره یکجا
- Parent Dependencies: ResidenceAddressField, PatientPhotoCapture, PersianDateField, api/patients
+ Description: ویرایش پروفایل سلامتجو؛ پرتره بلافاصله روی سرور + لود بعد از رفرش
+ Parent Dependencies: ResidenceAddressField, PatientPhotoCapture, PersianDateField, usePatientPortraitUrl
  */
 
 import { useMemo, useState, type FormEvent } from "react";
 import { AppInput } from "@/components/AppInput";
 import { PatientPhotoCapture } from "@/components/PatientPhotoCapture";
-import { PersianDateField } from "@/components/PersianDateField";
+import { birthDateBounds, PersianDateField } from "@/components/PersianDateField";
 import { ResidenceAddressField } from "@/components/ResidenceAddressField";
 import {
   postPatientPortrait,
   updateMyPatientProfile,
   uploadFileBlob,
 } from "@/lib/api/patients";
+import { usePatientPortraitUrl } from "@/hooks/usePatientPortraitUrl";
 import { buildResidenceFromPatient, parseResidenceAddress } from "@/lib/residence-address";
 import { Loader2 } from "lucide-react";
 import { MARITAL_STATUS_OPTIONS, normalizeMaritalStatus } from "@/lib/marital-status";
@@ -47,11 +48,17 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
     })
   );
   const [saving, setSaving] = useState(false);
-  // عکس فقط محلی تا «ذخیره پروفایل» — جلوگیری از آپلود فوری جدا از دموگرافیک
-  const [pendingPhotoDataUrl, setPendingPhotoDataUrl] = useState<string | null>(null);
+  const [photoSaving, setPhotoSaving] = useState(false);
+  // پیش‌نمایش فوری تا آپلود تمام شود
+  const [localPhotoDataUrl, setLocalPhotoDataUrl] = useState<string | null>(null);
 
   const phoneDisplay = useMemo(() => patient.phone, [patient.phone]);
-  const previewPhoto = pendingPhotoDataUrl || patient.photoDataUrl || null;
+  const storedPortrait = usePatientPortraitUrl({
+    ...patient,
+    photoDataUrl: localPhotoDataUrl || patient.photoDataUrl,
+  });
+  const previewPhoto = localPhotoDataUrl || storedPortrait.url || null;
+  const birthBounds = useMemo(() => birthDateBounds(), []);
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -73,7 +80,7 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
         homeUnit: applyHome ? home!.unit ?? null : null,
         homePostalCode: applyHome ? home!.postalCode ?? null : null,
       });
-      const patch: Partial<PatientFullDto> = {
+      onSaved({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         fatherName: fatherName.trim() || null,
@@ -86,19 +93,7 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
         homePlaque: applyHome ? home!.plaque : patient.homePlaque,
         homeUnit: applyHome ? home!.unit ?? null : patient.homeUnit,
         homePostalCode: applyHome ? home!.postalCode ?? null : patient.homePostalCode,
-      };
-      if (pendingPhotoDataUrl) {
-        if (!patient.serverId) throw new Error("شناسه سرور پرونده یافت نشد.");
-        const res = await fetch(pendingPhotoDataUrl);
-        const blob = await res.blob();
-        const uploaded = await uploadFileBlob(blob, "portrait.jpg", patient.serverId);
-        await postPatientPortrait(patient.serverId, uploaded.storageKey);
-        patch.photoDataUrl = pendingPhotoDataUrl;
-        patch.hasPortrait = true;
-        patch.portraitStorageKey = uploaded.storageKey;
-        setPendingPhotoDataUrl(null);
-      }
-      onSaved(patch);
+      });
     } catch (err) {
       onError(err instanceof Error ? err.message : "ذخیره پروفایل انجام نشد.");
     } finally {
@@ -106,12 +101,31 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
     }
   };
 
-  const onPhoto = (dataUrl: string) => {
+  // پرتره با تأیید بلافاصله روی سرور می‌رود تا رفرش آن را نگه دارد
+  const onPhoto = async (dataUrl: string) => {
     if (!patient.serverId) {
       onError("شناسه سرور پرونده یافت نشد.");
       return;
     }
-    setPendingPhotoDataUrl(dataUrl);
+    setLocalPhotoDataUrl(dataUrl);
+    setPhotoSaving(true);
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const uploaded = await uploadFileBlob(blob, "portrait.jpg", patient.serverId);
+      await postPatientPortrait(patient.serverId, uploaded.storageKey);
+      onSaved({
+        photoDataUrl: dataUrl,
+        hasPortrait: true,
+        portraitStorageKey: uploaded.storageKey,
+      });
+    } catch (err) {
+      setLocalPhotoDataUrl(null);
+      onError(err instanceof Error ? err.message : "ذخیره عکس روی سرور انجام نشد.");
+      throw err;
+    } finally {
+      setPhotoSaving(false);
+    }
   };
 
   return (
@@ -136,7 +150,14 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
         </label>
         <label className="app-label">
           تاریخ تولد
-          <PersianDateField className="mt-1" value={birthDate} onChange={setBirthDate} aria-label="تاریخ تولد" />
+          <PersianDateField
+            className="mt-1"
+            value={birthDate}
+            onChange={setBirthDate}
+            minDate={birthBounds.minDate}
+            maxDate={birthBounds.maxDate}
+            aria-label="تاریخ تولد"
+          />
         </label>
         <label className="app-label">
           وضعیت تأهل
@@ -164,9 +185,12 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
         {previewPhoto && (
           <img src={previewPhoto} alt="عکس پرونده" className="mb-3 h-28 w-auto rounded-lg border border-slate-200" />
         )}
-        {pendingPhotoDataUrl && (
-          <p className="mb-2 rounded-lg bg-teal-50 px-2 py-1.5 text-[10px] text-teal-800">
-            عکس جدید فقط محلی است؛ با «ذخیره پروفایل» به سرور می‌رود.
+        {storedPortrait.loading && !previewPhoto && (
+          <p className="mb-2 text-[10px] text-slate-400">در حال بارگذاری عکس ذخیره‌شده…</p>
+        )}
+        {patient.hasPortrait && storedPortrait.failed && !previewPhoto && (
+          <p className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5 text-[10px] text-amber-900">
+            عکس روی سرور هست ولی نمایش آن ممکن نشد؛ دوباره بگیرید یا صفحه را تازه کنید.
           </p>
         )}
         {!patient.serverId ? (
@@ -176,7 +200,7 @@ export function OwnerProfileForm({ patient, busy, onSaved, onError }: Props) {
         ) : (
           <PatientPhotoCapture
             patientName={patient.fullName}
-            busy={saving}
+            busy={busy || saving || photoSaving}
             onConfirm={(url) => onPhoto(url)}
           />
         )}

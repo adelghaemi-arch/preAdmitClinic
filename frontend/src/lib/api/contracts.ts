@@ -1,17 +1,19 @@
 /*
  File: frontend/src/lib/api/contracts.ts
- Description: نگاشت قرارداد/اعضا از Nabz.Api (قیف + formStatus پیشرفت پرسشنامه)
- Parent Dependencies: api/http, api/roles, types/clinic
+ Description: نگاشت قرارداد/اعضا از Nabz.Api (قیف + formStatus + submitted-form PDF)
+ Parent Dependencies: api/http, api/roles, mock-contracts, types/clinic
  */
 
-import { apiFetch } from "@/lib/api/http";
+import { ApiError, apiFetch, getApiBaseUrl, readApiToken } from "@/lib/api/http";
 import { guidToNumericId } from "@/lib/api/roles";
+import { DEFAULT_PATHWAY_CODE, resolveHealthPathwayTitle } from "@/lib/health-pathway-titles";
+import { formatPersianDateLabel } from "@/lib/mock-contracts";
 import { ageFromBirthIso, displayFullName } from "@/lib/person-identity";
 import type { ContractMember, ContractPathwayRule, CorporateContract } from "@/types/clinic";
 
 export interface ApiContractPathwayRuleDto {
   id: string;
-  libraryRuleId?: string | null;
+  libraryPathwayId?: string | null;
   title: string;
   gender: string;
   minAge?: number | null;
@@ -32,6 +34,7 @@ export interface ApiContractDto {
   memberCount: number;
   defaultPathwayCode?: string | null;
   pathwayRules?: ApiContractPathwayRuleDto[];
+  partnerLogoStorageKey?: string | null;
 }
 
 export interface ApiContractMemberDto {
@@ -113,13 +116,9 @@ function emptySupervisor(name?: string | null, phone?: string | null): Corporate
   };
 }
 
-/** عنوان فارسی مسیر سلامتی؛ اگر سرور کد انگلیسی برگرداند (مثل FULL_CHECKUP) جایگزین می‌شود. */
+/** عنوان فارسی مسیر سلامتی؛ کد انگلیسی خام در UI نشان داده نمی‌شود. */
 export function resolvePathwayDisplayTitle(code?: string | null, title?: string | null): string {
-  const c = (code ?? "").trim();
-  const t = (title ?? "").trim();
-  if (t && t !== c) return t;
-  if (!c || c === "FULL_CHECKUP") return "چکاپ جامع";
-  return t || c;
+  return resolveHealthPathwayTitle(code, title);
 }
 
 export function mapApiMember(m: ApiContractMemberDto, contractNumericId: number): ContractMember {
@@ -132,6 +131,9 @@ export function mapApiMember(m: ApiContractMemberDto, contractNumericId: number)
   const age = m.age ?? ageFromBirthIso(birthDate) ?? 0;
   const gender: "مرد" | "زن" = m.gender === "زن" ? "زن" : "مرد";
   const pathwayCode = m.assignedPathwayCode ?? "";
+  // تاریخ مراجعه اکسل/رستر → نوبت دستی در تب نوبت‌دهی (قبلاً فقط در scheduledVisitDate می‌ماند)
+  const visitIso = m.scheduledVisitDate ? String(m.scheduledVisitDate).slice(0, 10) : null;
+  const hasVisit = Boolean(visitIso && /^\d{4}-\d{2}-\d{2}$/.test(visitIso));
   return {
     id: guidToNumericId(m.id),
     serverId: m.id,
@@ -145,7 +147,7 @@ export function mapApiMember(m: ApiContractMemberDto, contractNumericId: number)
     nationalId: m.nationalId,
     phone: m.phone,
     birthDate,
-    scheduledVisitDate: m.scheduledVisitDate ? String(m.scheduledVisitDate).slice(0, 10) : null,
+    scheduledVisitDate: visitIso,
     age,
     gender,
     maritalStatus: m.maritalStatus ?? null,
@@ -170,11 +172,12 @@ export function mapApiMember(m: ApiContractMemberDto, contractNumericId: number)
     draftSymptoms: "",
     draftAllergies: "",
     draftMedications: "",
-    appointmentStatus: "unscheduled",
-    scheduledDate: null,
-    scheduledLabel: null,
+    appointmentStatus: hasVisit ? "pinned" : "unscheduled",
+    scheduledDate: hasVisit ? visitIso : null,
+    scheduledLabel: hasVisit && visitIso ? formatPersianDateLabel(visitIso) : null,
     callSentAt: null,
     linkedPatientId: m.linkedPatientId ? guidToNumericId(m.linkedPatientId) : null,
+    linkedPatientServerId: m.linkedPatientId ? String(m.linkedPatientId) : null,
   };
 }
 
@@ -182,24 +185,31 @@ export function mapApiContract(c: ApiContractDto, members: ApiContractMemberDto[
   const id = guidToNumericId(c.id);
   const statusRaw = (c.status ?? "active").toLowerCase();
   const status: CorporateContract["status"] =
-    statusRaw === "draft" ? "draft" : statusRaw === "completed" ? "completed" : "active";
+    statusRaw === "draft"
+      ? "draft"
+      : statusRaw === "completed"
+        ? "completed"
+        : statusRaw === "inactive"
+          ? "inactive"
+          : "active";
   return {
     id,
     serverId: c.id,
     code: c.code,
     title: c.title,
     organizationName: c.organizationName,
+    partnerLogoStorageKey: c.partnerLogoStorageKey ?? null,
     status,
     startDate: new Date().toISOString().slice(0, 10),
     endDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
     apiEndpoint: "",
     apiKey: "",
     lastApiSyncAt: null,
-    defaultPathwayCode: (c.defaultPathwayCode ?? "").trim() || "FULL_CHECKUP",
+    defaultPathwayCode: (c.defaultPathwayCode ?? "").trim() || DEFAULT_PATHWAY_CODE,
     pathwayRules: (c.pathwayRules ?? []).map(
       (r, idx): ContractPathwayRule => ({
         id: r.id || `api-rule-${c.id}-${idx}`,
-        libraryRuleId: r.libraryRuleId ?? null,
+        libraryPathwayId: r.libraryPathwayId ?? null,
         title: r.title,
         gender: r.gender === "زن" || r.gender === "مرد" ? r.gender : "همه",
         minAge: r.minAge ?? null,
@@ -268,4 +278,92 @@ export async function fetchContractMembersAll(contractServerId: string): Promise
   );
   const numericId = guidToNumericId(contractServerId);
   return list.map((m) => mapApiMember(m, numericId));
+}
+
+/** UC-ADM-26 — پاسخ submitted پرسشنامه عضو برای PDF قیف. */
+export interface ApiMemberSubmittedFormDto {
+  memberId: string;
+  contractId: string;
+  patientId: string;
+  formId: string;
+  formCode: string;
+  formTitle: string;
+  submittedAt?: string | null;
+  fullName: string;
+  nationalId: string;
+  age?: number | null;
+  gender?: string | null;
+  organizationName: string;
+  answers: Array<{
+    itemCode: string;
+    valueCode?: string | null;
+    valueRaw?: string | null;
+    notes?: string | null;
+    skippedByRule?: boolean;
+  }>;
+}
+
+export async function fetchMemberSubmittedForm(
+  contractServerId: string,
+  memberServerId: string
+): Promise<ApiMemberSubmittedFormDto> {
+  return apiFetch<ApiMemberSubmittedFormDto>(
+    `/api/contracts/${encodeURIComponent(contractServerId)}/members/${encodeURIComponent(memberServerId)}/submitted-form`
+  );
+}
+
+/** UC-ADM-26 — دانلود PDF واقعی از Chromium سرور. */
+export async function downloadMemberIntakePdf(
+  contractServerId: string,
+  memberServerId: string
+): Promise<void> {
+  const headers = new Headers();
+  const token = readApiToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const res = await fetch(
+    `${getApiBaseUrl()}/api/contracts/${encodeURIComponent(contractServerId)}/members/${encodeURIComponent(memberServerId)}/intake-pdf`,
+    { method: "GET", headers }
+  );
+  if (!res.ok) {
+    let msg = `خطای سرور (${res.status})`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body?.error) msg = String(body.error);
+    } catch {
+      /* پاسخ باینری یا خالی */
+    }
+    throw new ApiError(msg, res.status);
+  }
+  const blob = await res.blob();
+  const cd = res.headers.get("Content-Disposition") ?? "";
+  const match = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(cd);
+  const fileName = match
+    ? decodeURIComponent(match[1].replace(/"/g, "").trim())
+    : `intake-${memberServerId}.pdf`;
+  const url = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** UC-ADM-22 — آپلود لوگوی سازمان/بانک قرارداد. */
+export async function uploadContractPartnerLogo(
+  contractServerId: string,
+  file: File
+): Promise<{ partnerLogoStorageKey: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await apiFetch<{ ok: boolean; partnerLogoStorageKey: string }>(
+    `/api/contracts/${encodeURIComponent(contractServerId)}/partner-logo`,
+    { method: "POST", body: form }
+  );
+  return { partnerLogoStorageKey: res.partnerLogoStorageKey };
 }

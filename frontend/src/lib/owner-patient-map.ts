@@ -1,13 +1,19 @@
 /*
  File: frontend/src/lib/owner-patient-map.ts
  Description: نگاشت OwnerIntakeSnapshot API به PatientFullDto برای hydrate
- Parent Dependencies: api/patients, api/roles, types/clinic
+ Parent Dependencies: api/patients, api/roles, types/clinic, person-identity
  */
 
 import type { OwnerIntakeSnapshotApi } from "@/lib/api/patients";
 import { guidToNumericId } from "@/lib/api/roles";
 import { normalizeMaritalStatus } from "@/lib/marital-status";
-import { defaultCompanionVisibility, type CompanionLinkDto, type PatientFullDto } from "@/types/clinic";
+import { ageFromBirthIso } from "@/lib/person-identity";
+import {
+  defaultCompanionVisibility,
+  type CompanionLinkDto,
+  type PathwayItineraryStationDto,
+  type PatientFullDto,
+} from "@/types/clinic";
 
 export function mapOwnerSnapshotToPatient(snap: OwnerIntakeSnapshotApi): PatientFullDto {
   const p = snap.patient;
@@ -17,6 +23,7 @@ export function mapOwnerSnapshotToPatient(snap: OwnerIntakeSnapshotApi): Patient
       : snap.intakeGate === "needs_form"
         ? "needs_form"
         : null;
+  const birthDate = p.birthDate ? String(p.birthDate).slice(0, 10) : null;
   return {
     id: guidToNumericId(p.id),
     serverId: p.id,
@@ -26,8 +33,10 @@ export function mapOwnerSnapshotToPatient(snap: OwnerIntakeSnapshotApi): Patient
     lastName: p.lastName,
     fatherName: p.fatherName ?? null,
     nationalId: p.nationalId,
-    age: p.age ?? 0,
-    birthDate: p.birthDate ?? null,
+    // اگر age از API نیاید از تولد حساب کن تا visibility ≥۵۰ نشکند
+    age: p.age ?? ageFromBirthIso(birthDate) ?? 0,
+    // DateOnly API گاهی با زمان می‌آید؛ برای PersianDateField فقط YYYY-MM-DD
+    birthDate,
     gender: p.gender ?? "",
     maritalStatus: normalizeMaritalStatus(p.maritalStatus) ?? p.maritalStatus ?? null,
     phone: p.phone,
@@ -37,7 +46,10 @@ export function mapOwnerSnapshotToPatient(snap: OwnerIntakeSnapshotApi): Patient
     completedAt: null,
     intakeCompleted: p.intakeCompleted || gate === "already_complete",
     intakeGate: gate,
+    // درصد پیش‌نویس از سرور تا نقشه راه بعد از بستن/باز کردن صفر نماند
+    formProgressPct: Math.min(100, Math.max(0, Number(snap.formProgressPct ?? 0))),
     hasPortrait: snap.hasPortrait,
+    portraitStorageKey: snap.portraitStorageKey ?? null,
     profileComplete: snap.profileComplete !== false,
     hospitalIntroStatus:
       snap.hospitalIntroStatus === "introduced" ||
@@ -64,6 +76,18 @@ export function mapOwnerSnapshotToPatient(snap: OwnerIntakeSnapshotApi): Patient
     homeUnit: p.homeUnit ?? null,
     homePostalCode: p.homePostalCode ?? null,
     stations: [],
+    // itinerary از کاتالوگ بک‌اند — جدا از VisitStation صف
+    pathwayItinerary: (snap.pathwayItinerary ?? []).map(
+      (s): PathwayItineraryStationDto => ({
+        stationDefId: s.stationDefId,
+        roomCode: s.roomCode,
+        titleFa: s.titleFa,
+        stepOrder: s.stepOrder,
+        isOptional: s.isOptional,
+        confirmed: s.confirmed,
+        confirmedAt: s.confirmedAt ?? null,
+      }),
+    ),
     clinicalNotes: [],
     paraclinicResults: [],
     alerts: [],

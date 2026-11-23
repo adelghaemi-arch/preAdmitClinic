@@ -104,9 +104,10 @@ Path داخل کانتینر: `wwwroot/uploads`، `/app/news-vitrine`، URL `/da
 
 | نقش | URL |
 |-----|-----|
-| my (فرانت کلینیک) | `https://my.liveteb.ir` |
+| my (فرانت کلینیک) | `https://my.nafasmed.ir` |
 | news (ویترین) | `https://liveteb.ir` |
 | api | `https://api.liveteb.ir` |
 
 - `FrontendUrls__My` / `FrontendUrls__News` هم‌تراز `MY_PUBLIC_URL` / `NEWS_PUBLIC_URL` در [`server/sync.config.bat`](../../server/sync.config.bat) — این کلیدها policy CORS را در `Program.cs` می‌سازند.
+- پکیج publish فقط `.env.example` دارد؛ `.env` هر هاست Linux جداست و rsync آن را overwrite نمی‌کند.
 - Edge عمومی: **ArvanCloud**. پاسخ 502/503 بدون `Access-Control-Allow-Origin` یعنی upstream/API down است، نه باگ سیاست CORS — triage طبق `.cursorrules` §0.2.

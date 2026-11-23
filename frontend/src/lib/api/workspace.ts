@@ -16,7 +16,9 @@ import {
 } from "@/lib/api/evidence";
 import { fetchClinicForms } from "@/lib/api/forms";
 import { apiFetch } from "@/lib/api/http";
-import { fetchPathwayLibraryRules } from "@/lib/api/pathway-library-rules";
+import { fetchPathways } from "@/lib/api/pathways";
+import { fetchClinicStations, mapClinicStationToRoom } from "@/lib/api/clinic-stations";
+import { mockPathwayDtos } from "@/lib/mock-contracts";
 import { guidToNumericId } from "@/lib/api/roles";
 import { MOCK_DATASET } from "@/lib/mock-dataset";
 import { DEFAULT_OSM_LOCAL, DEFAULT_PLATFORM_SETTINGS } from "@/lib/mock-platform";
@@ -26,8 +28,8 @@ import type {
   FormDefinition,
   FraudCaptureSession,
   FraudReviewStatus,
-  PathwayLibraryRule,
   PathwayDto,
+  RoomDto,
   GpsPoint,
   PlatformSettings,
   PlatformState,
@@ -218,6 +220,7 @@ function emptyPlatform(clinic: ClinicDto | null): PlatformState {
             toubaPasswordSet: clinic.toubaPasswordSet,
             toubaSendUrl: clinic.toubaSendUrl ?? "",
             toubaOtpMessageTemplate: clinic.toubaOtpMessageTemplate ?? "",
+            logoStorageKey: clinic.logoStorageKey ?? null,
             patientsToday: 0,
             staffCount: 0,
             contractsCount: 0,
@@ -336,6 +339,19 @@ const ROLE_LABEL: Record<string, string> = {
   supervisor: "ناظر سازمان",
 };
 
+/**
+ * کاتالوگ ایستگاه برای snapshot.
+ * Admin/Platform همه را می‌بینند؛ JWT پزشک در API فقط فعال‌ها را برمی‌گرداند.
+ */
+async function loadClinicRoomsForSnapshot(): Promise<RoomDto[]> {
+  try {
+    const rows = await fetchClinicStations(false);
+    return rows.map(mapClinicStationToRoom);
+  } catch {
+    return [];
+  }
+}
+
 /** بارگذاری اسکلت snapshot از سرور؛ لیست‌های عملیاتی غیر-v1 خالی می‌مانند. */
 export async function loadWorkspaceSnapshot(): Promise<ClinicSnapshot> {
   let clinic: ClinicDto | null = null;
@@ -374,7 +390,8 @@ export async function loadWorkspaceSnapshot(): Promise<ClinicSnapshot> {
 
   let contracts: CorporateContract[] = [];
   let forms: FormDefinition[] = [];
-  let pathwayLibrary: PathwayLibraryRule[] = [];
+  let pathways: PathwayDto[] = [];
+  let pathwayLibrary: PathwayDto[] = [];
   if (clinic?.id) {
     if (canListContracts) {
       try {
@@ -391,13 +408,14 @@ export async function loadWorkspaceSnapshot(): Promise<ClinicSnapshot> {
       /* Owner/Admin/Specialist؛ در صورت 403 خالی */
     }
   }
-  // کتابخانه مسیر سلامتی فقط Admin/Platform — مثل /api/users تا Console پر از 403 نشود
+  try {
+    pathways = await fetchPathways();
+  } catch {
+    pathways = mockPathwayDtos(MOCK_DATASET.pathways ?? []);
+  }
+  // کتابخانه = همان مسیرهای isInLibrary؛ لیست جدا فقط برای سازگاری snapshot
   if (canListUsers) {
-    try {
-      pathwayLibrary = await fetchPathwayLibraryRules();
-    } catch {
-      pathwayLibrary = [];
-    }
+    pathwayLibrary = pathways.filter((p) => p.isInLibrary);
   }
 
   // بازه/فلگ ضدتقلب برای همه نقش‌ها (Owner هم دوربین را با همین بازه می‌زند)
@@ -478,20 +496,10 @@ export async function loadWorkspaceSnapshot(): Promise<ClinicSnapshot> {
       city: clinic?.city ?? "تهران",
     },
     pathwayLibrary,
-    rooms: [],
+    // کاتالوگ ایستگاه از API؛ در صورت خطا به mock برنگرد (لیست خالی بهتر از دادهٔ مرده)
+    rooms: await loadClinicRoomsForSnapshot(),
     links: [],
-    // تا API مسیر درمان آماده شود، کاتالوگ FE برای عنوان/ایستگاه‌ها hydrate می‌شود
-    pathways: (MOCK_DATASET.pathways ?? []).map(
-      (p): PathwayDto => ({
-        id: p.id,
-        code: p.code,
-        title: p.title,
-        description: p.description,
-        stationCodes: [...p.stationCodes],
-        estimatedTotalMinutes: p.estimatedTotalMinutes,
-        isActive: p.isActive,
-      })
-    ),
+    pathways,
     staff: [],
     patients: [],
     contracts,

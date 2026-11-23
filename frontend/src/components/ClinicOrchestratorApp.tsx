@@ -1,7 +1,7 @@
-/*
+﻿/*
  File: frontend/src/components/ClinicOrchestratorApp.tsx
- Description: ارکستراتور کلینیک — نشست پیش‌پذیرش Owner و مخفی‌سازی مسیر
- Parent Dependencies: lib/api/*, CorporateContractsHub, workspace, owner-intake-gate
+ Description: ارکستراتور کلینیک — نشست پیش‌پذیرش Owner، آواتار پرترهٔ بیضی در تاپ‌بار
+ Parent Dependencies: lib/api/*, CorporateContractsHub, workspace, owner-intake-gate, usePatientPortraitUrl
  */
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { AppInput } from "@/components/AppInput";
@@ -34,7 +34,6 @@ import {
   Loader2,
   LogOut,
   Menu,
-  RefreshCw,
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
@@ -52,7 +51,14 @@ import {
   Settings2,
 } from "lucide-react";
 import { PlatformAdminPanel, type PlatformSection } from "./PlatformAdminPanel";
-import type { AppUserDto, ClinicSnapshot, WorkspaceRole } from "@/types/clinic";
+import type {
+  AppUserDto,
+  ClinicSnapshot,
+  FormResponse,
+  IntakeDocumentType,
+  PatientIntakeDocumentGroup,
+  WorkspaceRole,
+} from "@/types/clinic";
 import {
   allowedPagesFor,
   COMPANION_FEATURE_ENABLED,
@@ -69,15 +75,29 @@ import {
   type AppPage,
 } from "@/lib/workspace";
 import { filterNavPagesForGate, resolveGatedPage, shouldGateOwner } from "@/lib/owner-intake-gate";
-import { normalizeMobile } from "@/lib/person-identity";
+import {
+  ageFromBirthIso,
+  isValidIranMobile,
+  isValidIranNationalId,
+  normalizeMobile,
+} from "@/lib/person-identity";
 import { mapOwnerSnapshotToPatient, selfLinkForOwner } from "@/lib/owner-patient-map";
 import {
   fetchOwnerIntakeSnapshot,
+  fetchPatientChart,
+  lookupPatientByNationalId,
   postPatientPortrait,
+  searchPatients,
   uploadFileBlob,
 } from "@/lib/api/patients";
+import { fetchSpecialistFormResponse } from "@/lib/api/forms";
+import {
+  mapApiPatientToDirectoryRow,
+  mergeSpecialistChart,
+} from "@/lib/specialist-patient-map";
 import { toFaDigits } from "@/lib/persian";
 import { OwnerProfileForm } from "@/components/OwnerProfileForm";
+import { usePatientPortraitUrl } from "@/hooks/usePatientPortraitUrl";
 import { ClinicDashboard } from "./ClinicDashboard";
 import { CompanionHome } from "./CompanionHome";
 import { CompanionLinks } from "./CompanionLinks";
@@ -100,21 +120,36 @@ import { ActiveSessionsPanel } from "@/components/ActiveSessionsPanel";
 import { signOut } from "@/lib/auth";
 import { loadWorkspaceSnapshot } from "@/lib/api/workspace";
 import {
-  createPathwayLibraryRule,
-  deletePathwayLibraryRule,
-  updatePathwayLibraryRule,
-} from "@/lib/api/pathway-library-rules";
+  createPathway,
+  deletePathway,
+  updatePathway,
+  type UpsertPathwayBody,
+} from "@/lib/api/pathways";
 import {
+  addEvidenceDocumentFiles,
   captureFraudFrame,
+  createEvidenceDocumentGroup,
   endFraudSession,
+  fetchMappedIntakeDocuments,
+  listPatientDocuments,
   recordGpsPoint,
+  removeEvidenceDocumentFile,
+  removeEvidenceDocumentGroup,
   reviewFraudSession,
   startFraudSession,
+  uploadDataUrlAsFile,
   uploadOpaqueFraudFrame,
 } from "@/lib/api/evidence";
+import { intakeDocumentLabelFa, isIntakeDocumentType } from "@/lib/intake-documents";
 import { updateCurrentClinic } from "@/lib/api/clinics";
+import {
+  createClinicStation,
+  setClinicStationActive,
+  updateClinicStation,
+} from "@/lib/api/clinic-stations";
 import { apiFetch } from "@/lib/api/http";
 import { hasApiRole } from "@/lib/api/roles";
+import { draftsToUpsertStations, stationCodesToDrafts, type PathwayStationDraft } from "@/lib/pathway-stations";
 import { allowedRolesFor, writeStoredRole } from "@/lib/viewer";
 import { configureOsmFromSettings } from "@/lib/osm-routing";
 import { stopOwnerGpsWatch } from "@/lib/owner-gps-watch";
@@ -208,6 +243,14 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
       try {
         const ownerSnap = await fetchOwnerIntakeSnapshot();
         const mapped = mapOwnerSnapshotToPatient(ownerSnap);
+        // مدارک پیش‌پذیرش جدا از snapshot؛ برای ادامه بعد از رفرش
+        if (mapped.serverId) {
+          try {
+            mapped.intakeDocuments = await fetchMappedIntakeDocuments(mapped.serverId);
+          } catch {
+            mapped.intakeDocuments = [];
+          }
+        }
         const link = selfLinkForOwner(user.id, mapped.id);
         const base = snapshotRef.current;
         setSnapshot({
@@ -238,6 +281,9 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
   const activePatient = snapshot.patients.find((p) => p.id === selectedPatientId) ?? snapshot.patients[0];
   const activeId = activePatient?.id ?? 0;
   const activeLink = snapshot.links.find((l) => l.patientId === activeId && l.userId === user.id);
+  // آواتار تاپ‌بار: پرترهٔ پروندهٔ Owner (همان قاب بیضی) به‌جای حروف اول
+  const topbarPortrait = usePatientPortraitUrl(role === "owner" ? activePatient : null);
+  const topbarAvatarUrl = topbarPortrait.url;
   const gateArgs = {
     role,
     link: activeLink,
@@ -390,6 +436,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
       const adminClinicMutations = new Set([
         "CREATE_CONTRACT",
         "UPDATE_CONTRACT",
+        "SET_CONTRACT_STATUS",
         "IMPORT_CONTRACT_MEMBERS",
         "UPDATE_CONTRACT_SUPERVISOR",
         "UPDATE_CONTRACT_MEMBER",
@@ -406,6 +453,12 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         "UPSERT_PATHWAY_LIBRARY_ITEM",
         "DELETE_PATHWAY_LIBRARY_ITEM",
         "UPDATE_CLINIC_PROFILE",
+        "SET_CLINIC_LOGO",
+        "SET_CONTRACT_PARTNER_LOGO",
+        // کاتالوگ ایستگاه کلینیک (UC-ADM-25)
+        "UPDATE_ROOM_CONFIG",
+        "CREATE_CLINIC_STATION",
+        "SET_CLINIC_STATION_ACTIVE",
       ]);
       if (adminClinicMutations.has(action) && !hasApiRole("Admin", "Platform")) {
         throw new Error(
@@ -554,30 +607,54 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         if (title.length < 3 || organizationName.length < 2) {
           throw new Error("عنوان قرارداد و نام سازمان را وارد کنید.");
         }
-        const defaultPathwayCode = String(payload.defaultPathwayCode ?? "").trim() || "FULL_CHECKUP";
+        const defaultPathwayCode = String(payload.defaultPathwayCode ?? "").trim() || "CORP_MEN_LT40";
         const created = await apiFetch<{ id: string }>(`/api/contracts?clinicId=${encodeURIComponent(clinic.id)}`, {
           method: "POST",
           body: { title, organizationName, code: null, defaultPathwayCode: defaultPathwayCode },
         });
-        const supName = String(payload.supervisorName ?? "").trim();
-        const supPhone = String(payload.supervisorPhone ?? "").trim();
-        if (supName && supPhone) {
-          const parts = supName.split(/\s+/);
+        const firstName =
+          String(payload.supervisorFirstName ?? "").trim() ||
+          String(payload.supervisorName ?? "").trim().split(/\s+/).filter(Boolean)[0] ||
+          "";
+        const lastName =
+          String(payload.supervisorLastName ?? "").trim() ||
+          String(payload.supervisorName ?? "").trim().split(/\s+/).filter(Boolean).slice(1).join(" ") ||
+          "";
+        const supPhone = normalizeMobile(String(payload.supervisorPhone ?? "").trim());
+        const nationalId = String(payload.supervisorNationalId ?? payload.nationalId ?? "").trim();
+        // اگر هر فیلد ناظر پر باشد، همهٔ فیلدهای اجباری باید کامل باشند
+        if (firstName || lastName || supPhone || nationalId) {
+          if (firstName.length < 2 || lastName.length < 2) {
+            throw new Error("نام و نام‌خانوادگی ناظر را جدا وارد کنید.");
+          }
+          if (!supPhone || !isValidIranMobile(supPhone)) {
+            throw new Error("شماره موبایل ناظر نامعتبر است.");
+          }
+          if (!nationalId) {
+            throw new Error("کدملی ناظر الزامی است.");
+          }
+          if (!isValidIranNationalId(nationalId)) {
+            throw new Error("کدملی ناظر نامعتبر است.");
+          }
           await apiFetch(`/api/contracts/${created.id}/supervisor`, {
             method: "PUT",
             body: {
-              firstName: parts[0] ?? "",
-              lastName: parts.slice(1).join(" ") || parts[0] || "",
+              firstName,
+              lastName,
               phone: supPhone,
-              title: String(payload.supervisorTitle ?? "").trim() || null,
-              nationalId: null,
+              title: null,
+              nationalId,
               canSendReminders: true,
             },
           });
         }
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
-        const createdContractId = snap.contracts.find((c) => c.serverId === created.id)?.id;
+        // برای انتخاب خودکار در کمبو؛ fallback روی جدیدترین قرارداد
+        const createdContractId =
+          snap.contracts.find((c) => c.serverId === created.id)?.id ??
+          [...snap.contracts].sort((a, b) => String(b.code).localeCompare(String(a.code), "en", { numeric: true }))[0]
+            ?.id;
         if (!quiet) setToast({ text: "قرارداد سازمانی ثبت شد." });
         return { ok: true, snapshot: snap, createdContractId };
       }
@@ -599,6 +676,24 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         if (!quiet) setToast({ text: "قرارداد به‌روزرسانی شد." });
         return { ok: true, snapshot: snap };
       }
+      if (action === "SET_CONTRACT_STATUS") {
+        // UC-ADM-24 — تأیید تاکیدی در UI؛ اینجا فقط وضعیت را می‌نویسد
+        const serverId = String(payload.contractServerId ?? "").trim();
+        if (!serverId) throw new Error("شناسه سرور قرارداد یافت نشد؛ صفحه را تازه کنید.");
+        const isActive = payload.isActive === true;
+        const updated = await apiFetch<{ status?: string }>(`/api/contracts/${serverId}/status`, {
+          method: "PUT",
+          body: { isActive },
+        });
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        if (!quiet) {
+          setToast({
+            text: isActive ? "قرارداد فعال شد." : "قرارداد غیرفعال شد.",
+          });
+        }
+        return { ok: true, snapshot: snap, status: updated.status ?? (isActive ? "Active" : "Inactive") };
+      }
       if (action === "UPDATE_CONTRACT_SUPERVISOR") {
         // API فقط FirstName/LastName می‌پذیرد؛ fullName تک‌فیلد برای سازگاری UI قدیمی split می‌شود
         const serverId = String(payload.contractServerId ?? "").trim();
@@ -611,14 +706,26 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         if (firstName.length < 2 || lastName.length < 2) {
           throw new Error("نام و نام‌خانوادگی ناظر را جدا وارد کنید.");
         }
+        const nationalId = String(payload.nationalId ?? "").trim();
+        if (!nationalId) {
+          throw new Error("کدملی ناظر الزامی است.");
+        }
+        // هم‌تراز بک‌اند: چک‌سام کدملی/موبایل قبل از PUT تا ۴۰۰ به‌جای پیام مبهم
+        if (!isValidIranNationalId(nationalId)) {
+          throw new Error("کدملی ناظر نامعتبر است.");
+        }
+        const phone = normalizeMobile(String(payload.phone ?? ""));
+        if (!isValidIranMobile(phone)) {
+          throw new Error("شماره موبایل ناظر نامعتبر است.");
+        }
         await apiFetch(`/api/contracts/${serverId}/supervisor`, {
           method: "PUT",
           body: {
             firstName,
             lastName,
-            phone: normalizeMobile(String(payload.phone ?? "")),
-            title: String(payload.title ?? "").trim() || null,
-            nationalId: payload.nationalId ? String(payload.nationalId).trim() : null,
+            phone,
+            title: null,
+            nationalId,
             canSendReminders: Boolean(payload.canSendReminders ?? true),
           },
         });
@@ -661,19 +768,22 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         });
         setSnapshot((prev) => ({
           ...prev,
-          patients: prev.patients.map((p) =>
-            p.serverId === serverId
-              ? {
-                  ...p,
-                  firstName: firstName || p.firstName,
-                  lastName: lastName || p.lastName,
-                  fullName: `${firstName} ${lastName}`.trim() || p.fullName,
-                  birthDate: birthDate ?? p.birthDate,
-                  maritalStatus: maritalStatus ?? p.maritalStatus,
-                  gender: gender || p.gender,
-                }
-              : p
-          ),
+          patients: prev.patients.map((p) => {
+            if (p.serverId !== serverId) return p;
+            const nextBirth = birthDate ?? p.birthDate;
+            // سن از تولد تازه تا visibility ≥۵۰ در همان نشست کهنه نماند
+            const nextAge = ageFromBirthIso(nextBirth?.slice(0, 10) ?? null) ?? p.age;
+            return {
+              ...p,
+              firstName: firstName || p.firstName,
+              lastName: lastName || p.lastName,
+              fullName: `${firstName} ${lastName}`.trim() || p.fullName,
+              birthDate: nextBirth,
+              age: nextAge,
+              maritalStatus: maritalStatus ?? p.maritalStatus,
+              gender: gender || p.gender,
+            };
+          }),
         }));
         if (!quiet) setToast({ text: "پروفایل بیمار به‌روز شد." });
         return { ok: true };
@@ -806,13 +916,27 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
               answers: nextAnswers,
               context: { gender: p.gender, age: p.age, maritalStatus: maritalRaw ?? null },
             };
+            const progressRaw = Number(payload.progressPct);
+            const nextProgressPct =
+              mode === "submit"
+                ? 100
+                : Number.isFinite(progressRaw)
+                  ? Math.min(99, Math.max(0, Math.round(progressRaw)))
+                  : p.formProgressPct;
             return {
               ...p,
               formResponses: [...other, nextResponse],
+              formProgressPct: nextProgressPct,
               intakeCompleted: mode === "submit" ? true : p.intakeCompleted,
               // سرور در submit نهایی JourneyIntroSeen را هم ست می‌کند
               journeyIntroSeen: mode === "submit" ? true : p.journeyIntroSeen,
-              ...(birthRaw ? { birthDate: birthRaw } : {}),
+              ...(birthRaw
+                ? {
+                    birthDate: birthRaw,
+                    // draft تولد age ذخیره‌شده را عوض نمی‌کرد و سوالات ≥۵۰ مخفی می‌ماندند
+                    age: ageFromBirthIso(birthRaw.slice(0, 10)) ?? p.age,
+                  }
+                : {}),
               ...(maritalRaw ? { maritalStatus: maritalRaw } : {}),
               ...(home
                 ? {
@@ -886,21 +1010,13 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         const blob = await res.blob();
         const uploaded = await uploadFileBlob(blob, "portrait.jpg", serverId);
         await postPatientPortrait(serverId, uploaded.storageKey);
-        // فریم تأیید و بستن نشست ضدتقلب هم‌زمان با پرتره
+        // بستن نشست ضدتقلب — کلید پرتره را با fraud_confirm شریک نکن (گیت دانلود Owner را می‌شکست)
         const fraudSessionId = String(payload.fraudSessionId ?? "").trim();
         if (fraudSessionId) {
           try {
-            await captureFraudFrame({
-              sessionId: fraudSessionId,
-              storageKey: uploaded.storageKey,
-              kind: "fraud_confirm",
-              lat: payload.lat != null ? Number(payload.lat) : undefined,
-              lon: payload.lon != null ? Number(payload.lon) : undefined,
-              accuracy: payload.accuracy != null ? Number(payload.accuracy) : undefined,
-            });
             await endFraudSession(fraudSessionId);
           } catch {
-            /* پرتره ذخیره شده؛ شکست تأیید نباید کل جریان را بشکند */
+            /* پرتره ذخیره شده؛ شکست بستن نشست نباید کل جریان را بشکند */
           }
         }
         setSnapshot((prev) => ({
@@ -975,6 +1091,58 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         });
         return { ok: true };
       }
+      // UC-ADM-25 — ایجاد ایستگاه کاتالوگ
+      if (action === "CREATE_CLINIC_STATION") {
+        await createClinicStation({
+          code: String(payload.code ?? "").trim() || null,
+          titleFa: String(payload.titleFa ?? payload.name ?? "").trim() || null,
+          category: payload.category != null ? String(payload.category) : null,
+          floor: payload.floor != null ? Number(payload.floor) : null,
+          roomNumber: payload.roomNumber != null ? String(payload.roomNumber) : null,
+          prepInstructions: payload.prepInstructions != null ? String(payload.prepInstructions) : null,
+          wayfindingSteps: payload.wayfindingSteps != null ? String(payload.wayfindingSteps) : null,
+          isActive: payload.isActive !== false,
+        });
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        if (!quiet) setToast({ text: "ایستگاه جدید در کاتالوگ کلینیک ثبت شد." });
+        return { ok: true, snapshot: snap };
+      }
+      // UC-ADM-25 — ویرایش ایستگاه / راهنمای مسیر
+      if (action === "UPDATE_ROOM_CONFIG") {
+        const serverId = String(payload.serverId ?? "").trim();
+        if (!serverId) throw new Error("شناسه سرور ایستگاه یافت نشد؛ صفحه را تازه کنید.");
+        await updateClinicStation(serverId, {
+          titleFa: payload.titleFa != null || payload.name != null
+            ? String(payload.titleFa ?? payload.name ?? "").trim()
+            : null,
+          category: payload.category != null ? String(payload.category) : null,
+          floor: payload.floor != null ? Number(payload.floor) : null,
+          roomNumber: payload.roomNumber != null ? String(payload.roomNumber) : null,
+          prepInstructions: payload.prepInstructions != null ? String(payload.prepInstructions) : null,
+          wayfindingSteps: payload.wayfindingSteps != null ? String(payload.wayfindingSteps) : null,
+          isActive: typeof payload.isActive === "boolean" ? payload.isActive : null,
+        });
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        if (!quiet) setToast({ text: "پیکربندی ایستگاه ذخیره شد." });
+        return { ok: true, snapshot: snap };
+      }
+      // UC-ADM-25 — فعال/غیرفعال ایستگاه (فهرست افزودن فوری پزشک)
+      if (action === "SET_CLINIC_STATION_ACTIVE") {
+        const serverId = String(payload.serverId ?? "").trim();
+        if (!serverId) throw new Error("شناسه سرور ایستگاه یافت نشد؛ صفحه را تازه کنید.");
+        const isActive = payload.isActive === true;
+        await setClinicStationActive(serverId, isActive);
+        const snap = await loadWorkspaceSnapshot();
+        setSnapshot(snap);
+        if (!quiet) {
+          setToast({
+            text: isActive ? "ایستگاه فعال شد." : "ایستگاه غیرفعال شد و از فهرست افزودن فوری حذف گردید.",
+          });
+        }
+        return { ok: true, snapshot: snap };
+      }
       if (action === "UPDATE_CLINIC_PROFILE") {
         const updated = await updateCurrentClinic({
           name: String(payload.name ?? "").trim(),
@@ -1019,6 +1187,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                     toubaPasswordSet: updated.toubaPasswordSet,
                     toubaSendUrl: updated.toubaSendUrl ?? "",
                     toubaOtpMessageTemplate: updated.toubaOtpMessageTemplate ?? "",
+                    logoStorageKey: updated.logoStorageKey ?? c.logoStorageKey ?? null,
                   }
                 : c
             ),
@@ -1026,6 +1195,34 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         }));
         if (!quiet) setToast({ text: "مشخصات بیمارستان ذخیره شد." });
         return { ok: true, clinic: updated };
+      }
+      if (action === "SET_CLINIC_LOGO") {
+        const key = String(payload.logoStorageKey ?? "").trim();
+        if (!key) throw new Error("کلید لوگو خالی است.");
+        setSnapshot((prev) => ({
+          ...prev,
+          platform: {
+            ...prev.platform,
+            clinics: prev.platform.clinics.map((c) =>
+              c.isCurrentTenant ? { ...c, logoStorageKey: key } : c
+            ),
+          },
+        }));
+        if (!quiet) setToast({ text: "لوگوی بیمارستان ذخیره شد." });
+        return { ok: true, logoStorageKey: key };
+      }
+      if (action === "SET_CONTRACT_PARTNER_LOGO") {
+        const contractId = Number(payload.contractId);
+        const key = String(payload.partnerLogoStorageKey ?? "").trim();
+        if (!Number.isFinite(contractId) || !key) throw new Error("لوگوی قرارداد نامعتبر است.");
+        setSnapshot((prev) => ({
+          ...prev,
+          contracts: prev.contracts.map((c) =>
+            c.id === contractId ? { ...c, partnerLogoStorageKey: key } : c
+          ),
+        }));
+        if (!quiet) setToast({ text: "لوگوی سازمان قرارداد ذخیره شد." });
+        return { ok: true, partnerLogoStorageKey: key };
       }
       if (action === "PLATFORM_UPDATE_SETTINGS") {
         const patch = (payload.settings ?? {}) as Record<string, unknown>;
@@ -1105,9 +1302,45 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         }));
         return { ok: true };
       }
+      if (action === "CONFIRM_PATHWAY_STATION") {
+        const { confirmPathwayStation } = await import("@/lib/api/patients");
+        const stationDefId = String(payload.stationDefId ?? "").trim();
+        if (!stationDefId) throw new Error("شناسه ایستگاه مسیر یافت نشد.");
+        const localPatientId = Number(payload.patientId ?? 0);
+        const row = await confirmPathwayStation(stationDefId);
+        setSnapshot((prev) => ({
+          ...prev,
+          patients: prev.patients.map((p) => {
+            // فقط پروندهٔ همان سلامتجو را پچ کن — نه همهٔ بیماران snapshot
+            if (localPatientId && p.id !== localPatientId) return p;
+            if (!p.pathwayItinerary?.length) return p;
+            return {
+              ...p,
+              pathwayItinerary: p.pathwayItinerary.map((s) =>
+                s.stationDefId === row.stationDefId
+                  ? {
+                      ...s,
+                      confirmed: row.confirmed,
+                      confirmedAt: row.confirmedAt ?? new Date().toISOString(),
+                    }
+                  : s,
+              ),
+            };
+          }),
+        }));
+        if (!quiet) setToast({ text: "ایستگاه تأیید شد." });
+        return { ok: true, station: row };
+      }
       if (action === "ENSURE_OWNER_PATIENT") {
         const snap = await fetchOwnerIntakeSnapshot();
         const mapped = mapOwnerSnapshotToPatient(snap);
+        if (mapped.serverId) {
+          try {
+            mapped.intakeDocuments = await fetchMappedIntakeDocuments(mapped.serverId);
+          } catch {
+            mapped.intakeDocuments = [];
+          }
+        }
         setSnapshot((prev) => {
           const exists = prev.patients.some(
             (p) => p.serverId === mapped.serverId || p.id === mapped.id
@@ -1123,22 +1356,255 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         });
         return { ok: true, patient: mapped };
       }
+      if (action === "ADD_INTAKE_DOCUMENT_GROUP") {
+        const localId = Number(payload.patientId);
+        const patient =
+          snapshotRef.current.patients.find((p) => p.id === localId) ??
+          snapshotRef.current.patients.find((p) => p.serverId === String(payload.serverPatientId ?? ""));
+        const serverId = String(patient?.serverId ?? payload.serverPatientId ?? "").trim();
+        if (!serverId) throw new Error("شناسه سرور پرونده برای مدرک یافت نشد؛ صفحه را تازه کنید.");
+        if (patient?.intakeCompleted) throw new Error("پس از ثبت نهایی پیش‌پذیرش، افزودن مدرک مجاز نیست.");
+        const documentTypeRaw = String(payload.documentType ?? "").trim();
+        if (!isIntakeDocumentType(documentTypeRaw)) throw new Error("نوع مدرک را از فهرست انتخاب کنید.");
+        const noteRaw = String(payload.note ?? "").trim();
+        const typeLabelFa =
+          documentTypeRaw === "other"
+            ? noteRaw || "سایر مدارک پزشکی"
+            : intakeDocumentLabelFa(documentTypeRaw);
+        const rawFiles = Array.isArray(payload.files) ? payload.files : [];
+        if (!rawFiles.length) throw new Error("حداقل یک فایل انتخاب کنید.");
+        const created = await createEvidenceDocumentGroup({
+          patientId: serverId,
+          documentType: documentTypeRaw,
+          typeLabelFa,
+          note: documentTypeRaw === "other" ? noteRaw || null : null,
+          documentDate: payload.documentDate != null ? String(payload.documentDate) : null,
+        });
+        const uploadedMeta: Array<{
+          fileName: string;
+          mimeType: string;
+          storageKey: string;
+          sizeBytes: number;
+          documentDate: string | null;
+          dataUrl: string;
+        }> = [];
+        for (const raw of rawFiles) {
+          const row = raw as Record<string, unknown>;
+          const dataUrl = String(row.dataUrl ?? "");
+          const fileName = String(row.fileName ?? "file.bin");
+          const mimeType = String(row.mimeType ?? "application/octet-stream");
+          const uploaded = await uploadDataUrlAsFile(dataUrl, fileName, serverId);
+          uploadedMeta.push({
+            fileName,
+            mimeType,
+            storageKey: uploaded.storageKey,
+            sizeBytes: Number(uploaded.sizeBytes ?? 0),
+            documentDate: row.documentDate != null ? String(row.documentDate) : null,
+            dataUrl,
+          });
+        }
+        await addEvidenceDocumentFiles(
+          created.id,
+          uploadedMeta.map((f) => ({
+            fileName: f.fileName,
+            mimeType: f.mimeType,
+            storageKey: f.storageKey,
+            sizeBytes: f.sizeBytes,
+            documentDate: f.documentDate,
+          }))
+        );
+        // id واقعی فایل‌ها از لیست سرور
+        const listed = await listPatientDocuments(serverId);
+        const serverGroup = listed.find((g) => g.id === created.id);
+        const group: PatientIntakeDocumentGroup = {
+          id: created.id,
+          documentType: documentTypeRaw as IntakeDocumentType,
+          typeLabelFa,
+          note: documentTypeRaw === "other" ? noteRaw || null : null,
+          documentDate: payload.documentDate != null ? String(payload.documentDate) : null,
+          uploadedAt: new Date().toISOString(),
+          files: (serverGroup?.files ?? []).map((f, idx) => ({
+            id: f.id,
+            fileName: f.fileName,
+            mimeType: f.mimeType,
+            storageKey: f.storageKey,
+            dataUrl: uploadedMeta[idx]?.dataUrl || "",
+            documentDate: f.documentDate ?? null,
+          })),
+        };
+        setSnapshot((prev) => ({
+          ...prev,
+          patients: prev.patients.map((p) =>
+            p.serverId === serverId || p.id === localId
+              ? { ...p, intakeDocuments: [...(p.intakeDocuments ?? []), group] }
+              : p
+          ),
+        }));
+        return { ok: true, group };
+      }
+      if (action === "ADD_INTAKE_DOCUMENT_FILES") {
+        const localId = Number(payload.patientId);
+        const groupId = String(payload.groupId ?? "").trim();
+        const patient = snapshotRef.current.patients.find((p) => p.id === localId);
+        const serverId = String(patient?.serverId ?? "").trim();
+        if (!serverId || !groupId) throw new Error("شناسه پرونده یا گروه مدرک یافت نشد.");
+        if (patient?.intakeCompleted) throw new Error("پس از ثبت نهایی پیش‌پذیرش، افزودن فایل مجاز نیست.");
+        const rawFiles = Array.isArray(payload.files) ? payload.files : [];
+        if (!rawFiles.length) throw new Error("حداقل یک فایل انتخاب کنید.");
+        const uploadedMeta: Array<{
+          fileName: string;
+          mimeType: string;
+          storageKey: string;
+          sizeBytes: number;
+          documentDate: string | null;
+          dataUrl: string;
+        }> = [];
+        for (const raw of rawFiles) {
+          const row = raw as Record<string, unknown>;
+          const dataUrl = String(row.dataUrl ?? "");
+          const fileName = String(row.fileName ?? "file.bin");
+          const mimeType = String(row.mimeType ?? "application/octet-stream");
+          const uploaded = await uploadDataUrlAsFile(dataUrl, fileName, serverId);
+          uploadedMeta.push({
+            fileName,
+            mimeType,
+            storageKey: uploaded.storageKey,
+            sizeBytes: Number(uploaded.sizeBytes ?? 0),
+            documentDate:
+              row.documentDate != null
+                ? String(row.documentDate)
+                : payload.documentDate != null
+                  ? String(payload.documentDate)
+                  : null,
+            dataUrl,
+          });
+        }
+        await addEvidenceDocumentFiles(
+          groupId,
+          uploadedMeta.map((f) => ({
+            fileName: f.fileName,
+            mimeType: f.mimeType,
+            storageKey: f.storageKey,
+            sizeBytes: f.sizeBytes,
+            documentDate: f.documentDate,
+          }))
+        );
+        const listed = await listPatientDocuments(serverId);
+        const serverGroup = listed.find((g) => g.id === groupId);
+        const existingGroup = patient?.intakeDocuments?.find((g) => g.id === groupId);
+        const byKey = new Map((existingGroup?.files ?? []).map((f) => [f.storageKey || f.fileName, f.dataUrl]));
+        for (const m of uploadedMeta) byKey.set(m.storageKey, m.dataUrl);
+        setSnapshot((prev) => ({
+          ...prev,
+          patients: prev.patients.map((p) => {
+            if (p.serverId !== serverId && p.id !== localId) return p;
+            return {
+              ...p,
+              intakeDocuments: (p.intakeDocuments ?? []).map((g) =>
+                g.id !== groupId
+                  ? g
+                  : {
+                      ...g,
+                      files: (serverGroup?.files ?? []).map((f) => ({
+                        id: f.id,
+                        fileName: f.fileName,
+                        mimeType: f.mimeType,
+                        storageKey: f.storageKey,
+                        dataUrl: byKey.get(f.storageKey) || byKey.get(f.fileName) || "",
+                        documentDate: f.documentDate ?? null,
+                      })),
+                    }
+              ),
+            };
+          }),
+        }));
+        return { ok: true };
+      }
+      if (action === "REMOVE_INTAKE_DOCUMENT_GROUP") {
+        const localId = Number(payload.patientId);
+        const groupId = String(payload.groupId ?? "").trim();
+        if (!groupId) throw new Error("شناسه مدرک نامعتبر است.");
+        await removeEvidenceDocumentGroup(groupId);
+        setSnapshot((prev) => ({
+          ...prev,
+          patients: prev.patients.map((p) =>
+            p.id === localId
+              ? { ...p, intakeDocuments: (p.intakeDocuments ?? []).filter((g) => g.id !== groupId) }
+              : p
+          ),
+        }));
+        return { ok: true };
+      }
+      if (action === "REMOVE_INTAKE_DOCUMENT_FILE") {
+        const localId = Number(payload.patientId);
+        const groupId = String(payload.groupId ?? "").trim();
+        const fileId = String(payload.fileId ?? "").trim();
+        if (!fileId) throw new Error("شناسه فایل نامعتبر است.");
+        await removeEvidenceDocumentFile(fileId);
+        setSnapshot((prev) => ({
+          ...prev,
+          patients: prev.patients.map((p) =>
+            p.id !== localId
+              ? p
+              : {
+                  ...p,
+                  intakeDocuments: (p.intakeDocuments ?? []).map((g) =>
+                    g.id !== groupId ? g : { ...g, files: g.files.filter((f) => f.id !== fileId) }
+                  ),
+                }
+          ),
+        }));
+        return { ok: true };
+      }
       if (action === "UPSERT_PATHWAY_LIBRARY_ITEM") {
         const rule = (payload.rule ?? {}) as Record<string, unknown>;
-        const body = {
-          title: String(rule.title ?? "").trim(),
+        const title = String(rule.title ?? "").trim();
+        // AdminRuleLibrary ایستگاه می‌فرستد؛ فرم قدیمی قرارداد فقط pathwayCode قالب دارد
+        const stationsRaw = Array.isArray(rule.stations) ? rule.stations : [];
+        let stationDrafts: PathwayStationDraft[] = stationsRaw.map((s, idx) => {
+          const row = s as Record<string, unknown>;
+          return {
+            roomCode: String(row.roomCode ?? "").trim(),
+            titleFa: String(row.titleFa ?? row.roomCode ?? "").trim(),
+            stepOrder: Number(row.stepOrder ?? idx + 1),
+            isOptional: Boolean(row.isOptional),
+          };
+        }).filter((s) => s.roomCode);
+        const templateCode = String(rule.pathwayCode ?? "").trim();
+        if (stationDrafts.length === 0 && templateCode) {
+          const template =
+            snapshot.pathways.find((p) => p.code === templateCode) ??
+            snapshot.pathwayLibrary.find((p) => p.code === templateCode || p.id === templateCode);
+          if (template) {
+            stationDrafts = template.stations?.length
+              ? template.stations.map((s) => ({
+                  roomCode: s.roomCode,
+                  titleFa: s.titleFa,
+                  stepOrder: s.stepOrder,
+                  isOptional: s.isOptional,
+                }))
+              : stationCodesToDrafts(template.stationCodes ?? [], template.optionalStationCodes, snapshot.rooms ?? []);
+          }
+        }
+        if (!title || stationDrafts.length === 0) {
+          throw new Error("عنوان مسیر و حداقل یک ایستگاه را کامل وارد کنید.");
+        }
+        const body: UpsertPathwayBody = {
+          title,
           description: String(rule.description ?? "").trim() || null,
           gender: String(rule.gender ?? "همه"),
           minAge: rule.minAge === "" || rule.minAge == null ? null : Number(rule.minAge),
           maxAge: rule.maxAge === "" || rule.maxAge == null ? null : Number(rule.maxAge),
           jobCategory: String(rule.jobCategory ?? "همه"),
-          pathwayCode: String(rule.pathwayCode ?? rule.pathwayCode ?? "").trim(),
+          isInLibrary: rule.isInLibrary === false ? false : true,
+          estimatedTotalMinutes:
+            rule.estimatedTotalMinutes === "" || rule.estimatedTotalMinutes == null
+              ? null
+              : Number(rule.estimatedTotalMinutes),
+          stations: draftsToUpsertStations(stationDrafts),
         };
-        if (!body.title || !body.pathwayCode) throw new Error("عنوان مسیر و قالب ایستگاهی مقصد را کامل وارد کنید.");
         const id = rule.id ? String(rule.id) : "";
-        const saved = id
-          ? await updatePathwayLibraryRule(id, body)
-          : await createPathwayLibraryRule(body);
+        const saved = id ? await updatePathway(id, body) : await createPathway(body);
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
         if (!quiet) setToast({ text: id ? "مسیر کتابخانه به‌روزرسانی شد." : "مسیر در کتابخانه ثبت شد." });
@@ -1148,7 +1614,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         const id = String(payload.id ?? "").trim();
         if (!id) throw new Error("شناسه مسیر نامعتبر است.");
         try {
-          await deletePathwayLibraryRule(id);
+          await deletePathway(id);
         } catch (err) {
           const msg = err instanceof Error ? err.message : "حذف مسیر ممکن نیست.";
           throw new Error(msg);
@@ -1161,13 +1627,14 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
       if (action === "ATTACH_PATHWAY_LIBRARY") {
         const serverId = String(payload.contractServerId ?? "").trim();
         if (!serverId) throw new Error("شناسه سرور قرارداد یافت نشد؛ صفحه را تازه کنید.");
-        const libraryRuleIds = (Array.isArray(payload.libraryRuleIds) ? payload.libraryRuleIds : [])
+        const libraryPathwayIds = (Array.isArray(payload.libraryRuleIds) ? payload.libraryRuleIds : [])
           .map((x) => String(x))
           .filter(Boolean);
-        if (libraryRuleIds.length === 0) throw new Error("هیچ مسیری برای اتصال انتخاب نشده است.");
+        if (libraryPathwayIds.length === 0) throw new Error("هیچ مسیری برای اتصال انتخاب نشده است.");
+        // بک‌اند LibraryPathwayIds می‌خواهد؛ نام قدیمی libraryRuleIds فقط از UI می‌آید
         const result = await apiFetch<{ recalculated?: number; needsManual?: number }>(
           `/api/contracts/${serverId}/pathway-rules/attach`,
-          { method: "POST", body: { libraryRuleIds } }
+          { method: "POST", body: { libraryPathwayIds } }
         );
         const snap = await loadWorkspaceSnapshot();
         setSnapshot(snap);
@@ -1205,15 +1672,16 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         const rulesRaw = Array.isArray(payload.pathwayRules) ? payload.pathwayRules : [];
         const body = rulesRaw.map((r, idx) => {
           const row = r as Record<string, unknown>;
+          const libraryPathwayId = row.libraryPathwayId ?? row.libraryRuleId;
           return {
             title: String(row.title ?? "").trim(),
             gender: String(row.gender ?? "همه"),
             minAge: row.minAge == null || row.minAge === "" ? null : Number(row.minAge),
             maxAge: row.maxAge == null || row.maxAge === "" ? null : Number(row.maxAge),
             jobCategory: String(row.jobCategory ?? "همه"),
-            pathwayCode: String(row.pathwayCode ?? row.pathwayCode ?? "").trim(),
+            pathwayCode: String(row.pathwayCode ?? "").trim(),
             priority: Number(row.priority ?? idx + 1),
-            libraryRuleId: row.libraryRuleId ? String(row.libraryRuleId) : null,
+            libraryPathwayId: libraryPathwayId ? String(libraryPathwayId) : null,
           };
         });
         // skipMemberReapply فقط اولویت را ذخیره می‌کند؛ جابه‌جایی اعضا با بررسی مجدد
@@ -1358,12 +1826,118 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
         if (!quiet) setToast({ text: `پیامک دعوت برای ${sent} نفر ارسال شد.` });
         return { ok: true, snapshot: snap, sent };
       }
+      // UC-SPC-01/02 — فهرست/جستجوی همهٔ بیماران کلینیک برای پزشک
+      if (action === "SEARCH_SPECIALIST_PATIENTS" || action === "SEARCH_PATIENT_DIRECTORY") {
+        if (!hasApiRole("Specialist", "Admin", "Platform")) {
+          throw new Error("جستجوی بیماران فقط برای نقش پزشک (یا ادمین) در نشست فعلی مجاز است.");
+        }
+        const clinicId =
+          String(payload.clinicId ?? "").trim() ||
+          snapshotRef.current.platform.clinics.find((c) => c.isCurrentTenant)?.id ||
+          snapshotRef.current.platform.clinics[0]?.id ||
+          "";
+        if (!clinicId) throw new Error("کلینیک جاری یافت نشد.");
+        const q = payload.query != null ? String(payload.query) : "";
+        const take = Math.min(100, Math.max(1, Number(payload.take ?? 50) || 50));
+        const rows = await searchPatients(clinicId, q, take);
+        const candidates = rows.map(mapApiPatientToDirectoryRow);
+        return { ok: true, candidates };
+      }
+      // UC-SPC-03 — استعلام کدملی
+      if (action === "LOOKUP_PATIENT_BY_NATIONAL_ID") {
+        if (!hasApiRole("Specialist", "Admin", "Platform")) {
+          throw new Error("استعلام کدملی برای نقش فعلی نشست مجاز نیست.");
+        }
+        const clinicId =
+          String(payload.clinicId ?? "").trim() ||
+          snapshotRef.current.platform.clinics.find((c) => c.isCurrentTenant)?.id ||
+          snapshotRef.current.platform.clinics[0]?.id ||
+          "";
+        if (!clinicId) throw new Error("کلینیک جاری یافت نشد.");
+        const nationalId = String(payload.nationalId ?? "").trim();
+        if (!nationalId) throw new Error("کد ملی را وارد کنید.");
+        const result = await lookupPatientByNationalId(clinicId, nationalId);
+        const candidate = result.patient ? mapApiPatientToDirectoryRow(result.patient) : null;
+        return {
+          ok: true,
+          found: Boolean(result.found && result.patient),
+          blocked: Boolean(result.blocked),
+          error: result.error ?? null,
+          candidate,
+        };
+      }
+      // UC-SPC-04/05/06 — hydrate chart + پاسخ submitted + مدارک
+      if (action === "OPEN_SPECIALIST_CHART") {
+        if (!hasApiRole("Specialist")) {
+          // chart فقط نقش Specialist در API؛ سوئیچ UI کافی نیست
+          throw new Error("باز کردن پرونده پزشکی به نقش پزشک در نشست فعلی نیاز دارد.");
+        }
+        const serverId = String(payload.serverPatientId ?? payload.patientServerId ?? "").trim();
+        if (!serverId) throw new Error("شناسه سرور بیمار یافت نشد.");
+        const chart = await fetchPatientChart(serverId);
+        let formResponse: FormResponse | null = null;
+        const formId = chart.formId ? String(chart.formId) : "";
+        if (formId) {
+          const mapped = await fetchSpecialistFormResponse(serverId, formId);
+          if (mapped) {
+            const localId = mapApiPatientToDirectoryRow(chart.patient).localId;
+            formResponse = {
+              id: mapped.id,
+              patientId: localId,
+              formId: mapped.formId,
+              formCode: mapped.formCode,
+              formVersion: 1,
+              formVersionId: mapped.formId,
+              status: mapped.status,
+              startedAt: mapped.submittedAt ?? new Date().toISOString(),
+              updatedAt: mapped.submittedAt ?? new Date().toISOString(),
+              completedAt: mapped.submittedAt,
+              answers: mapped.answers,
+              context: {
+                gender: chart.patient.gender ?? "",
+                age: chart.patient.age ?? 0,
+                maritalStatus: chart.patient.maritalStatus ?? "",
+              },
+            };
+          }
+        }
+        let documents: PatientIntakeDocumentGroup[] = [];
+        try {
+          documents = await fetchMappedIntakeDocuments(serverId);
+        } catch {
+          // نبود مدرک نباید باز شدن chart را بشکند
+          documents = [];
+        }
+        const merged = mergeSpecialistChart(chart, formResponse, documents);
+        setSnapshot((prev) => {
+          const others = prev.patients.filter(
+            (p) => p.serverId !== serverId && p.id !== merged.id
+          );
+          return { ...prev, patients: [...others, merged] };
+        });
+        if (!quiet) setToast({ text: `پرونده «${merged.fullName}» بارگذاری شد.` });
+        return { ok: true, patientId: merged.id, serverId, patient: merged };
+      }
       if (action === "RESET_MOCK_DATA") {
         throw new Error(
           "بازنشانی دادهٔ نمایشی از این بخش پشتیبانی نمی‌شود. از ریست فکتوری پلتفرم (محیط غیر production) استفاده کنید."
         );
       }
-      throw new Error(`عملیات «${action || "نامشخص"}» هنوز به API وصل نشده است.`);
+      // برچسب فارسی برای toast — کد انگلیسی اکشن به کاربر نشان داده نمی‌شود
+      const unwiredActionFa: Record<string, string> = {
+        PIN_MEMBER_DATE: "ثبت نوبت دستی",
+        UPSERT_DAY_QUOTA: "تعیین سقف روزانه",
+        AUTO_FILL_DAY: "توزیع خودکار نوبت",
+        SEND_DAY_CALLS: "فراخوان روزانه",
+        UPDATE_CONTRACT_API: "تنظیم API قرارداد",
+        SYNC_CONTRACT_FROM_API: "همگام‌سازی از API",
+      };
+      const actionFa = unwiredActionFa[action];
+      throw new Error(
+        actionFa
+          ? `عملیات «${actionFa}» هنوز به سامانه وصل نشده است.`
+          : "این عملیات هنوز به سامانه وصل نشده است."
+      );
     } catch (e) {
       // فریم‌های silent ضدتقلب UI را با toast پر نکنند؛ مگر notifyError (مثلاً نقطهٔ اول GPS)
       if (!quiet || notifyError) setToast({ text: e instanceof Error ? e.message : "خطا در انجام عملیات", error: true });
@@ -1373,9 +1947,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
     }
   }, []);
 
-  const act = async (payload: Record<string, unknown>) => {
-    await execute(payload);
-  };
+  // نتیجهٔ execute (مثلاً createdContractId) باید به Hub برگردد
+  const act = async (payload: Record<string, unknown>) => execute(payload);
 
   const switchRole = async (next: WorkspaceRole, opts?: { page?: AppPage; contractId?: number }) => {
     setRoleOpen(false);
@@ -1529,7 +2102,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             <img src="/icon-64x64.png" alt="نفس" className="h-11 w-11 object-cover" />
           </span>
           <span>
-            <strong className="block text-[21px] font-extrabold tracking-tight text-[#234e40]">نفس</strong>
+            <strong className="block text-[18px] font-extrabold tracking-tight text-[#234e40]">سامانه نفس</strong>
             <span className="mt-1 block text-[9px] tracking-wide text-slate-400">مدیریت هوشمند، مراقبت یکپارچه</span>
           </span>
         </button>
@@ -1624,11 +2197,7 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            {(role === "patient" || role === "owner") && activePatient && <button onClick={() => { setAccountOpen(true); setNotificationsOpen(false); }} className="hidden max-w-44 truncate rounded-lg bg-teal-50 px-2.5 py-1.5 text-[10px] font-semibold text-teal-800 sm:block" title="برای تغییر پرونده، منوی پروفایل را باز کنید">{isSelf ? `پرونده من: ${activePatient.fullName}` : `همراه: ${activePatient.fullName}`}</button>}
             <div className="hidden text-[10px] text-slate-400 2xl:block">{date}</div>
-            <button aria-label="به‌روزرسانی اطلاعات" title="به‌روزرسانی اطلاعات" onClick={() => void refresh()} className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-50 hover:text-teal-600">
-              <RefreshCw className={`h-4 w-4 stroke-[1.6] ${busy ? "animate-spin" : ""}`} />
-            </button>
             <div className="popover-container relative">
               <button
                 onClick={() => {
@@ -1671,7 +2240,15 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                 aria-label="حساب کاربری"
                 className="flex items-center gap-2.5"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e4ebdf] bg-[#eef2e9] text-[11px] font-semibold text-[#70845f]">{initials(user.fullName)}</span>
+                {topbarAvatarUrl ? (
+                  <span className="flex h-9 w-7 shrink-0 items-center justify-center overflow-hidden rounded-[50%] border border-[#e4ebdf] bg-[#eef2e9] shadow-sm">
+                    <img src={topbarAvatarUrl} alt="" className="h-full w-full object-cover" />
+                  </span>
+                ) : (
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e4ebdf] bg-[#eef2e9] text-[11px] font-semibold text-[#70845f]">
+                    {initials(user.fullName)}
+                  </span>
+                )}
                 <span className="hidden text-right md:block">
                   <strong className="block text-[11px] font-semibold text-slate-600">{user.fullName}</strong>
                   <span className="mt-1 flex items-center gap-1 text-[9px] text-slate-400">
@@ -1842,7 +2419,8 @@ export function ClinicOrchestratorApp({ initialSnapshot, user: initialUser, init
                     ? "funnel"
                     : current === "contract-packages"
                       ? "packages"
-                      : "people"
+                      : // سایدبار «قرارداد» با داده → افراد؛ ایجاد جدید همچنان setTab(packages) می‌زند
+                        "people"
               }
               onAction={async (p) => (await execute(p)) as unknown as Record<string, unknown>}
               onOpenPatientRecord={(pid) => navigate("records", pid)}

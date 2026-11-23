@@ -62,4 +62,18 @@ describe("UC-ADM-12 form progress (UT-FE-ADM-12)", () => {
     expect(m.profileProgressPct).toBe(100);
     expect(m.profileCompletedAt).toContain("2026");
   });
+
+  it("تاریخ مراجعه رستر → نوبت دستی (pinned) در تب نوبت‌دهی", () => {
+    const m = mapApiMember(baseMember({ scheduledVisitDate: "2026-11-21" }), 1);
+    expect(m.scheduledVisitDate).toBe("2026-11-21");
+    expect(m.appointmentStatus).toBe("pinned");
+    expect(m.scheduledDate).toBe("2026-11-21");
+    expect(m.scheduledLabel).toBeTruthy();
+  });
+
+  it("بدون تاریخ مراجعه → بدون نوبت", () => {
+    const m = mapApiMember(baseMember({ scheduledVisitDate: null }), 1);
+    expect(m.appointmentStatus).toBe("unscheduled");
+    expect(m.scheduledDate).toBeNull();
+  });
 });

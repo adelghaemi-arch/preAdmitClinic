@@ -503,7 +503,7 @@ export function CorporateSupervisorPanel({
                     <td className="py-2.5">
                       <div className="font-semibold text-slate-800">{m.fullName}</div>
                       <div className="text-[10px] text-slate-400">
-                        {m.department} · کد {m.personnelCode} · {toFaDigits(m.phone)}
+                        {m.department} · کد {toFaDigits(m.personnelCode)} · {toFaDigits(m.phone)}
                       </div>
                     </td>
                     <td className="py-2.5 text-[11px] text-slate-600">{m.assignedPathwayTitle}</td>

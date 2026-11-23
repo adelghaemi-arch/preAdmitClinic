@@ -1,12 +1,13 @@
 /*
  File: frontend/src/components/ContractSearchSelect.tsx
- Description: کمبوی قابل‌جستجوی قرارداد با تاریخ شمسی شروع
- Parent Dependencies: AppInput, persian, date-iso, workspace matches
+ Description: کمبوی قابل‌جستجوی قرارداد با تاریخ شمسی شروع؛ سورت جدیدترین بالا / نمونه پایین؛ badge غیرفعال
+ Parent Dependencies: AppInput, persian, date-iso, contract-list-sort, workspace matches
  */
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { AppInput } from "@/components/AppInput";
+import { contractStatusBadgeLabel, sortContractsForPicker } from "@/lib/contract-list-sort";
 import { gregorianIsoToJalaliDate } from "@/lib/date-iso";
 import { toFaDigits } from "@/lib/persian";
 import { matchesAllTerms } from "@/lib/workspace";
@@ -57,7 +58,8 @@ export function ContractSearchSelect({
 }: Props) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
-  const selected = contracts.find((c) => c.id === value) ?? contracts[0] ?? null;
+  const ordered = useMemo(() => sortContractsForPicker(contracts), [contracts]);
+  const selected = ordered.find((c) => c.id === value) ?? ordered[0] ?? null;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -76,9 +78,9 @@ export function ContractSearchSelect({
 
   const filtered = useMemo(() => {
     const q = query.trim();
-    if (!q) return contracts;
-    return contracts.filter((c) => matchesAllTerms(contractSearchHaystack(c), q));
-  }, [contracts, query]);
+    if (!q) return ordered;
+    return ordered.filter((c) => matchesAllTerms(contractSearchHaystack(c), q));
+  }, [ordered, query]);
 
   const pick = (id: number) => {
     onChange(id);
@@ -87,7 +89,8 @@ export function ContractSearchSelect({
   };
 
   return (
-    <div ref={rootRef} className="relative">
+    // وقتی باز است z بالا تا روی تب‌ها/لیست پایین بنشیند؛ والد نباید overflow-hidden داشته باشد
+    <div ref={rootRef} className={`relative ${open ? "z-50" : "z-0"}`}>
       {!open ? (
         <button
           type="button"
@@ -100,7 +103,16 @@ export function ContractSearchSelect({
           <span className="min-w-0 flex-1">
             {selected ? (
               <>
-                <span className="block truncate text-[12px] font-semibold text-slate-800">{contractPrimaryLabel(selected)}</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="block min-w-0 flex-1 truncate text-[12px] font-semibold text-slate-800">
+                    {contractPrimaryLabel(selected)}
+                  </span>
+                  {contractStatusBadgeLabel(selected.status) ? (
+                    <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 ring-1 ring-amber-200">
+                      {contractStatusBadgeLabel(selected.status)}
+                    </span>
+                  ) : null}
+                </span>
                 <span className="mt-0.5 block truncate text-[10px] font-medium text-slate-500">{contractMetaLabel(selected)}</span>
               </>
             ) : (
@@ -151,7 +163,7 @@ export function ContractSearchSelect({
           <ul
             id={listId}
             role="listbox"
-            className="absolute z-40 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-800/10"
+            className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-800/10"
           >
             {filtered.length === 0 ? (
               <li className="px-3 py-2.5 text-[11px] text-slate-400">قراردادی با این جستجو پیدا نشد.</li>
@@ -166,8 +178,15 @@ export function ContractSearchSelect({
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => pick(c.id)}
                     >
-                      <span className={`block truncate text-[12px] ${active ? "font-bold text-teal-900" : "font-semibold text-slate-800"}`}>
-                        {contractPrimaryLabel(c)}
+                      <span className="flex items-center gap-1.5">
+                        <span className={`block min-w-0 flex-1 truncate text-[12px] ${active ? "font-bold text-teal-900" : "font-semibold text-slate-800"}`}>
+                          {contractPrimaryLabel(c)}
+                        </span>
+                        {contractStatusBadgeLabel(c.status) ? (
+                          <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-800 ring-1 ring-amber-200">
+                            {contractStatusBadgeLabel(c.status)}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="mt-0.5 block truncate text-[10px] text-slate-500">{contractMetaLabel(c)}</span>
                     </button>

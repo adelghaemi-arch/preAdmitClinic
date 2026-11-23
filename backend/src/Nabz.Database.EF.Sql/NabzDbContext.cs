@@ -5,6 +5,7 @@
  */
 
 using Microsoft.EntityFrameworkCore;
+using Nabz.Domain.Common;
 using Nabz.Domain.Entities;
 
 namespace Nabz.Database.EF.Sql;
@@ -20,11 +21,14 @@ public class NabzDbContext : DbContext
     public DbSet<AuthSession> AuthSessions => Set<AuthSession>();
     public DbSet<MultiSessionAlert> MultiSessionAlerts => Set<MultiSessionAlert>();
     public DbSet<Clinic> Clinics => Set<Clinic>();
+    public DbSet<ClinicStation> ClinicStations => Set<ClinicStation>();
     public DbSet<CorporateContract> CorporateContracts => Set<CorporateContract>();
     public DbSet<ContractSupervisor> ContractSupervisors => Set<ContractSupervisor>();
     public DbSet<ContractMember> ContractMembers => Set<ContractMember>();
     public DbSet<ContractPathwayRule> ContractPathwayRules => Set<ContractPathwayRule>();
-    public DbSet<PathwayLibraryRule> PathwayLibraryRules => Set<PathwayLibraryRule>();
+    public DbSet<PathwayDefinition> PathwayDefinitions => Set<PathwayDefinition>();
+    public DbSet<PathwayStationDef> PathwayStationDefs => Set<PathwayStationDef>();
+    public DbSet<PatientPathwayStationProgress> PatientPathwayStationProgresses => Set<PatientPathwayStationProgress>();
     public DbSet<ContractSmsLog> ContractSmsLogs => Set<ContractSmsLog>();
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<PatientProfileRevision> PatientProfileRevisions => Set<PatientProfileRevision>();
@@ -46,6 +50,13 @@ public class NabzDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Id کلاینت‌ساید است؛ ValueGeneratedOnAdd روی Guid باعث DbUpdateConcurrencyException روی SaveChanges می‌شود
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(EntityBase).IsAssignableFrom(entityType.ClrType))
+                modelBuilder.Entity(entityType.ClrType).Property(nameof(EntityBase.Id)).ValueGeneratedNever();
+        }
+
         modelBuilder.Entity<Person>(e =>
         {
             // موبایل تکراری مجاز (چند هویت روی یک شماره)
@@ -101,10 +112,24 @@ public class NabzDbContext : DbContext
             e.Property(x => x.ToubaPassword).HasMaxLength(200);
             e.Property(x => x.ToubaSendUrl).HasMaxLength(300);
             e.Property(x => x.ToubaOtpMessageTemplate).HasMaxLength(500);
+            e.Property(x => x.LogoStorageKey).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<ClinicStation>(e =>
+        {
+            e.HasOne(x => x.Clinic).WithMany().HasForeignKey(x => x.ClinicId);
+            e.HasIndex(x => new { x.ClinicId, x.Code }).IsUnique();
+            e.Property(x => x.Code).HasMaxLength(32).IsRequired();
+            e.Property(x => x.TitleFa).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Category).HasMaxLength(32).IsRequired();
+            e.Property(x => x.RoomNumber).HasMaxLength(32);
+            e.Property(x => x.PrepInstructions).HasMaxLength(2000);
+            e.Property(x => x.WayfindingSteps).HasMaxLength(2000);
         });
 
         modelBuilder.Entity<CorporateContract>(e =>
         {
+            e.Property(x => x.PartnerLogoStorageKey).HasMaxLength(500);
             e.HasOne(x => x.Clinic).WithMany().HasForeignKey(x => x.ClinicId);
             e.HasIndex(x => x.Code);
             e.HasOne(x => x.Supervisor).WithOne(x => x.Contract).HasForeignKey<ContractSupervisor>(x => x.ContractId);
@@ -222,6 +247,33 @@ public class NabzDbContext : DbContext
         modelBuilder.Entity<ContractPathwayRule>(e =>
         {
             e.HasOne(x => x.Contract).WithMany(x => x.PathwayRules).HasForeignKey(x => x.ContractId);
+        });
+
+        modelBuilder.Entity<PathwayDefinition>(e =>
+        {
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Code).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(1000);
+            e.Property(x => x.Gender).HasMaxLength(16).IsRequired();
+            e.Property(x => x.JobCategory).HasMaxLength(64).IsRequired();
+        });
+
+        modelBuilder.Entity<PathwayStationDef>(e =>
+        {
+            e.HasOne(x => x.PathwayDefinition).WithMany(x => x.Stations).HasForeignKey(x => x.PathwayDefinitionId);
+            e.HasIndex(x => new { x.PathwayDefinitionId, x.StepOrder });
+            e.Property(x => x.RoomCode).HasMaxLength(32).IsRequired();
+            e.Property(x => x.TitleFa).HasMaxLength(200).IsRequired();
+        });
+
+        modelBuilder.Entity<PatientPathwayStationProgress>(e =>
+        {
+            e.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientId);
+            e.HasOne(x => x.PathwayStationDef).WithMany().HasForeignKey(x => x.PathwayStationDefId)
+                .OnDelete(DeleteBehavior.Restrict);
+            // یک تأیید به‌ازای هر ایستگاه قالب برای هر بیمار
+            e.HasIndex(x => new { x.PatientId, x.PathwayStationDefId }).IsUnique();
         });
 
         modelBuilder.Entity<ContractSmsLog>(e =>

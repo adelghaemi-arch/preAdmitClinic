@@ -6,7 +6,8 @@
 #   rsync -avu --exclude-from=deploy-rsync-exclude.txt ./ user@host:/path/to/server/
 # هرگز --delete را روی کل درخت با persist روشن نکنید.
 
-# سکرت‌های پرشده روی سرور
+# سکرت‌ها و تنظیم per-host — هرگز از ویندوز به لینوکس نرود (سرورهای متفاوت خراب نشوند)
+# پکیج فقط .env.example دارد؛ api/.env هر هاست جداست
 api/.env
 **/.env
 !**/.env.example

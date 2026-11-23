@@ -128,6 +128,7 @@ flowchart LR
 |-------|-----|--------------|---------|--------|---------------------|-----------|
 | TC-ADM-01 | UC-ADM-01 | admin | لاگین ادمین | ایجاد قرارداد سازمانی | قرارداد در لیست | |
 | TC-ADM-22 | UC-ADM-22 | admin | قرارداد موجود | ویرایش عنوان/سازمان/بسته پایه از هدر | لیست و هدر به‌روز؛ Code ثابت | |
+| TC-ADM-24 | UC-ADM-24 | admin | قرارداد Active | غیرفعال با مودال تأیید؛ تیک نمایش غیرفعال‌ها؛ فعال‌سازی مجدد | Status=Inactive سپس Active؛ کمبو بدون تیک فقط Active | |
 | TC-ADM-02 | UC-ADM-02 | admin | قرارداد موجود | تنظیم ناظر سازمان | ناظر به قرارداد لینک می‌شود | |
 | TC-ADM-03 | UC-ADM-03 | admin | قرارداد | تنظیم API / همگام‌سازی (در صورت فعال) | پیکربندی ذخیره؛ sync بدون crash | |
 | TC-ADM-04 | UC-ADM-04 | admin | قرارداد | ورود اعضا (import) | اعضا در رستر | |
@@ -144,6 +145,7 @@ flowchart LR
 | TC-ADM-FORM-PKG | UC-ADM-18 | admin | فرم‌های seeded | خروجی JSON و Excel → ورود مجدد | round-trip بدون خطا؛ تعداد فرم‌ها پایدار؛ قوانین visibility حفظ | |
 | TC-ADM-12 | UC-ADM-12 | admin | دادهٔ مانیتور | داشبورد کلیات/قیف؛ فیلتر شروع/تکمیل پرسشنامه | FormDraft/FormSubmitted و badge پیشرفت منطقی | |
 | TC-ADM-13 | UC-ADM-13 | admin | پرونده موجود | مشاهده پرونده از مانیتور | وضعیت پیش‌پذیرش درست | |
+| TC-ADM-26 | UC-ADM-26 | admin | عضو با پرسشنامه Submitted | دکمه PDF → مودال → دانلود از API | PDF وکتور Chromium؛ عنوان کلینیک؛ بدون همکار سازمانی؛ متن قابل‌جستجو؛ بدون LinkedPatient خطا | |
 | TC-ADM-14 | UC-ADM-14 | platform | env غیر-prod | ریست فکتوری پلتفرم با OTP (یا re-seed سرور) | قفل در production؛ DB+آپلود به حالت seed؛ UI ادمین کلینیک دکمهٔ ریست mock ندارد | |
 | TC-ADM-15 | UC-ADM-15 | admin | کاربران seed | فهرست کاربران کلینیک | کاربران Platform در لیست **نیستند** | |
 | TC-ADM-16 | UC-ADM-16 | admin | — | ایجاد کاربر specialist/admin | نقش Platform قابل انتصاب نیست | |

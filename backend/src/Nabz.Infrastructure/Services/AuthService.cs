@@ -1,7 +1,7 @@
 /*
  File: backend/src/Nabz.Infrastructure/Services/AuthService.cs
- Description: OTP با عضو قرارداد/بیمار/ناظر؛ soft-admit؛ FixedOtp (+۱ ادمین کل) یا قالب کاوه‌نگار
- Parent Dependencies: IAuthRepository, IPlatformRepository, IPatientService, ISmsSender, AuthOptions, KavenegarOptions, PlatformAdminIdentity
+ Description: OTP با عضو قرارداد/بیمار/ناظر؛ soft-admit؛ FixedOtp (+۱ ادمین کل) یا طوبی/کاوه‌نگار
+ Parent Dependencies: IAuthRepository, IPlatformRepository, IPatientService, ISmsSender, AuthOptions, KavenegarOptions, PlatformAdminIdentity, ToubaOtpTemplateRules
  */
 
 using System.Security.Cryptography;
@@ -13,6 +13,7 @@ using Nabz.Application.Interfaces;
 using Nabz.Application.Interfaces.Repositories;
 using Nabz.Application.Options;
 using Nabz.Application.Security;
+using Nabz.Application.Sms;
 using Nabz.Domain.Entities;
 using Nabz.Domain.Enums;
 
@@ -661,9 +662,15 @@ public sealed class AuthService(
             {
                 if (provider == ClinicSmsProvider.Touba)
                 {
-                    var tpl = clinic?.ToubaOtpMessageTemplate?.Trim();
-                    if (string.IsNullOrWhiteSpace(tpl))
-                        tpl = "کد ورود شما: {code}";
+                    string tpl;
+                    try
+                    {
+                        tpl = ToubaOtpTemplateRules.ResolveOrThrow(clinic?.ToubaOtpMessageTemplate);
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        return new OtpRequestResult(false, null, ex.Message);
+                    }
                     var content = tpl.Replace("{code}", code, StringComparison.OrdinalIgnoreCase);
                     await sms.SendPlainAsync(mobile, content, ct);
                 }
@@ -696,6 +703,14 @@ public sealed class AuthService(
             ExpiresAt = DateTime.UtcNow.AddSeconds(ttl)
         }, ct);
         await uow.SaveChangesAsync(ct);
+        // بدون افشای کد؛ برای تشخیص Fixed در برابر SMS واقعی روی سرور
+        var mobileSuffix = mobile.Length >= 4 ? mobile[^4..] : mobile;
+        logger.LogInformation(
+            "OTP صادر شد purpose={Purpose} mobileSuffix={MobileSuffix} fixedOtp={FixedOtp} provider={Provider}",
+            purpose,
+            mobileSuffix,
+            authCfg.HasFixedOtp,
+            authCfg.HasFixedOtp ? "FixedOtp" : "Sms");
         return new OtpRequestResult(true, demoCode, null);
     }
 

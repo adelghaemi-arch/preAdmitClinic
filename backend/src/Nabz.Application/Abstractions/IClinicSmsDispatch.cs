@@ -27,4 +27,13 @@ public interface IClinicSmsDispatch
         string? apiKey,
         string? sender,
         CancellationToken ct = default);
+
+    /// <summary>UserInfo طوبی — اعتبار و خطوط؛ مستقل از FixedOtp.</summary>
+    Task<ToubaAccountInfoResult> GetToubaAccountInfoAsync(
+        string username,
+        string password,
+        string? serviceUrl,
+        CancellationToken ct = default);
 }
+
+public sealed record ToubaAccountInfoResult(int Credit, IReadOnlyList<string> SenderNumbers);

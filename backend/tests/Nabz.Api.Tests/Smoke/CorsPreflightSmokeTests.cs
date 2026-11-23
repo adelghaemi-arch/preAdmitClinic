@@ -23,13 +23,13 @@ public sealed class CorsPreflightSmokeTests : IClassFixture<NabzApiFactory>
     public async Task Options_OtpRequest_FromMyOrigin_ReturnsAllowOrigin()
     {
         using var req = new HttpRequestMessage(HttpMethod.Options, "/api/auth/otp/request");
-        req.Headers.TryAddWithoutValidation("Origin", "https://my.liveteb.ir");
+        req.Headers.TryAddWithoutValidation("Origin", "https://my.nafasmed.ir");
         req.Headers.TryAddWithoutValidation("Access-Control-Request-Method", "POST");
         req.Headers.TryAddWithoutValidation("Access-Control-Request-Headers", "content-type,authorization");
 
         var res = await _client.SendAsync(req);
         Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
         Assert.True(res.Headers.TryGetValues("Access-Control-Allow-Origin", out var origins));
-        Assert.Contains("https://my.liveteb.ir", origins);
+        Assert.Contains("https://my.nafasmed.ir", origins);
     }
 }

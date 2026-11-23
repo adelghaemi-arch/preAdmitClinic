@@ -270,8 +270,8 @@ export function PreAdmitDocumentsPanel({
       }
       setModal({ open: false });
       resetModalForm();
-    } catch {
-      setModalError("ذخیره مدرک انجام نشد. دوباره تلاش کنید.");
+    } catch (e) {
+      setModalError(e instanceof Error && e.message ? e.message : "ذخیره مدرک انجام نشد. دوباره تلاش کنید.");
     } finally {
       setUploading(false);
     }

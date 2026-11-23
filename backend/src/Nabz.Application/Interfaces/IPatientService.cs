@@ -31,6 +31,16 @@ public record UpdatePatientHomeAddressRequest(
     string? HomeUnit = null,
     string? HomePostalCode = null);
 
+/// <summary>ایستگاه برنامه‌ریزی‌شدهٔ مسیر برای پنل سلامتجو (جدا از صف کلینیک).</summary>
+public record PathwayItineraryStationDto(
+    Guid StationDefId,
+    string RoomCode,
+    string TitleFa,
+    int StepOrder,
+    bool IsOptional,
+    bool Confirmed,
+    DateTime? ConfirmedAt);
+
 public record OwnerIntakeSnapshotDto(
     PatientDto Patient,
     string? FormStatus,
@@ -47,7 +57,12 @@ public record OwnerIntakeSnapshotDto(
     string? HospitalName = null,
     string? IntroducedMobileMasked = null,
     /// <summary>نام/نام‌خانوادگی/کدملی/تاریخ‌تولد حداقل.</summary>
-    bool ProfileComplete = false);
+    bool ProfileComplete = false,
+    /// <summary>کلید فایل پرتره برای تامنیل بخش اطلاعات پایه (بدون data URL).</summary>
+    string? PortraitStorageKey = null,
+    IReadOnlyList<PathwayItineraryStationDto>? PathwayItinerary = null,
+    /// <summary>درصد پیشرفت پیش‌نویس پرسشنامه (۰–۱۰۰)؛ برای نقشه راه قبل از intake کامل.</summary>
+    int FormProgressPct = 0);
 
 public record PatientChartDto(
     PatientDto Patient,
@@ -115,6 +130,8 @@ public interface IPatientService
     Task<IReadOnlyList<PatientDto>> SearchAsync(Guid clinicId, string? query, int take = 50, CancellationToken ct = default);
     Task<PatientDto?> GetForOwnerAsync(Guid userId, CancellationToken ct = default);
     Task<OwnerIntakeSnapshotDto?> GetOwnerIntakeSnapshotAsync(Guid userId, CancellationToken ct = default);
+    /// <summary>تأیید خوداظهاری حضور در ایستگاه مسیر — بدون الزام ترتیب؛ idempotent.</summary>
+    Task<PathwayItineraryStationDto> ConfirmPathwayStationAsync(Guid ownerUserId, Guid stationDefId, CancellationToken ct = default);
     Task<PatientChartDto?> GetChartAsync(Guid patientId, CancellationToken ct = default);
     Task<PatientIntakeStatusDto?> GetIntakeStatusAsync(Guid patientId, CancellationToken ct = default);
     Task<PatientDto> UpdatePhoneAsync(Guid patientId, string phone, CancellationToken ct = default);

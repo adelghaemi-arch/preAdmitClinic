@@ -17,11 +17,14 @@ public sealed class InMemoryStore
     public List<AuthSession> Sessions { get; } = [];
     public List<MultiSessionAlert> Alerts { get; } = [];
     public List<Clinic> Clinics { get; } = [];
+    public List<ClinicStation> ClinicStations { get; } = [];
     public List<CorporateContract> Contracts { get; } = [];
     public List<ContractMember> Members { get; } = [];
     public List<ContractSupervisor> Supervisors { get; } = [];
     public List<ContractPathwayRule> PathwayRules { get; } = [];
-    public List<PathwayLibraryRule> PathwayLibraryRules { get; } = [];
+    public List<PathwayDefinition> PathwayDefinitions { get; } = [];
+    public List<PathwayStationDef> PathwayStationDefs { get; } = [];
+    public List<PatientPathwayStationProgress> PathwayStationProgress { get; } = [];
     public List<ContractSmsLog> ContractSmsLogs { get; } = [];
     public List<Patient> Patients { get; } = [];
     public List<PatientProfileRevision> ProfileRevisions { get; } = [];

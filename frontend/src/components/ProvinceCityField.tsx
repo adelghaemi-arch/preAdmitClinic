@@ -1,3 +1,9 @@
+/*
+ File: frontend/src/components/ProvinceCityField.tsx
+ Description: انتخاب استان/شهر؛ بعد از استان، کمبوی شهر باز و فوکوس می‌شود
+ Parent Dependencies: iran-locations, AppInput
+ */
+
 import { AppInput } from "@/components/AppInput";
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
@@ -29,6 +35,7 @@ function SearchableCombo({
   placeholder,
   emptyText,
   onSelect,
+  forceOpenToken = 0,
 }: {
   label: string;
   value: string;
@@ -38,10 +45,13 @@ function SearchableCombo({
   placeholder: string;
   emptyText: string;
   onSelect: (next: string) => void;
+  /** افزایش توکن → باز شدن فهرست + فوکوس ورودی (مثلاً بعد از انتخاب استان) */
+  forceOpenToken?: number;
 }) {
   const locked = Boolean(disabled || readOnly);
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value);
 
@@ -58,6 +68,16 @@ function SearchableCombo({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
+  // پس از انتخاب استان: شهر را باز و فوکوس کن (منتظر فعال شدن disabled نباش)
+  useEffect(() => {
+    if (!forceOpenToken || locked) return;
+    setOpen(true);
+    const t = window.setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [forceOpenToken, locked]);
+
   const filtered = useMemo(() => filterLocationNames(options, query), [options, query]);
 
   const pick = (name: string) => {
@@ -71,6 +91,7 @@ function SearchableCombo({
       <span className="mb-1 block text-[10px] font-medium text-slate-500">{label}</span>
       <div className="relative">
         <AppInput
+          ref={inputRef}
           type="text"
           role="combobox"
           aria-expanded={open}
@@ -83,6 +104,7 @@ function SearchableCombo({
           autoComplete="off"
           lang="fa"
           dir="rtl"
+          enterKeyHint="next"
           onFocus={() => {
             if (!locked) setOpen(true);
           }}
@@ -97,6 +119,7 @@ function SearchableCombo({
             if (e.key === "Escape") setOpen(false);
             if (e.key === "Enter") {
               e.preventDefault();
+              e.stopPropagation();
               if (filtered.length === 1) pick(filtered[0]);
               else if (filtered.includes(query.trim())) pick(query.trim());
             }
@@ -111,7 +134,10 @@ function SearchableCombo({
           disabled={locked}
           aria-label={`باز کردن فهرست ${label}`}
           onClick={() => {
-            if (!locked) setOpen((v) => !v);
+            if (!locked) {
+              setOpen((v) => !v);
+              inputRef.current?.focus();
+            }
           }}
           className="absolute inset-y-0 left-0 flex items-center px-2.5 text-slate-400 disabled:opacity-40"
         >
@@ -160,6 +186,7 @@ export function ProvinceCityField({
   const parsed = useMemo(() => parseProvinceCity(value), [value]);
   const [province, setProvince] = useState(parsed.province);
   const [city, setCity] = useState(parsed.city);
+  const [cityOpenToken, setCityOpenToken] = useState(0);
 
   useEffect(() => {
     const next = parseProvinceCity(value);
@@ -188,6 +215,8 @@ export function ProvinceCityField({
           setProvince(next);
           setCity("");
           emit(next, "");
+          // استان انتخاب شد → کمبوی شهر را باز و فوکوس کن
+          if (next.trim()) setCityOpenToken((n) => n + 1);
         }}
       />
       <SearchableCombo
@@ -198,6 +227,7 @@ export function ProvinceCityField({
         readOnly={readOnly}
         placeholder={province ? "جستجو یا انتخاب شهر" : "ابتدا استان را انتخاب کنید"}
         emptyText="شهری یافت نشد"
+        forceOpenToken={cityOpenToken}
         onSelect={(next) => {
           setCity(next);
           emit(province, next);

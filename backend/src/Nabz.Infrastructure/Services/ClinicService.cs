@@ -1,37 +1,74 @@
 /*
  File: backend/src/Nabz.Infrastructure/Services/ClinicService.cs
- Description: سرویس کلینیک جاری — لوکیشن، پشتیبانی، سامانه پیامک، تست ارسال قبل از فعال‌سازی (UC-ADM-23)
- Parent Dependencies: IClinicRepository, IClinicSmsDispatch, ISmsCampaignTemplateRepository, ClinicSmsTestSamples
+ Description: سرویس کلینیک جاری — لوکیشن، پشتیبانی، SMS SOAP طوبی، لوگوی برند (UC-ADM-21/23)
+ Parent Dependencies: IClinicRepository, IFileStorage, IClinicSmsDispatch, ToubaSoapSmsSender
  */
 
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nabz.Application.Abstractions;
+using Nabz.Application.Brand;
 using Nabz.Application.Interfaces;
 using Nabz.Application.Interfaces.Repositories;
 using Nabz.Application.Options;
 using Nabz.Application.Sms;
 using Nabz.Domain.Entities;
 using Nabz.Domain.Enums;
+using Nabz.Infrastructure.Sms;
 
 namespace Nabz.Infrastructure.Services;
 
 public sealed class ClinicService(
     IClinicRepository clinics,
     IUnitOfWork uow,
+    IFileStorage files,
     IClinicSmsDispatch smsDispatch,
     ISmsCampaignTemplateRepository smsTemplates,
     IOptions<KavenegarOptions> kavenegarOptions,
     ILogger<ClinicService> logger) : IClinicService
 {
-    public const string DefaultToubaSendUrl = "https://sms.tsms.ir/url/tsms.php";
+    public const string DefaultToubaSendUrl = ToubaSoapSmsSender.DefaultSoapUrl;
     private static readonly Regex Mobile09 = new(@"^09\d{9}$", RegexOptions.Compiled);
 
     public async Task<ClinicDto?> GetCurrentAsync(CancellationToken ct = default)
     {
         var c = await clinics.GetCurrentAsync(ct);
         return c is null ? null : Map(c);
+    }
+
+    public async Task<ClinicLogoUploadResult> UploadLogoAsync(
+        Stream content, string fileName, string contentType, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        await using var ms = new MemoryStream();
+        await content.CopyToAsync(ms, ct);
+        BrandLogoRules.EnsureValidUpload(contentType, ms.Length);
+        ms.Position = 0;
+
+        var clinic = await clinics.GetCurrentAsync(ct)
+            ?? throw new InvalidOperationException("کلینیک جاری یافت نشد.");
+
+        var ext = BrandLogoRules.NormalizeExtension(contentType, fileName);
+        var canonical = $"logo{ext}";
+        var stored = await files.SaveAsync(
+            ms,
+            fileName,
+            contentType,
+            new StorageSaveContext(FolderOverride: BrandLogoRules.ClinicFolder, CanonicalFileName: canonical),
+            ct);
+
+        if (!string.IsNullOrWhiteSpace(clinic.LogoStorageKey)
+            && !string.Equals(clinic.LogoStorageKey, stored.StorageKey, StringComparison.Ordinal))
+        {
+            try { await files.DeleteAsync(clinic.LogoStorageKey, ct); }
+            catch { /* حذف لوگوی قبلی بهترین‌تلاش */ }
+        }
+
+        clinic.LogoStorageKey = stored.StorageKey;
+        clinic.UpdatedAt = DateTime.UtcNow;
+        await uow.SaveChangesAsync(ct);
+        return new ClinicLogoUploadResult(stored.StorageKey, stored.FileName, stored.ContentType, stored.SizeBytes);
     }
 
     public async Task<ClinicDto> UpdateCurrentAsync(UpdateClinicRequest request, CancellationToken ct = default)
@@ -82,11 +119,19 @@ public sealed class ClinicService(
         if (request.ToubaSendUrl is not null)
         {
             var url = NormalizeOptional(request.ToubaSendUrl, 300);
-            c.ToubaSendUrl = string.IsNullOrWhiteSpace(url) ? DefaultToubaSendUrl : url;
+            // URL قدیمی tsms.php را به SOAP نمونه remap می‌کنیم
+            c.ToubaSendUrl = string.IsNullOrWhiteSpace(url)
+                ? DefaultToubaSendUrl
+                : ToubaSoapSmsSender.ResolveSoapEndpoint(url);
         }
 
         if (request.ToubaOtpMessageTemplate is not null)
-            c.ToubaOtpMessageTemplate = NormalizeOptional(request.ToubaOtpMessageTemplate, 500);
+        {
+            var tpl = NormalizeOptional(request.ToubaOtpMessageTemplate, 500);
+            // بدون {code} متن ثابت به گوشی می‌رود و با CodeHash رندم جور نیست
+            ToubaOtpTemplateRules.EnsureValidIfSet(tpl);
+            c.ToubaOtpMessageTemplate = tpl;
+        }
 
         ValidateSmsConfig(c);
 
@@ -194,6 +239,23 @@ public sealed class ClinicService(
         throw new InvalidOperationException("حالت تست نامعتبر است (AppTemplate / Direct / ProviderTemplate).");
     }
 
+    public async Task<ClinicToubaAccountDto> GetToubaAccountInfoAsync(CancellationToken ct = default)
+    {
+        var c = await clinics.GetCurrentAsync(ct)
+            ?? throw new InvalidOperationException("کلینیک جاری یافت نشد.");
+
+        if (string.IsNullOrWhiteSpace(c.ToubaUsername) || string.IsNullOrWhiteSpace(c.ToubaPassword))
+            throw new InvalidOperationException("برای بارگذاری حساب طوبی، نام کاربری و رمز را ذخیره کنید.");
+
+        var info = await smsDispatch.GetToubaAccountInfoAsync(
+            c.ToubaUsername,
+            c.ToubaPassword,
+            ToubaSoapSmsSender.ResolveSoapEndpoint(c.ToubaSendUrl),
+            ct);
+
+        return new ClinicToubaAccountDto(info.Credit, info.SenderNumbers);
+    }
+
     private static ClinicSmsProvider ResolveTestProvider(Clinic c, string? requestProvider)
     {
         ClinicSmsProvider? requested = null;
@@ -242,6 +304,7 @@ public sealed class ClinicService(
                 throw new InvalidOperationException("برای طوبی رمز عبور الزامی است.");
             if (string.IsNullOrWhiteSpace(c.SmsSenderNumber))
                 throw new InvalidOperationException("شماره ارسال‌کننده (خط) برای طوبی الزامی است.");
+            ToubaOtpTemplateRules.EnsureValidIfSet(c.ToubaOtpMessageTemplate);
         }
     }
 
@@ -314,6 +377,7 @@ public sealed class ClinicService(
             c.ToubaUsername,
             ClinicSmsSecrets.MaskIfSet(c.ToubaPassword),
             !string.IsNullOrWhiteSpace(c.ToubaPassword),
-            c.ToubaSendUrl ?? DefaultToubaSendUrl,
-            c.ToubaOtpMessageTemplate);
+            ToubaSoapSmsSender.ResolveSoapEndpoint(c.ToubaSendUrl),
+            c.ToubaOtpMessageTemplate,
+            c.LogoStorageKey);
 }

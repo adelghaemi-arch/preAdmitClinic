@@ -22,11 +22,14 @@ public sealed class FakeDatabaseFactoryReset(InMemoryStore store) : IDatabaseFac
         store.Sessions.Clear();
         store.Alerts.Clear();
         store.Clinics.Clear();
+        store.ClinicStations.Clear();
         store.Contracts.Clear();
         store.Members.Clear();
         store.Supervisors.Clear();
         store.PathwayRules.Clear();
-        store.PathwayLibraryRules.Clear();
+        store.PathwayDefinitions.Clear();
+        store.PathwayStationDefs.Clear();
+        store.PathwayStationProgress.Clear();
         store.ContractSmsLogs.Clear();
         store.Patients.Clear();
         store.ProfileRevisions.Clear();

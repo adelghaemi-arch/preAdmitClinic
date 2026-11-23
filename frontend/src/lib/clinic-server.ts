@@ -1,3 +1,9 @@
+/*
+ File: frontend/src/lib/clinic-server.ts
+ Description: snapshot mock برای QR/kiosk؛ مسیرهای سلامتی به DTO واحد
+ Parent Dependencies: mock-store, mock-contracts
+ */
+import { mockPathwayDtos } from "@/lib/mock-contracts";
 import { mockStore } from "@/lib/mock-store";
 import type { ClinicSnapshot, StationStatus } from "@/types/clinic";
 
@@ -153,7 +159,7 @@ export async function getClinicSnapshot(): Promise<ClinicSnapshot> {
       permission: l.permission,
       visibility: l.visibility,
     })),
-    pathways: mockStore.pathways,
+    pathways: mockPathwayDtos(mockStore.pathways),
     staff: mockStore.staff.map((s) => ({
       ...s,
       appUserId: s.appUserId ?? null,

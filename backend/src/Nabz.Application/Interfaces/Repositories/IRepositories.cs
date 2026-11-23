@@ -55,6 +55,16 @@ public interface IClinicRepository
     Task AddAsync(Clinic clinic, CancellationToken ct = default);
 }
 
+public interface IClinicStationRepository
+{
+    Task<List<ClinicStation>> ListByClinicAsync(Guid clinicId, bool activeOnly, CancellationToken ct = default);
+    Task<ClinicStation?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<ClinicStation?> GetByClinicAndCodeAsync(Guid clinicId, string code, CancellationToken ct = default);
+    Task AddAsync(ClinicStation station, CancellationToken ct = default);
+    /// <summary>همگام‌سازی عنوان ایستگاه‌های مسیر با کد اتاق.</summary>
+    Task<int> SyncPathwayStationTitlesAsync(string roomCode, string titleFa, CancellationToken ct = default);
+}
+
 public interface IContractRepository
 {
     Task<CorporateContract?> GetByIdAsync(Guid id, bool includeMembers = false, CancellationToken ct = default);
@@ -82,20 +92,28 @@ public interface IContractRepository
     void RemovePathwayRules(IEnumerable<ContractPathwayRule> rules);
     Task<ContractPathwayRule?> GetPathwayRuleByIdAsync(Guid ruleId, CancellationToken ct = default);
     /// <summary>قوانین قرارداد متصل به یک قانون کتابخانه (برای همگام‌سازی ویرایش).</summary>
-    Task<List<ContractPathwayRule>> ListPathwayRulesByLibraryRuleIdAsync(Guid libraryRuleId, CancellationToken ct = default);
+    Task<List<ContractPathwayRule>> ListPathwayRulesByLibraryPathwayIdAsync(Guid libraryPathwayId, CancellationToken ct = default);
     Task AddPathwayRuleAsync(ContractPathwayRule rule, CancellationToken ct = default);
 }
 
-public interface IPathwayLibraryRuleRepository
+public interface IPathwayCatalogRepository
 {
-    Task<PathwayLibraryRule?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<List<PathwayLibraryRule>> ListAsync(string? query, int take, CancellationToken ct = default);
+    Task<PathwayDefinition?> GetByIdAsync(Guid id, bool includeStations = true, CancellationToken ct = default);
+    Task<PathwayDefinition?> GetByCodeAsync(string code, bool includeStations = true, CancellationToken ct = default);
+    Task<PathwayStationDef?> GetStationByIdAsync(Guid stationDefId, CancellationToken ct = default);
+    Task<List<PathwayDefinition>> ListActiveAsync(CancellationToken ct = default);
+    Task<List<PathwayDefinition>> ListAsync(string? query, bool libraryOnly, int take, CancellationToken ct = default);
     Task<int> CountAsync(CancellationToken ct = default);
-    Task AddAsync(PathwayLibraryRule rule, CancellationToken ct = default);
-    void Remove(PathwayLibraryRule rule);
-    Task<int> CountAttachedContractsAsync(Guid libraryRuleId, CancellationToken ct = default);
-    /// <summary>آمار اعضا: فعال (غیر Completed) و قبلاً استفاده‌کرده (Completed) بر اساس match عنوان قانون متصل.</summary>
-    Task<(int ActiveMatched, int PreviouslyUsed)> CountMemberUsageAsync(Guid libraryRuleId, CancellationToken ct = default);
+    Task AddAsync(PathwayDefinition def, CancellationToken ct = default);
+    void Remove(PathwayDefinition def);
+    void RemoveRange(IEnumerable<PathwayDefinition> defs);
+    void RemoveStations(IEnumerable<PathwayStationDef> stations);
+    Task<int> CountAttachedContractsAsync(Guid pathwayId, CancellationToken ct = default);
+    /// <summary>آمار اعضا بر اساس عنوان مسیر متصل از کتابخانه.</summary>
+    Task<(int ActiveMatched, int PreviouslyUsed)> CountMemberUsageAsync(Guid pathwayId, CancellationToken ct = default);
+    Task<List<PatientPathwayStationProgress>> ListProgressByPatientAsync(Guid patientId, CancellationToken ct = default);
+    Task<PatientPathwayStationProgress?> GetProgressAsync(Guid patientId, Guid stationDefId, CancellationToken ct = default);
+    Task AddProgressAsync(PatientPathwayStationProgress progress, CancellationToken ct = default);
 }
 
 /// <summary>لینک عضویت برای enrichment لیست کاربران ادمین.</summary>

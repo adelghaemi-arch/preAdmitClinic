@@ -193,7 +193,7 @@
           "visibilityRules": [],
           "helpText": "",
           "notesPolicy": "never",
-          "prefillFromPatient": null,
+          "prefillFromPatient": "birthDate",
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
@@ -458,7 +458,7 @@
           "visibilityRules": [],
           "helpText": "",
           "notesPolicy": "never",
-          "prefillFromPatient": null,
+          "prefillFromPatient": "maritalStatus",
           "readOnlyIfPrefill": false,
           "selectOptions": [
             "مجرد",
@@ -1541,7 +1541,7 @@
           "id": "CA_M_ITEM_33",
           "sectionId": "CA_M_SEC_5",
           "code": "CA_M_Q33",
-          "labelFa": "کاهش وزن ناخواسته (مثلاً بیش از ۵ کیلو در ۳ ماه)) داشته‌اید؟",
+          "labelFa": "کاهش وزن ناخواسته (مثلاً بیش از ۵ کیلو در ۳ ماه) داشته‌اید؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 33,
@@ -2405,7 +2405,7 @@
           "id": "CA_M_ITEM_59",
           "sectionId": "CA_M_SEC_8",
           "code": "CA_M_Q59",
-          "labelFa": "تغییر واضح در الگوی سرفه  شدت/ نوع)) داشته‌اید؟",
+          "labelFa": "تغییر واضح در الگوی سرفه  (شدت/ نوع) داشته‌اید؟",
           "inputType": "yn_unk",
           "required": true,
           "sortOrder": 59,
@@ -3234,7 +3234,7 @@
           "visibilityRules": [],
           "helpText": "",
           "notesPolicy": "never",
-          "prefillFromPatient": null,
+          "prefillFromPatient": "birthDate",
           "readOnlyIfPrefill": false,
           "selectOptions": null,
           "coding": {
@@ -3499,7 +3499,7 @@
           "visibilityRules": [],
           "helpText": "",
           "notesPolicy": "never",
-          "prefillFromPatient": null,
+          "prefillFromPatient": "maritalStatus",
           "readOnlyIfPrefill": false,
           "selectOptions": [
             "مجرد",

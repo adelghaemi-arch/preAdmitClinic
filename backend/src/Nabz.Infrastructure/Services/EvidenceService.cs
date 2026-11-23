@@ -5,6 +5,7 @@
  */
 
 using Nabz.Application.Abstractions;
+using Nabz.Application.Brand;
 using Nabz.Application.Identity;
 using Nabz.Application.Interfaces;
 using Nabz.Application.Interfaces.Repositories;
@@ -467,18 +468,30 @@ public sealed class EvidenceService(
         p.Id, p.PatientId, p.Kind.ToString(), p.StorageKey, p.CapturedAt, p.SessionId, p.GpsLat, p.GpsLon);
 
     public async Task<bool> CanDownloadStorageKeyAsync(
-        string storageKey, Guid actingUserId, bool isPlatform, CancellationToken ct = default)
+        string storageKey,
+        Guid actingUserId,
+        bool isPlatform,
+        bool isSpecialist = false,
+        bool isAdmin = false,
+        CancellationToken ct = default)
     {
-        var key = Uri.UnescapeDataString(storageKey ?? "").Trim();
+        var key = Uri.UnescapeDataString(storageKey ?? "").Trim().Replace('\\', '/');
         if (string.IsNullOrEmpty(key)) return false;
 
+        // لوگوی برند کلینیک/قرارداد — فقط Admin/Platform
+        if (BrandLogoRules.IsBrandStorageKey(key) && (isPlatform || isAdmin))
+            return true;
+
+        // FindPhoto اولویت Portrait دارد (کلید مشترک با fraud_confirm بعد از تأیید پرتره)
         var photo = await evidence.FindPhotoByStorageKeyAsync(key, ct);
         if (photo is not null)
         {
-            // فریم ضدتقلب فقط برای ادمین کل
+            // فریم ضدتقلب فقط برای ادمین کل — پرتره برای مالک/پزشک
             if (photo.Kind is UserPhotoKind.FraudAuto or UserPhotoKind.FraudConfirm)
                 return isPlatform;
             if (isPlatform) return true;
+            // UC-SPC-06: پزشک پرترهٔ پرونده را می‌بیند
+            if (isSpecialist && photo.Kind == UserPhotoKind.Portrait) return true;
             return photo.Patient?.OwnerUserId == actingUserId
                    || (await patients.GetByIdAsync(photo.PatientId, ct))?.OwnerUserId == actingUserId;
         }
@@ -487,6 +500,8 @@ public sealed class EvidenceService(
         if (doc is not null)
         {
             if (isPlatform) return true;
+            // UC-SPC-06: پزشک مدارک پیش‌پذیرش را دانلود/پیش‌نمایش می‌کند
+            if (isSpecialist) return true;
             var patientId = doc.Group?.PatientId ?? Guid.Empty;
             if (patientId == Guid.Empty) return false;
             if (doc.Group?.Patient?.OwnerUserId == actingUserId) return true;

@@ -21,7 +21,7 @@ export type ContractPathwayBucket = {
   minAge?: number | null;
   maxAge?: number | null;
   jobCategory?: string;
-  libraryRuleId?: string | null;
+  libraryPathwayId?: string | null;
 };
 
 /** قوانین قرارداد به ترتیب اولویت (عدد کمتر = بالاتر در لیست). */
@@ -37,7 +37,7 @@ export function buildContractPathwayBuckets(
   contract: Pick<CorporateContract, "pathwayRules" | "defaultPathwayCode">,
   pathways: PathwayDto[]
 ): ContractPathwayBucket[] {
-  const defaultCode = (contract.defaultPathwayCode || "").trim() || "FULL_CHECKUP";
+  const defaultCode = (contract.defaultPathwayCode || "").trim() || "CORP_MEN_LT40";
   const defPathway = pathways.find((p) => p.code === defaultCode);
   const defaultBucket: ContractPathwayBucket = {
     id: DEFAULT_PATHWAY_BUCKET_ID,
@@ -60,7 +60,7 @@ export function buildContractPathwayBuckets(
       minAge: rule.minAge,
       maxAge: rule.maxAge,
       jobCategory: rule.jobCategory,
-      libraryRuleId: rule.libraryRuleId ?? null,
+      libraryPathwayId: rule.libraryPathwayId ?? null,
     };
   });
 
@@ -107,7 +107,7 @@ export function contractPathwayOverrideOptions(
   contract: Pick<CorporateContract, "pathwayRules" | "defaultPathwayCode">,
   pathways: PathwayDto[]
 ): { code: string; title: string; bucketId: string }[] {
-  const defaultCode = (contract.defaultPathwayCode || "").trim() || "FULL_CHECKUP";
+  const defaultCode = (contract.defaultPathwayCode || "").trim() || "CORP_MEN_LT40";
   const defPathway = pathways.find((p) => p.code === defaultCode);
   const out: { code: string; title: string; bucketId: string }[] = [
     {

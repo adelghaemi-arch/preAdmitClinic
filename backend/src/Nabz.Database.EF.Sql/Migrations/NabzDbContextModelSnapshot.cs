@@ -25,7 +25,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.ApiAbuseIncident", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("Acknowledged")
@@ -88,7 +87,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.AuthSession", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AppSurface")
@@ -145,7 +143,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.Clinic", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Address")
@@ -179,6 +176,10 @@ namespace Nabz.Database.EF.Sql.Migrations
 
                     b.Property<double?>("Longitude")
                         .HasColumnType("float");
+
+                    b.Property<string>("LogoStorageKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -223,10 +224,68 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.ToTable("Clinics");
                 });
 
+            modelBuilder.Entity("Nabz.Domain.Entities.ClinicStation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid>("ClinicId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Floor")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PrepInstructions")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("RoomNumber")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TitleFa")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("WayfindingSteps")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClinicId", "Code")
+                        .IsUnique();
+
+                    b.ToTable("ClinicStations");
+                });
+
             modelBuilder.Entity("Nabz.Domain.Entities.ContractMember", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AbandonedAtStep")
@@ -326,7 +385,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.ContractPathwayRule", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("ContractId")
@@ -343,7 +401,7 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("LibraryRuleId")
+                    b.Property<Guid?>("LibraryPathwayId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int?>("MaxAge")
@@ -376,7 +434,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.ContractSmsLog", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AudienceLabel")
@@ -417,7 +474,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.ContractSupervisor", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("AssignedAt")
@@ -460,7 +516,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.CorporateContract", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ApiEndpoint")
@@ -492,6 +547,10 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PartnerLogoStorageKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<DateOnly?>("StartDate")
                         .HasColumnType("date");
 
@@ -517,7 +576,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.EvidencePackage", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -788,7 +846,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.FraudCaptureSession", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -839,7 +896,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.GpsPoint", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<double>("Accuracy")
@@ -883,7 +939,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.IntakeDocumentFile", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -926,7 +981,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.IntakeDocumentGroup", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -965,7 +1019,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.MultiSessionAlert", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("ActiveSessionCount")
@@ -1002,7 +1055,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.OtpChallenge", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("CodeHash")
@@ -1041,29 +1093,41 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.ToTable("OtpChallenges");
                 });
 
-            modelBuilder.Entity("Nabz.Domain.Entities.PathwayLibraryRule", b =>
+            modelBuilder.Entity("Nabz.Domain.Entities.PathwayDefinition", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("EstimatedTotalMinutes")
+                        .HasColumnType("int");
 
                     b.Property<string>("Gender")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsInLibrary")
+                        .HasColumnType("bit");
 
                     b.Property<string>("JobCategory")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<int?>("MaxAge")
                         .HasColumnType("int");
@@ -1071,26 +1135,62 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Property<int?>("MinAge")
                         .HasColumnType("int");
 
-                    b.Property<string>("PathwayCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.ToTable("PathwayLibraryRules");
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("PathwayDefinitions");
+                });
+
+            modelBuilder.Entity("Nabz.Domain.Entities.PathwayStationDef", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsOptional")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("PathwayDefinitionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RoomCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("StepOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TitleFa")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PathwayDefinitionId", "StepOrder");
+
+                    b.ToTable("PathwayStationDefs");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.Patient", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AssignedPathwayCode")
@@ -1169,10 +1269,39 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.ToTable("Patients");
                 });
 
+            modelBuilder.Entity("Nabz.Domain.Entities.PatientPathwayStationProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("PathwayStationDefId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PatientId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PathwayStationDefId");
+
+                    b.HasIndex("PatientId", "PathwayStationDefId")
+                        .IsUnique();
+
+                    b.ToTable("PatientPathwayStationProgresses");
+                });
+
             modelBuilder.Entity("Nabz.Domain.Entities.PatientPhoto", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CapturedAt")
@@ -1230,7 +1359,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.PatientProfileRevision", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("At")
@@ -1278,7 +1406,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.Person", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateOnly?>("BirthDate")
@@ -1333,7 +1460,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.PlatformAuditEntry", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Action")
@@ -1368,7 +1494,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.PlatformSettings", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("BrandName")
@@ -1421,7 +1546,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.SmsCampaignTemplate", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("BodyPreview")
@@ -1476,7 +1600,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -1505,7 +1628,6 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.UserRoleAssignment", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("ClinicId")
@@ -1549,6 +1671,17 @@ namespace Nabz.Database.EF.Sql.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Nabz.Domain.Entities.ClinicStation", b =>
+                {
+                    b.HasOne("Nabz.Domain.Entities.Clinic", "Clinic")
+                        .WithMany()
+                        .HasForeignKey("ClinicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Clinic");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.ContractMember", b =>
@@ -1748,6 +1881,17 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Nabz.Domain.Entities.PathwayStationDef", b =>
+                {
+                    b.HasOne("Nabz.Domain.Entities.PathwayDefinition", "PathwayDefinition")
+                        .WithMany("Stations")
+                        .HasForeignKey("PathwayDefinitionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PathwayDefinition");
+                });
+
             modelBuilder.Entity("Nabz.Domain.Entities.Patient", b =>
                 {
                     b.HasOne("Nabz.Domain.Entities.Clinic", "Clinic")
@@ -1771,6 +1915,25 @@ namespace Nabz.Database.EF.Sql.Migrations
                     b.Navigation("OwnerUser");
 
                     b.Navigation("Person");
+                });
+
+            modelBuilder.Entity("Nabz.Domain.Entities.PatientPathwayStationProgress", b =>
+                {
+                    b.HasOne("Nabz.Domain.Entities.PathwayStationDef", "PathwayStationDef")
+                        .WithMany()
+                        .HasForeignKey("PathwayStationDefId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Nabz.Domain.Entities.Patient", "Patient")
+                        .WithMany()
+                        .HasForeignKey("PatientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PathwayStationDef");
+
+                    b.Navigation("Patient");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.PatientPhoto", b =>
@@ -1851,6 +2014,11 @@ namespace Nabz.Database.EF.Sql.Migrations
             modelBuilder.Entity("Nabz.Domain.Entities.IntakeDocumentGroup", b =>
                 {
                     b.Navigation("Files");
+                });
+
+            modelBuilder.Entity("Nabz.Domain.Entities.PathwayDefinition", b =>
+                {
+                    b.Navigation("Stations");
                 });
 
             modelBuilder.Entity("Nabz.Domain.Entities.User", b =>

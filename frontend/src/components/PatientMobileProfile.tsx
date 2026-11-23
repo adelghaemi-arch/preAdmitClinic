@@ -1,6 +1,6 @@
 ﻿/*
  File: frontend/src/components/PatientMobileProfile.tsx
- Description: پروفایل موبایل سلامتجو؛ برچسب نقشه با برند نفس
+ Description: پروفایل موبایل سلامتجو؛ بنر تاریخ مراجعه قابل بستن
  Parent Dependencies: ResultAttachment, IntakeFileThumbGrid, PreAdmitFormRenderer
  */
 import { ResultAttachment } from "./ResultAttachment";
@@ -33,6 +33,7 @@ import type {
   PatientFullDto,
   RoomDto,
 } from "@/types/clinic";
+import { activeClinicRooms } from "@/lib/api/clinic-stations";
 import {
   formatFaDate,
   formatFaTime,
@@ -41,12 +42,14 @@ import {
 import {
   buildHealthRoadmap,
   findActiveContractMembership,
+  preAdmitPartialPct,
   roadmapProgress,
 } from "@/lib/health-roadmap";
 import { roomStaffDisplay } from "@/lib/workspace";
 import { QrCodeVisual } from "./QrCodeVisual";
 import { PrintableEmrReport } from "./PrintableEmrReport";
 import { PreAdmitFormRenderer } from "./PreAdmitFormRenderer";
+import { HoldToConfirmButton } from "./HoldToConfirmButton";
 
 type MobileTab = "journey" | "intake" | "wayfinding" | "emr";
 
@@ -92,6 +95,19 @@ export function PatientMobileProfile({
   const [qrInputToken, setQrInputToken] = useState("");
   const [qrError, setQrError] = useState("");
   const [alertBannerDismissed, setAlertBannerDismissed] = useState(false);
+  // بنر تاریخ مراجعه — نشست‌محور تا برای همان نوبت دوباره مزاحم نشود
+  const visitBannerKey =
+    patient?.scheduledVisitDate && patient?.id
+      ? `nabz_visit_banner_${patient.id}_${String(patient.scheduledVisitDate).slice(0, 10)}`
+      : null;
+  const [visitBannerDismissed, setVisitBannerDismissed] = useState(() => {
+    if (!visitBannerKey || typeof sessionStorage === "undefined") return false;
+    try {
+      return sessionStorage.getItem(visitBannerKey) === "1";
+    } catch {
+      return false;
+    }
+  });
 
   // Wayfinding selected floor
   const [selectedFloor, setSelectedFloor] = useState<number>(2);
@@ -119,6 +135,18 @@ export function PatientMobileProfile({
   useEffect(() => {
     setAlertBannerDismissed(false);
   }, [patient?.id]);
+
+  useEffect(() => {
+    if (!visitBannerKey) {
+      setVisitBannerDismissed(false);
+      return;
+    }
+    try {
+      setVisitBannerDismissed(sessionStorage.getItem(visitBannerKey) === "1");
+    } catch {
+      setVisitBannerDismissed(false);
+    }
+  }, [visitBannerKey]);
 
   // Sync floor & auto-open wayfinding when triggered by specialist completion!
   useEffect(() => {
@@ -177,11 +205,18 @@ export function PatientMobileProfile({
     }
   };
 
-  const roomsOnFloor = snapshot.rooms.filter((r) => r.floor === selectedFloor);
+  // نقشه فقط ایستگاه‌های فعال کاتالوگ را نشان می‌دهد (UC-ADM-25)
+  const roomsOnFloor = activeClinicRooms(snapshot.rooms).filter((r) => r.floor === selectedFloor);
 
   const membership = findActiveContractMembership(snapshot.contracts, patient.nationalId);
-  const roadmapStages = buildHealthRoadmap(patient, membership?.member ?? null);
-  const roadmap = roadmapProgress(roadmapStages);
+  const roadmapStages = buildHealthRoadmap(patient, membership?.member ?? null, {
+    pathways: snapshot.pathways,
+    rooms: snapshot.rooms,
+  });
+  const roadmap = roadmapProgress(
+    roadmapStages,
+    preAdmitPartialPct(patient, membership?.member?.profileProgressPct ?? 0)
+  );
   const roadmapActive = roadmapStages.find((s) => s.state === "active");
   const hideGlobalRoadmap = lockNonIntakeTabs;
 
@@ -285,7 +320,11 @@ export function PatientMobileProfile({
                 </button>
               )}
               <div className="mt-2 text-[10px] text-emerald-50/70">
-                مسیر امروز: {toFaDigits(completedCount)} از {toFaDigits(patient.stations.length)} ایستگاه
+                {patient.stations.length > 0
+                  ? `مسیر امروز: ${toFaDigits(completedCount)} از ${toFaDigits(patient.stations.length)} ایستگاه`
+                  : (patient.pathwayItinerary?.length ?? 0) > 0
+                    ? `مسیر مراجعه: ${toFaDigits((patient.pathwayItinerary ?? []).filter((s) => s.confirmed).length)} از ${toFaDigits(patient.pathwayItinerary!.length)} ایستگاه`
+                    : null}
               </div>
             </>
           )}
@@ -309,17 +348,87 @@ export function PatientMobileProfile({
             کند.
           </div>
         )}
-        {/* تاریخ مراجعه از رستر — قبل از تکمیل پیش‌پذیرش هشدار معطل نشدن در بیمارستان */}
-        {patient.scheduledVisitDate && !patient.intakeCompleted && (
-          <div className="border-b border-teal-200 bg-teal-50 px-3.5 py-2.5 text-[11px] leading-relaxed text-teal-950">
-            مراجعه شما در تاریخ{" "}
-            <span className="font-bold">{toFaDigits(formatFaDate(patient.scheduledVisitDate))}</span> است.
-            لطفاً پیش‌پذیرش را قبل از آن روز تکمیل کنید تا در بیمارستان معطل نشوید.
+        {/* تاریخ مراجعه از رستر — قبل از تکمیل پیش‌پذیرش؛ با «متوجه شدم» بسته می‌شود */}
+        {patient.scheduledVisitDate && !patient.intakeCompleted && !visitBannerDismissed && (
+          <div className="border-b border-teal-200 bg-teal-50 px-3.5 py-2.5">
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 flex-1 text-[11px] leading-relaxed text-teal-950">
+                مراجعه شما در تاریخ{" "}
+                <span className="font-bold">{toFaDigits(formatFaDate(patient.scheduledVisitDate))}</span> است.
+                لطفاً پیش‌پذیرش را قبل از آن روز تکمیل کنید تا در بیمارستان معطل نشوید.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setVisitBannerDismissed(true);
+                  if (visitBannerKey) {
+                    try {
+                      sessionStorage.setItem(visitBannerKey, "1");
+                    } catch {
+                      /* private mode */
+                    }
+                  }
+                }}
+                className="shrink-0 rounded-lg bg-teal-700 px-2 py-1 text-[10px] font-bold text-white hover:bg-teal-800"
+              >
+                متوجه شدم
+              </button>
+            </div>
           </div>
         )}
         {patient.scheduledVisitDate && patient.intakeCompleted && (
           <div className="border-b border-slate-200 bg-slate-50 px-3.5 py-2 text-[11px] text-slate-700">
             تاریخ مراجعه: {toFaDigits(formatFaDate(patient.scheduledVisitDate))}
+          </div>
+        )}
+
+        {/* UC-OWN-14: مسیر ایستگاه‌ها پس از پیش‌پذیرش — ترتیب پیشنهادی؛ تیک بدون الزام ترتیب */}
+        {patient.intakeCompleted && (patient.pathwayItinerary?.length ?? 0) > 0 && (
+          <div className="border-b border-teal-100 bg-white px-3.5 py-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <div>
+                <div className="text-[11px] font-extrabold text-teal-900">مسیر مراجعه شما</div>
+                <div className="text-[10px] text-slate-500">
+                  ترتیب پیشنهادی است؛ در صورت نیاز می‌توانید خارج از ترتیب تأیید کنید.
+                </div>
+              </div>
+              {patient.pathwayTitle ? (
+                <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-800 ring-1 ring-teal-100">
+                  {patient.pathwayTitle}
+                </span>
+              ) : null}
+            </div>
+            <ol className="space-y-2">
+              {(patient.pathwayItinerary ?? []).map((st) => (
+                <li
+                  key={st.stationDefId}
+                  className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/80 px-2.5 py-2"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-bold text-slate-600 ring-1 ring-slate-200">
+                    {toFaDigits(st.stepOrder)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[12px] font-bold text-slate-800">{st.titleFa}</div>
+                    {st.isOptional ? (
+                      <div className="text-[10px] text-amber-700">اختیاری — در صورت صلاح‌دید پزشک</div>
+                    ) : null}
+                  </div>
+                  <HoldToConfirmButton
+                    confirmed={st.confirmed}
+                    disabled={busy || readOnly}
+                    label="انجام دادم (۳ ثانیه نگه دارید)"
+                    doneLabel="رفتم"
+                    onConfirm={() =>
+                      onAction({
+                        action: "CONFIRM_PATHWAY_STATION",
+                        stationDefId: st.stationDefId,
+                        patientId: patient.id,
+                      })
+                    }
+                  />
+                </li>
+              ))}
+            </ol>
           </div>
         )}
 

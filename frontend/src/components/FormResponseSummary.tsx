@@ -1,3 +1,8 @@
+/*
+ File: frontend/src/components/FormResponseSummary.tsx
+ Description: خلاصه پاسخ پرسشنامه — مود اولویت بالینی (مثبت/توضیح/هشدار) و پرسشنامه کامل
+ Parent Dependencies: form-engine, types/clinic
+ */
 import React, { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronDown, FileText, ListFilter } from "lucide-react";
 import type { ClinicSnapshot, FormDefinition, PatientFullDto } from "@/types/clinic";
@@ -218,18 +223,13 @@ export function FormResponseSummary({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900">{form.title}</h3>
-          <p className="text-[10px] text-slate-500">
-            نسخه {toFaDigits(form.version)} · ثبت{" "}
-            {response.completedAt ? new Date(response.completedAt).toLocaleString("fa-IR") : "—"}
-            {activeMode === "full" ? " · فقط خواندنی" : ""}
-          </p>
-        </div>
-        <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] text-emerald-800">
-          پشتیبانی تصمیم — نه تشخیص
-        </span>
+      <div>
+        <h3 className="text-sm font-semibold text-slate-900">{form.title}</h3>
+        <p className="text-[10px] text-slate-500">
+          نسخه {toFaDigits(form.version)} · ثبت{" "}
+          {response.completedAt ? new Date(response.completedAt).toLocaleString("fa-IR") : "—"}
+          {activeMode === "full" ? " · فقط خواندنی" : ""}
+        </p>
       </div>
 
       {enableViewToggle && (
@@ -242,7 +242,7 @@ export function FormResponseSummary({
             }`}
           >
             <ListFilter className="h-3.5 w-3.5" />
-            موارد خاص
+            اولویت بالینی
           </button>
           <button
             type="button"
@@ -252,7 +252,7 @@ export function FormResponseSummary({
             }`}
           >
             <FileText className="h-3.5 w-3.5" />
-            کل فرم
+            پرسشنامه کامل
           </button>
         </div>
       )}

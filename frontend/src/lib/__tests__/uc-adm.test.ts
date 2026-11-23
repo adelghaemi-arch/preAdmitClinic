@@ -25,6 +25,12 @@ describe("UC-ADM-02", () => {
   it("allowedPages شامل contracts", () => {
     expect(allowedPagesFor("admin")).toContain("contracts");
   });
+
+  it("کدملی ناظر باید چک‌سام معتبر داشته باشد (1x)", async () => {
+    const { isValidIranNationalId } = await import("@/lib/person-identity");
+    expect(isValidIranNationalId("0012345679")).toBe(true);
+    expect(isValidIranNationalId("1234567890")).toBe(false);
+  });
 });
 
 describe("UC-ADM-03", () => {

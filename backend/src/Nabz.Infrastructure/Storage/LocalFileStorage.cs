@@ -55,10 +55,22 @@ public sealed class LocalFileStorage(IConfiguration configuration) : IFileStorag
             if (string.IsNullOrWhiteSpace(safeName)) safeName = "file.bin";
             keyLeaf = $"{Guid.NewGuid():N}_{safeName}";
         }
-        var year = DateTime.UtcNow.ToString("yyyy");
-        var prefix = NormalizeNationalIdPrefix(context?.NationalIdPrefix);
-        // سلسله: سال / سه رقم کدملی / فایل — جلوگیری از انباشت در یک پوشه
-        var key = $"{year}/{prefix}/{keyLeaf}";
+        string key;
+        if (!string.IsNullOrWhiteSpace(context?.FolderOverride))
+        {
+            // برند کلینیک/قرارداد — مسیر ثابت قابل‌مجوز برای Admin/Platform
+            var folder = context!.FolderOverride!.Trim().Trim('/').Replace('\\', '/');
+            if (folder.Contains("..", StringComparison.Ordinal) || folder.Length == 0)
+                throw new InvalidOperationException("مسیر ذخیره نامعتبر است.");
+            key = $"{folder}/{keyLeaf}";
+        }
+        else
+        {
+            var year = DateTime.UtcNow.ToString("yyyy");
+            var prefix = NormalizeNationalIdPrefix(context?.NationalIdPrefix);
+            // سلسله: سال / سه رقم کدملی / فایل — جلوگیری از انباشت در یک پوشه
+            key = $"{year}/{prefix}/{keyLeaf}";
+        }
         var full = Path.Combine(Root(), key.Replace('/', Path.DirectorySeparatorChar));
         Directory.CreateDirectory(Path.GetDirectoryName(full)!);
         await using var fs = File.Create(full);

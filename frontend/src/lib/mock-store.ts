@@ -1,3 +1,8 @@
+/*
+ File: frontend/src/lib/mock-store.ts
+ Description: فروشگاه mock/hydrate اسنپ‌شات کلینیک؛ کتابخانه مسیر فقط از API یا seed صریح
+ Parent Dependencies: mock-dataset.ts, mock-contracts.ts, clinic.ts
+ */
 import { MOCK_DATASET, type MockDataset } from "@/lib/mock-dataset";
 import { buildSeededContracts, buildSeededPathwayLibrary } from "@/lib/mock-contracts";
 import {
@@ -198,7 +203,7 @@ function buildStore(): MockStore {
     ...(dataset as Omit<MockStore, "contracts" | "pathwayLibrary" | "clinicLocation" | "forms" | "platform">),
     clinicLocation: { lat: 35.7448, lon: 51.3753, address: "تهران، خیابان کارگر شمالی، بین بهشتی و مجیدیه، پلاک ۱۲۰", city: "تهران" },
     contracts: seededContracts,
-    pathwayLibrary: buildSeededPathwayLibrary(),
+    pathwayLibrary: buildSeededPathwayLibrary(dataset.pathways),
     forms: seedForms,
     platform,
   };
@@ -387,10 +392,10 @@ export function hydrateMockStore(data: Partial<MockStore>): void {
     Array.isArray(data.contracts) && data.contracts.length > 0
       ? data.contracts
       : buildSeededContracts(current.pathways);
-  current.pathwayLibrary =
-    Array.isArray(data.pathwayLibrary) && data.pathwayLibrary.length > 0
-      ? data.pathwayLibrary
-      : buildSeededPathwayLibrary();
+  // خالیِ API را با Guid ساختگی mock پر نکن — attach با «قانون کتابخانه یافت نشد» می‌شکند
+  current.pathwayLibrary = Array.isArray(data.pathwayLibrary)
+    ? data.pathwayLibrary
+    : buildSeededPathwayLibrary(current.pathways);
   if (!current.clinicLocation) current.clinicLocation = { lat: 35.7448, lon: 51.3753, address: "تهران، خیابان کارگر شمالی، پلاک ۱۲۰", city: "تهران" };
   // Catalog forms always refresh from the bundled seed (titles/structure); keep any extra admin forms.
   {

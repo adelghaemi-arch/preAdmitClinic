@@ -1,4 +1,9 @@
-﻿import { memo, useEffect, useMemo, useRef, useState } from "react";
+﻿/*
+ File: frontend/src/components/PatientDirectoryDialog.tsx
+ Description: جستجو و فهرست سلامتجویان با نمایش ارقام فارسی برای کدملی/موبایل
+ Parent Dependencies: lib/persian.ts, lib/workspace.ts, lib/client-db.ts
+ */
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { AppInput, AppTextarea } from "@/components/AppInput";
 import { CheckCircle2, ClipboardList, Clock3, Filter, History, MapPin, Pill, RotateCcw, Search, ShieldAlert, X } from "lucide-react";
 import type { ClinicSnapshot } from "@/types/clinic";
@@ -177,7 +182,7 @@ const DirectoryResultsTable = memo(function DirectoryResultsTable({ results, bus
                     <span className="mt-1 block text-[10px] text-slate-400">{result.patient.intakeCompleted ? "پرسشنامه ثبت شده" : "پرسشنامه تکمیل‌نشده"}</span>
                   </button>
                 </td>
-                <td className="px-3 py-3"><span dir="ltr" className="font-mono text-[11px] text-teal-700">{result.nationalId}</span></td>
+                <td className="px-3 py-3"><span dir="ltr" className="font-mono text-[11px] text-teal-700">{toFaDigits(result.nationalId)}</span></td>
                 <td className="px-3 py-3 text-[11px] text-slate-600">{toFaDigits(result.patient.age)} سال · {result.patient.gender}</td>
                 <td className="px-3 py-3" dir="ltr"><span className="font-mono text-[11px] text-slate-600">{toFaDigits(result.patient.phone)}</span></td>
                 <td className="max-w-44 truncate px-3 py-3 text-[11px] text-slate-600">{result.patient.pathwayTitle}</td>

@@ -112,6 +112,22 @@ public sealed class PatientsController(IPatientService patients) : ControllerBas
         return s is null ? NotFound() : Ok(s);
     }
 
+    /// <summary>UC-OWN-14 — تأیید خوداظهاری ایستگاه مسیر (hold سمت کلاینت).</summary>
+    [Authorize(Roles = "Owner")]
+    [HttpPost("mine/pathway-stations/{stationDefId:guid}/confirm")]
+    public async Task<IActionResult> ConfirmPathwayStation(Guid stationDefId, CancellationToken ct)
+    {
+        try
+        {
+            var row = await patients.ConfirmPathwayStationAsync(User.GetUserId(), stationDefId, ct);
+            return Ok(row);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { ok = false, error = ex.Message });
+        }
+    }
+
     /// <summary>به‌روزرسانی آدرس/مختصات منزل — فقط مالک پرونده (با سوابق).</summary>
     [Authorize(Roles = "Owner")]
     [HttpPut("{id:guid}/home")]

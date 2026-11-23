@@ -1,18 +1,21 @@
 /*
  File: frontend/src/lib/mock-contracts.ts
- Description: دادهٔ نمایشی قراردادها؛ قالب پیام با برند نفس
- Parent Dependencies: clinic types
+ Description: دادهٔ نمایشی قراردادها؛ خروجی گزارش xlsx واقعی
+ Parent Dependencies: clinic types, xlsx, person-identity, persian
  */
 import type {
   ContractAppointmentStatus,
-  PathwayLibraryRule,
   ContractMember,
   ContractPathwayRule,
   CorporateContract,
   MockPathwayRow,
   OnboardingStage,
+  PathwayDto,
 } from "@/types/clinic";
+import * as XLSX from "xlsx";
+import { stationCodesToDrafts } from "@/lib/pathway-stations";
 import { iranLocalDayOffset } from "@/lib/date-iso";
+import { birthIsoToFaLabel } from "@/lib/person-identity";
 import { formatFaDateRelative } from "@/lib/persian";
 
 /**
@@ -20,83 +23,43 @@ import { formatFaDateRelative } from "@/lib/persian";
  * دادهٔ زندهٔ قرارداد از API می‌آید؛ این ماژول جایگزین دیتابیس نیست.
  */
 
-/** Central, system-wide package rules — reusable across any number of contracts. */
-export function buildSeededPathwayLibrary(): PathwayLibraryRule[] {
-  const now = new Date().toISOString();
-  return [
-    {
-      id: "lib-rule-1",
-      code: "LR-001",
-      title: "پایش سالمندان (بالای ۴۵ سال)",
-      description: "افراد ۴۵ سال به بالا — چکاپ جامع شامل قلب، ریه، دهان، آزمایشگاه و تصویربرداری",
-      gender: "همه",
-      minAge: 45,
-      maxAge: null,
-      jobCategory: "همه",
-      pathwayCode: "FULL_CHECKUP",
-      createdAt: now,
-    },
-    {
-      id: "lib-rule-2",
-      code: "LR-002",
-      title: "بانوان زیر ۴۵ سال — پایش قلب و ریه",
-      description: "بانوان جوان و میانسال — بسته قلب و ریه با آزمایشگاه تخصصی",
-      gender: "زن",
-      minAge: 18,
-      maxAge: 44,
-      jobCategory: "همه",
-      pathwayCode: "CARDIO_PULMO",
-      createdAt: now,
-    },
-    {
-      id: "lib-rule-3",
-      code: "LR-003",
-      title: "مردان عملیات و فنی زیر ۴۵ سال",
-      description: "نیروهای عملیاتی در معرض گرد و غبار و مواد شیمیایی — پایش ریه، قلب و تاییدیه جراحی",
-      gender: "مرد",
-      minAge: 18,
-      maxAge: 44,
-      jobCategory: "عملیات و فنی",
-      pathwayCode: "PRE_OP",
-      createdAt: now,
-    },
-    {
-      id: "lib-rule-4",
-      code: "LR-004",
-      title: "کارکنان اداری و مالی",
-      description: "کارکنان ستادی — پایش قلب، سلامت دهان و ارزیابی سوخت‌وساز",
-      gender: "همه",
-      minAge: 18,
-      maxAge: 44,
-      jobCategory: "اداری و مالی",
-      pathwayCode: "DENTAL_CARDIO",
-      createdAt: now,
-    },
-    {
-      id: "lib-rule-5",
-      code: "LR-005",
-      title: "نیروهای فناوری اطلاعات",
-      description: "کارکنان شیفت‌کاری و پشت رایانه — پایش قلب و ریه",
-      gender: "همه",
-      minAge: 18,
-      maxAge: 44,
-      jobCategory: "فناوری و مهندسی",
-      pathwayCode: "CARDIO_PULMO",
-      createdAt: now,
-    },
-    {
-      id: "lib-rule-6",
-      code: "LR-006",
-      title: "پایش میانسالان مرد (۳۵ تا ۵۵ سال)",
-      description: "ریسک‌های متابولیک و قلبی مردان میانسال — قلب، ریه و آزمایشگاه",
-      gender: "مرد",
-      minAge: 35,
-      maxAge: 55,
-      jobCategory: "همه",
-      pathwayCode: "CARDIO_PULMO",
-      createdAt: now,
-    },
-  ];
+/** نگاشت یک ردیف mock به DTO واحد مسیر سلامتی */
+export function mapMockPathwayRowToDto(row: MockPathwayRow): PathwayDto {
+  const stations = stationCodesToDrafts(row.stationCodes, row.optionalStationCodes, []).map((s) => ({
+    roomCode: s.roomCode,
+    titleFa: s.titleFa,
+    stepOrder: s.stepOrder,
+    isOptional: s.isOptional,
+  }));
+  return {
+    id: `mock-pathway-${row.id}`,
+    code: row.code,
+    title: row.title,
+    description: row.description,
+    gender: row.gender ?? "همه",
+    minAge: row.minAge ?? null,
+    maxAge: row.maxAge ?? null,
+    jobCategory: row.jobCategory ?? "همه",
+    stationCodes: [...row.stationCodes],
+    optionalStationCodes: row.optionalStationCodes ? [...row.optionalStationCodes] : [],
+    stations,
+    estimatedTotalMinutes: row.estimatedTotalMinutes,
+    isActive: row.isActive,
+    isInLibrary: row.isInLibrary !== false,
+    createdAt: new Date().toISOString(),
+    activeMatchedCount: 0,
+    previouslyUsedCount: 0,
+    attachedContractCount: 0,
+  };
+}
+
+/** کتابخانه = همان مسیرهای seed با isInLibrary */
+export function buildSeededPathwayLibrary(pathways: MockPathwayRow[]): PathwayDto[] {
+  return pathways.filter((p) => p.isInLibrary !== false).map(mapMockPathwayRowToDto);
+}
+
+export function mockPathwayDtos(pathways: MockPathwayRow[]): PathwayDto[] {
+  return pathways.map(mapMockPathwayRowToDto);
 }
 
 export const JOB_CATEGORIES = [
@@ -200,7 +163,7 @@ export function resolveMemberPackage(
 ): { pathwayCode: string; pathwayTitle: string; ruleTitle: string } {
   const sorted = [...rules].sort((a, b) => a.priority - b.priority);
   const titleOf = (code: string) =>
-    pathways.find((p) => p.code === code)?.title ?? pathways[0]?.title ?? "چکاپ جامع سلامت یک‌روزه";
+    pathways.find((p) => p.code === code)?.title ?? pathways[0]?.title ?? "چکاپ آقایان زیر ۴۰ سال";
 
   for (const rule of sorted) {
     if (rule.gender !== "همه" && rule.gender !== member.gender) continue;
@@ -213,7 +176,7 @@ export function resolveMemberPackage(
       ruleTitle: rule.title,
     };
   }
-  const fallback = pathways.find((p) => p.code === defaultPathwayCode)?.code ?? pathways[0]?.code ?? "FULL_CHECKUP";
+  const fallback = pathways.find((p) => p.code === defaultPathwayCode)?.code ?? pathways[0]?.code ?? "CORP_MEN_LT40";
   return {
     pathwayCode: fallback,
     pathwayTitle: titleOf(fallback),
@@ -353,57 +316,42 @@ function makeMember(
     scheduledLabel: scheduledIso ? formatPersianDateLabel(scheduledIso) : null,
     callSentAt: raw.appt !== "unscheduled" ? hoursAgo(8) : null,
     linkedPatientId: null,
+    linkedPatientServerId: null,
   };
 }
 
-export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "title">[]): CorporateContract[] {
+/** قوانین قرارداد mock = اتصال همان چهار مسیر کتابخانه seed (هم‌تراز AppDataSeeder) */
+function buildCorpLibraryRules(
+  pathways: Array<Pick<MockPathwayRow, "id" | "code" | "title" | "gender" | "minAge" | "maxAge" | "jobCategory">>,
+  idPrefix: string
+): ContractPathwayRule[] {
+  const order = ["CORP_MEN_LT40", "CORP_MEN_GE40", "CORP_WOMEN_LT40", "CORP_WOMEN_GE40"];
+  return order.flatMap((code, idx) => {
+    const p = pathways.find((x) => x.code === code);
+    if (!p) return [];
+    return [{
+      id: `${idPrefix}-${code}`,
+      libraryPathwayId: `mock-pathway-${p.id}`,
+      title: p.title,
+      gender: (p.gender ?? "همه") as ContractPathwayRule["gender"],
+      minAge: p.minAge ?? null,
+      maxAge: p.maxAge ?? null,
+      jobCategory: p.jobCategory ?? "همه",
+      pathwayCode: p.code,
+      priority: idx + 1,
+    }];
+  });
+}
+
+export function buildSeededContracts(
+  pathways: Array<Pick<MockPathwayRow, "id" | "code" | "title" | "gender" | "minAge" | "maxAge" | "jobCategory">>
+): CorporateContract[] {
   const today = isoDayOffset(0);
   const tomorrow = isoDayOffset(1);
   const dayAfter = isoDayOffset(2);
 
   /* -------- Contract 1: هلدینگ پتروشیمی پارس‌نفت (28 پرسنل فارسی) -------- */
-  const c1Rules: ContractPathwayRule[] = [
-    {
-      id: "r1-exec-senior",
-      title: "مدیران و افراد ۴۵ سال به بالا (هر دو جنس)",
-      gender: "همه",
-      minAge: 45,
-      maxAge: null,
-      jobCategory: "همه",
-      pathwayCode: "FULL_CHECKUP",
-      priority: 1,
-    },
-    {
-      id: "r1-ops-men",
-      title: "مردان واحد عملیات و فنی (زیر ۴۵ سال — پایش ریه و قلب شغلی)",
-      gender: "مرد",
-      minAge: 18,
-      maxAge: 44,
-      jobCategory: "عملیات و فنی",
-      pathwayCode: "PRE_OP",
-      priority: 2,
-    },
-    {
-      id: "r1-women-under45",
-      title: "بانوان زیر ۴۵ سال (پایش قلب، تنفس و آزمایش کامل)",
-      gender: "زن",
-      minAge: 18,
-      maxAge: 44,
-      jobCategory: "همه",
-      pathwayCode: "CARDIO_PULMO",
-      priority: 3,
-    },
-    {
-      id: "r1-office-men",
-      title: "مردان ستادی و مهندسی زیر ۴۵ سال",
-      gender: "مرد",
-      minAge: 18,
-      maxAge: 44,
-      jobCategory: "همه",
-      pathwayCode: "DENTAL_CARDIO",
-      priority: 4,
-    },
-  ];
+  const c1Rules: ContractPathwayRule[] = buildCorpLibraryRules(pathways, "r1");
 
   // Exactly illustrates user's example:
   // «عادل مرادی» is manually pinned to TODAY; today's quota is 20 men → clicking auto-fill calls up 19 remaining men automatically!
@@ -441,38 +389,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
   ];
 
   /* -------- Contract 2: بانک توسعه نوین (10 پرسنل فارسی) -------- */
-  const c2Rules: ContractPathwayRule[] = [
-    {
-      id: "r2-senior",
-      title: "مدیران شعب و کارکنان بالای ۴۵ سال",
-      gender: "همه",
-      minAge: 45,
-      maxAge: null,
-      jobCategory: "همه",
-      pathwayCode: "FULL_CHECKUP",
-      priority: 1,
-    },
-    {
-      id: "r2-mid",
-      title: "کارشناسان ۳۵ تا ۴۴ سال (پکیج قلب و ریه)",
-      gender: "همه",
-      minAge: 35,
-      maxAge: 44,
-      jobCategory: "همه",
-      pathwayCode: "CARDIO_PULMO",
-      priority: 2,
-    },
-    {
-      id: "r2-young",
-      title: "کارکنان زیر ۳۵ سال (پایش قلب و سلامت دهان)",
-      gender: "همه",
-      minAge: 18,
-      maxAge: 34,
-      jobCategory: "همه",
-      pathwayCode: "DENTAL_CARDIO",
-      priority: 3,
-    },
-  ];
+  const c2Rules: ContractPathwayRule[] = buildCorpLibraryRules(pathways, "r2");
 
   const c2Raw: RawPerson[] = [
     { code: "NB-2201", name: "شهرام نیک‌پی", nid: "0061234589", phone: "09121119988", age: 53, gender: "مرد", dept: "مدیریت امور شعب", cat: "مدیریت", source: "api", stage: "completed", pct: 100, appt: "visit_done", dayOffset: 0, meds: "والزارتان ۸۰" },
@@ -500,7 +417,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
     apiEndpoint: "https://hr-gateway.parsnaft.ir/v2/health-roster",
     apiKey: "PARS-HR-LIVE-9841-K2",
     lastApiSyncAt: hoursAgo(6),
-    defaultPathwayCode: "FULL_CHECKUP",
+    defaultPathwayCode: "CORP_MEN_LT40",
     pathwayRules: c1Rules,
     dayQuotas: [
       {
@@ -569,7 +486,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
         recipientPreview: ["جواد قاسمی‌پور", "سعید نعمتی", "وحید کرمی", "فرزانه طاهری"],
       },
     ],
-    members: c1Raw.map((raw) => makeMember(nextMemberId++, 1, raw, c1Rules, "FULL_CHECKUP", pathways)),
+    members: c1Raw.map((raw) => makeMember(nextMemberId++, 1, raw, c1Rules, "CORP_MEN_LT40", pathways)),
     createdAt: hoursAgo(72),
   };
 
@@ -584,7 +501,7 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
     apiEndpoint: "https://welfare.novinbank.ir/api/v1/checkup-members",
     apiKey: "NOVIN-BANK-API-4420-X9",
     lastApiSyncAt: hoursAgo(18),
-    defaultPathwayCode: "CARDIO_PULMO",
+    defaultPathwayCode: "CORP_WOMEN_LT40",
     pathwayRules: c2Rules,
     dayQuotas: [
       {
@@ -621,116 +538,94 @@ export function buildSeededContracts(pathways: Pick<MockPathwayRow, "code" | "ti
         recipientPreview: ["شهرام نیک‌پی", "لاله معینی", "آرش بهمنی"],
       },
     ],
-    members: c2Raw.map((raw) => makeMember(nextMemberId++, 2, raw, c2Rules, "CARDIO_PULMO", pathways)),
+    members: c2Raw.map((raw) => makeMember(nextMemberId++, 2, raw, c2Rules, "CORP_WOMEN_LT40", pathways)),
     createdAt: hoursAgo(120),
   };
 
   return [contract1, contract2];
 }
 
-/* ---------------- Excel Template Generator & Parser (100% client-side) ---------------- */
+/* تمپلیت اکسل اعضا — پیاده‌سازی در contract-excel-template.ts */
+export { downloadContractExcelTemplate } from "@/lib/contract-excel-template";
 
-const TEMPLATE_HEADERS = [
-  "نام*",
-  "نام‌خانوادگی*",
-  "کد ملی*",
-  "شماره موبایل*",
-  "تاریخ تولد* (شمسی)",
-  "جنسیت*",
-  "تاهل",
-  "نام پدر",
-  "تاریخ مراجعه (شمسی)",
-  "گروه / کد مسیر",
-  "واحد سازمانی",
-  "رده شغلی",
+/** هدرهای گزارش اکسل قرارداد (ادمین / ناظر). */
+export const CONTRACT_REPORT_EXCEL_HEADERS = [
   "کد پرسنلی",
-];
+  "نام و نام خانوادگی",
+  "کد ملی",
+  "موبایل",
+  "سن",
+  "جنسیت",
+  "واحد سازمانی",
+  "مسیر سلامتی تخصیص‌یافته",
+  "وضعیت پیش‌ثبت‌نام",
+  "درصد تکمیل پروفایل",
+  "وضعیت نوبت‌دهی",
+  "تاریخ نوبت معاینه",
+] as const;
 
-const TEMPLATE_SAMPLE_ROWS = [
-  ["امیرحسین", "رستگار", "0012345679", "09123456781", "1355/02/15", "مرد", "متأهل", "رضا", "1405/09/01", "FULL_CHECKUP", "بهره‌برداری", "عملیات و فنی", "PR-2001"],
-  ["نازنین", "شریفی", "0011223340", "09129876542", "1369/08/03", "زن", "مجرد", "علی", "", "", "امور مالی", "اداری و مالی", "PR-2002"],
-  ["مسعود", "طباطبایی", "0499370899", "09351122334", "1351/11/20", "مرد", "", "حسن", "1405/09/02", "آقایان 40+", "مدیریت مهندسی", "مدیریت", "PR-2003"],
-];
-
-/** Downloads a real Excel-ready RTL `.xls` template (opens natively in Microsoft Excel & LibreOffice). */
-export function downloadContractExcelTemplate(format: "xls" | "csv" = "xls"): void {
-  if (typeof window === "undefined") return;
-  if (format === "csv") {
-    const rows = [TEMPLATE_HEADERS, ...TEMPLATE_SAMPLE_ROWS];
-    const csv =
-      "\uFEFF" +
-      rows.map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\r\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    triggerDownload(blob, "nabz-contract-template.csv");
-    return;
-  }
-
-  const headerHtml = TEMPLATE_HEADERS.map(
-    (h) =>
-      `<th style="background:#1d5545;color:#ffffff;font-weight:bold;padding:8px 12px;border:1px solid #cbd5e1;">${h}</th>`
-  ).join("");
-  const bodyHtml = TEMPLATE_SAMPLE_ROWS.map(
-    (row) =>
-      `<tr>${row
-        .map(
-          (cell, i) =>
-            `<td style="padding:6px 10px;border:1px solid #e2e8f0;${
-              // کدملی و موبایل به‌صورت متن تا صفر پیشوند در Excel حذف نشود
-              i === 2 || i === 3 ? "mso-number-format:'\\@';" : ""
-            }">${cell}</td>`
-        )
-        .join("")}</tr>`
-  ).join("");
-
-  const html = `\uFEFF<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" dir="rtl"><head><meta charset="UTF-8" /></head><body><table dir="rtl" border="1"><thead><tr>${headerHtml}</tr></thead><tbody>${bodyHtml}</tbody></table></body></html>`;
-  const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8;" });
-  triggerDownload(blob, "nabz-contract-template.xls");
+/** تاریخ نوبت برای خروجی: شمسی ثابت YYYY/MM/DD نه برچسب نسبی. */
+export function contractReportVisitJalali(
+  m: Pick<ContractMember, "scheduledDate" | "scheduledVisitDate">
+): string {
+  const iso = (m.scheduledDate || m.scheduledVisitDate || "").trim().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "نوبت‌دهی نشده";
+  return birthIsoToFaLabel(iso);
 }
 
-/** Exports a contract's full roster (funnel + package + appointment) to Excel for admin or corporate supervisor. */
-export function exportContractReportExcel(contract: CorporateContract): void {
-  if (typeof window === "undefined") return;
-  const headers = [
-    "کد پرسنلی",
-    "نام و نام خانوادگی",
-    "کد ملی",
-    "موبایل",
-    "سن",
-    "جنسیت",
-    "واحد سازمانی",
-    "مسیر سلامتی تخصیص‌یافته",
-    "وضعیت پیش‌ثبت‌نام",
-    "درصد تکمیل پروفایل",
-    "وضعیت نوبت‌دهی",
-    "تاریخ نوبت معاینه",
-  ];
-  const rows = contract.members.map((m) => [
-    m.personnelCode,
+/** ردیف‌های گزارش برای تست و ساخت workbook. */
+export function buildContractReportExcelRows(contract: CorporateContract): string[][] {
+  return contract.members.map((m) => [
+    m.personnelCode ?? "",
     m.fullName,
-    m.nationalId,
-    m.phone,
-    String(m.age),
+    // متن نگه داشته شود تا صفر اول کدملی/موبایل در اکسل نپرد
+    String(m.nationalId ?? ""),
+    String(m.phone ?? ""),
+    String(m.age ?? ""),
     m.gender,
-    m.department,
-    // عنوان فارسی؛ اگر عنوان = کد انگلیسی بود جایگزین می‌شود
+    m.department ?? "",
     m.assignedPathwayTitle === m.assignedPathwayCode || !m.assignedPathwayTitle
-      ? m.assignedPathwayCode === "FULL_CHECKUP" || !m.assignedPathwayCode
-        ? "چکاپ جامع"
-        : m.assignedPathwayTitle || m.assignedPathwayCode
+      ? m.assignedPathwayTitle || m.assignedPathwayCode || "چکاپ آقایان زیر ۴۰ سال"
       : m.assignedPathwayTitle,
     ONBOARDING_META[m.onboardingStage].label,
     `${m.profileProgressPct}%`,
     APPOINTMENT_META[m.appointmentStatus].label,
-    m.scheduledLabel ?? "نوبت‌دهی نشده",
+    contractReportVisitJalali(m),
   ]);
-  const csv =
-    "\uFEFF" +
-    [headers, ...rows]
-      .map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
-      .join("\r\n");
+}
+
+/** workbook گزارش برای تست و دانلود. */
+export function buildContractReportExcelWorkbook(contract: CorporateContract): XLSX.WorkBook {
+  const headers = [...CONTRACT_REPORT_EXCEL_HEADERS];
+  const rows = buildContractReportExcelRows(contract);
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  const textCols = [2, 3, 11]; // کد ملی، موبایل، تاریخ نوبت
+  for (let r = 1; r <= rows.length; r++) {
+    for (const c of textCols) {
+      const addr = XLSX.utils.encode_cell({ r, c });
+      const cell = ws[addr];
+      if (!cell) continue;
+      cell.t = "s";
+      cell.v = String(cell.v ?? "");
+      cell.z = "@";
+    }
+  }
+  ws["!cols"] = headers.map((h) => ({ wch: Math.max(12, h.length + 2) }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "گزارش");
+  return wb;
+}
+
+/** خروجی واقعی .xlsx با ستون کدملی/موبایل/تاریخ به‌صورت متن. */
+export function exportContractReportExcel(contract: CorporateContract): void {
+  if (typeof window === "undefined") return;
+  const wb = buildContractReportExcelWorkbook(contract);
+  const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
   triggerDownload(
-    new Blob([csv], { type: "text/csv;charset=utf-8;" }),
-    `report-${contract.code}.csv`
+    new Blob([out], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
+    `report-${contract.code || "contract"}.xlsx`
   );
 }
 

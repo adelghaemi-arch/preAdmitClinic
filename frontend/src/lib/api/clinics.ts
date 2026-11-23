@@ -1,6 +1,6 @@
 /*
  File: frontend/src/lib/api/clinics.ts
- Description: API کلینیک جاری — لوکیشن، پشتیبانی، سامانه پیامک، تست ارسال (UC-ADM-23)
+ Description: API کلینیک جاری — لوکیشن، لوگو، پیامک، تست ارسال (UC-ADM-21/23)
  Parent Dependencies: api/http
  */
 
@@ -28,6 +28,7 @@ export interface ApiClinicDto {
   toubaPasswordSet?: boolean;
   toubaSendUrl?: string | null;
   toubaOtpMessageTemplate?: string | null;
+  logoStorageKey?: string | null;
 }
 
 export async function fetchCurrentClinic() {
@@ -65,6 +66,17 @@ export interface ClinicSmsTestResultDto {
   detail?: string | null;
 }
 
+/** UC-ADM-21 — آپلود لوگوی بیمارستان (PNG/JPEG/WebP). */
+export async function uploadClinicLogo(file: File): Promise<{ logoStorageKey: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await apiFetch<{ ok: boolean; logoStorageKey: string }>("/api/clinics/current/logo", {
+    method: "POST",
+    body: form,
+  });
+  return { logoStorageKey: res.logoStorageKey };
+}
+
 /** UC-ADM-23 — از تنظیمات ذخیره‌شدهٔ سرور؛ مستقل از FixedOtp و درگاه فعال. */
 export async function testClinicSms(body: {
   mode: ClinicSmsTestModeApi;
@@ -80,4 +92,29 @@ export async function testClinicSms(body: {
     method: "POST",
     body,
   });
+}
+
+export interface ClinicToubaAccountDto {
+  credit: number;
+  senderNumbers: string[];
+}
+
+/** پیش‌فرض SOAP نمونه TSMS */
+export const DEFAULT_TOUBA_SOAP_URL = "http://www.tsms.ir/soapWSDL/";
+
+/** UC-ADM-21 — اعتبار و خطوط از UserInfo طوبی (اعتبار ذخیره‌شده). */
+export async function fetchToubaAccount() {
+  return apiFetch<ClinicToubaAccountDto>("/api/clinics/current/sms/touba-account");
+}
+
+/** گزینه‌های select خط ارسال؛ اگر مقدار فعلی در لیست نبود، نگهش می‌داریم. */
+export function mergeToubaSenderOptions(current: string, fromAccount: string[]): string[] {
+  const set = new Set<string>();
+  for (const n of fromAccount) {
+    const t = (n ?? "").trim();
+    if (t) set.add(t);
+  }
+  const cur = (current ?? "").trim();
+  if (cur) set.add(cur);
+  return Array.from(set);
 }

@@ -26,6 +26,7 @@ public sealed class PatientService(
     IFormRepository forms,
     IEvidenceRepository evidence,
     IClinicRepository clinics,
+    IPathwayCatalogRepository pathwayCatalog,
     IUnitOfWork uow) : IPatientService
 {
     public Task<PatientDto> AdmitContractMemberAsync(Guid memberId, CancellationToken ct = default)
@@ -182,13 +183,15 @@ public sealed class PatientService(
         string? formStatus = null;
         Guid? formId = null;
         string? formCode = null;
+        var formProgressPct = 0;
         var intakeGate = "already_complete";
         string? intakeGateMessage =
             "شما قبلاً پیش‌پذیرش را تکمیل کرده‌اید؛ نیازی به تکرار این مرحله نیست.";
         var clinic = await clinics.GetCurrentAsync(ct);
         if (clinic is not null)
         {
-            var formList = await forms.ListByClinicAsync(clinic.Id, ct);
+            // ساختار آیتم‌ها برای محاسبهٔ درصد پیشرفت پیش‌نویس لازم است
+            var formList = await forms.ListByClinicWithStructureAsync(clinic.Id, ct);
             var publishedMatching = formList
                 .Where(f => f.Status == FormPublishStatus.Published)
                 .Where(f => FormAudienceEvaluator.MatchesFormAudience(f, p, out _))
@@ -209,6 +212,16 @@ public sealed class PatientService(
                     formId = published.Id;
                     formCode = published.Code;
                     formStatus = status;
+                    if (response?.Answers is { Count: > 0 })
+                    {
+                        var answerMap = response.Answers
+                            .GroupBy(a => a.ItemCode, StringComparer.OrdinalIgnoreCase)
+                            .ToDictionary(
+                                g => g.Key,
+                                g => (string?)(g.Last().ValueCode ?? g.Last().ValueRaw),
+                                StringComparer.OrdinalIgnoreCase);
+                        formProgressPct = FormService.ComputeFormProgressPct(published, p, answerMap);
+                    }
                     break;
                 }
             }
@@ -251,6 +264,9 @@ public sealed class PatientService(
             if (member is not null)
             {
                 scheduledVisitDate = member.ScheduledVisitDate;
+                // عضو قرارداد هم درصد را نگه می‌دارد؛ اگر از پاسخ فرم صفر بود از اینجا بردار
+                if (formProgressPct <= 0 && member.ProfileProgressPct > 0 && !p.IntakeCompleted)
+                    formProgressPct = Math.Clamp(member.ProfileProgressPct, 0, 99);
                 var introduced = IranMobile.Normalize(
                     string.IsNullOrWhiteSpace(member.IntroducedMobile) ? member.Person.Mobile : member.IntroducedMobile);
                 var current = IranMobile.Normalize(person.Mobile ?? "");
@@ -268,12 +284,87 @@ public sealed class PatientService(
             }
         }
 
+        if (p.IntakeCompleted || string.Equals(intakeGate, "already_complete", StringComparison.Ordinal))
+            formProgressPct = 100;
+
         var profileComplete = IsProfileComplete(person);
+        // itinerary از کاتالوگ مسیر تخصیص‌یافته — مستقل از پذیرش روز مراجعه
+        var itinerary = await BuildPathwayItineraryAsync(p, ct);
 
         return new OwnerIntakeSnapshotDto(
             Map(p, scheduledVisitDate), formStatus, formId, formCode, docs.Count, portrait is not null, gps.Count,
             intakeGate, intakeGateMessage,
-            hospitalIntroStatus, hospitalName, introducedMasked, profileComplete);
+            hospitalIntroStatus, hospitalName, introducedMasked, profileComplete,
+            // تامنیل اطلاعات پایه روی فرانت با همین کلید از /api/files لود می‌شود
+            portrait?.StorageKey, itinerary, formProgressPct);
+    }
+
+    public async Task<PathwayItineraryStationDto> ConfirmPathwayStationAsync(
+        Guid ownerUserId, Guid stationDefId, CancellationToken ct = default)
+    {
+        var p = await patients.GetByOwnerUserIdAsync(ownerUserId, ct)
+            ?? throw new InvalidOperationException("پرونده یافت نشد.");
+        if (!p.IntakeCompleted)
+            throw new InvalidOperationException("پس از تکمیل پیش‌پذیرش می‌توانید ایستگاه‌ها را تأیید کنید.");
+
+        var station = await pathwayCatalog.GetStationByIdAsync(stationDefId, ct)
+            ?? throw new InvalidOperationException("ایستگاه مسیر یافت نشد.");
+
+        var def = await pathwayCatalog.GetByCodeAsync(
+            p.AssignedPathwayCode ?? HealthPathwayTitles.DefaultCode, includeStations: true, ct);
+        if (def is null || def.Stations.All(s => s.Id != stationDefId))
+            throw new InvalidOperationException("این ایستگاه متعلق به مسیر تخصیص‌یافته شما نیست.");
+
+        var existing = await pathwayCatalog.GetProgressAsync(p.Id, stationDefId, ct);
+        if (existing is null)
+        {
+            await pathwayCatalog.AddProgressAsync(new PatientPathwayStationProgress
+            {
+                PatientId = p.Id,
+                PathwayStationDefId = stationDefId,
+                ConfirmedAt = DateTime.UtcNow
+            }, ct);
+            await uow.SaveChangesAsync(ct);
+            existing = await pathwayCatalog.GetProgressAsync(p.Id, stationDefId, ct);
+        }
+
+        return new PathwayItineraryStationDto(
+            station.Id,
+            station.RoomCode,
+            station.TitleFa,
+            station.StepOrder,
+            station.IsOptional,
+            true,
+            existing?.ConfirmedAt ?? DateTime.UtcNow);
+    }
+
+    private async Task<IReadOnlyList<PathwayItineraryStationDto>> BuildPathwayItineraryAsync(
+        Patient p, CancellationToken ct)
+    {
+        var code = string.IsNullOrWhiteSpace(p.AssignedPathwayCode)
+            ? HealthPathwayTitles.DefaultCode
+            : p.AssignedPathwayCode!;
+        var def = await pathwayCatalog.GetByCodeAsync(code, includeStations: true, ct);
+        if (def is null || def.Stations.Count == 0)
+            return Array.Empty<PathwayItineraryStationDto>();
+
+        var progress = await pathwayCatalog.ListProgressByPatientAsync(p.Id, ct);
+        var byStation = progress.ToDictionary(x => x.PathwayStationDefId);
+        return def.Stations
+            .OrderBy(s => s.StepOrder)
+            .Select(s =>
+            {
+                byStation.TryGetValue(s.Id, out var prog);
+                return new PathwayItineraryStationDto(
+                    s.Id,
+                    s.RoomCode,
+                    s.TitleFa,
+                    s.StepOrder,
+                    s.IsOptional,
+                    prog is not null,
+                    prog?.ConfirmedAt);
+            })
+            .ToList();
     }
 
     public async Task<PatientChartDto?> GetChartAsync(Guid patientId, CancellationToken ct = default)

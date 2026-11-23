@@ -1,7 +1,7 @@
 /*
  File: backend/src/Nabz.Infrastructure/Sms/ClinicRoutingSmsSender.cs
  Description: مسیریابی ISmsSender؛ Auth:FixedOtp بر درگاه فعال ادمین اولویت دارد
- Parent Dependencies: KavenegarTemplateSmsSender, ToubaUrlSmsSender, IClinicRepository, AuthOptions
+ Parent Dependencies: KavenegarTemplateSmsSender, ToubaSoapSmsSender, IClinicRepository, AuthOptions
  */
 
 using Microsoft.Extensions.Logging;
@@ -16,7 +16,7 @@ namespace Nabz.Infrastructure.Sms;
 public sealed class ClinicRoutingSmsSender(
     IClinicRepository clinics,
     KavenegarTemplateSmsSender kavenegar,
-    ToubaUrlSmsSender touba,
+    ToubaSoapSmsSender touba,
     IOptions<KavenegarOptions> kavenegarOptions,
     IOptions<AuthOptions> authOptions,
     ILogger<ClinicRoutingSmsSender> logger) : ISmsSender
@@ -65,6 +65,7 @@ public sealed class ClinicRoutingSmsSender(
 
     private void EnsureRealSmsAllowed()
     {
+        // FixedOtp فقط OTP/کمپین تولید را قطع می‌کند؛ تست UC-ADM-23 از IClinicSmsDispatch جداست
         if (authOptions.Value.HasFixedOtp)
             throw new InvalidOperationException(ClinicSmsDispatch.FixedOtpBlocksSmsMessage);
     }

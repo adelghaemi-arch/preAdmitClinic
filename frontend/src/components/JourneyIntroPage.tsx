@@ -31,7 +31,10 @@ export function JourneyIntroPage({ snapshot, patientId, onContinue, onAction, bu
   }
 
   const membership = findActiveContractMembership(snapshot.contracts, patient.nationalId);
-  const stages = buildHealthRoadmap(patient, membership?.member ?? null);
+  const stages = buildHealthRoadmap(patient, membership?.member ?? null, {
+    pathways: snapshot.pathways,
+    rooms: snapshot.rooms,
+  });
   const clinicName =
     snapshot.platform.clinics.find((c) => c.isCurrentTenant)?.name ??
     snapshot.platform.clinics[0]?.name;
