@@ -34,8 +34,8 @@ public class NabzApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("Auth:FixedOtp", _fixedOtp ?? "");
         builder.UseSetting("ConnectionStrings:NabzClinic", _connectionString);
-        // origins واقعی تا smoke OPTIONS با WithOrigins بشکند اگر CORS حذف شود
-        builder.UseSetting("FrontendUrls:My", "https://my.nafasmed.ir");
+        // لیست کاما‌جدا تا پارس چند-origin در Program شکسته نشود؛ نمونهٔ دامنه نه قفل برند
+        builder.UseSetting("FrontendUrls:My", "https://my.nafasmed.ir,https://my.cors-second.example");
         builder.UseSetting("FrontendUrls:News", "https://liveteb.ir");
     }
 

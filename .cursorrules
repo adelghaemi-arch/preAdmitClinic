@@ -291,10 +291,10 @@ server/
 
 - آرتیفکت اجرا زیر `server/{app}`؛ **دادهٔ پایدار فقط** زیر `server/persist/`
 - در `docker-compose` این داده‌ها **bind mount** به `persist/` باشند؛ named volume Docker یا کپی داخل image برای آپلود/ویترین ممنوع است
-- در ریپو و پکیج ارسالی فقط **`.env.example`**؛ فایل `.env` واقعی روی سرور می‌ماند و اسکریپت‌های publish/sync/init **هرگز** آن را overwrite نمی‌کنند
-- قالب‌های `docker-compose.yml` / `Dockerfile` / `.env.example` فقط از `_templates` تولید شوند؛ ویرایش دستی خارج از قالب ممنوع
+- در ریپو و پکیج ارسالی فقط **`.env.example`** و **`docker-compose.yml.example`**؛ فایل‌های زنده `.env` / `docker-compose.yml` روی هر هاست می‌مانند و اسکریپت‌های publish/sync/init/rsync **هرگز** آن‌ها را overwrite یا ارسال نمی‌کنند
+- قالب‌های `docker-compose.yml.example` / `Dockerfile` / `.env.example` فقط از `_templates` تولید شوند؛ ویرایش دستی خارج از قالب ممنوع
 - هر `server/{app}/.env.example` باید **نمونهٔ واقعی `KEY=value`** داشته باشد (نه فقط کامنت). placeholder برای سکرت مجاز است؛ کلیدهای runtime در overlay
 - مسیر اصلی انتشار: `publish.bat` — نه اجرای جداگانهٔ helpers به‌عنوان جریان رسمی
-- **کپی فقط‌تازه‌تر:** هنگام همگام‌سازی آرتیفکت بیلد به `server/{api,my,news}` (robocopy `/XO` بدون wipe) و rsync ویندوز→لینوکس (`-avu`) فقط فایل‌هایی که **منبعشان از مقصد تازه‌تر** است بازنویسی شوند؛ مقصدِ هم‌سن/جدیدتر و فایل‌های اضافی dest دست نخورده بمانند؛ wipe کامل پوشهٔ dest ممنوع مگر درخواست صریح اپراتور. استثنا: refresh قالب از `_templates`؛ و ممنوعیت همیشگی overwrite روی `.env` و `persist/`
-- کپی ویندوز→لینوکس با exclude؛ overwrite روی `persist/**` و `{api}/.env` ممنوع
+- **کپی فقط‌تازه‌تر:** هنگام همگام‌سازی آرتیفکت بیلد به `server/{api,my,news}` (robocopy `/XO` بدون wipe) و rsync ویندوز→لینوکس (`-avu`) فقط فایل‌هایی که **منبعشان از مقصد تازه‌تر** است بازنویسی شوند؛ مقصدِ هم‌سن/جدیدتر و فایل‌های اضافی dest دست نخورده بمانند؛ wipe کامل پوشهٔ dest ممنوع مگر درخواست صریح اپراتور. استثنا: refresh قالب از `_templates`؛ و ممنوعیت همیشگی overwrite/ارسال روی `.env`، `docker-compose.yml` و `persist/`
+- کپی ویندوز→لینوکس با exclude؛ overwrite روی `persist/**` و `{api,my,news}/.env` و `**/docker-compose.yml` ممنوع
 - path داخل کانتینر ثابت می‌ماند؛ فقط مسیر هاست به `persist/` است

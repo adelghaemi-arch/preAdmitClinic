@@ -10,6 +10,22 @@
 # Changelog فرایندی
 
 
+## ۱۴۰۵/۰۹/۰۲ — bake فرانت به api.nafasmed.ir
+
+- `API_PUBLIC_URL` / `VITE_API_BASE_URL` نمونه: `https://api.nafasmed.ir` تا بیلد my دیگر به `api.liveteb.ir` نرود.
+- CORS روی هاست API جداست؛ بعد از بیلد باید `my/dist` روی سرور عوض شود (env alone کافی نیست).
+
+## ۱۴۰۵/۰۹/۰۲ — CORS چند-origin از FrontendUrls (هر دامنهٔ فرانت)
+
+- `FrontendUrls__My` / `News` روی هر هاست: Origin واقعی همان فرانت؛ چند تا با `,` یا `;`.
+- invite_url فقط اولین origin در `My`؛ پارس مشترک در `FrontendUrlsOptions.ParseOrigins`.
+- دامنهٔ example در ریپو قفل برند نیست؛ رفع بلاک مرورگر = ست env هاست + recreate API.
+
+## ۱۴۰۵/۰۹/۰۲ — پکیج publish فقط *.example برای env و compose
+
+- قالب و پکیج: `docker-compose.yml.example` + `.env.example`؛ فایل زنده `docker-compose.yml` / `.env` ساخته یا rsync نمی‌شود (`deploy-rsync-exclude`).
+- `init-server-structure` دیگر از example به `.env` کپی نمی‌کند؛ هر هاست Linux یک‌بار خودش کپی/merge می‌کند تا پورت و سکرت سرورهای متفاوت خراب نشوند.
+
 ## ۱۴۰۵/۰۹/۰۲ — دامنهٔ رسمی my → nafasmed + .env فقط per-host
 
 - origin فرانت کلینیک: `https://my.nafasmed.ir` (`MY_PUBLIC_URL` / `FrontendUrls__My` / smoke CORS).

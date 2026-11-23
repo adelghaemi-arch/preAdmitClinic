@@ -38,7 +38,7 @@
 | سطح | آدرس / مسیر |
 |-----|-------------|
 | فرانت کلینیک (my) | `https://my.nafasmed.ir` · لوکال Vite |
-| API | `https://api.liveteb.ir` · `/api/*` |
+| API | `https://api.nafasmed.ir` · `/api/*` |
 | ورود | OTP موبایل؛ ادمین کل seed: `09133752696` |
 | دمو OTP | فقط وقتی `Auth__FixedOtp` ست باشد (غیر-prod) |
 

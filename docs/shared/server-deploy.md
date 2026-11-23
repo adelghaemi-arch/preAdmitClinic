@@ -19,7 +19,7 @@
 
 1. بارگذاری [`sync.config.bat`](../../server/sync.config.bat) (پورت، URL عمومی، `DEPLOY_REMOTE`)
 2. [`pre-publish-tests.bat`](../../server/pre-publish-tests.bat) — بستن قفل DLL + Unit بک + API smoke + Vitest؛ شکست → توقف انتشار
-3. [`init-server-structure.bat`](../../server/init-server-structure.bat) — اسکلت + قالب compose / `.env.example` / `persist/`
+3. [`init-server-structure.bat`](../../server/init-server-structure.bat) — اسکلت + قالب `docker-compose.yml.example` / `.env.example` / `persist/` (بدون ساخت فایل زنده)
 4. [`sync-deploy.bat`](../../server/sync-deploy.bat) `all` — بیلد my/news + publish api
 5. اگر `DEPLOY_REMOTE` پر باشد → `rsync` با [`deploy-rsync-exclude.txt`](../../server/deploy-rsync-exclude.txt)؛ وگرنه چاپ دستور کپی
 6. چاپ خلاصهٔ موفقیت + دستورهای `docker compose` برای لینوکس؛ سپس ۲۰ ثانیه صبر با تشخیص کلید
@@ -27,10 +27,12 @@
 **پایان کنسول:** خطا/تست ناموفق → `pause` (پنجره باز). موفقیت → بدون کلید پس از ۲۰ثانیه بسته؛ کلید دیگر = بستن زودتر؛ **Esc = باز بماند** تا با نتیجه کار کنید.
 
 قبل از بیلد production، در `sync.config.bat` مقادیر `MY_PUBLIC_URL` / `NEWS_PUBLIC_URL` / `API_PUBLIC_URL` را به origin عمومی مرورگر تنظیم کنید (نه `localhost`).  
-دامنهٔ رسمی my فعلی: `https://my.nafasmed.ir` (CORS از `FrontendUrls__My` روی **همان هاست**).  
+نمونهٔ فعلی bake در `sync.config`: `https://my.nafasmed.ir` — CORS همیشه از `FrontendUrls__*` روی **همان هاست** می‌آید (هر دامنهٔ فرانت).  
 برای `my`: قبل از `npm run build` مقدار `VITE_API_BASE_URL=%API_PUBLIC_URL%` ست می‌شود (بدون `/api`).
 
-**قرارداد `.env`:** پکیج publish فقط `.env.example` می‌سازد/می‌فرستد؛ روی ویندوز دیگر از example به `.env` کپی نمی‌شود. هر هاست Linux `.env` خودش را یک‌بار از example می‌سازد و نگه می‌دارد — rsync با `deploy-rsync-exclude.txt` هرگز `.env` را overwrite نمی‌کند تا سرورهای متفاوت خراب نشوند.
+**قرارداد `.env` و `docker-compose.yml`:** پکیج publish فقط `*.example` می‌سازد/می‌فرستد (`.env.example` + `docker-compose.yml.example`). فایل‌های زنده روی ویندوز ساخته نمی‌شوند و rsync با `deploy-rsync-exclude.txt` هرگز آن‌ها را overwrite نمی‌کند تا سرورهای متفاوت خراب نشوند.
+
+**CORS / هر دامنهٔ فرانت:** `FrontendUrls__My` و `FrontendUrls__News` روی `api/.env` **همان هاست** باید دقیقاً Origin مرورگر آن استقرار باشد (مثلاً `https://my.any-domain.ir`). چند origin با `,` یا `;`. مقدار داخل `.env.example` / `sync.config` فقط نمونه است؛ عوض کردن دامنه = ویرایش env هاست + `docker compose up -d --force-recreate` (نه پچ کد و نه انتظار overwrite از publish).
 
 `init-server-structure.bat` و `sync-deploy.bat` helper داخلی‌اند؛ مسیر اصلی اپراتور فقط `publish.bat` است. بیلد جزئی اختیاری: `sync-deploy.bat my|news|api`.  
 تست جداگانه بدون بیلد: `pre-publish-tests.bat`. بای‌پس اضطراری: `set SKIP_PRE_PUBLISH_TESTS=1` قبل از `publish.bat` (هشدار در لاگ).
@@ -67,9 +69,9 @@ server/
   persist/
     uploads/                  # آپلودهای API
     news-data/                # دادهٔ ویترین (آینده)
-  api/   # publish + Dockerfile + compose + .env.example
-  my/    # dist + nginx.conf + compose + .env.example
-  news/  # dist + nginx.conf + compose + .env.example
+  api/   # publish + Dockerfile + docker-compose.yml.example + .env.example
+  my/    # dist + nginx.conf + docker-compose.yml.example + .env.example
+  news/  # dist + nginx.conf + docker-compose.yml.example + .env.example
 ```
 
 ## جدول سرویس‌ها
@@ -123,16 +125,16 @@ flowchart LR
 
 ## قواعد بیلد و قالب
 
-- قالب‌ها از [`_templates/write-deploy-files.ps1`](../../server/_templates/write-deploy-files.ps1) refresh می‌شوند؛ ویرایش دستی compose/Dockerfile/`nginx.conf` خارج از قالب ممنوع.
+- قالب‌ها از [`_templates/write-deploy-files.ps1`](../../server/_templates/write-deploy-files.ps1) فقط `docker-compose.yml.example` / `.env.example` / `Dockerfile` / `nginx.conf` می‌نویسند؛ ویرایش دستی خارج از قالب ممنوع. فایل زنده compose روی هاست است.
 - **SPA fallback:** `my` و `news` هر دو `nginx.conf` با `try_files $uri $uri/ /index.html` دارند تا مسیرهای کلاینت (مثل `/login`) با رفرش مستقیم 404 ندهند.
 - **MIME برای `.mjs`:** هر دو `nginx.conf` برای `*.mjs` صریحاً `Content-Type: application/javascript` می‌گذارند (مثلاً worker `pdf.js`)؛ وگرنه `mime.types` قدیمی فایل را `octet-stream` می‌دهد و مرورگر ماژول را رد می‌کند. بعد از به‌روز کردن فایل روی سرور: `sudo docker compose up -d` در `server/my` (و در صورت نیاز purge کش ابرآروان برای همان asset).
-- **`.env` موجود API بازنویسی نمی‌شود** و در مسیر publish ساخته/ارسال نمی‌شود. کلید جدید در `.env.example` را دستی به `.env` **همان هاست** اضافه کنید (مثلاً `FrontendUrls__My`).
+- **`.env` و `docker-compose.yml` زنده** در مسیر publish ساخته/ارسال نمی‌شوند. کلید یا پورت جدید را از `*.example` دستی به فایل زنده **همان هاست** merge کنید.
 - اگر `frontend/news` نباشد، sync برای news فقط **placeholder** می‌نویسد تا nginx بالا بیاید.
 - **کپی فقط‌تازه‌تر:** `sync-deploy.bat` برای `my/dist` و `news/dist` از `robocopy /E /XO` بدون wipe مقصد استفاده می‌کند؛ `api/publish` هم قبل از `dotnet publish` پاک نمی‌شود. فقط منبع تازه‌تر از مقصد overwrite می‌شود؛ فایل‌های اضافی/قدیمی dest می‌مانند.
 
 ## کپی پکیج به لینوکس
 
-فقط `.env.example` ارسال می‌شود؛ `.env` پرشده و محتویات `persist/` روی سرور نباید overwrite شوند.
+فقط `*.example` (به‌همراه Dockerfile / nginx / dist / publish) ارسال می‌شود؛ `.env` و `docker-compose.yml` زنده و محتویات `persist/` روی سرور نباید overwrite شوند.
 
 اگر `DEPLOY_REMOTE` در `sync.config.bat` پر باشد، `publish.bat` خودش rsync را با `-avu` اجرا می‌کند (`-u` = اگر مقصد جدیدتر است overwrite نشود)؛ وگرنه:
 
@@ -141,12 +143,17 @@ rsync -avu --exclude-from=deploy-rsync-exclude.txt ./ user@host:/path/to/server/
 ```
 
 فایل exclude: [`server/deploy-rsync-exclude.txt`](../../server/deploy-rsync-exclude.txt).  
-هرگز `--delete` را طوری نزنید که `persist/` یا `.env` مقصد پاک شود.
+هرگز `--delete` را طوری نزنید که `persist/` یا `.env` / `docker-compose.yml` مقصد پاک شود.
 
 ## روی سرور لینوکس
 
-1. یک‌بار داخل `server/api`: `cp .env.example .env` و پر کردن `User Id` / `Password` و در صورت نیاز `Auth__FixedOtp` / کلید کاوه‌نگار.
-2. در هر پوشهٔ فعال (`api` / `my` / `news`): `sudo docker compose up -d --build`
+1. یک‌بار در هر پوشهٔ فعال (`api` / `my` / `news`):
+   ```bash
+   cp .env.example .env                         # api: User Id/Password و FrontendUrls
+   cp docker-compose.yml.example docker-compose.yml
+   ```
+   بعد فقط merge دستی از example وقتی کلید/پورت جدید آمد.
+2. در هر پوشه: `sudo docker compose up -d --build`
 3. API در استارت: `MigrateAsync` + seed از `IAppDataSeeder` / `AppDataSeeder` (مالک دمو `09123458910`؛ ادمین کل `09133752696`).
 4. **مایگریشن:** فقط یک `Initial` (شامل `Persons`)؛ روی DB خام استارت API همان را یک‌بار اعمال + `AppDataSeeder` می‌کند. DB سرور اگر حذف شده، فقط publish و استارت کافی است. ریست بعدی: UC-PLT-13 با OTP.
 
@@ -169,7 +176,7 @@ mkdir -p persist/uploads persist/news-data
 | `ConnectionStrings__NabzClinic` | MSSQL روی هاست |
 | `Auth__FixedOtp` | اگر پر باشد → همان کد برای لاگین؛ **بدون درگاه پیامک** |
 | `Kavenegar__ApiKey` / `OtpTemplate` / `InviteTemplate` | fallback وقتی `Clinic.SmsProvider=Kavenegar` یا None ولی env پر باشد |
-| `FrontendUrls__My` / `FrontendUrls__News` | originهای فرانت برای سیاست CORS (`WithOrigins` در `Program.cs`) — هم‌تراز `MY_PUBLIC_URL` / `NEWS_PUBLIC_URL` |
+| `FrontendUrls__My` / `FrontendUrls__News` | Origin(های) فرانت همین هاست برای CORS (`WithOrigins`)؛ چند تا با کاما؛ اولین `My` = پایهٔ invite_url |
 
 ### PDF پرسشنامه (UC-ADM-26) و Chromium
 

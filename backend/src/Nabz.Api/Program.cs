@@ -36,21 +36,17 @@ builder.Services.AddControllers().AddJsonOptions(o =>
 });
 builder.Services.AddOpenApi();
 
-// FrontendUrls باید واقعاً policy بسازد؛ خالی = AllowAnyOrigin فقط برای dev بدون env
+// FrontendUrls: هر origin فرانت این هاست (یک یا چند تا با ,/؛)؛ خالی = AllowAnyOrigin فقط برای dev بدون env
 var frontendOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-void AddOrigin(string? raw)
-{
-    var o = raw?.Trim().TrimEnd('/');
-    if (!string.IsNullOrEmpty(o))
-        frontendOrigins.Add(o);
-}
-AddOrigin(builder.Configuration["FrontendUrls:My"]);
-AddOrigin(builder.Configuration["FrontendUrls:News"]);
+foreach (var o in FrontendUrlsOptions.ParseOrigins(builder.Configuration["FrontendUrls:My"]))
+    frontendOrigins.Add(o);
+foreach (var o in FrontendUrlsOptions.ParseOrigins(builder.Configuration["FrontendUrls:News"]))
+    frontendOrigins.Add(o);
 // Vite لوکال فقط در Development تا WithOrigins روی سرور شل نشود
 if (builder.Environment.IsDevelopment())
 {
-    AddOrigin("http://localhost:5173");
-    AddOrigin("http://127.0.0.1:5173");
+    frontendOrigins.Add("http://localhost:5173");
+    frontendOrigins.Add("http://127.0.0.1:5173");
 }
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>

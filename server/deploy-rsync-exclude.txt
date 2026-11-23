@@ -7,10 +7,12 @@
 # هرگز --delete را روی کل درخت با persist روشن نکنید.
 
 # سکرت‌ها و تنظیم per-host — هرگز از ویندوز به لینوکس نرود (سرورهای متفاوت خراب نشوند)
-# پکیج فقط .env.example دارد؛ api/.env هر هاست جداست
-api/.env
+# پکیج فقط *.example دارد؛ .env و docker-compose.yml هر هاست جداست
 **/.env
 !**/.env.example
+**/docker-compose.yml
+**/docker-compose.yaml
+!**/docker-compose.yml.example
 
 # دادهٔ پایدار روی هاست لینوکس (آپلود + ویترین)
 persist/uploads/**

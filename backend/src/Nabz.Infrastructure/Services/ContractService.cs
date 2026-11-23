@@ -550,7 +550,8 @@ public sealed class ContractService(
 
     private string BuildInviteUrl(string inviteToken)
     {
-        var bas = (frontendUrls.Value.My ?? string.Empty).Trim().TrimEnd('/');
+        // اگر My لیست کاما‌جدا باشد فقط اولین origin پایهٔ لینک دعوت است
+        var bas = frontendUrls.Value.PrimaryMy ?? string.Empty;
         if (string.IsNullOrWhiteSpace(bas) || string.IsNullOrWhiteSpace(inviteToken))
             return inviteToken;
         return $"{bas}/?invite={Uri.EscapeDataString(inviteToken)}";

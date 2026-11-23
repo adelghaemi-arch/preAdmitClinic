@@ -13,7 +13,7 @@ backend/**/*.user
 *.suo
 .vs/
 
-# آرتیفکت دیپلوی — سکرت و publish/dist محلی (قالب‌ها و .env.example می‌مانند)
+# آرتیفکت دیپلوی — سکرت و publish/dist محلی (فقط *.example در ریپو می‌مانند)
 server/api/publish/
 server/api/.env
 server/my/dist/
@@ -22,6 +22,12 @@ server/persist/uploads/*
 !server/persist/uploads/.gitkeep
 server/persist/news-data/*
 !server/persist/news-data/.gitkeep
+# compose زنده per-host — فقط docker-compose.yml.example در گیت
+server/**/docker-compose.yml
+server/**/docker-compose.yaml
+!server/**/docker-compose.yml.example
+server/docker-compose.yml
+!server/docker-compose.yml.example
 
 **/__pycache__/
 *.pyc

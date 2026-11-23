@@ -1,10 +1,11 @@
+# نمونه — روی هاست: cp docker-compose.yml.example docker-compose.yml سپس پورت/نام را برای همان سرور تنظیم کنید
 services:
   app:
     build: .
-    container_name: adel-maryam-nafasmed-clinic-api
+    container_name: adel-maryam-nabz-clinic-api
     restart: unless-stopped
     ports:
-      - "5450:8080"
+      - "5438:8080"
     env_file:
       - .env
     environment:

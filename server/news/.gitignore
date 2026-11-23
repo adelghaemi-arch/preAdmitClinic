@@ -10,6 +10,9 @@ coverage/
 *.log
 .env*
 !.env.example
+docker-compose.yml
+docker-compose.yaml
+!docker-compose.yml.example
 
 # بقایای layout قدیمی
 data/

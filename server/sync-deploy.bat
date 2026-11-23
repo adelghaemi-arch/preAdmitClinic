@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal EnableExtensions EnableDelayedExpansion
 REM /*
 REM  File: server/sync-deploy.bat
-REM  Description: بیلد/پابلیش و همگام‌سازی افزایشی به server/{my,news,api}؛ فقط .env.example؛ persist/.env پرشده دست نخورده
+REM  Description: بیلد/پابلیش و همگام‌سازی افزایشی به server/{my,news,api}؛ فقط *.example؛ بدون .env/compose زنده
 REM  Parent Dependencies: publish.bat, sync.config.bat, frontend, backend, _templates/write-deploy-files.ps1
 REM */
 
@@ -149,8 +149,8 @@ if not exist "%SERVER_ROOT%\api\publish\.playwright\node\linux-x64\node" (
   echo [OK] Playwright linux-x64 driver present in publish
 )
 
-REM پکیج فقط .env.example دارد؛ .env پرشده روی ویندوز ساخته نمی‌شود تا سرورهای مختلف خراب نشوند
-echo [INFO] api/.env is NOT created here - on each Linux host copy .env.example once and edit that host only
+REM پکیج فقط *.example دارد؛ .env و docker-compose.yml زنده ساخته/ارسال نمی‌شوند
+echo [INFO] live .env / docker-compose.yml NOT created - on each Linux host copy from *.example once
 
 set "DID_API=1"
 echo [OK] api -^> server\api\publish
@@ -158,22 +158,22 @@ echo.
 :after_api
 
 echo === Sync summary ===
-if "%DID_MY%"=="1" echo  - my:   dist + docker-compose.yml + .env.example  ^(port %MY_HOST_PORT%, VITE_API_BASE_URL=%API_PUBLIC_URL%^)
+if "%DID_MY%"=="1" echo  - my:   dist + docker-compose.yml.example + .env.example  ^(port %MY_HOST_PORT%, VITE_API_BASE_URL=%API_PUBLIC_URL%^)
 if "%DID_NEWS%"=="1" (
   if "%NEWS_PLACEHOLDER%"=="1" (
-    echo  - news: placeholder dist + docker-compose.yml + .env.example  ^(port %NEWS_HOST_PORT%^)
+    echo  - news: placeholder dist + docker-compose.yml.example + .env.example  ^(port %NEWS_HOST_PORT%^)
   ) else (
-    echo  - news: dist + docker-compose.yml + .env.example  ^(port %NEWS_HOST_PORT%, VITE_API_URL=%API_PUBLIC_URL%^)
+    echo  - news: dist + docker-compose.yml.example + .env.example  ^(port %NEWS_HOST_PORT%, VITE_API_URL=%API_PUBLIC_URL%^)
   )
 )
-if "%DID_API%"=="1" echo  - api:  publish + Dockerfile + docker-compose.yml + .env.example ^(port %API_HOST_PORT% -^> %API_CONTAINER_PORT%, MSSQL %MSSQL_HOST%:%MSSQL_PORT%^)
-echo  - persist: uploads + news-data on host ^(bind mounts; never ship filled .env^)
+if "%DID_API%"=="1" echo  - api:  publish + Dockerfile + docker-compose.yml.example + .env.example ^(port %API_HOST_PORT% -^> %API_CONTAINER_PORT%, MSSQL %MSSQL_HOST%:%MSSQL_PORT%^)
+echo  - persist: uploads + news-data on host ^(bind mounts; never ship live .env / compose^)
 echo.
 if exist "%SERVER_ROOT%\api\uploads" echo [WARN] legacy server\api\uploads - migrate to persist\uploads
 if exist "%SERVER_ROOT%\news\data" echo [WARN] legacy server\news\data - migrate to persist\news-data
-echo On Linux ^(per folder^): sudo docker compose up -d --build
+echo On Linux ^(per folder^): cp *.example to live once, then sudo docker compose up -d --build
 echo Copy with: rsync -avu --exclude-from=deploy-rsync-exclude.txt
-echo API: package ships .env.example only; each host keeps its own .env ^(FrontendUrls / MSSQL^).
+echo Package ships *.example only; each host keeps its own .env and docker-compose.yml.
 exit /b 0
 
 :write_deploy

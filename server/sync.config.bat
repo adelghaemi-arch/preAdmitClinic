@@ -12,11 +12,11 @@ set "MY_HOST_PORT=5437"
 set "API_HOST_PORT=5438"
 set "API_CONTAINER_PORT=8080"
 
-REM --- URL عمومی برای بیلد فرانت و FrontendUrls (سیاست CORS روی API) ---
-set "NEWS_PUBLIC_URL=https://liveteb.ir"
+REM --- URL عمومی برای بیلد فرانت و نمونهٔ FrontendUrls در .env.example (CORS واقعی = api/.env همان هاست) ---
+set "NEWS_PUBLIC_URL=https://nafasmed.ir"
 set "MY_PUBLIC_URL=https://my.nafasmed.ir"
 REM origin عمومی API برای bake در بیلد my؛ اگر reverse-proxy فرق دارد همین را عوض کنید
-set "API_PUBLIC_URL=https://api.liveteb.ir"
+set "API_PUBLIC_URL=https://api.nafasmed.ir"
 
 REM --- دسترسی کانتینر API به MSSQL روی هاست سرور ---
 set "MSSQL_HOST=host.docker.internal"

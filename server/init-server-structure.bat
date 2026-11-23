@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal EnableExtensions EnableDelayedExpansion
 REM /*
 REM  File: server/init-server-structure.bat
-REM  Description: اسکلت انتشار server/{api,my,news,persist} بدون بیلد؛ بدون overwrite روی .env و دادهٔ پایدار
+REM  Description: اسکلت انتشار server/{api,my,news,persist} بدون بیلد؛ فقط *.example؛ بدون ساخت .env / compose زنده
 REM  Parent Dependencies: publish.bat, sync.config.bat, _templates/write-deploy-files.ps1
 REM */
 
@@ -32,15 +32,8 @@ if errorlevel 1 exit /b 1
 powershell -NoProfile -ExecutionPolicy Bypass -File "%SERVER_ROOT%\_templates\write-deploy-files.ps1" -Target api -ServerRoot "%SERVER_ROOT%"
 if errorlevel 1 exit /b 1
 
-REM فقط اگر .env نبود از example بساز؛ هرگز سکرت موجود را بازنویسی نکن
-if not exist "%SERVER_ROOT%\api\.env" (
-  if exist "%SERVER_ROOT%\api\.env.example" (
-    copy /y "%SERVER_ROOT%\api\.env.example" "%SERVER_ROOT%\api\.env" >nul
-    echo [INFO] created server\api\.env from .env.example - fill secrets before docker compose up
-  )
-) else (
-  echo [INFO] kept existing server\api\.env
-)
+REM .env و docker-compose.yml زنده ساخته نمی‌شوند — فقط *.example در پکیج؛ هر هاست Linux خودش کپی می‌کند
+echo [INFO] package has .env.example + docker-compose.yml.example only — copy once per Linux host
 
 REM هشدار مهاجرت از layout قدیمی — بدون حذف خودکار
 if exist "%SERVER_ROOT%\api\uploads" (

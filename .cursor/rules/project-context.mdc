@@ -92,7 +92,7 @@ Deploy: [`docs/shared/server-deploy.md`](../../docs/shared/server-deploy.md)
 سرویس‌ها: `server/api` · `server/my` · `server/news`  
 Persist نمونه: `persist/uploads/` · `persist/news-data/`
 
-هر `server/{api,my,news}/.env.example` باید `KEY=value` واقعی داشته باشد:
+هر `server/{api,my,news}/.env.example` و `docker-compose.yml.example` باید نمونهٔ واقعی قابل‌کپی داشته باشد؛ فایل زنده روی هاست است:
 
 - `my`: حداقل `VITE_API_BASE_URL=<API_PUBLIC_URL>` (بدون `/api`)
 - `news`: حداقل `VITE_API_URL=<API_PUBLIC_URL>`
@@ -106,8 +106,9 @@ Path داخل کانتینر: `wwwroot/uploads`، `/app/news-vitrine`، URL `/da
 |-----|-----|
 | my (فرانت کلینیک) | `https://my.nafasmed.ir` |
 | news (ویترین) | `https://liveteb.ir` |
-| api | `https://api.liveteb.ir` |
+| api | `https://api.nafasmed.ir` |
 
 - `FrontendUrls__My` / `FrontendUrls__News` هم‌تراز `MY_PUBLIC_URL` / `NEWS_PUBLIC_URL` در [`server/sync.config.bat`](../../server/sync.config.bat) — این کلیدها policy CORS را در `Program.cs` می‌سازند.
-- پکیج publish فقط `.env.example` دارد؛ `.env` هر هاست Linux جداست و rsync آن را overwrite نمی‌کند.
+- پکیج publish فقط `.env.example` و `docker-compose.yml.example` دارد؛ فایل‌های زنده هر هاست Linux جداست و rsync آن‌ها را overwrite نمی‌کند.
+- CORS: `FrontendUrls__My` / `News` روی همان هاست = Origin(های) فرانت همان استقرار (کاما‌جدا مجاز)؛ دامنهٔ جدول بالا فقط نمونه است.
 - Edge عمومی: **ArvanCloud**. پاسخ 502/503 بدون `Access-Control-Allow-Origin` یعنی upstream/API down است، نه باگ سیاست CORS — triage طبق `.cursorrules` §0.2.

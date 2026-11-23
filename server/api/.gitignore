@@ -13,6 +13,9 @@ coverage/
 *.log
 .env*
 !.env.example
+docker-compose.yml
+docker-compose.yaml
+!docker-compose.yml.example
 
 # بقایای layout قدیمی — اگر هنوز محلی باشند در گیت نروند
 uploads/

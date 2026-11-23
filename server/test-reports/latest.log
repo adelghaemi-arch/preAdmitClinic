@@ -1,59 +1,60 @@
 ﻿=== Nabz Clinic pre-publish tests ===
-Log: C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server\test-reports\pre-publish-20261120-192908.log
+Log: C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server\test-reports\pre-publish-20261123-195829.log
 Mode: quiet (PRE_PUBLISH_VERBOSE=1 for full output)
 ---
-  [skip] Nabz.Api.exe not running
+  [killed] Nabz.Api pid=28328
   [skip] testhost.exe not running
   [skip] Nabz.Api.Tests.exe not running
   [skip] testhost.net48.exe not running
   [skip] testhost.netcoreapp.exe not running
   [skip] vstest.console.exe not running
-[0/3] Stop locks — killed: 0, skipped: 6
+[0/3] Stop locks — killed: 1, skipped: 5
 [1/3 Backend unit] RUNNING (details in log)…
 CMD: dotnet.exe test C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Nabz.Infrastructure.Tests.csproj -v q --nologo
   … still running (5s)
-  … still running (10s)
 ----- suite output: 1/3 Backend unit -----
-C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Fakes\FakeRepositories.cs(301,30): warning CS8601: Possible null reference assignment. [C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Nabz.Infrastructure.Tests.csproj]
-C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Fakes\FakeRepositories.cs(319,30): warning CS8601: Possible null reference assignment. [C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Nabz.Infrastructure.Tests.csproj]
-C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\UseCases\Owner\UcOwn05_11_EvidenceAndSessionTests.cs(45,9): warning xUnit2013: Do not use Assert.Equal() to check for collection size. Use Assert.Single instead. (https://xunit.net/xunit.analyzers/rules/xUnit2013) [C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\Nabz.Infrastructure.Tests.csproj]
 Test run for C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Infrastructure.Tests\bin\Debug\net10.0\Nabz.Infrastructure.Tests.dll (.NETCoreApp,Version=v10.0)
 A total of 1 test files matched the specified pattern.
 
-Passed!  - Failed:     0, Passed:   123, Skipped:     0, Total:   123, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:   226, Skipped:     0, Total:   226, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0)
 
------ end suite: 1/3 Backend unit (exit=, 15.1s) -----
-[PASS] 1/3 Backend unit — Passed!  - Failed:     0, Passed:   123, Skipped:     0, Total:   123, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0) (15.1s)
+----- end suite: 1/3 Backend unit (exit=, 10.0s) -----
+[PASS] 1/3 Backend unit — Passed!  - Failed:     0, Passed:   226, Skipped:     0, Total:   226, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0) (10s)
 [2/3 API smoke] RUNNING (details in log)…
 CMD: dotnet.exe test C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\Nabz.Api.Tests.csproj -v q --nologo
   … still running (5s)
   … still running (10s)
   … still running (15s)
   … still running (20s)
+  … still running (25s)
+  … still running (30s)
 ----- suite output: 2/3 API smoke -----
 Test run for C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\backend\tests\Nabz.Api.Tests\bin\Debug\net10.0\Nabz.Api.Tests.dll (.NETCoreApp,Version=v10.0)
 A total of 1 test files matched the specified pattern.
 
-Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 9 s - Nabz.Api.Tests.dll (net10.0)
+Passed!  - Failed:     0, Passed:    20, Skipped:     0, Total:    20, Duration: 15 s - Nabz.Api.Tests.dll (net10.0)
 
------ end suite: 2/3 API smoke (exit=, 25.1s) -----
-[PASS] 2/3 API smoke — Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 9 s - Nabz.Api.Tests.dll (net10.0) (25.1s)
+----- end suite: 2/3 API smoke (exit=, 35.0s) -----
+[PASS] 2/3 API smoke — Passed!  - Failed:     0, Passed:    20, Skipped:     0, Total:    20, Duration: 15 s - Nabz.Api.Tests.dll (net10.0) (35s)
 [3/3 Frontend unit] RUNNING (details on console / log note)…
 Frontend via _run-frontend-tests.ps1 (no file redirect — Vitest globals)
   … still running (5s)
-Frontend finished exit=0 elapsed=10.0s
-[PASS] 3/3 Frontend unit — exit code 0 (10s)
+  … still running (10s)
+  … still running (15s)
+  … still running (20s)
+Frontend finished exit=0 elapsed=25.0s
+[PASS] 3/3 Frontend unit — exit code 0 (25s)
 ---
 ========================================
   PRE-PUBLISH TEST REPORT
 ========================================
-Started:  2026-11-20T19:29:08.6180092+03:30
-Finished: 2026-11-20T19:29:59.0667252+03:30
-Duration: 50s
+Started:  2026-11-23T19:58:29.6146987+03:30
+Finished: 2026-11-23T19:59:40.0399533+03:30
+Duration: 70s
 ---
-1 Backend Infrastructure.Tests  PASS   0    Passed!  - Failed:     0, Passed:   123, Skipped:     0, Total:   123, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0)
-2 API smoke Nabz.Api.Tests      PASS   0    Passed!  - Failed:     0, Passed:    16, Skipped:     0, Total:    16, Duration: 9 s - Nabz.Api.Tests.dll (net10.0)
+1 Backend Infrastructure.Tests  PASS   0    Passed!  - Failed:     0, Passed:   226, Skipped:     0, Total:   226, Duration: 1 s - Nabz.Infrastructure.Tests.dll (net10.0)
+2 API smoke Nabz.Api.Tests      PASS   0    Passed!  - Failed:     0, Passed:    20, Skipped:     0, Total:    20, Duration: 15 s - Nabz.Api.Tests.dll (net10.0)
 3 Frontend Vitest test:run      PASS   0    exit code 0
 ---
-Full log: C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server\test-reports\pre-publish-20261120-192908.log
+Full log: C:\Adel\Projects\Own\Maryam\clinicPreAdmit\type3\server\test-reports\pre-publish-20261123-195829.log
 PRE-PUBLISH TESTS: PASS

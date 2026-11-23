@@ -1,10 +1,11 @@
+# نمونه ریشه (per-host) — روی هاست کپی به docker-compose.yml؛ publish هرگز فایل زنده را overwrite نمی‌کند
 services:
   app:
     build: .
-    container_name: adel-maryam-nabz-clinic-api
+    container_name: adel-maryam-nafasmed-clinic-api
     restart: unless-stopped
     ports:
-      - "5438:8080"
+      - "5450:8080"
     env_file:
       - .env
     environment:

@@ -1,5 +1,5 @@
 ﻿# File: server/_templates/write-deploy-files.ps1
-# Description: نوشتن docker-compose.yml و .env.example برای my/news/api؛ دادهٔ پایدار زیر persist/
+# Description: نوشتن docker-compose.yml.example و .env.example برای my/news/api؛ دادهٔ پایدار زیر persist/
 # Parent Dependencies: sync-deploy.bat, sync.config.bat, init-server-structure.bat
 
 param(
@@ -66,7 +66,9 @@ Ensure-PersistSkeleton -Root $ServerRoot
 switch ($Target) {
     'my' {
         $dest = Join-Path $ServerRoot 'my'
+        # فقط .example — روی هر هاست یک‌بار به docker-compose.yml کپی/merge شود؛ rsync فایل زنده را نمی‌فرستد
         $compose = @"
+# نمونه — روی هاست: cp docker-compose.yml.example docker-compose.yml سپس پورت/نام را برای همان سرور تنظیم کنید
 services:
   app:
     image: nginx:alpine
@@ -84,11 +86,12 @@ services:
 VITE_API_BASE_URL=$apiUrl
 
 # پس از sync روی سرور:
+#   cp docker-compose.yml.example docker-compose.yml   # یک‌بار / merge دستی
 #   sudo docker compose up -d --build
 # پورت هاست: $myPort
 # URL عمومی فرانت: $myUrl
 "@
-        Write-Utf8NoBom (Join-Path $dest 'docker-compose.yml') $compose
+        Write-Utf8NoBom (Join-Path $dest 'docker-compose.yml.example') $compose
         Write-Utf8NoBom (Join-Path $dest '.env.example') $envExample
 
         # بدون try_files، مسیرهای کلاینت مثل /login با رفرش مستقیم 404 می‌دهند
@@ -134,6 +137,9 @@ coverage/
 *.log
 .env*
 !.env.example
+docker-compose.yml
+docker-compose.yaml
+!docker-compose.yml.example
 "@
         Write-Utf8NoBom (Join-Path $dest '.gitignore') $gitignore
 
@@ -147,7 +153,9 @@ coverage/
     }
     'news' {
         $dest = Join-Path $ServerRoot 'news'
+        # فقط .example — روی هر هاست یک‌بار به docker-compose.yml کپی/merge شود
         $compose = @"
+# نمونه — روی هاست: cp docker-compose.yml.example docker-compose.yml سپس پورت/نام را برای همان سرور تنظیم کنید
 services:
   app:
     image: nginx:alpine
@@ -166,12 +174,13 @@ services:
 VITE_API_URL=$apiUrl
 
 # پس از sync روی سرور:
+#   cp docker-compose.yml.example docker-compose.yml   # یک‌بار / merge دستی
 #   sudo docker compose up -d --build
 # پورت هاست: $newsPort
 # URL پیشنهادی: $newsUrl
 # دادهٔ پایدار روی هاست: server/persist/news-data (URL عمومی: /data/)
 "@
-        Write-Utf8NoBom (Join-Path $dest 'docker-compose.yml') $compose
+        Write-Utf8NoBom (Join-Path $dest 'docker-compose.yml.example') $compose
         Write-Utf8NoBom (Join-Path $dest '.env.example') $envExample
 
         $nginxConf = @'
@@ -222,6 +231,9 @@ coverage/
 *.log
 .env*
 !.env.example
+docker-compose.yml
+docker-compose.yaml
+!docker-compose.yml.example
 
 # بقایای layout قدیمی
 data/
@@ -276,7 +288,9 @@ COPY publish/ .
 EXPOSE $apiContainerPort
 ENTRYPOINT ["dotnet", "Nabz.Api.dll"]
 "@
+        # فقط .example — روی هر هاست یک‌بار به docker-compose.yml کپی/merge شود؛ rsync فایل زنده را نمی‌فرستد
         $compose = @"
+# نمونه — روی هاست: cp docker-compose.yml.example docker-compose.yml سپس پورت/نام را برای همان سرور تنظیم کنید
 services:
   app:
     build: .
@@ -332,7 +346,8 @@ ApiAbuse__LastSeenMinIntervalSeconds=60
 Storage__Root=/app/wwwroot/uploads
 # ویترین آینده روی هاست: server/persist/news-data → /app/news-vitrine
 # URLهای فرانت — وارد سیاست CORS در Program.cs می‌شوند (WithOrigins)
-# فقط نمونهٔ پکیج — روی هر هاست Linux در api/.env همان سرور ست کنید (publish هرگز .env نمی‌فرستد)
+# Origin واقعی فرانت همین هاست (نه دامنهٔ قفل‌شده). چند تا با کاما مجاز است
+# publish هرگز .env زنده را نمی‌فرستد — روی هاست ست کنید و کانتینر را recreate کنید
 FrontendUrls__My=$myUrl
 FrontendUrls__News=$newsUrl
 
@@ -340,7 +355,7 @@ FrontendUrls__News=$newsUrl
 Playwright__ExecutablePath=
 "@
         Write-Utf8NoBom (Join-Path $dest 'Dockerfile') $dockerfile
-        Write-Utf8NoBom (Join-Path $dest 'docker-compose.yml') $compose
+        Write-Utf8NoBom (Join-Path $dest 'docker-compose.yml.example') $compose
         Write-Utf8NoBom (Join-Path $dest '.env.example') $envExample
 
         $dockerIgnore = @"
@@ -365,6 +380,9 @@ coverage/
 *.log
 .env*
 !.env.example
+docker-compose.yml
+docker-compose.yaml
+!docker-compose.yml.example
 
 # بقایای layout قدیمی — اگر هنوز محلی باشند در گیت نروند
 uploads/

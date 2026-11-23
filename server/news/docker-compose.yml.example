@@ -1,3 +1,4 @@
+# نمونه — روی هاست: cp docker-compose.yml.example docker-compose.yml سپس پورت/نام را برای همان سرور تنظیم کنید
 services:
   app:
     image: nginx:alpine
