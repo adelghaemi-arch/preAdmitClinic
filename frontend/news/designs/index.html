@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>طرح‌های پیشنهادی — سایت اطلاع‌رسانی نفس</title>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-SemiBold.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Bold.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Black.woff2) format("woff2");font-weight:800;font-display:swap}
+@font-face{font-family:Lalezar;src:url(../assets/fonts/lalezar-400-arabic.woff2) format("woff2");font-weight:400;font-display:swap}
+
+*{box-sizing:border-box}
+:root{
+  --paper:#f2eee4;--card:#fff;--ink:#161310;--soft:#4d483f;--muted:#7c7568;
+  --line:#dcd5c4;--line2:#c9c0aa;--accent:#a83a1f;--forest:#123b2e;--teal:#2b8d6e;
+  --r:14px;--pad:clamp(18px,4vw,52px);--max:1280px;
+  --shadow:0 20px 40px -30px rgba(22,19,16,.45);
+}
+body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:var(--paper);color:var(--ink);line-height:1.9;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.wrap{max-width:var(--max);margin-inline:auto;padding-inline:var(--pad)}
+
+/* ---- سرصفحه ---- */
+.top{padding-block:clamp(28px,4vw,52px) 18px;border-block-end:1px solid var(--line)}
+.kicker{display:inline-flex;align-items:center;gap:9px;font-size:.72rem;font-weight:700;letter-spacing:.16em;color:var(--accent);text-transform:uppercase}
+.kicker::before{content:"";width:28px;height:1px;background:currentColor;opacity:.7}
+h1{margin-block-start:14px;font-size:clamp(1.7rem,3.6vw,2.7rem);font-weight:800;line-height:1.35;letter-spacing:-.015em}
+.lead{margin-block-start:12px;max-width:52rem;color:var(--soft);font-size:clamp(.94rem,1.2vw,1.02rem);line-height:2.05}
+.metaline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-block-start:18px;font-size:.76rem;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);background:rgba(255,255,255,.6);border-radius:999px;padding:4px 11px;font-size:.72rem;font-weight:600;color:var(--soft)}
+.tag--live{border-color:#e6c8bd;background:#f7e6df;color:#8f2f18}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+
+/* ---- شبکهٔ کارت‌ها ---- */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(16px,2.2vw,26px);padding-block:clamp(24px,3.4vw,40px) clamp(40px,5vw,72px)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.22,.61,.36,1),box-shadow .3s}
+.card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.card__frame{position:relative;display:block;background:#eae5d8;border-block-end:1px solid var(--line);cursor:pointer}
+.card__bar{display:flex;align-items:center;gap:6px;padding:9px 12px;background:#efeade;border-block-end:1px solid var(--line)}
+.card__bar i{width:8px;height:8px;border-radius:50%;background:#cfc7b4;display:block}
+.card__bar span{margin-inline-start:auto;font-size:.66rem;color:var(--muted);direction:ltr}
+.shot{position:relative;overflow:hidden;height:calc(var(--h) * var(--s) * 1px);background:#fff}
+.shot iframe{position:absolute;top:0;right:0;width:calc(var(--w) * 1px);height:calc(var(--h) * 1px);border:0;transform:scale(var(--s));transform-origin:top right;pointer-events:none;background:#fff}
+.card__body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:8px;flex:1}
+.card__num{font-family:Lalezar,Vazirmatn,sans-serif;font-size:1.05rem;color:var(--accent);line-height:1}
+.card__title{font-size:1.15rem;font-weight:800;line-height:1.5}
+.card__desc{font-size:.86rem;color:var(--soft);line-height:1.95;flex:1}
+.card__tags{display:flex;gap:6px;flex-wrap:wrap}
+.card__actions{display:flex;gap:8px;margin-block-start:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 17px;border-radius:999px;font-size:.84rem;font-weight:600;border:1px solid transparent;transition:.2s}
+.btn--dark{background:var(--ink);color:var(--paper)}
+.btn--dark:hover{background:#000}
+.btn--ghost{border-color:var(--line2);color:var(--soft);background:#fff}
+.btn--ghost:hover{border-color:var(--ink);color:var(--ink)}
+.btn svg{width:15px;height:15px}
+
+/* ---- کارت طرح فعلی ---- */
+.current{border:1px dashed var(--line2);background:rgba(255,255,255,.5);border-radius:var(--r);padding:18px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-block-start:26px}
+.current__txt{flex:1;min-width:240px}
+.current h3{font-size:.98rem;font-weight:800}
+.current p{font-size:.82rem;color:var(--muted);margin-block-start:2px}
+
+/* ---- راهنما پایین ---- */
+.note{border-block-start:1px solid var(--line);padding-block:26px 40px;font-size:.8rem;color:var(--muted);line-height:2}
+.note b{color:var(--soft)}
+
+/* ---- نمایشگر ---- */
+.viewer{position:fixed;inset:0;z-index:100;display:none;background:rgba(18,16,14,.72);backdrop-filter:blur(6px);padding:clamp(10px,2vw,26px)}
+.viewer.open{display:flex;flex-direction:column;gap:12px}
+.vbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff;border-radius:12px;padding:9px 12px;box-shadow:var(--shadow)}
+.vbar__title{font-weight:800;font-size:.92rem}
+.vbar__num{font-family:Lalezar,sans-serif;color:var(--accent);margin-inline-end:6px}
+.vbar__sp{flex:1}
+.vbar button,.vbar a{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;font-size:.78rem;font-weight:600;border:1px solid var(--line);color:var(--soft);background:#fff}
+.vbar button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.vbar button:hover,.vbar a:hover{border-color:var(--ink);color:var(--ink)}
+.vbar button[aria-pressed="true"]:hover{color:#fff}
+.vstage{flex:1;display:grid;place-items:center;overflow:auto;min-height:0}
+.vstage iframe{background:#fff;border:0;border-radius:10px;box-shadow:0 30px 60px -30px rgba(0,0,0,.55);width:100%;height:100%}
+.vstage[data-dev="desktop"] iframe{max-width:1440px}
+.vstage[data-dev="tablet"] iframe{max-width:834px;height:min(100%,1112px)}
+.vstage[data-dev="mobile"] iframe{max-width:390px;height:min(100%,844px)}
+.vback{position:fixed;inset-block-end:14px;inset-inline-start:14px;z-index:90;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:.76rem;font-weight:600;box-shadow:var(--shadow);opacity:.9}
+
+@media (max-width:900px){
+  .grid{grid-template-columns:1fr}
+  .shot{height:calc(var(--h) * var(--s) * 1px)}
+}
+@media (max-width:560px){
+  .card__actions .btn{flex:1}
+  .vbar__title{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="kicker">طرح‌های پیشنهادی · سایت اطلاع‌رسانی</span>
+    <h1>چهار مسیر برای سایت خبری «نفس» — یک محتوا، چهار شخصیت.</h1>
+    <p class="lead">
+      هر طرح یک صفحهٔ کامل و مستقل است و <b>همان محتوا</b> را با منطق بصری متفاوتی روایت می‌کند تا مقایسه منصفانه باشد:
+      یک تیتر اصلی، شش خبر، چهار عدد، یک نقل‌قول و یک دعوت به دمو. پیش‌نمایش‌ها زنده‌اند؛ روی هر کارت کلیک کنید تا در اندازهٔ واقعی،
+      روی دسکتاپ/تبلت/موبایل ببینید.
+    </p>
+    <div class="metaline">
+      <span class="tag tag--live"><span class="dot"></span> نسخهٔ قابل بازبینی</span>
+      <span class="tag">۴ طرح + طرح فعلی</span>
+      <span class="tag">فقط پوشهٔ news — پروژهٔ اصلی دست‌نخورده</span>
+    </div>
+
+    <div class="current">
+      <div class="current__txt">
+        <h3>طرح فعلی سایت (سبز و کرم)</h3>
+        <p>همان چیزی که الان در خبری مستقر است: ۹ صفحه، محتوای تفکیک‌شده، دکمهٔ دمو. این طرح حذف نشده و همچنان مرجع محتواست.</p>
+      </div>
+      <a class="btn btn--ghost" href="../index.html" target="_blank" rel="noopener">دیدن سایت فعلی ↗</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid" id="grid"></div>
+
+  <div class="note">
+    <b>یادداشت طراحی:</b> هر چهار طرح عمداً بدون تصویر تولیدی جدید ساخته شده‌اند تا تفاوت، در «سیستم طراحی» دیده شود نه در عکس.
+    جایی که تصویر لازم بوده، از سه تصویر موجود در <span dir="ltr">assets/img</span> استفاده شده است.
+    هیچ‌کدام از این فایل‌ها روی سایت اصلی اثر ندارد؛ انتخاب که شد، برنده به ساختار `content/` منتقل می‌شود.
+  </div>
+</main>
+
+<a class="vback" href="../index.html">↗ سایت فعلی</a>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="نمایش طرح">
+  <div class="vbar">
+    <button id="vClose" aria-label="بستن">✕</button>
+    <div class="vbar__title"><span class="vbar__num" id="vNum">۰۱</span><span id="vTitle"></span></div>
+    <span class="vbar__sp"></span>
+    <div style="display:flex;gap:6px" role="group" aria-label="اندازهٔ نمایش">
+      <button data-dev="desktop" aria-pressed="true">دسکتاپ</button>
+      <button data-dev="tablet" aria-pressed="false">تبلت</button>
+      <button data-dev="mobile" aria-pressed="false">موبایل</button>
+    </div>
+    <button id="vPrev">‹ قبلی</button>
+    <button id="vNext">بعدی ›</button>
+    <a id="vNew" href="#" target="_blank" rel="noopener">فایل مستقل ↗</a>
+  </div>
+  <div class="vstage" id="vStage" data-dev="desktop">
+    <iframe id="vFrame" title="پیش‌نمایش طرح"></iframe>
+  </div>
+</div>
+
+<script>
+const DESIGNS = [
+  {
+    id: "01-newsroom",
+    num: "۰۱",
+    title: "میز خبر",
+    tagline: "روزنامه‌ای و معتبر",
+    desc: "چیدمان ستونی و متراکم با خطوط نازک، تیتر درشت و ستون «کوتاه‌ها». لحن روزنامه‌نگارانه؛ مناسب وقتی می‌خواهیم خبر و شفافیت، حرف اول را بزند.",
+    tags: ["اطلاع‌رسانی", "اعتبار رسانه‌ای", "متن‌محور"],
+    scale: 0.26
+  },
+  {
+    id: "02-evidence",
+    num: "۰۲",
+    title: "شاهد",
+    tagline: "داشبورد و عدد",
+    desc: "سطح روشن و خنثی، کارت‌های سفید و شاخص‌های عددی با نمودار. برای مدیر بیمارستانی که قبل از هر چیز می‌پرسد: «عددش کجاست؟»",
+    tags: ["مدیر بیمارستان", "شاخص‌محور", "داشبورد"],
+    scale: 0.26
+  },
+  {
+    id: "03-magazine",
+    num: "۰۳",
+    title: "مجلهٔ بالینی",
+    tagline: "تصویر و روایت",
+    desc: "جلد تمام‌عرض با تیتر درشت، پروندهٔ شماره و نقل‌قول بزرگ. برای برندسازی و روایت انسانی؛ اعتماد از طریق تصویر و قصه ساخته می‌شود.",
+    tags: ["برند", "روایت بیمار", "تصویرمحور"],
+    scale: 0.26
+  },
+  {
+    id: "04-nightshift",
+    num: "۰۴",
+    title: "شب دیجیتال",
+    tagline: "فنی و شریک‌محور",
+    desc: "تیره، با تایپوگرافی فنی، تایم‌لاین نسخه‌ها و نمونهٔ واقعی API. برای شریک فناوری و سرمایه‌گذاری که دنبال جزئیات فنی و نقشهٔ راه است.",
+    tags: ["شریک فنی", "محصول", "تیره"],
+    scale: 0.26
+  }
+];
+
+const grid = document.getElementById("grid");
+grid.innerHTML = DESIGNS.map(d => `
+  <article class="card">
+    <a class="card__frame" href="${d.id}.html" data-open="${d.id}" aria-label="بازکردن طرح ${d.title}">
+      <div class="card__bar"><i></i><i></i><i></i><span>${d.id}.html</span></div>
+      <div class="shot" style="--w:1440;--h:920;--s:${d.scale}">
+        <iframe src="${d.id}.html" loading="lazy" title="پیش‌نمایش ${d.title}" tabindex="-1"></iframe>
+      </div>
+    </a>
+    <div class="card__body">
+      <span class="card__num">${d.num}</span>
+      <h2 class="card__title">${d.title} <span style="font-weight:400;color:var(--muted);font-size:.82rem">— ${d.tagline}</span></h2>
+      <p class="card__desc">${d.desc}</p>
+      <div class="card__tags">${d.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
+      <div class="card__actions">
+        <button class="btn btn--dark" data-open="${d.id}">دیدن در اندازهٔ واقعی</button>
+        <a class="btn btn--ghost" href="${d.id}.html" target="_blank" rel="noopener">فایل مستقل ↗</a>
+      </div>
+    </div>
+  </article>
+`).join("");
+
+/* ---- نمایشگر ---- */
+const viewer = document.getElementById("viewer");
+const frame = document.getElementById("vFrame");
+const stage = document.getElementById("vStage");
+let cur = 0;
+
+function show(i) {
+  cur = (i + DESIGNS.length) % DESIGNS.length;
+  const d = DESIGNS[cur];
+  document.getElementById("vNum").textContent = d.num;
+  document.getElementById("vTitle").textContent = d.title + " — " + d.tagline;
+  document.getElementById("vNew").href = d.id + ".html";
+  frame.src = d.id + ".html";
+  viewer.classList.add("open");
+  document.body.style.overflow = "hidden";
+  try { history.replaceState(null, "", "#" + d.id); } catch (e) {}
+}
+
+function close() {
+  viewer.classList.remove("open");
+  document.body.style.overflow = "";
+  frame.src = "about:blank";
+  try { history.replaceState(null, "", location.pathname); } catch (e) {}
+}
+
+document.addEventListener("click", (e) => {
+  const opener = e.target.closest("[data-open]");
+  if (opener) {
+    e.preventDefault();
+    const id = opener.getAttribute("data-open");
+    show(DESIGNS.findIndex(x => x.id === id));
+  }
+});
+document.getElementById("vClose").addEventListener("click", close);
+document.getElementById("vPrev").addEventListener("click", () => show(cur - 1));
+document.getElementById("vNext").addEventListener("click", () => show(cur + 1));
+document.querySelectorAll("[data-dev]").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("[data-dev]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    stage.setAttribute("data-dev", b.getAttribute("data-dev"));
+  });
+});
+document.addEventListener("keydown", (e) => {
+  if (!viewer.classList.contains("open")) return;
+  if (e.key === "Escape") close();
+  if (e.key === "ArrowLeft") show(cur + 1);
+  if (e.key === "ArrowRight") show(cur - 1);
+});
+
+const h = location.hash.replace("#", "");
+const idx = DESIGNS.findIndex(d => d.id === h);
+if (idx > -1) show(idx);
+</script>
+</body>
+</html>

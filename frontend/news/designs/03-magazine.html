@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مجلهٔ بالینی — نفس | طرح پیشنهادی ۰۳</title>
+<meta name="description" content="طرح پیشنهادی «مجلهٔ بالینی» برای سایت اطلاع‌رسانی نفس — جلد تصویری، تیتر درشت و روایت انسانی.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-SemiBold.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Bold.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Black.woff2) format("woff2");font-weight:800;font-display:swap}
+@font-face{font-family:Lalezar;src:url(../assets/fonts/lalezar-400-arabic.woff2) format("woff2");font-weight:400;font-display:swap}
+
+/* ===== مجلهٔ بالینی: جلد تصویری، تیتر درشت، روایت ===== */
+*{box-sizing:border-box}
+:root{
+  --cream:#faf7f2;--ink:#191512;--soft:#4a423a;--muted:#8a7f72;
+  --line:#e5ddd0;--accent:#8f2d1b;--sage:#3f6b57;--gold:#c39b4e;
+  --pad:clamp(18px,4.5vw,64px);--max:1340px;
+}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.9;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,p,figure,blockquote{margin:0}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.wrap{max-width:var(--max);margin-inline:auto;padding-inline:var(--pad)}
+.serifless{letter-spacing:-.02em}
+
+/* ---- نوار بالا ---- */
+.top{border-block-end:1px solid var(--line)}
+.top__in{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:58px;font-size:.72rem;letter-spacing:.04em;color:var(--muted)}
+.top__left{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.top b{color:var(--ink);letter-spacing:.2em;font-size:.68rem;font-weight:700}
+.top__nav{display:flex;gap:16px;flex-wrap:wrap}
+.top__nav a:hover{color:var(--accent)}
+
+/* ---- جلد ---- */
+.cover{position:relative;margin-block:clamp(14px,2.2vw,26px) 0;border-radius:4px;overflow:hidden;background:#2c2622}
+.cover img{width:100%;height:clamp(340px,52vw,600px);object-fit:cover;opacity:.92}
+.cover__scrim{position:absolute;inset:0;background:linear-gradient(200deg,rgba(25,21,18,.08) 10%,rgba(25,21,18,.62) 58%,rgba(25,21,18,.88) 100%)}
+.cover__in{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(20px,3.4vw,46px);color:#faf7f2}
+.cover__tag{display:inline-flex;align-items:center;gap:8px;font-size:.66rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#f0d9a8}
+.cover__tag::before{content:"";width:26px;height:1px;background:currentColor}
+.cover h1{margin-block:12px 0;font-size:clamp(1.75rem,4.6vw,3.4rem);line-height:1.22;font-weight:800;letter-spacing:-.02em;max-width:26ch;text-wrap:balance}
+.cover p{margin-block-start:12px;font-size:clamp(.9rem,1.2vw,1.02rem);color:rgba(250,247,242,.82);max-width:48ch;line-height:2}
+.cover__foot{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-block-start:20px;font-size:.72rem;color:rgba(250,247,242,.68)}
+.cover__foot .btn{background:#faf7f2;color:var(--ink);border-radius:999px;padding:10px 20px;font-size:.8rem;font-weight:700;display:inline-flex;gap:7px;align-items:center}
+.cover__foot .btn:hover{background:#f0d9a8}
+.cover__foot svg{width:14px;height:14px}
+
+/* ---- روبان شماره ---- */
+.ribbon{display:flex;align-items:center;gap:14px;padding-block:16px;border-block-end:1px solid var(--line);flex-wrap:wrap}
+.ribbon__no{font-family:Lalezar,sans-serif;font-size:1.5rem;line-height:1;color:var(--accent)}
+.ribbon__t{font-size:.78rem;font-weight:700}
+.ribbon__d{font-size:.72rem;color:var(--muted)}
+.ribbon__fill{flex:1;height:1px;background:var(--line);min-width:20px}
+.ribbon__more{font-size:.76rem;font-weight:700;color:var(--accent)}
+
+/* ---- پروندهٔ شماره: دو ستون نامتقارن ---- */
+.feature{display:grid;grid-template-columns:.85fr 1.15fr;gap:clamp(18px,3vw,40px);padding-block:clamp(22px,3.2vw,40px);border-block-end:1px solid var(--line)}
+.feature__side{padding-block-start:6px}
+.kicker{font-size:.66rem;font-weight:800;letter-spacing:.2em;color:var(--sage);text-transform:uppercase}
+.feature h2{margin-block:10px 0;font-size:clamp(1.25rem,2.4vw,1.85rem);line-height:1.45;font-weight:800;text-wrap:balance}
+.feature h2:hover{color:var(--accent)}
+.feature p{margin-block-start:10px;font-size:.9rem;color:var(--soft);line-height:2.05}
+.feature__meta{margin-block-start:14px;font-size:.72rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.feature__meta .sep{width:4px;height:4px;border-radius:50%;background:var(--line)}
+.quote-block{border-inline-start:2px solid var(--gold);padding-inline-start:16px;margin-block-start:18px}
+.quote-block blockquote{font-size:.98rem;font-weight:600;line-height:1.95;color:var(--ink)}
+.quote-block figcaption{font-size:.7rem;color:var(--muted);margin-block-start:6px}
+
+/* ---- شبکهٔ مجله ---- */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:clamp(14px,2.2vw,28px);padding-block:clamp(22px,3.2vw,40px)}
+.item{display:flex;flex-direction:column;gap:10px}
+.item--span5{grid-column:span 5}
+.item--span7{grid-column:span 7}
+.item--span4{grid-column:span 4}
+.item--span6{grid-column:span 6}
+.item__pic{overflow:hidden;border-radius:3px;background:#e9e2d6}
+.item__pic img{width:100%;height:100%;object-fit:cover;transition:transform .55s cubic-bezier(.22,.61,.36,1)}
+.item:hover .item__pic img{transform:scale(1.035)}
+.item--span5 .item__pic,.item--span7 .item__pic{aspect-ratio:16/9.5}
+.item--span4 .item__pic{aspect-ratio:4/3}
+.item__cat{font-size:.64rem;font-weight:800;letter-spacing:.16em;color:var(--accent);text-transform:uppercase}
+.item h3{font-size:1.06rem;font-weight:800;line-height:1.6;text-wrap:balance}
+.item--span7 h3{font-size:clamp(1.15rem,2vw,1.5rem);line-height:1.45}
+.item h3:hover{color:var(--accent)}
+.item p{font-size:.85rem;color:var(--soft);line-height:1.95}
+.item__meta{font-size:.7rem;color:var(--muted)}
+
+/* ---- ستون مقاله + لیست ---- */
+.split{display:grid;grid-template-columns:1.5fr .5fr;gap:clamp(20px,3.4vw,46px);padding-block:clamp(16px,2.4vw,26px) clamp(26px,4vw,44px);border-block-start:1px solid var(--line)}
+.longread h2{font-size:clamp(1.2rem,2.2vw,1.6rem);font-weight:800;line-height:1.5;margin-block-end:10px}
+.longread p{font-size:.9rem;color:var(--soft);line-height:2.15;margin-block-end:12px}
+.longread a.more{font-size:.78rem;font-weight:700;color:var(--accent);display:inline-flex;gap:6px;align-items:center}
+.longread a.more:hover{gap:10px}
+
+.list h4{font-size:.68rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-block-end:12px;padding-block-end:8px;border-block-end:1px solid var(--line)}
+.list ol{list-style:none;margin:0;padding:0;counter-reset:l}
+.list li{counter-increment:l;display:flex;gap:12px;padding-block:11px;border-block-end:1px solid var(--line);font-size:.85rem;line-height:1.75}
+.list li::before{content:counter(l,persian);font-family:Lalezar,sans-serif;color:var(--gold);font-size:.95rem;line-height:1.5;flex:none;min-width:18px}
+.list a:hover{color:var(--accent)}
+.list li span{display:block;font-size:.68rem;color:var(--muted);margin-block-start:2px}
+
+/* ---- نوار نقل‌قول بزرگ ---- */
+.bigquote{background:#1f2a26;color:#faf7f2;padding-block:clamp(34px,5vw,64px);margin-block:clamp(10px,2vw,20px) 0}
+.bigquote__in{max-width:60rem;margin-inline:auto;text-align:center;padding-inline:var(--pad)}
+.bigquote blockquote{font-size:clamp(1.15rem,2.7vw,2rem);font-weight:600;line-height:1.8;letter-spacing:-.01em;text-wrap:balance}
+.bigquote figcaption{margin-block-start:16px;font-size:.75rem;color:rgba(250,247,242,.55)}
+.bigquote figcaption b{color:#f0d9a8;font-weight:600}
+
+/* ---- CTA ---- */
+.cta{display:grid;grid-template-columns:1.25fr .75fr;gap:clamp(18px,3vw,36px);align-items:center;padding-block:clamp(30px,4.4vw,56px);border-block-end:1px solid var(--line)}
+.cta h2{font-size:clamp(1.3rem,2.6vw,2rem);font-weight:800;line-height:1.4;text-wrap:balance}
+.cta p{font-size:.9rem;color:var(--soft);margin-block-start:8px;max-width:34rem}
+.cta__side{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.btn{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:11px 20px;font-size:.82rem;font-weight:700;transition:.2s}
+.btn--dark{background:var(--ink);color:var(--cream)}
+.btn--dark:hover{background:var(--accent)}
+.btn--line{border:1px solid var(--line);color:var(--soft)}
+.btn--line:hover{border-color:var(--ink);color:var(--ink)}
+
+/* ---- فوتر ---- */
+.ft{padding-block:26px 40px}
+.ft__in{display:flex;align-items:flex-start;justify-content:space-between;gap:26px;flex-wrap:wrap}
+.ft__brand b{font-family:Lalezar,sans-serif;font-size:1.6rem;font-weight:400;line-height:1}
+.ft__brand p{font-size:.78rem;color:var(--muted);max-width:24rem;margin-block-start:8px}
+.ft__cols{display:flex;gap:clamp(22px,3vw,48px);flex-wrap:wrap}
+.ft h5{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 9px}
+.ft ul{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:.8rem}
+.ft a:hover{color:var(--accent)}
+.ft__bottom{margin-block-start:26px;padding-block-start:14px;border-block-start:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.7rem;color:var(--muted)}
+
+@media (max-width:1040px){
+  .feature{grid-template-columns:1fr}
+  .grid{grid-template-columns:repeat(6,1fr)}
+  .item--span5,.item--span7,.item--span4,.item--span6{grid-column:span 3}
+  .split{grid-template-columns:1fr}
+  .cta{grid-template-columns:1fr}
+  .cta__side{justify-content:flex-start}
+}
+@media (max-width:700px){
+  .grid{grid-template-columns:1fr}
+  .item--span5,.item--span7,.item--span4,.item--span6{grid-column:span 1}
+  .item--span5 .item__pic,.item--span7 .item__pic{aspect-ratio:16/10}
+  .cover img{height:clamp(300px,64vw,420px)}
+  .top__nav{display:none}
+  .ft__cols{gap:22px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="wrap top__in">
+    <div class="top__left">
+      <b>نفس</b>
+      <span>مجلهٔ پیش‌پذیرش سلامت</span>
+      <span style="color:var(--line)">|</span>
+      <span>شمارهٔ ۱۲ · آذر ۱۴۰۵</span>
+    </div>
+    <nav class="top__nav" aria-label="بخش‌ها">
+      <a href="#" aria-current="page">جلد</a>
+      <a href="#stories">روایت‌ها</a>
+      <a href="#read">مقالات</a>
+      <a href="#demo">همکاری</a>
+      <a href="#demo">تماس</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+  <div class="wrap">
+    <!-- جلد -->
+    <section class="cover">
+      <img src="../assets/img/reception.jpg" alt="مسئول پذیرش با تبلت در حال راهنمایی بیمار در پذیرش بیمارستان">
+      <div class="cover__scrim"></div>
+      <div class="cover__in">
+        <span class="cover__tag">پروندهٔ این شماره · پذیرش</span>
+        <h1 class="serifless">بیمار که می‌رسد،<br>پرونده‌اش آماده است.</h1>
+        <p>هر روز صبح، پذیرش با یک صف و یک دستهٔ فرم دست‌نویس شروع می‌شود. ما این صف را از شب قبل کوتاه می‌کنیم — با اطلاعاتی که بیمار در خانه و در زمان خودش داده است.</p>
+        <div class="cover__foot">
+          <a class="btn" href="#demo">داستان کامل را بخوانید
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
+          </a>
+          <span>۱۰ دقیقه مطالعه</span>
+          <span>·</span>
+          <span>تیم نفس</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- روبان -->
+    <div class="ribbon">
+      <span class="ribbon__no">۱۲</span>
+      <span class="ribbon__t">در این شماره</span>
+      <span class="ribbon__d">پذیرش · محصول · همکاری · بیمار</span>
+      <span class="ribbon__fill"></span>
+      <a class="ribbon__more" href="#stories">همهٔ مطالب ←</a>
+    </div>
+
+    <!-- پروندهٔ شماره -->
+    <section class="feature">
+      <div class="feature__side">
+        <span class="kicker">تحلیل · پذیرش</span>
+        <h2><a href="#">چهار دقیقه‌ای که از ویزیت برگشت</a></h2>
+        <p>پزشک معمولاً بخشی از اولین دقایق ویزیت را صرف خواندن خط و پرسیدن دوبارهٔ همان سؤال‌ها می‌کند. این گزارش، مسیر آن چهار دقیقه را قدم‌به‌قدم دنبال می‌کند: از فرم دست‌نویس تا پروندهٔ خوانا.</p>
+        <div class="feature__meta"><span>۱۴۰۵/۰۸/۱۲</span><span class="sep"></span><span>۷ دقیقه</span><span class="sep"></span><span>تیم محصول</span></div>
+        <figure class="quote-block">
+          <blockquote>«بیشتر کار ما نوشتن نیست، پرسیدن دوبارهٔ چیزهایی است که قبلاً پرسیده‌ایم.»</blockquote>
+          <figcaption>مسئول پذیرش · نقل‌قول نمونه</figcaption>
+        </figure>
+      </div>
+      <a href="#" class="item__pic" style="display:block">
+        <img src="../assets/img/doctor-tablet.jpg" alt="پزشک با تبلت در راهروی کلینیک، در حال خواندن پرونده" style="aspect-ratio:16/10.5;width:100%;object-fit:cover;border-radius:3px">
+      </a>
+    </section>
+
+    <!-- شبکهٔ مجله -->
+    <section class="grid" id="stories">
+      <article class="item item--span7">
+        <a href="#" class="item__pic"><img src="../assets/img/patient-phone.jpg" alt="بیمار در خانه فرم پیش‌پذیرش را روی گوشی پر می‌کند"></a>
+        <span class="item__cat">بیمار</span>
+        <h3><a href="#">شبی که فرم را در آشپزخانه پر کردم</a></h3>
+        <p>روایت یک بیمار: بیست دقیقه زودتر از همیشه کارش تمام شد. دربارهٔ اینکه چطور یک پیامک ساده، صف صبح را از زندگی یک آدم حذف کرد.</p>
+        <div class="item__meta">۱۴۰۵/۰۷/۱۵ · ۶ دقیقه</div>
+      </article>
+
+      <article class="item item--span5">
+        <a href="#" class="item__pic"><img src="../assets/img/reception.jpg" alt="پذیرش بیمارستان" style="width:100%;height:100%;object-fit:cover"></a>
+        <span class="item__cat">همکاری</span>
+        <h3><a href="#">چهار بیمارستان، یک زبان مشترک گزارش</a></h3>
+        <p>چرا یکسان‌سازی فرم‌ها اشتباه بود و چه چیزی واقعاً مشترک شد.</p>
+        <div class="item__meta">۱۴۰۵/۰۷/۲۸ · ۵ دقیقه</div>
+      </article>
+
+      <article class="item item--span4">
+        <a href="#" class="item__pic"><img src="../assets/img/doctor-tablet.jpg" alt="پزشک و تبلت" style="width:100%;height:100%;object-fit:cover"></a>
+        <span class="item__cat">محصول</span>
+        <h3><a href="#">فرم کوتاه‌تر، محترمانه‌تر</a></h3>
+        <p>سؤال‌ها بر اساس سن و وضعیت شاخه می‌خورند؛ نتیجه ۵۸ درصد سؤال کمتر.</p>
+        <div class="item__meta">۱۴۰۵/۰۸/۱۲ · ۴ دقیقه</div>
+      </article>
+
+      <article class="item item--span4">
+        <a href="#" class="item__pic"><img src="../assets/img/patient-phone.jpg" alt="بیمار و گوشی" style="width:100%;height:100%;object-fit:cover"></a>
+        <span class="item__cat">حریم خصوصی</span>
+        <h3><a href="#">دقیقاً چه داده‌ای می‌گیریم — و چرا</a></h3>
+        <p>جدول ساده: چه چیزی، چرا، چه کسی می‌بیند. و اینکه می‌توانید مرحله را رد کنید.</p>
+        <div class="item__meta">۱۴۰۵/۰۷/۰۲ · ۵ دقیقه</div>
+      </article>
+
+      <article class="item item--span4">
+        <a href="#" class="item__pic"><img src="../assets/img/reception.jpg" alt="پذیرش و تبلت" style="width:100%;height:100%;object-fit:cover"></a>
+        <span class="item__cat">همکاری</span>
+        <h3><a href="#">دیوار شیشه‌ای، بدون استعاره</a></h3>
+        <p>همهٔ اعداد قرارداد در یک داشبورد مشترک؛ محاسبهٔ سهم و لاگ تغییرات برای هر دو طرف.</p>
+        <div class="item__meta">۱۴۰۵/۰۶/۳۰ · ۶ دقیقه</div>
+      </article>
+    </section>
+
+    <!-- مقاله + لیست -->
+    <section class="split" id="read">
+      <div class="longread">
+        <span class="kicker">مقالهٔ بلند</span>
+        <h2>هفت سؤالی که پیش از خرید سیستم پیش‌پذیرش باید بپرسید</h2>
+        <p>از «داده کجا نگهداری می‌شود» تا «اگر پزشک فرم را نخواند چه می‌شود». این فهرست را برای جلسهٔ ارزیابی خودتان آماده کرده‌ایم؛ ما هم باید بتوانیم به همهٔ این هفت سؤال با سند پاسخ بدهیم.</p>
+        <p>در بخش دوم مقاله، برای هر سؤال یک «پاسخ خوب» و یک «پاسخ هشدار» نوشته‌ایم تا معیار مقایسه داشته باشید — حتی اگر در نهایت ما را انتخاب نکنید.</p>
+        <a class="more" href="#">خواندن مقاله ←</a>
+      </div>
+      <aside class="list">
+        <h4>پرخوانده‌ترین‌ها</h4>
+        <ol>
+          <li><a href="#">پیش‌پذیرش بدون احراز حضور، فقط یک فرم آنلاین است<span>دیدگاه · ۱۴۰۵/۰۷/۱۵</span></a></li>
+          <li><a href="#">گزارش: پذیرش چقدر وقت بیمارستان را می‌خورد؟<span>بازار · ۱۴۰۵/۰۵/۳۰</span></a></li>
+          <li><a href="#">سه الگوی امن اتصال به HIS<span>فنی · ۱۴۰۵/۰۵/۱۱</span></a></li>
+          <li><a href="#">از کاغذ ۱۲ صفحه تا ۶ دقیقه<span>محصول · ۱۴۰۵/۰۴/۲۲</span></a></li>
+          <li><a href="#">۳۰ روز تا اولین پیش‌پذیرش<span>راهنما · ۱۴۰۵/۰۲/۲۰</span></a></li>
+        </ol>
+      </aside>
+    </section>
+  </div>
+
+  <!-- نقل‌قول بزرگ -->
+  <figure class="bigquote">
+    <div class="bigquote__in">
+      <blockquote>«قبلاً چهار دقیقهٔ اول ویزیت صرف خواندن فرم دست‌نویس می‌شد. حالا پروندهٔ آماده را قبل از ورود بیمار می‌بینم.»</blockquote>
+      <figcaption><b>دکتر سعید مهدوی</b> · مدیر بیمارستان، ۱۸۰ تخت — روایت نمونه</figcaption>
+    </div>
+  </figure>
+
+  <div class="wrap">
+    <section class="cta" id="demo">
+      <div>
+        <h2>این شماره را با یک دموی ۱۵ دقیقه‌ای ببندیم.</h2>
+        <p>پروندهٔ یک بیمار نمونه را باز می‌کنیم و صف پذیرش را با شما مرور می‌کنیم. بدون اسلاید، بدون نصب.</p>
+      </div>
+      <div class="cta__side">
+        <a class="btn btn--dark" href="#">رزرو دمو</a>
+        <a class="btn btn--line" href="#">مشترک شدن در مجله</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="ft">
+  <div class="wrap">
+    <div class="ft__in">
+      <div class="ft__brand">
+        <b>نفس</b>
+        <p>مجلهٔ پیش‌پذیرش سلامت — روایت‌هایی از پذیرش، پرونده و زمان پزشک. هر عدد، برچسب نمونه دارد.</p>
+      </div>
+      <div class="ft__cols">
+        <div><h5>مجله</h5><ul><li><a href="#stories">این شماره</a></li><li><a href="#">آرشیو</a></li><li><a href="#">خبرنامه</a></li></ul></div>
+        <div><h5>محصول</h5><ul><li><a href="#">برای مراکز</a></li><li><a href="#">برای بیماران</a></li><li><a href="#">مشارکت</a></li></ul></div>
+        <div><h5>تماس</h5><ul><li><a href="tel:+982191002400" dir="ltr">۰۲۱–۹۱۰۰ ۲۴۰۰</a></li><li><a href="mailto:hello@nabz.health" dir="ltr">hello@nabz.health</a></li></ul></div>
+      </div>
+    </div>
+    <div class="ft__bottom">
+      <span>© ۱۴۰۵ نفس</span>
+      <span>طرح پیشنهادی ۰۳ · «مجلهٔ بالینی» — محتوا و روایت‌ها نمونه‌اند</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>شب دیجیتال — نفس | طرح پیشنهادی ۰۴</title>
+<meta name="description" content="طرح پیشنهادی «شب دیجیتال» برای سایت اطلاع‌رسانی نفس — تیره، فنی و شریک‌محور با تایم‌لاین نسخه‌ها و نمونهٔ API.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-SemiBold.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Bold.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Black.woff2) format("woff2");font-weight:800;font-display:swap}
+
+/* ===== شب دیجیتال: تیره، فنی، شریک‌محور ===== */
+*{box-sizing:border-box}
+:root{
+  --bg:#080d12;--bg2:#0c1319;--card:#0f171f;--card2:#121c25;
+  --ink:#e8f0f2;--soft:#a9bcc4;--muted:#6c848f;
+  --line:#1b2831;--line2:#26363f;
+  --neon:#43d9a3;--neon2:#1fae7e;--amber:#f0b429;--violet:#8b7cf6;
+  --pad:clamp(16px,4vw,48px);--max:1280px;--r:14px;
+}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.85;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(circle at 15% 0%,rgba(67,217,163,.07),transparent 45%),radial-gradient(circle at 85% 8%,rgba(139,124,246,.06),transparent 42%);
+  background-repeat:no-repeat}
+h1,h2,h3,h4,p,figure{margin:0}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid var(--neon);outline-offset:3px;border-radius:6px}
+.wrap{max-width:var(--max);margin-inline:auto;padding-inline:var(--pad)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;direction:ltr;unicode-bidi:embed}
+.num{font-variant-numeric:tabular-nums}
+
+/* شبکهٔ پس‌زمینه */
+.grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(67,217,163,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(67,217,163,.045) 1px,transparent 1px);
+  background-size:72px 72px;
+  mask-image:radial-gradient(70% 50% at 50% 0%,#000,transparent 80%);
+  -webkit-mask-image:radial-gradient(70% 50% at 50% 0%,#000,transparent 80%)}
+main,header,footer{position:relative;z-index:1}
+
+/* ---- هدر ---- */
+.hdr{position:sticky;top:0;z-index:30;border-block-end:1px solid var(--line);background:rgba(8,13,18,.86);backdrop-filter:blur(14px)}
+.hdr__in{display:flex;align-items:center;gap:18px;min-height:62px}
+.brand{display:flex;align-items:center;gap:10px;flex:none}
+.brand__mark{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(140deg,rgba(67,217,163,.22),rgba(67,217,163,.05));border:1px solid rgba(67,217,163,.35);color:var(--neon)}
+.brand__mark svg{width:18px;height:18px}
+.brand b{font-size:1.15rem;font-weight:800;line-height:1.1;letter-spacing:.01em}
+.brand span{display:block;font-size:.58rem;letter-spacing:.18em;color:var(--muted);font-weight:600}
+.nav{display:flex;gap:2px;margin-inline-start:16px;flex-wrap:wrap}
+.nav a{padding:6px 11px;border-radius:7px;font-size:.82rem;color:var(--soft);transition:.15s}
+.nav a:hover{background:var(--card2);color:var(--ink)}
+.nav a[aria-current]{color:var(--neon);background:rgba(67,217,163,.08)}
+.hdr__act{margin-inline-start:auto;display:flex;gap:8px;align-items:center}
+.status{display:inline-flex;align-items:center;gap:7px;font-size:.7rem;color:var(--soft);border:1px solid var(--line2);border-radius:999px;padding:4px 11px}
+.status i{width:6px;height:6px;border-radius:50%;background:var(--neon);box-shadow:0 0 0 3px rgba(67,217,163,.15);animation:pulse 2.6s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 2px rgba(67,217,163,.18)}50%{box-shadow:0 0 0 5px rgba(67,217,163,.04)}}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:9px;font-size:.82rem;font-weight:600;transition:.18s;border:1px solid transparent}
+.btn--neon{background:var(--neon);color:#04231a}
+.btn--neon:hover{background:#5ff0b6;box-shadow:0 8px 26px -12px rgba(67,217,163,.7)}
+.btn--line{border-color:var(--line2);color:var(--soft);background:rgba(255,255,255,.02)}
+.btn--line:hover{border-color:var(--neon);color:var(--neon)}
+.btn svg{width:14px;height:14px}
+
+/* ---- هیرو ---- */
+.hero{padding-block:clamp(30px,5vw,64px) clamp(24px,3.4vw,40px)}
+.hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(22px,3.6vw,48px);align-items:center}
+.badge{display:inline-flex;align-items:center;gap:8px;font-size:.7rem;font-weight:600;color:var(--neon);border:1px solid rgba(67,217,163,.3);background:rgba(67,217,163,.07);border-radius:999px;padding:4px 12px}
+.badge span{color:var(--muted)}
+h1{margin-block:14px 0;font-size:clamp(1.85rem,4.2vw,3.15rem);line-height:1.26;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--neon)}
+h1 code{font-family:ui-monospace,monospace;font-size:.62em;background:var(--card2);border:1px solid var(--line2);border-radius:8px;padding:.1em .4em;color:var(--amber);direction:ltr;display:inline-block;vertical-align:middle}
+.hero p.sub{margin-block-start:14px;color:var(--soft);font-size:clamp(.94rem,1.2vw,1.02rem);max-width:36rem;line-height:2}
+.hero__chips{display:flex;gap:7px;flex-wrap:wrap;margin-block-start:16px}
+.chip{font-size:.7rem;color:var(--soft);border:1px solid var(--line2);border-radius:7px;padding:3px 9px;background:rgba(255,255,255,.02)}
+.hero__cta{display:flex;gap:9px;flex-wrap:wrap;margin-block-start:22px}
+
+/* ترمینال/کد */
+.term{border:1px solid var(--line2);border-radius:12px;background:linear-gradient(180deg,var(--card2),var(--card));overflow:hidden;box-shadow:0 30px 60px -40px #000}
+.term__bar{display:flex;align-items:center;gap:6px;padding:9px 12px;border-block-end:1px solid var(--line);background:rgba(255,255,255,.02)}
+.term__bar i{width:9px;height:9px;border-radius:50%;background:#2a3942;display:block}
+.term__bar i:first-child{background:#f0b429}
+.term__bar span{margin-inline-start:auto;font-size:.64rem;color:var(--muted)}
+.term pre{margin:0;padding:14px 16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.74rem;line-height:1.95;direction:ltr;text-align:left;color:#9fb6bf;overflow-x:auto}
+.term .k{color:var(--violet)}
+.term .s{color:var(--neon)}
+.term .n{color:var(--amber)}
+.term .c{color:#4e6570}
+.term__foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 14px;border-block-start:1px solid var(--line);font-size:.66rem;color:var(--muted);background:rgba(255,255,255,.015)}
+
+/* ---- نوار KPI ---- */
+.kpi-band{border-block:1px solid var(--line);background:rgba(255,255,255,.012)}
+.kpi-band__in{display:grid;grid-template-columns:repeat(4,1fr)}
+.kpi{padding:18px;border-inline-start:1px solid var(--line)}
+.kpi:first-child{border-inline-start:0;padding-inline-start:0}
+.kpi b{display:block;font-size:clamp(1.3rem,2.3vw,1.8rem);font-weight:800;line-height:1.15;color:#fff}
+.kpi b i{font-style:normal;font-size:.68rem;font-weight:600;color:var(--neon);margin-inline-start:4px}
+.kpi span{display:block;font-size:.74rem;color:var(--muted);margin-block-start:2px}
+
+/* ---- بخش ---- */
+.sec{padding-block:clamp(30px,4.4vw,58px)}
+.sec__head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-block-end:20px}
+.sec__head h2{font-size:clamp(1.25rem,2.3vw,1.8rem);font-weight:800;line-height:1.4;letter-spacing:-.01em}
+.sec__head p{font-size:.86rem;color:var(--muted);margin-block-start:5px;max-width:34rem}
+.sec__head a{font-size:.78rem;font-weight:600;color:var(--neon);display:inline-flex;gap:5px;align-items:center}
+.sec__head a:hover{gap:9px}
+.eyebrow{font-family:ui-monospace,monospace;font-size:.66rem;letter-spacing:.12em;color:var(--neon2);direction:ltr;display:block;margin-block-end:6px}
+
+/* کارت خبر */
+.news{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.n{border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:16px;display:flex;flex-direction:column;gap:8px;transition:.2s;position:relative;overflow:hidden}
+.n::after{content:"";position:absolute;inset-block-start:0;inset-inline:0;height:1px;background:linear-gradient(90deg,transparent,rgba(67,217,163,.5),transparent);opacity:0;transition:.3s}
+.n:hover{border-color:var(--line2);transform:translateY(-3px);background:var(--card2)}
+.n:hover::after{opacity:1}
+.n__top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.n__ver{font-family:ui-monospace,monospace;font-size:.64rem;color:var(--neon);direction:ltr;background:rgba(67,217,163,.08);border:1px solid rgba(67,217,163,.22);border-radius:5px;padding:1px 6px}
+.n__date{font-size:.66rem;color:var(--muted)}
+.n h3{font-size:.96rem;font-weight:700;line-height:1.65;text-wrap:balance}
+.n h3:hover{color:var(--neon)}
+.n p{font-size:.81rem;color:var(--soft);line-height:1.9;flex:1}
+.n__meta{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--muted);border-block-start:1px solid var(--line);padding-block-start:8px}
+.n--feature{grid-column:span 3;display:grid;grid-template-columns:1.1fr .9fr;gap:0;padding:0}
+.n--feature .body{padding:22px;display:flex;flex-direction:column;gap:8px}
+.n--feature h3{font-size:clamp(1.1rem,1.9vw,1.4rem);line-height:1.5}
+.n--feature .pic{position:relative;min-height:220px;border-inline-start:1px solid var(--line)}
+.n--feature .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.75) brightness(.82) contrast(1.05)}
+.n--feature .pic::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(15,23,31,.9),transparent 60%)}
+
+/* ---- تایم‌لاین ---- */
+.timeline{position:relative;display:grid;gap:0;border-inline-start:1px solid var(--line2);margin-inline-start:8px}
+.tl{position:relative;padding:0 0 22px 0;padding-inline-start:22px}
+.tl:last-child{padding-block-end:0}
+.tl::before{content:"";position:absolute;inset-inline-start:-4.5px;inset-block-start:6px;width:8px;height:8px;border-radius:50%;background:var(--bg);border:1.5px solid var(--neon)}
+.tl--now::before{background:var(--neon);box-shadow:0 0 0 4px rgba(67,217,163,.14)}
+.tl--future::before{border-color:var(--line2)}
+.tl__head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.tl__v{font-family:ui-monospace,monospace;font-size:.7rem;color:var(--neon);direction:ltr}
+.tl--future .tl__v{color:var(--muted)}
+.tl__badge{font-size:.6rem;border:1px solid rgba(67,217,163,.28);color:var(--neon);border-radius:4px;padding:0 5px}
+.tl h3{font-size:.96rem;font-weight:700;margin-block-start:3px}
+.tl p{font-size:.81rem;color:var(--soft);line-height:1.9;margin-block-start:2px;max-width:38rem}
+
+/* ---- دو ستون: قابلیت + شواهد ---- */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.panel{border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:18px}
+.panel h3{font-size:.95rem;font-weight:700;margin-block-end:3px}
+.panel > p{font-size:.78rem;color:var(--muted);margin-block-end:14px}
+.feat{display:grid;gap:10px}
+.feat__i{display:flex;gap:10px;align-items:flex-start;font-size:.83rem;color:var(--soft)}
+.feat__i svg{width:16px;height:16px;color:var(--neon);flex:none;margin-block-start:.35em}
+.feat__i b{color:var(--ink);font-weight:600}
+.quote{border-inline-start:2px solid var(--neon);padding-inline-start:14px;font-size:.9rem;color:var(--ink);line-height:1.95}
+.quote figcaption{font-size:.7rem;color:var(--muted);margin-block-start:8px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-block-start:12px}
+.tag{font-size:.66rem;border:1px solid var(--line2);border-radius:5px;padding:2px 7px;color:var(--muted);font-family:ui-monospace,monospace;direction:ltr}
+
+/* ---- CTA ---- */
+.cta{border:1px solid rgba(67,217,163,.24);border-radius:16px;background:linear-gradient(150deg,rgba(67,217,163,.1),rgba(67,217,163,.02) 55%,transparent);padding:clamp(20px,3.2vw,36px);display:grid;grid-template-columns:1.2fr .8fr;gap:22px;align-items:center;margin-block:clamp(20px,3vw,34px)}
+.cta h2{font-size:clamp(1.15rem,2.2vw,1.65rem);font-weight:800;line-height:1.45}
+.cta p{font-size:.85rem;color:var(--soft);margin-block-start:7px;max-width:32rem}
+.cta__side{display:grid;gap:8px}
+
+/* ---- فوتر ---- */
+.ft{border-block-start:1px solid var(--line);padding-block:28px 0;background:rgba(0,0,0,.2)}
+.ft__grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:20px;padding-block-end:20px}
+.ft p{font-size:.78rem;color:var(--muted);line-height:1.95;max-width:23rem;margin-block-start:9px}
+.ft h4{font-size:.7rem;letter-spacing:.1em;color:var(--ink);font-weight:700;margin-block-end:9px;text-transform:uppercase}
+.ft ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:.79rem;color:var(--soft)}
+.ft a:hover{color:var(--neon)}
+.ft__bottom{border-block-start:1px solid var(--line);padding-block:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.68rem;color:var(--muted)}
+
+@media (max-width:1020px){
+  .hero__grid{grid-template-columns:1fr}
+  .news{grid-template-columns:repeat(2,1fr)}
+  .n--feature{grid-column:span 2;grid-template-columns:1fr}
+  .n--feature .pic{min-height:170px;border-inline-start:0;border-block-start:1px solid var(--line);order:-1}
+  .duo{grid-template-columns:1fr}
+  .cta{grid-template-columns:1fr}
+  .kpi-band__in{grid-template-columns:1fr 1fr}
+  .kpi:nth-child(3){border-inline-start:0;padding-inline-start:0}
+  .kpi:nth-child(-n+2){border-block-end:1px solid var(--line)}
+  .ft__grid{grid-template-columns:1fr 1fr}
+  .nav{display:none}
+}
+@media (max-width:620px){
+  .news{grid-template-columns:1fr}
+  .n--feature{grid-column:span 1}
+  .kpi-band__in{grid-template-columns:1fr}
+  .kpi{border-inline-start:0!important;padding-inline:0!important;border-block-end:1px solid var(--line)}
+  .ft__grid{grid-template-columns:1fr}
+  .hdr__act .status{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="grid-bg" aria-hidden="true"></div>
+
+<header class="hdr">
+  <div class="wrap hdr__in">
+    <a class="brand" href="#">
+      <span class="brand__mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 4 14 3-9 2.5 2H22"/></svg></span>
+      <span><b>نفس</b><span>NABZ · INTAKE API</span></span>
+    </a>
+    <nav class="nav" aria-label="ناوبری">
+      <a href="#" aria-current="page">نمای کلی</a>
+      <a href="#news">Changelog</a>
+      <a href="#roadmap">نقشهٔ راه</a>
+      <a href="#partners">شرکا</a>
+      <a href="#demo">دسترسی</a>
+    </nav>
+    <div class="hdr__act">
+      <span class="status"><i></i> v1.2 در دسترس</span>
+      <a class="btn btn--neon" href="#demo">درخواست دسترسی</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap hero__grid">
+      <div>
+        <span class="badge">پیش‌پذیرش سلامت، به‌صورت API <span>· v1.2</span></span>
+        <h1>پروندهٔ بیمار،<br>قبل از <em>رسیدنش</em> آماده است.</h1>
+        <p class="sub">
+          نفس یک لایهٔ ورودی است، نه یک HIS دیگر: دعوت با پیامک، تکمیل فرم شرطی، شواهد حضور و تحویل ساختاریافتهٔ پرونده
+          به پذیرش و پزشک. برای مراکزی که HIS دارند و نمی‌خواهند عوضش کنند.
+        </p>
+        <div class="hero__chips">
+          <span class="chip">REST + Webhook</span>
+          <span class="chip">Self-host (Docker)</span>
+          <span class="chip">Multi-tenant</span>
+          <span class="chip">Audit log</span>
+          <span class="chip">SSO / OTP</span>
+        </div>
+        <div class="hero__cta">
+          <a class="btn btn--neon" href="#demo">درخواست دسترسی به سندباکس
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
+          </a>
+          <a class="btn btn--line" href="#roadmap">نقشهٔ راه</a>
+        </div>
+      </div>
+
+      <div class="term" aria-label="نمونهٔ فراخوانی API">
+        <div class="term__bar"><i></i><i></i><i></i><span>intake · create</span></div>
+<pre><span class="c"># ایجاد پروندهٔ پیش‌پذیرش برای عضو قرارداد</span>
+<span class="k">POST</span> /v1/intakes
+<span class="k">Authorization:</span> <span class="s">Bearer</span> {token}
+{
+  <span class="k">"contractId"</span>: <span class="n">"DEMO-ORG"</span>,
+  <span class="k">"mobile"</span>: <span class="n">"0912…"</span>,
+  <span class="k">"formId"</span>: <span class="n">"pre-admit.general"</span>,
+  <span class="k">"evidence"</span>: { <span class="k">"otp"</span>: <span class="n">true</span>, <span class="k">"frame"</span>: <span class="n">true</span> }
+}
+
+<span class="c"># پاسخ: وضعیت قابل پیگیری + لینک یک‌بارمصرف</span>
+<span class="s">201</span> { <span class="k">"status"</span>: <span class="n">"invited"</span>, <span class="k">"link"</span>: <span class="n">"https://…"</span> }</pre>
+        <div class="term__foot"><span>نمونهٔ نمایشی — سند رسمی با هماهنگی منتشر می‌شود</span><span class="mono">v1.2</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="kpi-band">
+    <div class="wrap kpi-band__in">
+      <div class="kpi"><b class="num">۴٫۲<i>دقیقه</i></b><span>میانگین زمان پذیرش · نمونه</span></div>
+      <div class="kpi"><b class="num">۸۱<i>٪</i></b><span>تکمیل پیش از مراجعه · نمونه</span></div>
+      <div class="kpi"><b class="num">۳<i>الگو</i></b><span>اتصال: لینک، فایل، API</span></div>
+      <div class="kpi"><b class="num">۰<i>بار</i></b><span>نیاز به تغییر HIS</span></div>
+    </div>
+  </div>
+
+  <section class="sec" id="news">
+    <div class="wrap">
+      <div class="sec__head">
+        <div>
+          <span class="eyebrow">// changelog</span>
+          <h2>چه چیزی منتشر شد، چه چیزی بعد است</h2>
+          <p>هر نسخه با یادداشت انتشار، محدودیت‌های شناخته‌شده و مسیر مهاجرت می‌آید.</p>
+        </div>
+        <a href="#">آرشیو نسخه‌ها ←</a>
+      </div>
+
+      <div class="news">
+        <article class="n n--feature">
+          <div class="body">
+            <div class="n__top"><span class="n__ver">v1.2</span><span class="n__date">۱۴۰۵/۰۸/۱۲</span></div>
+            <h3><a href="#">فرم‌ساز شرطی: منطق نمایش و کاتالوگ پرسش‌نامه</a></h3>
+            <p>هر سؤال می‌تواند به شرط سن، جنسیت یا پاسخ قبلی گره بخورد. ماتریس شرط نمایش از طریق import/export بسته (JSON/Excel) قابل انتقال است. محدودیت شناخته‌شده: منطق شرطی تودرتو بیش از سه سطح پشتیبانی نمی‌شود.</p>
+            <div class="n__meta">۴ دقیقه · یادداشت انتشار</div>
+          </div>
+          <div class="pic"><img src="../assets/img/doctor-tablet.jpg" alt="پزشک با تبلت در راهروی کلینیک"></div>
+        </article>
+
+        <article class="n">
+          <div class="n__top"><span class="n__ver">v1.1</span><span class="n__date">۱۴۰۵/۰۷/۰۲</span></div>
+          <h3><a href="#">شواهد حضور: OTP، فریم و فاصله</a></h3>
+          <p>سه لایهٔ مستقل با لاگ ممیزی؛ امکان رد کردن مرحله توسط بیمار.</p>
+          <div class="n__meta">۶ دقیقه</div>
+        </article>
+
+        <article class="n">
+          <div class="n__top"><span class="n__ver">v1.0</span><span class="n__date">۱۴۰۵/۰۵/۱۱</span></div>
+          <h3><a href="#">سه الگوی اتصال به HIS</a></h3>
+          <p>لینک امن، فایل استاندارد، API — با معیار انتخاب برای هر مرکز.</p>
+          <div class="n__meta">۹ دقیقه</div>
+        </article>
+
+        <article class="n">
+          <div class="n__top"><span class="n__ver">next</span><span class="n__date">۱۴۰۵/۱۰</span></div>
+          <h3><a href="#">Webhook وضعیت پرونده</a></h3>
+          <p>اعلان رویدادمحور برای تکمیل فرم، آپلود مدارک و آماده‌شدن پرونده.</p>
+          <div class="n__meta">در حال توسعه</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="roadmap" style="padding-block-start:0">
+    <div class="wrap duo">
+      <div class="panel">
+        <span class="eyebrow">// roadmap</span>
+        <h3>نقشهٔ راه، بدون تاریخ‌های خوش‌بینانه</h3>
+        <p>هر مرحله وقتی منتشر می‌شود که در یک مرکز واقعی کار کند.</p>
+        <div class="timeline">
+          <div class="tl">
+            <div class="tl__head"><span class="tl__v">v1.0</span><span class="tl__badge">منتشر شده</span></div>
+            <h3>پیش‌پذیرش و پروندهٔ آماده</h3>
+            <p>فرم شرطی، مدارک، احراز حضور، نقش پذیرش و پزشک.</p>
+          </div>
+          <div class="tl tl--now">
+            <div class="tl__head"><span class="tl__v">v1.2</span><span class="tl__badge">اکنون</span></div>
+            <h3>قیف سازمانی و دیوار شیشه‌ای</h3>
+            <p>دعوت گروهی، پنل ناظر، داشبورد درآمد مشترک با شریک.</p>
+          </div>
+          <div class="tl tl--future">
+            <div class="tl__head"><span class="tl__v">v1.3</span></div>
+            <h3>اتصال HIS و خروجی استاندارد</h3>
+            <p>API پایدار، نگاشت داده، گزارش تجمیعی و webhook وضعیت.</p>
+          </div>
+          <div class="tl tl--future">
+            <div class="tl__head"><span class="tl__v">v2.0</span></div>
+            <h3>پذیرش بدون کاغذ</h3>
+            <p>صف هوشمند، پیش‌بینی حضور و مسیر درمان بین‌مرکزی.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="partners">
+        <span class="eyebrow">// partners</span>
+        <h3>مدل مشارکت، شفاف و قابل بازبینی</h3>
+        <p>سه نقش، سه سهم مشخص؛ همهٔ اعداد در داشبورد مشترک.</p>
+        <div class="feat">
+          <div class="feat__i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m4.5 12.5 5 5 10-11"/></svg><span><b>شریک معرف</b> — سهم از قرارداد اول و تمدید سالانه</span></div>
+          <div class="feat__i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m4.5 12.5 5 5 10-11"/></svg><span><b>شریک عملیاتی</b> — استقرار، اتصال HIS و آموزش</span></div>
+          <div class="feat__i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m4.5 12.5 5 5 10-11"/></svg><span><b>شریک رشد</b> — مدل درآمدی مشترک با زنجیرهٔ کلینیک</span></div>
+          <div class="feat__i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m4.5 12.5 5 5 10-11"/></svg><span><b>دادهٔ بیمار</b> هیچ‌وقت بخشی از معامله نیست</span></div>
+        </div>
+        <figure class="quote" style="margin-block-start:16px">
+          «اگر عددی به نفع ما اشتباه باشد، شما همان‌جا در داشبورد مشترک می‌بینید.»
+          <figcaption>اصل دیوار شیشه‌ای</figcaption>
+        </figure>
+        <div class="tags">
+          <span class="tag">shared-dashboard</span>
+          <span class="tag">audit-log</span>
+          <span class="tag">monthly-settlement</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="cta" id="demo">
+      <div>
+        <h2>سندباکس را باز کنید، بعد تصمیم بگیرید.</h2>
+        <p>دسترسی به محیط تست، پروندهٔ نمونه و مستند API. برای تیم فنی شما: معماری، محدودیت‌ها و مدل استقرار.</p>
+      </div>
+      <div class="cta__side">
+        <a class="btn btn--neon" href="#">درخواست دسترسی به سندباکس</a>
+        <a class="btn btn--line" href="#news">خواندن changelog</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="ft">
+  <div class="wrap">
+    <div class="ft__grid">
+      <div>
+        <a class="brand" href="#" style="margin-block-end:4px">
+          <span class="brand__mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M2 12h4l2.5-7 4 14 3-9 2.5 2H22"/></svg></span>
+          <span><b>نفس</b><span>NABZ · INTAKE API</span></span>
+        </a>
+        <p>لایهٔ پیش‌پذیرش سلامت با API قابل اتصال به HIS، استقرار داخلی و لاگ ممیزی کامل.</p>
+      </div>
+      <div><h4>محصول</h4><ul><li><a href="#">نمای کلی</a></li><li><a href="#news">Changelog</a></li><li><a href="#roadmap">نقشهٔ راه</a></li><li><a href="#demo">سندباکس</a></li></ul></div>
+      <div><h4>شرکا</h4><ul><li><a href="#partners">مدل مشارکت</a></li><li><a href="#partners">دیوار شیشه‌ای</a></li><li><a href="#demo">تماس</a></li></ul></div>
+      <div><h4>تماس</h4><ul><li><a href="tel:+982191002400" dir="ltr">۰۲۱–۹۱۰۰ ۲۴۰۰</a></li><li><a href="mailto:hello@nabz.health" dir="ltr">hello@nabz.health</a></li><li>شنبه تا چهارشنبه، ۹ تا ۱۸</li></ul></div>
+    </div>
+    <div class="ft__bottom">
+      <span>© ۱۴۰۵ نفس — همهٔ حقوق محفوظ است.</span>
+      <span>طرح پیشنهادی ۰۴ · «شب دیجیتال» — نمونهٔ API نمایشی است</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
