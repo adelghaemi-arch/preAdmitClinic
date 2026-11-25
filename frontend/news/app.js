@@ -1438,20 +1438,23 @@ function initProcess() {
       const on = c.dataset.stage === key;
       c.classList.toggle("is-on", on);
       c.setAttribute("aria-pressed", String(on));
-      if (on) {
-        const cw = c.parentElement.getBoundingClientRect().left;
-        const pw = c.parentElement.parentElement.getBoundingClientRect().left;
-        if (cw < pw - 4 || cw > pw + 40) {
-          c.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
-        }
-      }
     });
+    /* فقط نوار افقی را جابه‌جا می‌کنیم — scrollIntoView کل صفحه را می‌کشید */
+    const rail = chips[0]?.closest(".px-rail");
+    const on = chips.find((c) => c.dataset.stage === key);
+    if (!rail || !on) return;
+    const a = on.getBoundingClientRect();
+    const b = rail.getBoundingClientRect();
+    if (a.left < b.left + 8) rail.scrollLeft += a.left - b.left - 8;
+    else if (a.right > b.right - 8) rail.scrollLeft += a.right - b.right + 8;
   };
   chips.forEach((c) => {
     c.addEventListener("click", () => {
       const el = document.getElementById(`px-${c.dataset.stage}`);
       if (!el) return;
-      el.scrollIntoView({ block: "start", behavior: "smooth" });
+      const off = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--nav-h"), 10) || 68;
+      const top = el.getBoundingClientRect().top + window.scrollY - off - 16;
+      window.scrollTo({ top, behavior: "smooth" });
       setOn(c.dataset.stage);
     });
   });
