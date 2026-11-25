@@ -2,7 +2,7 @@
 chcp 65001 >nul
 REM /*
 REM  File: server/sync.config.bat
-REM  Description: تنظیمات مشترک انتشار سرور نفس (بدون سکرت)؛ توسط publish.bat بارگذاری می‌شود
+REM  Description: تنظیمات مشترک انتشار سرور تپش (بدون سکرت)؛ توسط publish.bat بارگذاری می‌شود
 REM  Parent Dependencies: publish.bat, sync-deploy.bat, init-server-structure.bat
 REM */
 

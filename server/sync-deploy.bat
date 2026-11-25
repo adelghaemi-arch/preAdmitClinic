@@ -113,7 +113,7 @@ if exist "%REPO_ROOT%\frontend\news\package.json" (
 ) else (
   echo [INFO] frontend\news not present - writing placeholder dist for nginx
   if not exist "%SERVER_ROOT%\news\dist" mkdir "%SERVER_ROOT%\news\dist" >nul 2>&1
-  > "%SERVER_ROOT%\news\dist\index.html" echo ^<!DOCTYPE html^>^<html lang="fa" dir="rtl"^>^<head^>^<meta charset="utf-8"/^>^<title^>نفس - ویترین^</title^>^</head^>^<body^>^<p^>ویترین news هنوز فعال نیست.^</p^>^</body^>^</html^>
+  > "%SERVER_ROOT%\news\dist\index.html" echo ^<!DOCTYPE html^>^<html lang="fa" dir="rtl"^>^<head^>^<meta charset="utf-8"/^>^<title^>تپش - ویترین^</title^>^</head^>^<body^>^<p^>ویترین news هنوز فعال نیست.^</p^>^</body^>^</html^>
   set "NEWS_PLACEHOLDER=1"
 )
 set "DID_NEWS=1"
