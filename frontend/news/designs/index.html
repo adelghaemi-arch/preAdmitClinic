@@ -116,6 +116,11 @@ h1{margin-block-start:14px;font-size:clamp(1.7rem,3.6vw,2.7rem);font-weight:800;
 .vstage[data-dev="mobile"] iframe{max-width:390px;height:min(100%,844px)}
 .vback{position:fixed;inset-block-end:14px;inset-inline-start:14px;z-index:90;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:var(--ink);color:var(--paper);font-size:.76rem;font-weight:600;box-shadow:var(--shadow);opacity:.9}
 
+/* طرح پنجم (آخرین کارت) تمام‌عرض می‌شود تا تکی و بی‌جا نماند */
+.card:last-child:nth-child(odd){grid-column:1/-1}
+.card:last-child:nth-child(odd) .card__body{max-width:70ch;margin-inline:auto;text-align:center}
+.card:last-child:nth-child(odd) .card__tags,
+.card:last-child:nth-child(odd) .card__actions{justify-content:center}
 @media (max-width:900px){
   .grid{grid-template-columns:1fr}
 }
@@ -131,15 +136,15 @@ h1{margin-block-start:14px;font-size:clamp(1.7rem,3.6vw,2.7rem);font-weight:800;
 <header class="top">
   <div class="wrap">
     <span class="kicker">طرح‌های پیشنهادی · سایت اطلاع‌رسانی</span>
-    <h1>چهار مسیر برای سایت خبری «نفس» — یک محتوا، چهار شخصیت.</h1>
+    <h1>پنج مسیر برای سایت خبری «نفس» — یک محتوا، پنج شخصیت.</h1>
     <p class="lead">
       هر طرح یک صفحهٔ کامل و مستقل است و <b>همان محتوا</b> را با منطق بصری متفاوتی روایت می‌کند تا مقایسه منصفانه باشد:
-      یک تیتر اصلی، شش خبر، چهار عدد، یک نقل‌قول و یک دعوت به دمو. کنار هر کارت، پیش‌نمایش <b>موبایل</b> همان طرح هست؛
+      یک تیتر اصلی، شش خبر، چهار عدد، یک نقل‌قول و یک دعوت به دمو. پنج طرح، پنج شخصیت. کنار هر کارت، پیش‌نمایش <b>موبایل</b> همان طرح هست؛
       روی کارت کلیک کنید تا در اندازهٔ واقعی و با تعویض دسکتاپ/تبلت/موبایل ببینید.
     </p>
     <div class="metaline">
       <span class="tag tag--live"><span class="dot"></span> نسخهٔ قابل بازبینی</span>
-      <span class="tag">۴ طرح + طرح فعلی</span>
+      <span class="tag">۵ طرح + طرح فعلی</span>
       <span class="tag">فقط پوشهٔ news — پروژهٔ اصلی دست‌نخورده</span>
     </div>
 
@@ -157,7 +162,7 @@ h1{margin-block-start:14px;font-size:clamp(1.7rem,3.6vw,2.7rem);font-weight:800;
   <div class="grid" id="grid"></div>
 
   <div class="note">
-    <b>یادداشت طراحی:</b> هر چهار طرح عمداً بدون تصویر تولیدی جدید ساخته شده‌اند تا تفاوت، در «سیستم طراحی» دیده شود نه در عکس.
+    <b>یادداشت طراحی:</b> هر پنج طرح عمداً بدون تصویر تولیدی جدید ساخته شده‌اند تا تفاوت، در «سیستم طراحی» دیده شود نه در عکس.
     جایی که تصویر لازم بوده، از سه تصویر موجود در <span dir="ltr">assets/img</span> استفاده شده است.
     هیچ‌کدام از این فایل‌ها روی سایت اصلی اثر ندارد؛ انتخاب که شد، برنده به ساختار `content/` منتقل می‌شود.
   </div>
@@ -223,6 +228,16 @@ const DESIGNS = [
     tagline: "فنی و شریک‌محور",
     desc: "تیره، با تایپوگرافی فنی، تایم‌لاین نسخه‌ها و نمونهٔ واقعی API. برای شریک فناوری و سرمایه‌گذاری که دنبال جزئیات فنی و نقشهٔ راه است.",
     tags: ["شریک فنی", "محصول", "تیره"],
+    scale: 0.26,
+    mscale: 0.16
+  },
+  {
+    id: "05-gateway",
+    num: "۰۵",
+    title: "دروازه",
+    tagline: "لندینگ مدرن و لایه‌ای",
+    desc: "هیروی تیره و تمام‌عرض با کارت نمایشی داده، سه کارت مخاطب، چهار گام مسیر بیمار، بخش‌های تصویری بزرگ، نوار آمار و پرسش‌های بازشو. لحن معرفی محصول؛ مناسب صفحهٔ اصلی و کمپین جذب.",
+    tags: ["جذب مشتری", "هیروی تصویری", "معرفی محصول"],
     scale: 0.26,
     mscale: 0.16
   }
