@@ -189,6 +189,138 @@ h1 em{font-style:normal;color:var(--brand);background:linear-gradient(transparen
   .ft__grid{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ==========================================================================
+   اصلاحات موبایل (آخر فایل تا اولویت داشته باشد)
+   ========================================================================== */
+@media (max-width: 760px) {
+  /* کف اندازهٔ متن: هیچ متنی زیر ۱۲px */
+  body { font-size: 16px; line-height: 1.9; }
+  p, li, span, a, small, figcaption, em, i { font-size: max(12px, 1em); }
+  .badge, .tag, .chip, .n__date, .n__ver, .item__meta, .story__meta,
+  .kpi span, .metric span, .rail-item__m, .byline, .ribbon__d,
+  .v__who small, .tl__v, .n__meta, .foot__bottom, .ft__bottom,
+  .hero__trust, .cover__foot, .feature__meta, .list li span,
+  .tab, .status { font-size: .8rem; }
+  h1, .cover h1 { line-height: 1.35; letter-spacing: -.01em; }
+  h1 { font-size: clamp(1.65rem, 7.4vw, 2.1rem); }
+  .cover h1 { font-size: clamp(1.6rem, 7vw, 2.05rem); }
+  h2 { font-size: clamp(1.2rem, 5.2vw, 1.5rem); line-height: 1.45; }
+  h3 { font-size: 1.06rem; line-height: 1.6; }
+  p, .lead, .standfirst, .hero p.sub, .story p, .n p, .item p,
+  .longread p, .feature p, .tl p, .model__how, .rail-item__t { font-size: .95rem; line-height: 2; }
+  .section, .sec, .hero, .top, .masthead { padding-inline: 0; }
+  .wrap { padding-inline: 18px; }
+
+  /* دکمه‌ها: تمام‌عرض و ۴۶px */
+  .btn, .build-btn { min-height: 46px; padding-block: 12px; font-size: .92rem; }
+  .hero__cta, .masthead__actions, .hdr__act, .cta__side, .cover__foot,
+  .cta__actions, .page-actions { display: grid !important; gap: 9px; width: 100%; }
+  .hero__cta .btn, .masthead__actions .btn, .hdr__act .btn,
+  .cta__side .btn, .cover__foot .btn { width: 100%; justify-content: center; }
+  .masthead__actions, .hdr__act { flex-wrap: wrap; }
+  /* در هدر، دکمهٔ ثانویه حذف و دکمهٔ اصلی جمع‌وجور می‌شود (نوار هدر شلوغ نشود) */
+  .masthead__actions .btn--line, .hdr__act .btn--soft, .hdr__act .btn--line { display: none; }
+  .masthead__actions .btn, .hdr__act .btn { width: auto; min-height: 40px; padding: 8px 12px; font-size: .82rem; }
+
+  /* هدر چسبان: بدون تلفن اضافه، تاچ ۴۴ */
+  .nav, .top__nav { display: none !important; }
+  .hdr__in { min-height: 58px; gap: 10px; }
+  .brand b { font-size: 1.1rem; }
+  .brand span { font-size: .54rem; letter-spacing: .12em; }
+  .brand__mark { width: 36px; height: 36px; }
+  .status { display: none; }
+  .masthead__meta { font-size: .74rem; gap: 8px; }
+  .masthead__meta span:nth-child(n+2) { display: none; }
+
+  /* شبکه‌ها یک‌ستونه با فاصلهٔ کافی */
+  .grid, .news, .stories, .voices, .duo, .split, .kpis, .kpi-band__in,
+  .grid-3, .columns, .foot__top, .ft__grid, .list, .timeline {
+    display: block !important;
+  }
+  .grid > *, .news > *, .stories > *, .voices > *, .duo > *,
+  .split > *, .foot__top > *, .ft__grid > * { margin-block-end: 16px; }
+  .foot__top > *:last-child, .ft__grid > *:last-child { margin-block-end: 0; }
+
+  /* کارت‌ها: بدون بردر چسبیده، پدینگ باز */
+  .story, .n, .item, .v, .box, .panel, .metric, .kpi, .rail-item {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px !important;
+    border-inline-start: 1px solid var(--line) !important;
+    margin-block-end: 12px;
+  }
+  .story--wide, .n--feature, .n--feat { display: block !important; }
+  .story--wide .photo, .n--feature .pic, .n--feat .pic { border-radius: 12px; overflow: hidden; margin-block-end: 14px; }
+  .story--wide img, .n--feature .pic img, .n--feat .pic img { aspect-ratio: 16/10; width: 100%; object-fit: cover; }
+
+  /* تصویر جلد: کوتاه‌تر و متن روی آن خوانا */
+  .cover { border-radius: 12px; }
+  .cover img { height: clamp(320px, 78vw, 430px); }
+  .cover__in { padding: 18px; }
+  .cover p { font-size: .95rem; }
+
+  /* عددها بزرگ‌تر و قابل اسکن */
+  .stat__v, .kpi b, .metric b { font-size: 1.7rem; }
+  .rail-title { font-size: .74rem; }
+
+  /* جدول‌ها: کارت‌شده، نه اسکرول افقی */
+  table { display: block; }
+  thead { display: none; }
+  tbody, tr, td { display: block; }
+  tr {
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px; margin-block-end: 10px; background: var(--card, #fff);
+  }
+  td { border: 0 !important; padding: 4px 0 !important; }
+  td:first-child { font-weight: 700; }
+
+  /* فرم‌ها */
+  input, select, textarea { font-size: 16px !important; padding: 12px 13px !important; }
+  .fields, .field-row { display: block !important; }
+
+  /* فوتر و نوارهای پایانی */
+  .foot__bottom, .ft__bottom { display: block; font-size: .8rem; line-height: 1.9; }
+  .foot__bottom > *, .ft__bottom > * { display: block; margin-block-end: 6px; }
+}
+
+@media (max-width: 400px) {
+  .wrap { padding-inline: 14px; }
+  .cover__in { padding: 14px; }
+  h1 { font-size: 1.55rem; }
+  .brand span { display: none; }
+}
+
+
+/* --- رفع فونت‌های بسیار ریز در موبایل (زیر ۱۲px خوانا نیست) --- */
+@media (max-width: 760px) {
+  .brand__name, .brand__desc, .brand-sub, .nav__date,
+  .kicker, .badge-sample, .stat__l, .n__cat, .story__cat,
+  .eyebrow, .tl__badge, .term__foot, .dash__foot, .legend,
+  .meta, .byline, small, i.unit, .unit, figcaption, .cap, .note {
+    font-size: .76rem !important;
+    letter-spacing: .01em;
+  }
+  /* اعداد و برچسب‌های داخل کارت‌های آماری */
+  .stat__l, .dash__foot, .term__foot, .legend { line-height: 1.6; }
+  /* تیترهای خیلی ریز نباشند */
+  h1, h2, h3 { letter-spacing: 0; }
+}
+
+/* برند و واحدهای ریز داخل کارت‌ها: کمی بزرگ‌تر تا در موبایل خوانا باشد */
+@media (max-width: 760px) {
+  header .brand span span, .brandWord span, .brand-lock span,
+  .dash .unit, .term__head, .kpi i, .metric i, i, .unit, .term__foot {
+    font-size: .74rem !important;
+  }
+  .brand small, header .brand small { font-size: .66rem !important; }
+}
+
+/* لوگوتایپ: نام لاتین برند در موبایل حداقل ۱۱px */
+@media (max-width: 760px) {
+  a.brand > span > span, .ft__grid a.brand > span > span { font-size: .7rem !important; letter-spacing: .08em; }
+  a.brand > span > b { font-size: 1.15rem; }
+}
 </style>
 </head>
 <body>

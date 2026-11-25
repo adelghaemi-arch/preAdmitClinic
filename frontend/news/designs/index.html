@@ -46,8 +46,35 @@ h1{margin-block-start:14px;font-size:clamp(1.7rem,3.6vw,2.7rem);font-weight:800;
 .card__bar{display:flex;align-items:center;gap:6px;padding:9px 12px;background:#efeade;border-block-end:1px solid var(--line)}
 .card__bar i{width:8px;height:8px;border-radius:50%;background:#cfc7b4;display:block}
 .card__bar span{margin-inline-start:auto;font-size:.66rem;color:var(--muted);direction:ltr}
-.shot{position:relative;overflow:hidden;height:calc(var(--h) * var(--s) * 1px);background:#fff}
-.shot iframe{position:absolute;top:0;right:0;width:calc(var(--w) * 1px);height:calc(var(--h) * 1px);border:0;transform:scale(var(--s));transform-origin:top right;pointer-events:none;background:#fff}
+/* ناحیهٔ پیش‌نمایش: دسکتاپ ۱۴۴۰px (مقیاس --s) و زیرش گوشی ۳۹۰px (مقیاس --ms)
+   بدون روی‌هم‌افتادگی، تا هر دو کامل و خوانا دیده شوند. */
+.shots{position:relative;background:#eae5d8;--s:.4;--ms:.46;padding:0 0 20px}
+.shot{position:relative;overflow:hidden;background:#fff;height:calc(760px * var(--s));border-block-end:1px solid #d8d1c0}
+.shot>iframe{position:absolute;top:0;right:0;width:1440px;height:760px;border:0;
+  transform:scale(var(--s));transform-origin:top right;pointer-events:none;background:#fff}
+.shot--mobile{
+  position:relative; margin:22px auto 0; z-index:4;
+  width:calc(390px * var(--ms)); height:calc(844px * var(--ms));
+  border-radius:calc(26px * var(--ms)); border:calc(6px * var(--ms)) solid #221d18;
+  background:#221d18; overflow:hidden; pointer-events:none;
+  box-shadow:0 24px 46px -20px rgba(0,0,0,.75);
+}
+.shot--mobile>iframe{position:absolute;top:0;right:0;width:390px;height:844px;border:0;
+  transform:scale(var(--ms));transform-origin:top right;pointer-events:none;background:#fff}
+.shot--mobile::after{content:"";position:absolute;inset-block-start:calc(10px * var(--ms));inset-inline-start:50%;
+  transform:translateX(-50%);width:32%;height:calc(10px * var(--ms));border-radius:99px;background:#221d18;z-index:2}
+.shot__badge{
+  position:absolute; inset-block-start:10px; inset-inline-start:10px; z-index:5;
+  font-size:.7rem; font-weight:700; background:rgba(20,18,15,.8); color:#fff;
+  padding:3px 9px; border-radius:6px;
+}
+.shot__badge b{color:#ffd9a0}
+.shot__cap{display:block;text-align:center;font-size:.7rem;color:#6a6152;margin-block-start:8px}
+/* موبایل: فقط پیش‌نمایش موبایل، در عرض کامل کارت */
+.shots.is-narrow{padding-block-end:14px}
+.shots.is-narrow > .shot:not(.shot--mobile){display:none}
+.shots.is-narrow .shot--mobile{margin-block-start:14px;border-width:4px;border-radius:20px}
+.shots.is-narrow .shot__badge{display:none}
 .card__body{padding:18px 20px 20px;display:flex;flex-direction:column;gap:8px;flex:1}
 .card__num{font-family:Lalezar,Vazirmatn,sans-serif;font-size:1.05rem;color:var(--accent);line-height:1}
 .card__title{font-size:1.15rem;font-weight:800;line-height:1.5}
@@ -91,7 +118,6 @@ h1{margin-block-start:14px;font-size:clamp(1.7rem,3.6vw,2.7rem);font-weight:800;
 
 @media (max-width:900px){
   .grid{grid-template-columns:1fr}
-  .shot{height:calc(var(--h) * var(--s) * 1px)}
 }
 @media (max-width:560px){
   .card__actions .btn{flex:1}
@@ -108,8 +134,8 @@ h1{margin-block-start:14px;font-size:clamp(1.7rem,3.6vw,2.7rem);font-weight:800;
     <h1>چهار مسیر برای سایت خبری «نفس» — یک محتوا، چهار شخصیت.</h1>
     <p class="lead">
       هر طرح یک صفحهٔ کامل و مستقل است و <b>همان محتوا</b> را با منطق بصری متفاوتی روایت می‌کند تا مقایسه منصفانه باشد:
-      یک تیتر اصلی، شش خبر، چهار عدد، یک نقل‌قول و یک دعوت به دمو. پیش‌نمایش‌ها زنده‌اند؛ روی هر کارت کلیک کنید تا در اندازهٔ واقعی،
-      روی دسکتاپ/تبلت/موبایل ببینید.
+      یک تیتر اصلی، شش خبر، چهار عدد، یک نقل‌قول و یک دعوت به دمو. کنار هر کارت، پیش‌نمایش <b>موبایل</b> همان طرح هست؛
+      روی کارت کلیک کنید تا در اندازهٔ واقعی و با تعویض دسکتاپ/تبلت/موبایل ببینید.
     </p>
     <div class="metaline">
       <span class="tag tag--live"><span class="dot"></span> نسخهٔ قابل بازبینی</span>
@@ -167,7 +193,8 @@ const DESIGNS = [
     tagline: "روزنامه‌ای و معتبر",
     desc: "چیدمان ستونی و متراکم با خطوط نازک، تیتر درشت و ستون «کوتاه‌ها». لحن روزنامه‌نگارانه؛ مناسب وقتی می‌خواهیم خبر و شفافیت، حرف اول را بزند.",
     tags: ["اطلاع‌رسانی", "اعتبار رسانه‌ای", "متن‌محور"],
-    scale: 0.26
+    scale: 0.26,
+    mscale: 0.16
   },
   {
     id: "02-evidence",
@@ -176,7 +203,8 @@ const DESIGNS = [
     tagline: "داشبورد و عدد",
     desc: "سطح روشن و خنثی، کارت‌های سفید و شاخص‌های عددی با نمودار. برای مدیر بیمارستانی که قبل از هر چیز می‌پرسد: «عددش کجاست؟»",
     tags: ["مدیر بیمارستان", "شاخص‌محور", "داشبورد"],
-    scale: 0.26
+    scale: 0.26,
+    mscale: 0.16
   },
   {
     id: "03-magazine",
@@ -185,7 +213,8 @@ const DESIGNS = [
     tagline: "تصویر و روایت",
     desc: "جلد تمام‌عرض با تیتر درشت، پروندهٔ شماره و نقل‌قول بزرگ. برای برندسازی و روایت انسانی؛ اعتماد از طریق تصویر و قصه ساخته می‌شود.",
     tags: ["برند", "روایت بیمار", "تصویرمحور"],
-    scale: 0.26
+    scale: 0.26,
+    mscale: 0.16
   },
   {
     id: "04-nightshift",
@@ -194,7 +223,8 @@ const DESIGNS = [
     tagline: "فنی و شریک‌محور",
     desc: "تیره، با تایپوگرافی فنی، تایم‌لاین نسخه‌ها و نمونهٔ واقعی API. برای شریک فناوری و سرمایه‌گذاری که دنبال جزئیات فنی و نقشهٔ راه است.",
     tags: ["شریک فنی", "محصول", "تیره"],
-    scale: 0.26
+    scale: 0.26,
+    mscale: 0.16
   }
 ];
 
@@ -203,8 +233,15 @@ grid.innerHTML = DESIGNS.map(d => `
   <article class="card">
     <a class="card__frame" href="${d.id}.html" data-open="${d.id}" aria-label="بازکردن طرح ${d.title}">
       <div class="card__bar"><i></i><i></i><i></i><span>${d.id}.html</span></div>
-      <div class="shot" style="--w:1440;--h:920;--s:${d.scale}">
-        <iframe src="${d.id}.html" loading="lazy" title="پیش‌نمایش ${d.title}" tabindex="-1"></iframe>
+      <div class="shots">
+        <div class="shot">
+          <iframe src="${d.id}.html" loading="lazy" title="پیش‌نمایش دسکتاپ ${d.title}" tabindex="-1"></iframe>
+        </div>
+        <div class="shot shot--mobile">
+          <iframe src="${d.id}.html" loading="lazy" title="پیش‌نمایش موبایل ${d.title}" tabindex="-1"></iframe>
+        </div>
+        <span class="shot__badge">دسکتاپ · <b>موبایل</b></span>
+        <span class="shot__cap">همان صفحه در موبایل ۳۹۰ پیکسل</span>
       </div>
     </a>
     <div class="card__body">
@@ -272,6 +309,23 @@ document.addEventListener("keydown", (e) => {
 const h = location.hash.replace("#", "");
 const idx = DESIGNS.findIndex(d => d.id === h);
 if (idx > -1) show(idx);
+
+/* مقیاس پیش‌نمایش‌ها را از عرض واقعی کارت حساب کن (بدون حدس عددی) */
+function fitShots(){
+  document.querySelectorAll(".shots").forEach(box=>{
+    const w = box.clientWidth;
+    const narrow = w < 560;
+    box.classList.toggle("is-narrow", narrow);
+    // در موبایل: پیش‌نمایش تمام‌عرض. در دسکتاپ: گوشی ~۳۴٪ عرض کارت.
+    const ms = narrow ? (w - 34) / 390 : Math.min(0.58, Math.max(160, Math.min(220, w * 0.34)) / 390);
+    box.style.setProperty("--s", (w / 1440).toFixed(4));
+    box.style.setProperty("--ms", ms.toFixed(4));
+  });
+}
+addEventListener("resize", fitShots, {passive:true});
+addEventListener("load", fitShots);
+new ResizeObserver(fitShots).observe(grid);
+fitShots();
 </script>
 </body>
 </html>

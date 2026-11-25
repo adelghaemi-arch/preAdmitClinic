@@ -152,6 +152,30 @@ input, textarea, select { font: inherit; color: inherit; }
 .link-arrow:hover { gap: 11px; border-color: var(--pine); }
 .link-arrow:hover svg { transform: translateX(-3px); }
 
+/* نوار اقدام چسبان موبایل: دکمهٔ دمو همیشه در دسترس، بدون اشغال هدر */
+.mobile-cta { display: none; }
+@media (max-width: 860px) {
+  .mobile-cta {
+    display: flex; gap: 8px; align-items: center;
+    position: fixed; inset-block-end: 0; inset-inline: 0; z-index: 45;
+    padding: 10px var(--pad-x) calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(247, 245, 239, .94);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-block-start: 1px solid var(--line);
+    box-shadow: 0 -12px 28px -22px rgba(14, 42, 35, .45);
+  }
+  .mobile-cta .btn { flex: 1; padding-block: 12px; font-size: .9rem; }
+  .mobile-cta__call {
+    flex: none; width: 46px; height: 46px; border-radius: 12px;
+    border: 1px solid var(--line-strong); background: #fff;
+    display: grid; place-items: center; color: var(--pine);
+  }
+  .mobile-cta__call svg { width: 19px; height: 19px; }
+  /* فضای امن پایین صفحه تا نوار روی فوتر نیفتد */
+  body { padding-block-end: 68px; }
+  .skip { display: none; }
+}
+
 /* ---------- نشان‌ها ---------- */
 .chip {
   display: inline-flex; align-items: center; gap: 7px;
@@ -933,9 +957,14 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
   .nav__links a { padding: 12px 8px; border-block-end: 1px solid var(--line); border-radius: 0; font-size: .95rem; }
   .nav__links a::after { display: none; }
   .nav__links a[aria-current="page"] { color: var(--teal); }
-  .nav__toggle { display: inline-flex; }
+  .nav__toggle { display: inline-flex; width: 44px; height: 44px; }
   .nav__actions .btn { display: none; }
-  .nav__phone span { display: none; }
+  /* تلفن در هدر حذف می‌شود؛ جایش در نوار اقدام پایین است */
+  .nav__phone { display: none; }
+  .brand__mark { width: 38px; height: 38px; }
+  .brand__name { font-size: 1.5rem; }
+  .brand__sub { font-size: .56rem; letter-spacing: .16em; }
+  .nav__in { min-height: 60px; gap: 12px; }
   .topbar { font-size: .7rem; }
   .topbar__in { min-height: 32px; padding-block: 4px; }
   .topbar__meta .hide-sm { display: none; }
@@ -962,6 +991,27 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
   .search { width: 100%; }
   .newshead { align-items: stretch; }
 }
+@media (max-width: 860px) {
+  /* کف اندازهٔ متن: زیر ۱۲px روی موبایل خوانده نمی‌شود */
+  .stat__note, .footer__note, .form__note, .trustline,
+  .fcard__aud, .jstep__who, .model__tag, .ncard__date, .voice__role,
+  .pagehead__meta .chip, .article__cap, .footer__bottom, .topbar,
+  .glass-note, .plan__unit, .model__best, .asidecard p, .crumbs { font-size: .78rem; }
+  .stat__label, .fcard p, .jstep p, .pain__bad p, .pain__fix p,
+  .ncard p, .voice__quote, .prose, .form__note, .cta p { font-size: .92rem; line-height: 2; }
+  .hero__lead { font-size: 1rem; line-height: 2.05; }
+  .sec__lead { font-size: .93rem; }
+  .chip { font-size: .78rem; padding: 5px 11px; }
+  .eyebrow { font-size: .72rem; }
+  .stat__val { font-size: 2rem; }
+  .stat { padding-block: 16px; }
+  h1.hero h1, .hero h1 { line-height: 1.32; }
+  .sec__title { line-height: 1.42; }
+  .sec__head { margin-block-end: 20px; gap: 14px; }
+  .section { padding-block: 34px; }
+  .section--tight { padding-block: 26px; }
+}
+
 @media (max-width: 460px) {
   body { font-size: 15.5px; }
   .btn { padding: 12px 18px; font-size: .88rem; }
@@ -983,4 +1033,148 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
   body { background: #fff; }
   body::before { display: none; }
   .section { padding-block: 16px; }
+}
+
+/* ==========================================================================
+   اصلاحات موبایل (این بلوک آخر است تا بر قواعد قبلی اولویت داشته باشد)
+   ========================================================================== */
+@media (max-width: 860px) {
+  /* --- پنل نمونه: چیدمان عمودی تا برچسب و مقدار روی هم نیفتند --- */
+  .panel { padding: 16px; border-radius: 18px; transform: none; }
+  .panel__top { padding-block-end: 12px; gap: 8px; }
+  .panel__title { font-size: .88rem; }
+  .panel__body { padding-block-start: 10px; gap: 0; }
+  .prow {
+    flex-direction: column; align-items: flex-start; gap: 1px;
+    padding-block: 9px; border-block-end: 1px dashed var(--line);
+    font-size: .9rem;
+  }
+  .prow:last-of-type { border-block-end: 0; }
+  .prow__label { font-size: .8rem; }
+  .prow__val { font-size: .92rem; }
+  .prow__val svg { width: 14px; height: 14px; }
+  .pfoot { font-size: .84rem; padding: 11px 12px; line-height: 1.8; align-items: flex-start; margin-block-start: 12px; }
+  .pfoot svg { margin-block-start: 3px; }
+  .ptrack { margin-block: 6px 2px; }
+
+  /* --- کارت شناور: زیر پنل، تمام‌عرض و ثابت (نه روی متن) --- */
+  .hero__visual { max-width: 100%; }
+  .floatcard {
+    position: static; inset: auto; transform: none;
+    margin-block-start: 12px; width: 100%;
+    justify-content: flex-start; font-size: .88rem; padding: 11px 14px;
+  }
+  .floatcard i { width: 34px; height: 34px; }
+  .floatcard small { font-size: .78rem; }
+  .ecg { display: none; }
+
+  /* --- سوییچ مخاطب: تمام‌عرض و خوانا --- */
+  .audience { width: 100%; padding: 5px; }
+  .audience button { flex: 1; padding: 10px 6px; font-size: .84rem; line-height: 1.5; }
+
+  /* --- دکمه‌های هیرو: تمام‌عرض و بزرگ --- */
+  .hero__actions { display: grid; gap: 9px; }
+  .hero__actions .btn { width: 100%; padding-block: 13px; }
+  .hero__note { font-size: .82rem; line-height: 1.85; }
+
+  /* --- اعداد آماری: کارت‌های جدا با فاصله، نه خطوط چسبیده --- */
+  .statband__grid { gap: 10px; padding-block: 14px; }
+  .stat {
+    border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px 16px !important; background: rgba(255, 255, 255, .55);
+  }
+  .stat__val { font-size: 1.9rem; }
+  .stat__label { font-size: .88rem; line-height: 1.85; }
+  .stat__note { font-size: .78rem; }
+
+  /* --- کارت‌های ویژگی/مدل/پلن: پدینگ بهتر --- */
+  .fcard, .model, .plan, .voice, .ncard { padding: 18px; }
+  .icobox { width: 40px; height: 40px; margin-block-end: 12px; }
+  .fcard h3, .model h3 { font-size: 1.02rem; }
+  .plan__price { font-size: 1.1rem; }
+  .plan__list li { font-size: .9rem; }
+
+  /* --- مسیر و تایم‌لاین: خط عمودی واضح --- */
+  .jstep { padding: 16px 16px 18px; }
+  .jstep__num { font-size: 1.6rem; }
+  .tl { padding-block-start: 18px; }
+  .timeline { gap: 14px; }
+
+  /* --- جدول نقش‌ها: اسکرول افقی با اشاره --- */
+  .tablewrap { position: relative; }
+  .tablewrap::after {
+    content: "← برای دیدن ستون‌ها بکشید";
+    display: block; text-align: center; font-size: .76rem; color: var(--muted);
+    padding: 8px; border-block-start: 1px dashed var(--line); background: rgba(240, 236, 225, .5);
+  }
+  table.roles { min-width: 560px; font-size: .88rem; }
+  table.roles th, table.roles td { padding: 11px 13px; }
+
+  /* --- دیوار شیشه‌ای و کارت‌های تیره --- */
+  .glasswrap { padding: 20px 16px; border-radius: 18px; }
+  .glass-card { padding: 15px; }
+  .glass-row { font-size: .88rem; padding-block: 10px; }
+  .glass-row span:first-child { flex: 1; }
+  .glasslist li { font-size: .9rem; }
+  .glass-note { font-size: .78rem; }
+
+  /* --- CTA: دکمه‌های تمام‌عرض --- */
+  .cta { padding: 22px 18px; }
+  .cta h2 { font-size: 1.25rem; line-height: 1.45; }
+  .cta__actions { display: grid; gap: 9px; }
+  .cta__actions .btn { width: 100%; }
+  .cta__list { font-size: .9rem; }
+
+  /* --- فرم‌ها: ورودی بزرگ‌تر و مناسب لمس --- */
+  .field input, .field select, .field textarea { padding: 12px 13px; font-size: .95rem; }
+  .field label { font-size: .86rem; }
+  .form__note { font-size: .78rem; }
+
+  /* --- فهرست خبرها: تصویر شاخص بلندتر و خوانا --- */
+  .ncard--featured .ncard__body { padding: 20px; }
+  .ncard--featured h3 { font-size: 1.15rem; }
+  .ncard__side, .ncard--featured .ncard__side { min-height: 190px; padding: 18px; }
+  .ncard--featured .side-quote { font-size: 1.3rem; }
+  .ncard__foot { font-size: .8rem; }
+
+  /* --- فوتر: ستون‌ها بازتر --- */
+  .footer__grid { gap: 22px; }
+  .footer ul { font-size: .9rem; gap: 10px; }
+  .footer__bottom { font-size: .78rem; }
+
+  /* --- هدر و نوار بالایی --- */
+  .topbar__in { min-height: 34px; }
+  .topbar__meta { font-size: .74rem; gap: 12px; }
+  .nav__links a { padding: 13px 8px; font-size: 1rem; }
+
+  /* --- سردر صفحات داخلی --- */
+  .pagehead h1 { font-size: 1.72rem; line-height: 1.35; }
+  .pagehead__lead { font-size: .96rem; }
+  .pagehead__actions { display: grid; gap: 9px; }
+  .pagehead__actions .btn { width: 100%; }
+
+  /* --- متن مقاله --- */
+  .prose { font-size: .96rem; line-height: 2.1; }
+  .article__head h1 { font-size: 1.45rem; }
+  .article__lede { font-size: .96rem; }
+}
+
+@media (max-width: 400px) {
+  .hero h1 { font-size: 1.85rem; }
+  .stat__val { font-size: 1.75rem; }
+  .audience button { font-size: .8rem; }
+  .mobile-cta .btn { font-size: .86rem; }
+  .brand__name { font-size: 1.4rem; }
+  .brand__sub { font-size: .52rem; letter-spacing: .12em; }
+}
+
+/* --- جزئیات ریز که در موبایل به حد ناخوانا می‌رسیدند --- */
+@media (max-width: 860px) {
+  .brand__sub { font-size: .64rem; letter-spacing: .1em; }
+  .ncard__cat { font-size: .78rem; }
+  .ncard__meta, .meta { font-size: .78rem; }
+  .tablewrap table.roles th, .tablewrap table.roles td { font-size: .84rem; }
+  .figcap, figcaption { font-size: .78rem; }
+  .footer__bottom, .footer .fine { font-size: .8rem; }
+  .stat__l, .stat__sub { font-size: .82rem; }
 }

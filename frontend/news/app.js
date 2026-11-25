@@ -139,6 +139,15 @@ function headerBlock(S, page) {
   return top + nav;
 }
 
+/* روی موبایل، دکمهٔ اصلی همیشه در دسترس است؛ در دسکتاپ پنهان می‌شود */
+function mobileCta(S) {
+  return `
+  <div class="mobile-cta" aria-label="اقدام سریع">
+    <a class="mobile-cta__call" href="tel:${esc(S.phoneHref)}" aria-label="تماس تلفنی">${icon("phone")}</a>
+    <a class="btn btn--primary" href="contact.html">${icon("calendar")} رزرو دموی رایگان</a>
+  </div>`;
+}
+
 function footerBlock(S) {
   return `
   <footer class="footer">
@@ -287,7 +296,7 @@ function pageIndex(D) {
     <div class="wrap hero__grid">
       <div class="hero__copy">
         <span class="chip chip--live reveal"><span class="dot"></span> نسخهٔ ۱٫۲ — فرم‌ساز شرطی، پرسش‌نامهٔ کوتاه‌تر</span>
-        <h1 class="reveal" data-d="1">بیمار که می‌رسد،<br>پرونده‌اش <mark>آماده</mark> است.</h1>
+        <h1 class="reveal" data-d="1">بیمار که می‌رسد، پرونده‌اش <mark>آماده</mark> است.</h1>
         <p class="hero__lead reveal" data-d="2" id="heroLead">نفس اطلاعات، مدارک و شواهد حضور بیمار را پیش از روز مراجعه جمع می‌کند؛ پذیرش از صف کاغذی به یک کنترل هویت کوتاه تبدیل می‌شود و پزشک پروندهٔ خوانا را قبل از ورود بیمار می‌بیند.</p>
         <div class="reveal" data-d="2" style="margin-block-start:22px">
           <div class="audience" role="group" aria-label="انتخاب مخاطب">
@@ -1546,7 +1555,8 @@ function renderAll(D, page) {
     `<a class="skip" href="#main">رفتن به محتوای اصلی</a>` +
     headerBlock(D.site, page) +
     `<main id="main">${PAGE_RENDERERS[page](D)}</main>` +
-    footerBlock(D.site);
+    footerBlock(D.site) +
+    mobileCta(D.site);
 
   initNav();
   initHeroSwitch();
