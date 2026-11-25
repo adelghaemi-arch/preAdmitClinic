@@ -70,6 +70,13 @@ function icon(name, cls = "") {
 
 /* ---------- کمک‌کننده‌ها ---------- */
 const $ = (sel, root = document) => root.querySelector(sel);
+/* چهار بخش مهم برای نوار پایین موبایل؛ بقیه در منوی همبرگری می‌مانند */
+const MOBILE_TABS = [
+  { slug: "index", label: "خانه", short: "خانه", icon: "pulse" },
+  { slug: "hospitals", label: "بیمارستان و کلینیک", short: "مراکز", icon: "building" },
+  { slug: "patients", label: "برای بیماران", short: "بیماران", icon: "heart" },
+  { slug: "contact", label: "تماس و دمو", short: "تماس", icon: "chat" },
+];
 /* تصاویر به‌صورت نگاشت سراسری تا رندرکارت خبر به D وابسته نباشد */
 let IMG = {};
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -128,7 +135,6 @@ function headerBlock(S, page) {
       ${brandBlock(S)}
       <nav class="nav__links" id="navLinks" aria-label="ناوبری اصلی">
         ${links}
-        <a class="btn btn--primary only-mobile" href="contact.html">درخواست دمو</a>
       </nav>
       <div class="nav__actions">
         <a class="nav__phone" href="tel:${esc(S.phoneHref)}">${icon("phone")}<span dir="ltr">${esc(S.phone)}</span></a>
@@ -144,13 +150,22 @@ function headerBlock(S, page) {
   return top + nav;
 }
 
-/* روی موبایل، دکمهٔ اصلی همیشه در دسترس است؛ در دسکتاپ پنهان می‌شود */
-function mobileCta(S) {
+/* نوار پایین موبایل: بخش‌های مهم همیشه در دسترس، دمو در هدر.
+   (دمو این‌جا نیست عمداً — در هدر و در همان نوار پایین بالای صفحه تکرار نمی‌شود) */
+function mobileNav(S, page) {
+  const items = MOBILE_TABS.map(
+    (t) => `<a class="mtab${t.slug === page ? " is-on" : ""}" href="${hrefFor(t.slug)}"
+        ${t.slug === page ? 'aria-current="page"' : ""}>
+        <span class="mtab__ic">${icon(t.icon)}</span>
+        <span class="mtab__t">${esc(t.short)}</span>
+      </a>`
+  ).join("");
   return `
-  <div class="mobile-cta" aria-label="اقدام سریع">
-    <a class="mobile-cta__call" href="tel:${esc(S.phoneHref)}" aria-label="تماس تلفنی">${icon("phone")}</a>
-    <a class="btn btn--primary" href="contact.html">${icon("calendar")} رزرو دموی رایگان</a>
-  </div>`;
+  <nav class="mnav" aria-label="ناوبری موبایل">
+    <div class="mnav__in">
+      ${items}
+    </div>
+  </nav>`;
 }
 
 function footerBlock(S) {
@@ -1708,7 +1723,7 @@ function renderAll(D, page) {
     headerBlock(D.site, page) +
     `<main id="main">${PAGE_RENDERERS[page](D)}</main>` +
     footerBlock(D.site) +
-    mobileCta(D.site);
+    mobileNav(D.site, page);
 
   initNav();
   initHeroSwitch();

@@ -72,6 +72,36 @@
   --ease: cubic-bezier(.22, .61, .36, 1);
 }
 
+/* ---------- اسکرول‌بار ----------
+   وب: لاغر و در طیف تم (پاین → تیل). موبایل: پنهان ولی کاملاً فعال
+   (اسکرول با انگشت، چرخ ماوس و صفحه‌کلید همه کار می‌کنند). */
+:root { --scroll-thumb: #7fb9a1; --scroll-thumb-2: #2b8d6e; }
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--scroll-thumb), var(--scroll-thumb-2));
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--scroll-thumb-2), var(--pine));
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* موبایل/تبلت: اسکرول‌بار دیده نمی‌شود، اسکرول سر جایش است */
+@media (max-width: 860px), (hover: none) {
+  html { scrollbar-width: none; -ms-overflow-style: none; }
+  ::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  * { scrollbar-width: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+}
+
 /* ---------- پایه ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html {
@@ -123,7 +153,6 @@ input, textarea, select { font: inherit; color: inherit; }
   transition: transform .25s var(--ease);
 }
 .skip:focus { transform: translate(-50%, 0); }
-.only-mobile { display: none; }
 
 /* ---------- دکمه‌ها ---------- */
 .btn {
@@ -152,27 +181,39 @@ input, textarea, select { font: inherit; color: inherit; }
 .link-arrow:hover { gap: 11px; border-color: var(--pine); }
 .link-arrow:hover svg { transform: translateX(-3px); }
 
-/* نوار اقدام چسبان موبایل: دکمهٔ دمو همیشه در دسترس، بدون اشغال هدر */
-.mobile-cta { display: none; }
+/* ---------- نوار پایین موبایل: بخش‌های مهم ---------- */
+.mnav { display: none; }
 @media (max-width: 860px) {
-  .mobile-cta {
-    display: flex; gap: 8px; align-items: center;
-    position: fixed; inset-block-end: 0; inset-inline: 0; z-index: 45;
-    padding: 10px var(--pad-x) calc(10px + env(safe-area-inset-bottom, 0px));
-    background: rgba(247, 245, 239, .94);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  .mnav {
+    display: block; position: fixed; inset-block-end: 0; inset-inline: 0; z-index: 45;
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+    background: rgba(255, 254, 250, .95);
+    backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4);
     border-block-start: 1px solid var(--line);
-    box-shadow: 0 -12px 28px -22px rgba(14, 42, 35, .45);
+    box-shadow: 0 -14px 30px -24px rgba(14, 42, 35, .55);
   }
-  .mobile-cta .btn { flex: 1; padding-block: 12px; font-size: .9rem; }
-  .mobile-cta__call {
-    flex: none; width: 46px; height: 46px; border-radius: 12px;
-    border: 1px solid var(--line-strong); background: #fff;
-    display: grid; place-items: center; color: var(--pine);
+  .mnav__in {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    padding: 6px 4px 7px;
   }
-  .mobile-cta__call svg { width: 19px; height: 19px; }
-  /* فضای امن پایین صفحه تا نوار روی فوتر نیفتد */
-  body { padding-block-end: 68px; }
+  .mtab {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 5px 2px; border-radius: 12px;
+    color: var(--muted); font-size: .68rem; font-weight: 600; line-height: 1.4;
+    transition: color .18s var(--ease);
+  }
+  .mtab__ic { display: grid; place-items: center; width: 26px; height: 26px; }
+  .mtab__ic svg { width: 21px; height: 21px; }
+  .mtab__t { white-space: nowrap; }
+  .mtab:active { background: var(--mint); }
+  .mtab.is-on { color: var(--pine); }
+  .mtab.is-on .mtab__ic { color: var(--pine); }
+  .mtab.is-on::after {
+    content: ""; position: absolute; inset-block-start: -7px; inset-inline: 26%;
+    height: 3px; border-radius: 0 0 4px 4px; background: var(--teal);
+  }
+  /* فضای امن پایین تا نوار روی محتوا/فوتر نیفتد */
+  body { padding-block-end: calc(66px + env(safe-area-inset-bottom, 0px)); }
   .skip { display: none; }
 }
 
@@ -957,10 +998,16 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
   .nav__links a { padding: 12px 8px; border-block-end: 1px solid var(--line); border-radius: 0; font-size: .95rem; }
   .nav__links a::after { display: none; }
   .nav__links a[aria-current="page"] { color: var(--teal); }
-  .nav__toggle { display: inline-flex; width: 44px; height: 44px; }
-  .nav__actions .btn { display: none; }
-  /* تلفن در هدر حذف می‌شود؛ جایش در نوار اقدام پایین است */
+  .nav__toggle { display: inline-flex; width: 44px; height: 44px; order: 1; }
+  /* دکمهٔ دمو در هدر موبایل می‌ماند؛ فقط فشرده می‌شود */
+  .nav__actions { gap: 8px; }
+  .nav__actions .btn {
+    display: inline-flex; order: 2; padding: 9px 13px; font-size: .78rem; gap: 6px;
+  }
+  .nav__actions .btn svg { width: 14px; height: 14px; }
+  /* تلفن در هدر حذف می‌شود؛ شماره در تاپ‌بار بالای صفحه هست */
   .nav__phone { display: none; }
+  .nav__in { flex-wrap: nowrap; }
   .brand__mark { width: 38px; height: 38px; }
   .brand__name { font-size: 1.5rem; }
   .brand__sub { font-size: .56rem; letter-spacing: .16em; }
@@ -968,8 +1015,6 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
   .topbar { font-size: .7rem; }
   .topbar__in { min-height: 32px; padding-block: 4px; }
   .topbar__meta .hide-sm { display: none; }
-  .only-mobile { display: block; }
-  .nav__links .btn { display: inline-flex; margin-block-start: 8px; }
   .hero h1 mark { white-space: normal; }
   .floatcard { inset-inline-start: auto; inset-inline-end: 8px; inset-block-end: -18px; }
   .panel { transform: none; }
@@ -1160,10 +1205,15 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
 }
 
 @media (max-width: 400px) {
+  /* هدر باید با دکمهٔ دمو در ۳۶۰px هم جا شود */
+  .nav__actions .btn { padding: 8px 10px; font-size: .74rem; }
+  .nav__actions .btn span, .nav__actions .btn { white-space: nowrap; }
+  .brand__sub { display: none; }
+  .brand__name { font-size: 1.35rem; }
+  .brand__mark { width: 34px; height: 34px; }
   .hero h1 { font-size: 1.85rem; }
   .stat__val { font-size: 1.75rem; }
   .audience button { font-size: .8rem; }
-  .mobile-cta .btn { font-size: .86rem; }
   .brand__name { font-size: 1.4rem; }
   .brand__sub { font-size: .52rem; letter-spacing: .12em; }
 }
