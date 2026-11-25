@@ -5,7 +5,6 @@
    ========================================================================== */
 
 /* بلوک «ساختار پروندهٔ پیش‌پذیرش» — از ماژول جدا تا تکرارشدنی باشد */
-import { intakeMarkup, bindIntake } from "./intake.js";
 
 /* محتوا به فایل‌های موضوعی تقسیم شده تا هر تغییر، سطح اثر کوچکی داشته باشد.
    ترتیب مهم نیست؛ کلیدها در loadContent ادغام می‌شوند. */
@@ -19,7 +18,7 @@ const DATA_PATHS = [
   "content/faq.json",
   "content/about.json",
   "content/contact.json",
-  "content/intake.json",
+  "content/process.json",
 ];
 /* حالت توسعه: با ?dev=1 (یا serve.mjs) تغییر فایل‌های محتوا بدون رفرش دستی اعمال می‌شود */
 const DEV = new URLSearchParams(location.search).has("dev");
@@ -58,6 +57,8 @@ const ICONS = {
   users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><path d="M16 5.2a3.2 3.2 0 0 1 0 5.6"/><path d="M17.5 14.9c1.7.6 2.8 2.1 3 4.1"/>',
   calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M3.5 10h17"/>',
   play: '<circle cx="12" cy="12" r="9"/><path d="m10 8.5 5.5 3.5-5.5 3.5v-7Z"/>',
+  stethoscope: '<path d="M6 3.5v5a4 4 0 0 0 8 0v-5"/><path d="M4 3.5h4"/><path d="M12 3.5h4"/><path d="M10 12.5v3a4.5 4.5 0 0 0 9 0v-2"/><circle cx="19" cy="11" r="2"/>',
+  activity: '<path d="M3 12h3.5l2-5.5 3.5 11 2.5-7 1.8 3h4.7"/>',
   quote: '<path d="M9.5 6.5C6.5 8 5 10.3 5 13.2c0 2.3 1.3 3.8 3.2 3.8 1.8 0 3-1.2 3-2.8 0-1.6-1.1-2.7-2.6-2.7-.3 0-.6 0-.8.1.3-1.3 1.2-2.4 2.5-3.2l-.8-1.9Zm8 0C14.5 8 13 10.3 13 13.2c0 2.3 1.3 3.8 3.2 3.8 1.8 0 3-1.2 3-2.8 0-1.6-1.1-2.7-2.6-2.7-.3 0-.6 0-.8.1.3-1.3 1.2-2.4 2.5-3.2l-.8-1.9Z"/>',
 };
 
@@ -266,42 +267,16 @@ function trustline() {
    ========================================================================== */
 function pageIndex(D) {
   const S = D.site;
-
-  const panel = `
-  <div class="hero__visual reveal" data-d="2">
-    <div class="panel" aria-hidden="true">
-      <div class="panel__top">
-        <span class="panel__title"><i>${icon("file")}</i> پروندهٔ پیش‌پذیرش</span>
-        <span class="chip chip--mint"><span class="dot"></span> آماده</span>
-      </div>
-      <div class="panel__body">
-        <div class="prow"><span class="prow__label">بیمار</span><span class="prow__val">مریم ت. · ۳۸ ساله</span></div>
-        <div class="prow"><span class="prow__label">فرم پیش‌پذیرش</span><span class="prow__val ok">${icon("check")} تکمیل‌شده</span></div>
-        <div class="prow"><span class="prow__label">مدارک</span><span class="prow__val ok">${icon("check")} ۴ فایل</span></div>
-        <div class="prow"><span class="prow__label">احراز حضور</span><span class="prow__val ok">${icon("check")} پیامک + تصویر</span></div>
-        <div class="prow"><span class="prow__label">فاصله تا مرکز</span><span class="prow__val warn">۱۸ کیلومتر</span></div>
-        <div class="ptrack"><span style="width:100%"></span></div>
-        <div class="pfoot">${icon("clock")} <span>روز مراجعه: فقط کنترل هویت — حدود <b>۴ دقیقه</b></span></div>
-      </div>
-    </div>
-    <div class="floatcard" aria-hidden="true">
-      <i>${icon("clock")}</i>
-      <span>۴٫۲ دقیقه<small>میانگین پذیرش، پایلوت</small></span>
-    </div>
-    <div class="ecg" aria-hidden="true">
-      <svg viewBox="0 0 600 90" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M0 60h60l10-8 10 20 12-52 14 70 12-26 10 6h40l10-10 12 22 12-46 14 62 12-24 8 6h50l10-14 12 26 12-40 12 54 14-26h60l10-8 12 18 12-40 12 50 12-20h50"/>
-      </svg>
-    </div>
-  </div>`;
+  const rc = D.images.reception;
 
   return `
-  <section class="hero">
+  <section class="hero hero--warm">
+    <div class="hero__grain" aria-hidden="true"></div>
     <div class="wrap hero__grid">
       <div class="hero__copy">
-        <span class="chip chip--live reveal"><span class="dot"></span> نسخهٔ ۱٫۲ — فرم‌ساز شرطی، پرسش‌نامهٔ کوتاه‌تر</span>
-        <h1 class="reveal" data-d="1">بیمار که می‌رسد، پرونده‌اش <mark>آماده</mark> است.</h1>
-        <p class="hero__lead reveal" data-d="2" id="heroLead">نفس اطلاعات، مدارک و شواهد حضور بیمار را پیش از روز مراجعه جمع می‌کند؛ پذیرش از صف کاغذی به یک کنترل هویت کوتاه تبدیل می‌شود و پزشک پروندهٔ خوانا را قبل از ورود بیمار می‌بیند.</p>
+        <span class="hero__kicker reveal">${icon("pulse")} پیش‌پذیرش سلامت · برای بیمارستان و کلینیک</span>
+        <h1 class="reveal" data-d="1">پذیرش، <em>پیش از رسیدن</em> بیمار تمام می‌شود.</h1>
+        <p class="hero__lead reveal" data-d="2" id="heroLead">بیمار فرم را در خانه پر می‌کند، مدارکش را می‌فرستد و روز مراجعه فقط کارت شناسایی نشان می‌دهد. پزشک هم پروندهٔ خوانا را پیش از ورود او می‌بیند.</p>
         <div class="reveal" data-d="2" style="margin-block-start:22px">
           <div class="audience" role="group" aria-label="انتخاب مخاطب">
             <button type="button" data-aud="hospital" aria-pressed="true">بیمارستان و کلینیک</button>
@@ -311,11 +286,21 @@ function pageIndex(D) {
         </div>
         <div class="hero__actions reveal" data-d="3">
           <a class="btn btn--primary" href="contact.html" id="heroCta">${icon("calendar")} <span>رزرو دموی ۱۵ دقیقه‌ای</span></a>
-          <a class="btn btn--ghost" href="hospitals.html" id="heroSecond">${icon("building")} <span>چطور کار می‌کند؟</span></a>
+          <a class="btn btn--ghost" href="#process" id="heroSecond">${icon("pulse")} <span>مسیر پرونده را ببینید</span></a>
         </div>
         <p class="hero__note reveal" data-d="4">${icon("shield")} ${esc(S.demoNote)}</p>
       </div>
-      ${panel}
+
+      <div class="hero__visual reveal" data-d="2">
+        <figure class="hero__shot">
+          <img src="${esc(rc.src)}" alt="${esc(rc.alt)}" fetchpriority="high" decoding="async">
+          <figcaption>${esc(rc.credit)} · کانتر پذیرش، با پرونده‌ای که از قبل آماده است</figcaption>
+        </figure>
+        <div class="hero__badge">
+          <i>${icon("clock")}</i>
+          <span><b>${esc(D.stats[0]?.value)} ${esc(D.stats[0]?.unit)}</b><small>${esc(D.stats[0]?.label)} — ${esc(D.stats[0]?.note)}</small></span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -333,7 +318,7 @@ function pageIndex(D) {
     </div>
   </div>
 
-  ${intakeSection(D, { pathway: "CORP_MEN_GE40", variant: "home" })}
+  ${processSection(D)}
 
   <section class="section" id="what">
     <div class="wrap">
@@ -507,7 +492,7 @@ function pageHospitals(D) {
     </div>
   </section>
 
-  ${intakeSection(D, { pathway: "CORP_MEN_GE40" })}
+  ${processSection(D)}
 
   <section class="section section--paper">
     <div class="wrap">
@@ -704,9 +689,7 @@ function pagePatients(D) {
     </div>
   </section>
 
-  ${intakeSection(D, { pathway: "CORP_WOMEN_GE40", variant: "patient" })}
-
-  ${ctaBlock(S, {
+    ${ctaBlock(S, {
     title: "می‌خواهید مرکز درمانی‌تان هم از نفس استفاده کند؟",
     lead: "لینک این صفحه را برای مسئول پذیرش یا پزشک خود بفرستید؛ یا نام مرکز را به ما بگویید تا خودمان پیگیری کنیم.",
     primary: "معرفی مرکز درمانی",
@@ -1113,6 +1096,31 @@ function pageAbout(D) {
           .join("")}
       </div>
 
+      ${
+        D.lead
+          ? `<article class="leadcard reveal">
+        <div class="leadcard__id">
+          <span class="avatar leadcard__avatar">${esc(D.lead.initials || "م‌ف")}</span>
+          <div>
+            <span class="leadcard__role">${esc(D.lead.role)}</span>
+            <h3>${esc(D.lead.name)}</h3>
+            <a class="leadcard__link" href="${esc(D.lead.site)}" target="_blank" rel="noopener noreferrer">
+              ${esc(D.lead.siteLabel || D.lead.site)} ${icon("arrowUp")}
+            </a>
+          </div>
+        </div>
+        <div class="leadcard__body">
+          <p>${esc(D.lead.bio)}</p>
+          <p class="leadcard__why">${icon("quote")} <span>${esc(D.lead.why)}</span></p>
+          <ul class="leadcard__focus">
+            ${(D.lead.focus || []).map((f) => `<li>${icon("check")}<span>${esc(f)}</span></li>`).join("")}
+          </ul>
+          <p class="leadcard__note">${esc(D.lead.note)}</p>
+        </div>
+      </article>`
+          : ""
+      }
+
       <div class="cards" style="margin-block-start:40px">
         ${D.team
           .map(
@@ -1238,13 +1246,92 @@ function pageContact(D) {
    ========================================================================== */
 
 /* ==========================================================================
-   بلوک ساختار پروندهٔ پیش‌پذیرش — خوانده‌شده از content/intake.json
+   مسیر پرونده — پنج ایستگاه از پیش‌پذیرش تا پروندهٔ الکترونیک
+   content/process.json
    ========================================================================== */
-function intakeSection(D, opts) {
-  if (!D.intake || !Array.isArray(D.intake.pathways) || !D.intake.pathways.length) return "";
-  return `<section class="section section--paper"><div class="wrap">
-    ${intakeMarkup(D.intake, opts)}
-  </div></section>`;
+function processSection(D) {
+  const P = D.process;
+  if (!P || !Array.isArray(P.stages) || !P.stages.length) return "";
+  const img = (key) => (key && D.images?.[key] ? D.images[key] : null);
+
+  const rail = P.stages
+    .map(
+      (st, i) => `<li class="px-rail__i">
+        <button type="button" class="px-rail__b${i === 0 ? " is-on" : ""}" data-stage="${esc(st.key)}"
+          aria-pressed="${i === 0 ? "true" : "false"}">
+          <span class="px-rail__n">${esc(st.num)}</span>
+          <span class="px-rail__t">${esc(st.title.split("—")[0].trim())}</span>
+        </button>
+      </li>`
+    )
+    .join("");
+
+  const blocks = P.stages
+    .map((st, i) => {
+      const im = img(st.image);
+      return `<article class="px-step reveal" data-step="${esc(st.key)}" id="px-${esc(st.key)}">
+        <div class="px-step__aside" aria-hidden="true">
+          <span class="px-step__num">${esc(st.num)}</span>
+          <span class="px-step__ico">${icon(st.icon)}</span>
+          <span class="px-step__line"></span>
+        </div>
+        <div class="px-step__main">
+          <header class="px-step__head">
+            <span class="px-step__tag">ایستگاه ${esc(st.num)} از ${esc(P.stages.length.toLocaleString("fa-IR"))}</span>
+            <h3>${esc(st.title)}</h3>
+            <p class="px-step__lead">${esc(st.lead)}</p>
+          </header>
+          <div class="px-step__grid${im ? "" : " px-step__grid--text"}">
+            <div class="px-step__body">
+              <ul class="px-step__list">
+                ${st.points.map((pt) => `<li>${icon("check")}<span>${esc(pt)}</span></li>`).join("")}
+              </ul>
+              <dl class="px-step__meta">
+                <div><dt>${icon("pin")} جایش</dt><dd>${esc(st.where)}</dd></div>
+                <div><dt>${icon("users")} مسئولش</dt><dd>${esc(st.who)}</dd></div>
+                <div><dt>${icon("clock")} زمانش</dt><dd>${esc(st.minutes)}</dd></div>
+              </dl>
+            </div>
+            ${
+              im
+                ? `<figure class="px-step__fig">
+                    <img src="${esc(im.src)}" alt="${esc(im.alt)}" loading="lazy" decoding="async">
+                    <figcaption>${esc(im.credit)}</figcaption>
+                  </figure>`
+                : `<div class="px-step__stamp">
+                    <div class="px-stamp">
+                      <span class="px-stamp__k">${icon(st.icon)}</span>
+                      <b>${esc(st.title.split("—")[0].trim())}</b>
+                      <p>${esc(st.handoff)}</p>
+                    </div>
+                  </div>`
+            }
+          </div>
+          <p class="px-step__handoff">${icon("arrow")} <span>تحویل به ایستگاه بعد: <b>${esc(st.handoff)}</b></span></p>
+        </div>
+      </article>`;
+    })
+    .join("");
+
+  return `<section class="section section--paper" id="process">
+    <div class="wrap">
+      ${secHead({ eyebrow: P.eyebrow, title: P.title, lead: P.lead })}
+      <div class="px">
+        <div class="px-head">
+          <span class="px-head__label">${icon("pulse")} این مسیر را ببینید</span>
+          <span class="px-head__hint">روی هر ایستگاه بزنید تا به همان بخش بروید</span>
+        </div>
+        <div class="px-rail__wrap">
+          <ol class="px-rail">${rail}</ol>
+        </div>
+        <div class="px-steps">${blocks}</div>
+        <div class="px-bound">
+          ${icon("shield")}
+          <p><b>مرز محصول:</b> ${esc(P.boundary)}</p>
+        </div>
+      </div>
+    </div>
+  </section>`;
 }
 
 const PAGE_RENDERERS = {
@@ -1263,16 +1350,16 @@ const HERO_COPY = {
   hospital: {
     lead: "نفس اطلاعات، مدارک و شواهد حضور بیمار را پیش از روز مراجعه جمع می‌کند؛ پذیرش از صف کاغذی به یک کنترل هویت کوتاه تبدیل می‌شود و پزشک پروندهٔ خوانا را قبل از ورود بیمار می‌بیند.",
     cta: "رزرو دموی ۱۵ دقیقه‌ای",
-    second: "چطور کار می‌کند؟",
+    second: "مسیر پرونده را ببینید",
     ctaHref: "contact.html",
-    secondHref: "hospitals.html",
+    secondHref: "#process",
   },
   patient: {
     lead: "اگر مرکز درمانی شما از نفس استفاده می‌کند، با یک پیامک فرم را در خانه پر می‌کنید و روز مراجعه فقط کارت شناسایی نشان می‌دهید. بدون نصب اپلیکیشن، بدون هزینه. و پیش از هر آپلود، دقیقاً می‌دانید چه داده‌ای گرفته می‌شود، چرا، و چه کسی آن را می‌بیند.",
     cta: "بیمار هستم؛ چه داده‌ای می‌گیرید؟",
-    second: "حریم خصوصی من",
+    second: "مسیر پرونده را ببینید",
     ctaHref: "patients.html#privacy",
-    secondHref: "patients.html",
+    secondHref: "#process",
   },
   partner: {
     lead: "مدل درآمدی ما یک داشبورد مشترک است: قرارداد، تعداد پیش‌پذیرش، محاسبهٔ سهم و تسویه، همه در یک صفحه و با یک منبع داده. به اصل «دیوار شیشه‌ای» متعهدیم.",
@@ -1338,6 +1425,47 @@ function initHeroSwitch() {
       second.setAttribute("href", copy.secondHref);
     });
   });
+}
+
+/* مسیر پرونده: با اسکرول، ایستگاه فعال در نوار بالا مشخص می‌شود و
+   کلیک روی نوار به همان ایستگاه می‌رود. */
+function initProcess() {
+  const steps = $$(".px-step[data-step]");
+  if (!steps.length) return;
+  const chips = $$(".px-rail__b[data-stage]");
+  const setOn = (key) => {
+    chips.forEach((c) => {
+      const on = c.dataset.stage === key;
+      c.classList.toggle("is-on", on);
+      c.setAttribute("aria-pressed", String(on));
+      if (on) {
+        const cw = c.parentElement.getBoundingClientRect().left;
+        const pw = c.parentElement.parentElement.getBoundingClientRect().left;
+        if (cw < pw - 4 || cw > pw + 40) {
+          c.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+        }
+      }
+    });
+  };
+  chips.forEach((c) => {
+    c.addEventListener("click", () => {
+      const el = document.getElementById(`px-${c.dataset.stage}`);
+      if (!el) return;
+      el.scrollIntoView({ block: "start", behavior: "smooth" });
+      setOn(c.dataset.stage);
+    });
+  });
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver(
+    (entries) => {
+      const hit = entries
+        .filter((en) => en.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (hit) setOn(hit.target.dataset.step);
+    },
+    { rootMargin: "-30% 0px -50% 0px", threshold: [0.05, 0.3, 0.6] }
+  );
+  steps.forEach((el) => io.observe(el));
 }
 
 function initReveal() {
@@ -1588,7 +1716,7 @@ function renderAll(D, page) {
   initFaqTabs();
   initForms();
   initCalculator();
-  if (D.intake) bindIntake(root, D.intake);
+  initProcess();
   // در ری‌لود زندهٔ محتوا، جای اسکرول کاربر حفظ می‌شود
   if (keepScroll > 0) {
     try {

@@ -52,6 +52,7 @@ const required = [
   ["principles", Array.isArray(D.principles) && D.principles.length === 4, "چهار اصل"],
   ["roadmap", Array.isArray(D.roadmap) && D.roadmap.length > 0, ""],
   ["team", Array.isArray(D.team) && D.team.length > 0, ""],
+  ["process", Boolean(D.process), "process.json بارگذاری نشد"],
   ["contactTopics", Array.isArray(D.contactTopics) && D.contactTopics.length > 0, ""],
 ];
 for (const [key, ok, msg] of required) {
@@ -108,71 +109,47 @@ if (!/[\u06F0-\u06F9]/.test(strings)) warnings.push("در محتوا رقم فا
 if (/TODO|FIXME|XXX/.test(strings)) warnings.push("نشانهٔ TODO/FIXME در محتوا مانده است");
 
 /* ---------- گزارش ---------- */
-/* ---------- بلوک ساختار پرونده (content/intake.json) ---------- */
-/* عددهای این بلوک از کاتالوگ واقعی فرم ساخته می‌شوند؛ اگر با آن ناهم‌خوان شوند،
-   سایت عددی را نشان می‌دهد که در محصول نیست. پس این‌جا با کاتالوگ مقایسه می‌شود. */
-const intake = D.intake;
-if (!intake) {
-  errors.push("intake: content/intake.json بارگذاری نشد (tools/build-intake.mjs را اجرا کنید)");
+/* ---------- بلوک مسیر پرونده (content/process.json) ---------- */
+const P = D.process;
+if (!P) {
+  errors.push("process: content/process.json بارگذاری نشد");
 } else {
-  if (!Array.isArray(intake.forms) || intake.forms.length < 2) errors.push("intake.forms: حداقل دو فرم لازم است");
-  if (!Array.isArray(intake.pathways) || intake.pathways.length !== 4) errors.push("intake.pathways: چهار پکیج چکاپ لازم است");
-
-  for (const p of intake.pathways || []) {
-    const sum = (p.sectionQuestions || []).reduce((a, b) => a + b, 0);
-    if (sum !== p.questionCount)
-      errors.push(`intake «${p.code}»: جمع بخش‌ها ${sum} با تعداد کل ${p.questionCount} نمی‌خواند`);
-    if (!p.ageLabel) errors.push(`intake «${p.code}»: برچسب سنی ندارد`);
-    if (!p.stations?.length) errors.push(`intake «${p.code}»: ایستگاه ندارد`);
-    if (!intake.forms.some((f) => f.code === p.form))
-      errors.push(`intake «${p.code}»: فرم «${p.form}» در forms نیست`);
+  if (!Array.isArray(P.stages) || P.stages.length !== 5)
+    errors.push(`process.stages: پنج ایستگاه لازم است (الان ${P.stages?.length ?? 0})`);
+  const keys = (P.stages || []).map((s) => s.key);
+  if (new Set(keys).size !== keys.length) errors.push("process.stages: key تکراری");
+  for (const st of P.stages || []) {
+    ["num", "key", "icon", "title", "where", "who", "minutes", "lead", "handoff"].forEach((k) => {
+      if (!st[k]) errors.push(`process «${st.key || st.num}»: فیلد «${k}» خالی است`);
+    });
+    if (!Array.isArray(st.points) || st.points.length < 2)
+      errors.push(`process «${st.key}»: حداقل دو نکته لازم است`);
+    if (st.image && !D.images?.[st.image])
+      errors.push(`process «${st.key}»: تصویر «${st.image}» در images نیست`);
   }
+  /* آخرین ایستگاه باید پروندهٔ الکترونیک باشد — این قولِ صفحه است */
+  if (keys[keys.length - 1] !== "record") errors.push("process: ایستگاه آخر باید «record» (پروندهٔ الکترونیک) باشد");
+  if (!P.boundary) errors.push("process.boundary: مرز محصول نوشته نشده");
+}
 
-  /* تطبیق با کاتالوگ واقعی فرم.
-     عدد سایت باید «سوالی که بیمار می‌بیند» باشد، نه تعداد خام کاتالوگ؛
-     پس همان سه قاعدهٔ form-engine.ts::isUserFacingFormItem تکرار می‌شود. */
-  try {
-    const catalog = JSON.parse(await readFile(resolve(ROOT, "../../frontend/my/src/lib/form-catalog.seed.json"), "utf8"));
-    /* عیناً همان سه تابع form-engine.ts */
-    const isFormDate = (i) => i.code.includes("formDate") || Boolean(i.coding?.aiTags?.includes("formDate"));
-    const isIdentity = (i) =>
-      ["fullName", "nationalId", "phone"].includes(i.prefillFromPatient) ||
-      /_BASE_fullName$|_DEMO_fullName$|_BASE_nationalId$|_DEMO_nationalId$|_BASE_phone$|_DEMO_phone$/i.test(i.code) ||
-      Boolean(i.coding?.aiTags?.some((t) => ["fullName", "nationalId", "phone"].includes(t)));
-    const isFacing = (i) => !i.code.includes("_SIG_") && !isFormDate(i) && !isIdentity(i);
-
-    for (const cf of catalog.forms) {
-      const mine = (intake.forms || []).find((f) => f.code === cf.code);
-      if (!mine) {
-        errors.push(`intake: فرم «${cf.code}» در intake نیست`);
-        continue;
-      }
-      const facing = cf.items.filter(isFacing).length;
-      if (mine.questionCount !== facing)
-        errors.push(`intake «${cf.code}»: ${mine.questionCount} سوال، کاتالوگ ${facing} سوال قابل‌نمایش (خام ${cf.items.length})`);
-      if (mine.sectionCount !== cf.sections.length)
-        errors.push(`intake «${cf.code}»: ${mine.sectionCount} بخش، کاتالوگ ${cf.sections.length} بخش`);
-
-      /* جمع سوال‌های بخش‌ها هم باید با کل بخواند */
-      const secSum = (mine.sections || []).reduce((a, s) => a + s.questions, 0);
-      if (secSum !== mine.questionCount)
-        errors.push(`intake «${cf.code}»: جمع بخش‌ها ${secSum} ≠ ${mine.questionCount}`);
-
-      /* فیلدهای پیش‌نمایش نباید از سقف بخش بیشتر شوند و نباید خالی باشند */
-      for (const [idx, s] of (mine.sections || []).entries()) {
-        for (const k of ["35", "40", "50"]) {
-          const fields = s.fieldsAt?.[k];
-          if (!Array.isArray(fields)) { errors.push(`intake «${cf.code}» بخش ${idx + 1}: fieldsAt.${k} نیست`); continue; }
-          if (fields.length > s.questions)
-            errors.push(`intake «${cf.code}» بخش ${idx + 1}: ${fields.length} فیلد در سن ${k}، سقف ${s.questions}`);
-        }
-        if (!(s.fieldsAt?.["35"] || []).length && !(s.fieldsAt?.["50"] || []).length)
-          errors.push(`intake «${cf.code}» بخش ${idx + 1}: در هیچ سنی فیلدی ندارد`);
-      }
-    }
-  } catch (err) {
-    warnings.push(`مقایسهٔ intake با کاتالوگ انجام نشد: ${err.message.split("\n")[0]}`);
+/* ---------- مدیر پروژه ---------- */
+const lead = D.lead;
+if (!lead) {
+  errors.push("lead: معرفی مدیر پروژه در about.json نیست");
+} else {
+  ["name", "role", "site", "bio", "why"].forEach((k) => {
+    if (!lead[k]) errors.push(`lead.${k} خالی است`);
+  });
+  if (!/^https:\/\//.test(lead.site || "")) errors.push("lead.site باید لینک https باشد");
+  if (lead.photo) {
+    const ok = await stat(join(ROOT, lead.photo)).then((x) => x.isFile()).catch(() => false);
+    if (!ok) errors.push(`lead.photo موجود نیست: ${lead.photo}`);
   }
+}
+
+/* ---------- هر عکس باید alt داشته باشد ---------- */
+for (const [k, v] of Object.entries(D.images || {})) {
+  if (!v.alt || v.alt.length < 12) errors.push(`images.${k}: alt توصیفی لازم است`);
 }
 
 console.log(`\nnews check — ${files.length} فایل محتوا، ${htmls.length} صفحه، ${assets.size} تصویر\n`);
