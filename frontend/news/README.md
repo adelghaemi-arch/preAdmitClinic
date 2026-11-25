@@ -1,13 +1,13 @@
 /*
  File: frontend/news/README.md
- Description: نمونهٔ طراحی وب‌سایت خبری و معرفی «نفس» — ساختار، اجرا، ویرایش محتوا
+ Description: نمونهٔ طراحی وب‌سایت خبری و معرفی «تپش» — ساختار، اجرا، ویرایش محتوا
  Parent Dependencies: frontend/news/{app.js,styles.css,content/,serve.mjs,check.mjs}, docs/news/README.md
 */
 
 > **مسیر:** [مخزن](../../README.md) › frontend › news
 > **پدر:** [frontend](../README.md) · سند متناظر: [docs/news/README.md](../../docs/news/README.md)
 
-# news — ویترین عمومی و اتاق خبر «نفس»
+# news — ویترین عمومی و اتاق خبر «تپش»
 
 یک سایت چندصفحه‌ای **بدون بیلد** برای سه مخاطب:
 
@@ -71,6 +71,12 @@ node serve.mjs          # http://localhost:4321
 **افزودن خبر:** یک شیء در `content/news.json` اضافه کنید؛ فهرست، فیلتر (`category`)، جست‌وجو و `article.html?id=…` خودکار به‌روز می‌شوند. `id` باید یکتا باشد و `image` یکی از `reception` / `doctor` / `patient`.
 
 **افزودن صفحهٔ تازه:** پوستهٔ HTML را از یکی از فایل‌ها کپی کنید (فقط `title` را عوض کنید)، سپس در `app.js` یک رندرر بنویسید و در `PAGE_RENDERERS` ثبت کنید. یک ردیف هم در `site.nav` بگذارید. `node check.mjs` می‌گوید چیزی جا افتاده یا نه.
+
+## نام محصول
+
+نام رسمی سایت **«تپش»** است (`site.brandFa` = «تپش»، `site.brandLatin` = `Tapesh`،
+ایمیل‌ها روی دامنهٔ `tapesh.health`). نام قبلی («نفس») فقط در پروتوتایپ‌های
+پوشهٔ `designs/` مانده و عمداً دست نخورده است؛ آن‌ها سند تاریخی طراحی‌اند.
 
 ## ناوبری و اسکرول‌بار
 

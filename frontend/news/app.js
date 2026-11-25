@@ -1,5 +1,5 @@
 /* ==========================================================================
-   نفس — نمونهٔ وب‌سایت خبری و معرفی (پروتوتایپ طراحی)
+   تپش — نمونهٔ وب‌سایت خبری و معرفی (پروتوتایپ طراحی)
    app.js — رندر صفحه‌ها، آیکون‌ها، تعامل‌های سبک
    محتوا از content.json خوانده می‌شود؛ فارسی و اعداد فارسی.
    ========================================================================== */
@@ -111,7 +111,7 @@ function headerBlock(S, page) {
   <div class="topbar">
     <div class="wrap topbar__in">
       <div class="topbar__meta">
-        <span><span class="dot" style="display:inline-block;color:#8fcfb4;margin-inline-end:6px"></span>ویترین رسمی نفس — پیش‌پذیرش سلامت برای مراکز درمانی</span>
+        <span><span class="dot" style="display:inline-block;color:#8fcfb4;margin-inline-end:6px"></span>ویترین رسمی تپش — پیش‌پذیرش سلامت برای مراکز درمانی</span>
         <span class="sep hide-sm"></span>
         <a class="hide-sm" href="news.html">اتاق خبر</a>
       </div>
@@ -175,7 +175,7 @@ function footerBlock(S) {
       <div class="footer__grid">
         <div>
           ${brandBlock(S)}
-          <p class="footer__about">نفس، لایهٔ پیش‌پذیرش سلامت است: اطلاعات، مدارک و شواهد حضور را پیش از روز مراجعه جمع می‌کند تا پذیرش کوتاه‌تر و ویزیت دقیق‌تر شود.</p>
+          <p class="footer__about">تپش، لایهٔ پیش‌پذیرش سلامت است: اطلاعات، مدارک و شواهد حضور را پیش از روز مراجعه جمع می‌کند تا پذیرش کوتاه‌تر و ویزیت دقیق‌تر شود.</p>
         </div>
         <div>
           <h4>محصول</h4>
@@ -187,7 +187,7 @@ function footerBlock(S) {
           </ul>
         </div>
         <div>
-          <h4>نفس</h4>
+          <h4>تپش</h4>
           <ul>
             <li><a href="news.html">اتاق خبر</a></li>
             <li><a href="voices.html">روایت‌ها</a></li>
@@ -211,7 +211,7 @@ function footerBlock(S) {
         </div>
       </div>
       <div class="footer__bottom">
-        <span>© ۱۴۰۵ نفس — همهٔ حقوق محفوظ است.</span>
+        <span>© ۱۴۰۵ تپش — همهٔ حقوق محفوظ است.</span>
         <span class="sample-note">${icon("spark")} این یک نمونهٔ طراحی است؛ اعداد، نظرات و برخی مطالب خبری نمونه‌اند.</span>
         <span>${esc(S.hours)}</span>
       </div>
@@ -338,9 +338,9 @@ function pageIndex(D) {
   <section class="section" id="what">
     <div class="wrap">
       ${secHead({
-        eyebrow: "نفس چه می‌کند",
+        eyebrow: "تپش چه می‌کند",
         title: "یک لایهٔ ورودی، میان بیمار و پروندهٔ بالینی.",
-        lead: "نفس جای HIS را نمی‌گیرد؛ کاری را که HIS برایش ساخته نشده انجام می‌دهد: جمع‌آوری منظم اطلاعات و شواهد، پیش از حضور.",
+        lead: "تپش جای HIS را نمی‌گیرد؛ کاری را که HIS برایش ساخته نشده انجام می‌دهد: جمع‌آوری منظم اطلاعات و شواهد، پیش از حضور.",
         action: `<a class="link-arrow" href="hospitals.html">جزئیات برای مراکز درمانی ${icon("arrow")}</a>`,
       })}
       <div class="cards">
@@ -376,8 +376,8 @@ function pageIndex(D) {
     <div class="wrap">
       ${secHead({
         eyebrow: "اعتماد، نه شعار",
-        title: "چرا پروندهٔ نفس را می‌شود باور کرد.",
-        lead: "پیش‌پذیرش بدون احراز حضور، فقط یک فرم آنلاین است. نفس از سه شاهد مستقل استفاده می‌کند و همه را به بیمار توضیح می‌دهد.",
+        title: "چرا پروندهٔ تپش را می‌شود باور کرد.",
+        lead: "پیش‌پذیرش بدون احراز حضور، فقط یک فرم آنلاین است. تپش از سه شاهد مستقل استفاده می‌کند و همه را به بیمار توضیح می‌دهد.",
         action: `<a class="link-arrow" href="patients.html#privacy">برای بیماران، شفاف ${icon("arrow")}</a>`,
       })}
       <div class="cards">
@@ -415,7 +415,7 @@ function pageIndex(D) {
 
   ${ctaBlock(S, {
     title: "یک درمانگاه، یک فرم، سی روز.<br>بعد تصمیم بگیرید.",
-    lead: "پایلوت نفس را با یک فرم واقعی و پنجاه دعوت شروع می‌کنیم؛ در پایان ماه عدد دارید، نه وعده.",
+    lead: "پایلوت تپش را با یک فرم واقعی و پنجاه دعوت شروع می‌کنیم؛ در پایان ماه عدد دارید، نه وعده.",
     secondary: { label: "دیدن مدل همکاری", href: "partners.html" },
   })}
 `;
@@ -494,7 +494,7 @@ function pageHospitals(D) {
         <a href="index.html">خانه</a>${icon("chevron")}<span>بیمارستان و کلینیک</span>
       </nav>
       <h1>پذیرشی که از شب قبل شروع می‌شود.</h1>
-      <p class="pagehead__lead">برای مدیر بیمارستان، مسئول پذیرش و پزشکی که چهار دقیقهٔ اول ویزیتش صرف خواندن فرم دست‌نویس می‌شود. نفس همان بخش از کار را برمی‌دارد، بدون اینکه HIS شما را دست بزند.</p>
+      <p class="pagehead__lead">برای مدیر بیمارستان، مسئول پذیرش و پزشکی که چهار دقیقهٔ اول ویزیتش صرف خواندن فرم دست‌نویس می‌شود. تپش همان بخش از کار را برمی‌دارد، بدون اینکه HIS شما را دست بزند.</p>
       <div class="pagehead__actions">
         <a class="btn btn--primary" href="contact.html">${icon("calendar")} رزرو دمو</a>
         <a class="btn btn--ghost" href="#pricing">${icon("chart")} مدل و هزینه</a>
@@ -513,7 +513,7 @@ function pageHospitals(D) {
       ${secHead({
         eyebrow: "درد امروز",
         title: "پنج چیزی که هر پذیرشی را کند می‌کند.",
-        lead: "اگر هیچ‌کدام اینها برای مرکز شما آشنا نیست، نفس احتمالاً به کارتان نمی‌آید — و این را از قبل می‌گوییم.",
+        lead: "اگر هیچ‌کدام اینها برای مرکز شما آشنا نیست، تپش احتمالاً به کارتان نمی‌آید — و این را از قبل می‌گوییم.",
       })}
       <div class="pains">
         ${D.hospitalPains
@@ -625,7 +625,7 @@ function pageHospitals(D) {
 
   ${ctaBlock(S, {
     title: "بیایید با یک درمانگاه شروع کنیم.",
-    lead: "یک جلسهٔ ۳۰ دقیقه‌ای با تیم پذیرش و پزشک شما کافی است تا بفهمیم نفس کجای جریان شما جا می‌شود.",
+    lead: "یک جلسهٔ ۳۰ دقیقه‌ای با تیم پذیرش و پزشک شما کافی است تا بفهمیم تپش کجای جریان شما جا می‌شود.",
     primary: "درخواست دمو",
     secondary: { label: "پرسش‌های متداول", href: "contact.html#faq" },
   })}
@@ -643,7 +643,7 @@ function pagePatients(D) {
     <div class="wrap">
       <nav class="crumbs" aria-label="مسیر"><a href="index.html">خانه</a>${icon("chevron")}<span>برای بیماران</span></nav>
       <h1>شما فرم را در خانه پر می‌کنید؛ ما صف را کوتاه می‌کنیم.</h1>
-      <p class="pagehead__lead">اگر مرکز درمانی شما از نفس استفاده می‌کند، یک پیامک با لینک دریافت می‌کنید. نه اپلیکیشن لازم است، نه حساب کاربری، نه پرداخت. فقط چند دقیقه وقت، در زمان خودتان.</p>
+      <p class="pagehead__lead">اگر مرکز درمانی شما از تپش استفاده می‌کند، یک پیامک با لینک دریافت می‌کنید. نه اپلیکیشن لازم است، نه حساب کاربری، نه پرداخت. فقط چند دقیقه وقت، در زمان خودتان.</p>
       <div class="pagehead__actions">
         <a class="btn btn--primary" href="#how">${icon("form")} چطور کار می‌کند</a>
         <a class="btn btn--ghost" href="#privacy">${icon("lock")} حریم خصوصی من</a>
@@ -720,14 +720,14 @@ function pagePatients(D) {
         ${qa.map((q, i) => `<details class="qa reveal" ${i === 0 ? "open" : ""}><summary>${esc(q.q)}<i>+</i></summary><p>${esc(q.a)}</p></details>`).join("")}
       </div>
       <p style="font-size:.8rem;color:var(--muted);margin-block-start:16px;max-width:44rem">
-        نکتهٔ مهم: پروندهٔ نفس، پروندهٔ رسمی بیمارستان نیست. اطلاعات پیش‌پذیرش برای آماده‌سازی ویزیت استفاده می‌شود و ثبت رسمی طبق روال همان مرکز انجام می‌شود.
+        نکتهٔ مهم: پروندهٔ تپش، پروندهٔ رسمی بیمارستان نیست. اطلاعات پیش‌پذیرش برای آماده‌سازی ویزیت استفاده می‌شود و ثبت رسمی طبق روال همان مرکز انجام می‌شود.
       </p>
       <div style="margin-block-start:22px">${trustline()}</div>
     </div>
   </section>
 
     ${ctaBlock(S, {
-    title: "می‌خواهید مرکز درمانی‌تان هم از نفس استفاده کند؟",
+    title: "می‌خواهید مرکز درمانی‌تان هم از تپش استفاده کند؟",
     lead: "لینک این صفحه را برای مسئول پذیرش یا پزشک خود بفرستید؛ یا نام مرکز را به ما بگویید تا خودمان پیگیری کنیم.",
     primary: "معرفی مرکز درمانی",
     secondary: { label: "خواندن اخبار محصول", href: "news.html" },
@@ -874,7 +874,7 @@ function pageNews(D) {
   <section class="pagehead">
     <div class="wrap">
       <nav class="crumbs" aria-label="مسیر"><a href="index.html">خانه</a>${icon("chevron")}<span>اتاق خبر</span></nav>
-      <h1>اتاق خبر نفس</h1>
+      <h1>اتاق خبر تپش</h1>
       <p class="pagehead__lead">انتشار نسخه، قراردادها، گزارش‌های بازار و درس‌های استقرار. هرچه در جلسهٔ فروش می‌گوییم، اینجا هم می‌نویسیم.</p>
       <div class="pagehead__meta">
         <span class="chip">${icon("file")} ${faNum(D.news.length)} مطلب منتشرشده</span>
@@ -953,7 +953,7 @@ function pageArticle(D) {
           <div class="article__meta">
             <span>${esc(n.date)}</span><span class="sep"></span>
             <span>${icon("clock")} ${esc(n.read)} مطالعه</span><span class="sep"></span>
-            <span>تیم نفس</span>
+            <span>تیم تپش</span>
             <span class="chip chip--sample" style="margin-inline-start:auto">محتوای نمونه</span>
           </div>
         </header>
@@ -1025,7 +1025,7 @@ function pageVoices(D) {
       </div>
       <div class="form">
         <h3>روایت خودتان را بفرستید</h3>
-        <p>اگر از نفس استفاده کرده‌اید و چیزی برای گفتن دارید — خوب یا بد — اینجا بنویسید.</p>
+        <p>اگر از تپش استفاده کرده‌اید و چیزی برای گفتن دارید — خوب یا بد — اینجا بنویسید.</p>
         <form data-form="story" novalidate>
           <div class="fields">
             <div class="field"><label for="storyName">نام <span>*</span></label><input id="storyName" name="name" required placeholder="نام و نقش"></div>
@@ -1065,23 +1065,23 @@ function voiceCard(v, i) {
 }
 
 /* ==========================================================================
-   دربارهٔ نفس
+   دربارهٔ تپش
    ========================================================================== */
 function pageAbout(D) {
   const S = D.site;
   return `
   <section class="pagehead">
     <div class="wrap">
-      <nav class="crumbs" aria-label="مسیر"><a href="index.html">خانه</a>${icon("chevron")}<span>دربارهٔ نفس</span></nav>
+      <nav class="crumbs" aria-label="مسیر"><a href="index.html">خانه</a>${icon("chevron")}<span>دربارهٔ تپش</span></nav>
       <h1>ما یک قدم از مسیر درمان را برمی‌داریم، نه بیشتر.</h1>
-      <p class="pagehead__lead">نفس از دل یک سؤال ساده ساخته شد: چرا بیمار باید همان اطلاعاتی را که در خانه می‌تواند بدهد، در صف پذیرش و در اتاق ویزیت دوباره بگوید؟</p>
+      <p class="pagehead__lead">تپش از دل یک سؤال ساده ساخته شد: چرا بیمار باید همان اطلاعاتی را که در خانه می‌تواند بدهد، در صف پذیرش و در اتاق ویزیت دوباره بگوید؟</p>
     </div>
   </section>
 
   <section class="section">
     <div class="wrap glassgrid">
       <div>
-        ${secHead({ eyebrow: "چرا", title: "زمان پزشک گران‌ترین منبع درمان است.", lead: "هر دقیقه‌ای که صرف رمزگشایی فرم دست‌نویس می‌شود، از دقت تشخیص کم می‌شود. نفس این دقیقه را برمی‌گرداند." })}
+        ${secHead({ eyebrow: "چرا", title: "زمان پزشک گران‌ترین منبع درمان است.", lead: "هر دقیقه‌ای که صرف رمزگشایی فرم دست‌نویس می‌شود، از دقت تشخیص کم می‌شود. تپش این دقیقه را برمی‌گرداند." })}
         <p style="font-size:.9rem;color:var(--ink-soft)">ما نه جایگزین پزشک هستیم، نه جایگزین HIS. یک لایهٔ ورودی هستیم که کیفیت داده را بالا می‌برد و بار اداری را از دوش پذیرش برمی‌دارد. این محدودیت را آگاهانه انتخاب کردیم: هرچه ادعای بزرگ‌تر، استقرار کندتر و ریسک بیشتر.</p>
       </div>
       <div class="panel" style="transform:none">
@@ -1191,7 +1191,7 @@ function pageContact(D) {
     <div class="wrap">
       <nav class="crumbs" aria-label="مسیر"><a href="index.html">خانه</a>${icon("chevron")}<span>تماس و دمو</span></nav>
       <h1>یک جلسهٔ ۱۵ دقیقه‌ای، بدون اسلاید.</h1>
-      <p class="pagehead__lead">پروندهٔ یک بیمار نمونه را باز می‌کنیم، صف پذیرش را با شما مرور می‌کنیم و اگر نفس به کارتان نیاید، همان‌جا می‌گوییم.</p>
+      <p class="pagehead__lead">پروندهٔ یک بیمار نمونه را باز می‌کنیم، صف پذیرش را با شما مرور می‌کنیم و اگر تپش به کارتان نیاید، همان‌جا می‌گوییم.</p>
       <div class="pagehead__meta">
         <span class="chip chip--mint">${icon("clock")} پاسخ در یک روز کاری</span>
         <span class="chip">${icon("phone")} ${esc(S.phone)}</span>
@@ -1387,14 +1387,14 @@ const PAGE_RENDERERS = {
 
 const HERO_COPY = {
   hospital: {
-    lead: "نفس اطلاعات، مدارک و شواهد حضور بیمار را پیش از روز مراجعه جمع می‌کند؛ پذیرش از صف کاغذی به یک کنترل هویت کوتاه تبدیل می‌شود و پزشک پروندهٔ خوانا را قبل از ورود بیمار می‌بیند.",
+    lead: "تپش اطلاعات، مدارک و شواهد حضور بیمار را پیش از روز مراجعه جمع می‌کند؛ پذیرش از صف کاغذی به یک کنترل هویت کوتاه تبدیل می‌شود و پزشک پروندهٔ خوانا را قبل از ورود بیمار می‌بیند.",
     cta: "رزرو دموی ۱۵ دقیقه‌ای",
     second: "مسیر پرونده را ببینید",
     ctaHref: "contact.html",
     secondHref: "#process",
   },
   patient: {
-    lead: "اگر مرکز درمانی شما از نفس استفاده می‌کند، با یک پیامک فرم را در خانه پر می‌کنید و روز مراجعه فقط کارت شناسایی نشان می‌دهید. بدون نصب اپلیکیشن، بدون هزینه. و پیش از هر آپلود، دقیقاً می‌دانید چه داده‌ای گرفته می‌شود، چرا، و چه کسی آن را می‌بیند.",
+    lead: "اگر مرکز درمانی شما از تپش استفاده می‌کند، با یک پیامک فرم را در خانه پر می‌کنید و روز مراجعه فقط کارت شناسایی نشان می‌دهید. بدون نصب اپلیکیشن، بدون هزینه. و پیش از هر آپلود، دقیقاً می‌دانید چه داده‌ای گرفته می‌شود، چرا، و چه کسی آن را می‌بیند.",
     cta: "بیمار هستم؛ چه داده‌ای می‌گیرید؟",
     second: "مسیر پرونده را ببینید",
     ctaHref: "patients.html#privacy",
