@@ -1230,29 +1230,21 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
 }
 
 /* ==========================================================================
-   مسیر پرونده — پنج ایستگاه، از پیش‌پذیرش تا پروندهٔ الکترونیک
-   داده از content/process.json — خط اتصال، ورقِ روایی، نه جدول
+   مسیر پرونده — پنج کارت روایی، از پیش‌پذیرش تا پروندهٔ الکترونیک
+   داده از content/process.json
    ========================================================================== */
 .px { position: relative; }
 
-/* راهنمای بالای مسیر */
 .px-head {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   flex-wrap: wrap; margin-block: clamp(22px, 3.4vw, 34px) 14px;
 }
-.px-head__label {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: .82rem; font-weight: 700; color: var(--pine);
-}
+.px-head__label { display: inline-flex; align-items: center; gap: 8px; font-size: .82rem; font-weight: 700; color: var(--pine); }
 .px-head__label svg { width: 17px; height: 17px; color: var(--pulse); }
 .px-head__hint { font-size: .8rem; color: var(--muted); }
 
-/* نوار ایستگاه‌ها — چسبان و افقی، رو به RTL */
-.px-rail__wrap {
-  margin-inline: calc(var(--pad-x) * -.3);
-  padding-inline: calc(var(--pad-x) * .3);
-  padding-block: 4px 12px;
-}
+/* نوار ایستگاه‌ها */
+.px-rail__wrap { margin-inline: calc(var(--pad-x) * -.3); padding-inline: calc(var(--pad-x) * .3); padding-block: 4px 16px; }
 .px-rail {
   display: flex; gap: 8px; list-style: none; margin: 0; padding: 0;
   overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth;
@@ -1265,140 +1257,104 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 14px 8px 10px; border-radius: 999px; cursor: pointer;
   background: #fff; border: 1px solid var(--line); color: var(--ink-soft);
-  font: inherit; font-size: .82rem; font-weight: 600;
-  transition: .18s var(--ease);
+  font: inherit; font-size: .82rem; font-weight: 600; transition: .18s var(--ease);
 }
 .px-rail__b:hover { border-color: var(--teal); color: var(--pine); }
 .px-rail__n {
-  display: grid; place-items: center; flex: none;
-  width: 24px; height: 24px; border-radius: 50%;
-  background: var(--paper-2); color: var(--muted);
+  display: grid; place-items: center; flex: none; width: 24px; height: 24px;
+  border-radius: 50%; background: var(--paper-2); color: var(--muted);
   font-size: .72rem; font-variant-numeric: tabular-nums; font-weight: 700;
 }
-.px-rail__b.is-on {
-  background: var(--pine); border-color: var(--pine); color: #fff;
-  box-shadow: 0 8px 18px -12px rgba(15, 58, 46, .9);
-}
+.px-rail__b.is-on { background: var(--pine); border-color: var(--pine); color: #fff; box-shadow: 0 8px 18px -12px rgba(15, 58, 46, .9); }
 .px-rail__b.is-on .px-rail__n { background: rgba(255, 255, 255, .18); color: #fff; }
 
-/* یک ایستگاه = ردیف روایی */
-.px-steps { display: grid; margin-block-start: 6px; }
-.px-step {
-  position: relative;
-  display: grid; grid-template-columns: 60px minmax(0, 1fr);
-  gap: clamp(14px, 2.2vw, 26px);
-  padding-block: clamp(18px, 3vw, 30px);
+/* ---------- کارت هر ایستگاه ---------- */
+.px-steps { display: grid; gap: clamp(16px, 2.4vw, 24px); }
+.px-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm); overflow: hidden;
+  scroll-margin-top: calc(var(--nav-h) + 24px);
 }
-.px-step__aside { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.px-step__num {
+.px-card__head {
+  display: flex; align-items: center; gap: 14px;
+  padding: clamp(16px, 2.2vw, 22px) clamp(16px, 2.4vw, 26px) 0;
+}
+.px-card__n {
   display: grid; place-items: center; flex: none;
-  width: 44px; height: 44px; border-radius: 14px;
-  background: var(--card); border: 1px solid var(--line);
-  color: var(--pine); font-weight: 800; font-size: .95rem;
-  font-variant-numeric: tabular-nums;
-  box-shadow: var(--shadow-sm);
+  width: 46px; height: 46px; border-radius: 14px;
+  background: var(--pine); color: #eaf5ef;
+  font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums;
 }
-.px-step__line {
-  position: absolute; top: 96px; inset-block-end: calc(clamp(18px, 3vw, 30px) * -1 - 4px);
-  inset-inline-start: 50%; width: 0;
-  border-inline-start: 2px dashed var(--line-strong);
-}
-.px-step__tag {
-  display: inline-block; margin-block-end: 6px;
-  font-size: .74rem; font-weight: 700; letter-spacing: .02em;
-  color: var(--teal);
-}
-.px-step__ico {
-  display: grid; place-items: center; flex: none;
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--mint); color: var(--pine);
-}
-.px-step__ico svg { width: 17px; height: 17px; }
-
-/* خط اتصال بین دو ایستگاه */
-.px-step:last-of-type .px-step__line { display: none; }
-
-.px-step__main { min-width: 0; }
-.px-step__head h3 {
-  font-size: clamp(1.06rem, 1.9vw, 1.3rem); font-weight: 800; color: var(--ink);
-  line-height: 1.6; margin: 0;
-}
-.px-step__lead {
-  margin-block-start: 8px; font-size: .92rem; line-height: 2; color: var(--ink-soft);
-  max-width: 46rem;
-}
-.px-step__grid {
-  display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
-  gap: clamp(14px, 2.4vw, 26px); align-items: start;
-  margin-block-start: 16px;
-}
-.px-step__grid--text { grid-template-columns: minmax(0, 1fr); }
-.px-step__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.px-step__list li {
-  display: flex; align-items: flex-start; gap: 9px;
-  font-size: .88rem; line-height: 1.95; color: var(--ink-soft);
-}
-.px-step__list svg {
-  width: 16px; height: 16px; flex: none; margin-block-start: 6px;
-  color: var(--teal);
-}
-.px-step__meta {
-  display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0;
-}
-.px-step__meta > div {
-  background: #fff; border: 1px solid var(--line); border-radius: 12px;
-  padding: 8px 12px; min-width: 0;
-}
-.px-step__meta dt {
-  display: flex; align-items: center; gap: 5px;
-  font-size: .74rem; color: var(--muted);
-}
-.px-step__meta dt svg { width: 13px; height: 13px; }
-.px-step__meta dd { margin: 3px 0 0; font-size: .84rem; font-weight: 600; color: var(--ink); }
-
-.px-step__fig {
-  margin: 0; border-radius: var(--r); overflow: hidden;
-  border: 1px solid var(--line); background: var(--card);
-  box-shadow: var(--shadow-sm);
-}
-.px-step__fig img {
-  display: block; width: 100%; height: auto; aspect-ratio: 16 / 10;
-  object-fit: cover;
-}
-.px-step__fig figcaption {
-  padding: 7px 12px; font-size: .74rem; color: var(--muted);
-  border-block-start: 1px solid var(--line); background: #fff;
+.px-card__ttl { min-width: 0; }
+.px-card__role { display: block; font-size: .74rem; font-weight: 700; color: var(--teal); letter-spacing: .01em; }
+.px-card__ttl h3 {
+  margin: 3px 0 0; font-size: clamp(1.06rem, 1.9vw, 1.32rem);
+  font-weight: 800; color: var(--ink); line-height: 1.55;
 }
 
-/* فرمِ خروجی/پرونده — به‌جای عکس */
-.px-step__stamp { display: grid; place-items: center; }
-.px-stamp {
-  width: 100%; max-width: 320px; text-align: center;
-  background: linear-gradient(160deg, var(--card), #fbfaf4);
-  border: 1px solid var(--line); border-radius: var(--r);
-  padding: 26px 20px; box-shadow: var(--shadow);
+.px-card__body {
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  gap: clamp(16px, 2.6vw, 30px); align-items: start;
+  padding: clamp(14px, 2vw, 20px) clamp(16px, 2.4vw, 26px) clamp(16px, 2.2vw, 22px);
 }
-.px-stamp__k {
-  display: grid; place-items: center; width: 46px; height: 46px; margin-inline: auto;
-  border-radius: 14px; background: var(--pine); color: #fff;
-}
-.px-stamp__k svg { width: 22px; height: 22px; }
-.px-stamp b { display: block; margin-block-start: 12px; font-size: .95rem; color: var(--pine); }
-.px-stamp p { margin-block-start: 6px; font-size: .82rem; line-height: 1.9; color: var(--muted); }
+.px-card__txt { min-width: 0; }
+.px-card__lead { font-size: .92rem; line-height: 2.05; color: var(--ink-soft); }
+.px-card__list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 9px; }
+.px-card__list li { display: flex; align-items: flex-start; gap: 9px; font-size: .87rem; line-height: 1.95; color: var(--ink-soft); }
+.px-card__list svg { width: 16px; height: 16px; flex: none; margin-block-start: 6px; color: var(--teal); }
 
-.px-step__handoff {
-  display: inline-flex; align-items: center; gap: 7px;
-  margin-block-start: 16px; padding: 8px 13px; border-radius: 10px;
-  background: var(--mint); color: #205c45;
-  font-size: .8rem; line-height: 1.8;
-}
-.px-step__handoff svg { width: 15px; height: 15px; flex: none; }
-.px-step__handoff b { color: var(--pine); }
+.px-card__fig { margin: 0; border-radius: var(--r); overflow: hidden; border: 1px solid var(--line); background: #fff; }
+.px-card__fig img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.px-card__fig figcaption { padding: 7px 12px; font-size: .74rem; color: var(--muted); border-block-start: 1px solid var(--line); }
 
-/* مرز محصول در پایان مسیر */
+/* کارت ایستگاه‌های بی‌عکس: پنل خلاصه به‌جای عکس */
+.px-card__panel {
+  display: grid; gap: 6px; justify-items: start;
+  padding: clamp(16px, 2.2vw, 22px); border-radius: var(--r);
+  background: linear-gradient(160deg, var(--mint), #f2f9f4);
+  border: 1px solid #cfe6d8;
+}
+.px-card__panelK {
+  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px;
+  background: var(--pine); color: #fff; margin-block-end: 4px;
+}
+.px-card__panelK svg { width: 20px; height: 20px; }
+.px-card__panel b { font-size: .95rem; color: var(--pine); }
+.px-card__panel p { font-size: .84rem; line-height: 1.85; color: #2c5445; }
+.px-card__panelTime {
+  display: inline-flex; align-items: center; gap: 6px; margin-block-start: 4px;
+  font-size: .78rem; font-weight: 600; color: #205c45;
+  background: #fff; border-radius: 99px; padding: 4px 10px;
+}
+.px-card__panelTime svg { width: 14px; height: 14px; }
+
+/* ---------- نوار واقعیت‌های ته کارت ---------- */
+.px-card__foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+  padding: 12px clamp(16px, 2.4vw, 26px) 14px;
+  border-block-start: 1px solid var(--line);
+  background: #fcfbf6;
+}
+.px-card__facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.px-fact {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 11px; border-radius: 99px;
+  background: #fff; border: 1px solid var(--line);
+  font-size: .78rem; color: var(--ink-soft);
+}
+.px-fact svg { width: 14px; height: 14px; flex: none; color: var(--teal); }
+.px-fact b { font-weight: 600; color: var(--ink); }
+.px-card__next {
+  display: inline-flex; align-items: center; gap: 7px; margin-inline-start: auto;
+  font-size: .78rem; color: #205c45;
+}
+.px-card__next > svg { width: 15px; height: 15px; flex: none; }
+.px-card__next > span { display: inline; }
+.px-card__next b { color: var(--pine); }
+
 .px-bound {
   display: flex; align-items: flex-start; gap: 10px;
-  margin-block-start: 10px; padding: 16px 18px;
+  margin-block-start: 20px; padding: 16px 18px;
   border-radius: var(--r); background: #fff;
   border: 1px solid var(--line); border-inline-start: 3px solid var(--pine);
 }
@@ -1407,163 +1363,47 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
 .px-bound b { color: var(--pine); }
 
 @media (max-width: 900px) {
-  .px-step__grid { grid-template-columns: minmax(0, 1fr); }
-  .px-step__fig { order: -1; }
-  .px-step__stamp { order: -1; }
+  .px-card__body { grid-template-columns: minmax(0, 1fr); }
+  .px-card__fig { order: -1; }
+  .px-card__panel { order: -1; width: 100%; }
+  .px-card__next { margin-inline-start: 0; }
 }
 @media (max-width: 620px) {
-  .px-step { grid-template-columns: 40px minmax(0, 1fr); gap: 12px; }
-  .px-step__num { width: 36px; height: 36px; border-radius: 11px; font-size: .84rem; }
-  .px-step__ico { width: 30px; height: 30px; }
-  .px-step__ico svg { width: 15px; height: 15px; }
-  .px-step__lead { font-size: .88rem; }
-  .px-step__meta > div { flex: 1 1 46%; }
+  .px-card__n { width: 38px; height: 38px; border-radius: 11px; font-size: .88rem; }
+  .px-card__lead { font-size: .89rem; }
+  .px-card__foot { gap: 10px; }
+  .px-fact { font-size: .76rem; padding: 5px 10px; }
   .px-head__hint { display: none; }
+  .px-card__next { display: none; }
 }
 
-/* ==========================================================================
-   هیرو گرم — عکسِ واقعی آدم‌ها، نه کارت داده
-   ========================================================================== */
-.hero--warm {
-  padding-block: clamp(30px, 4.6vw, 62px) clamp(28px, 4vw, 48px);
-  background:
-    radial-gradient(120% 90% at 88% 6%, rgba(43, 141, 110, .16), transparent 62%),
-    radial-gradient(90% 80% at 6% 88%, rgba(210, 74, 47, .09), transparent 60%),
-    linear-gradient(180deg, #fbf9f3, var(--paper));
+/* ---------- نوار مدیر پروژه در صفحهٔ اصلی ---------- */
+.leadstrip {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px; align-items: center;
+  padding: clamp(16px, 2.2vw, 22px) clamp(16px, 2.4vw, 26px);
+  background: linear-gradient(120deg, var(--mint), #f7fbf8 62%, var(--card));
+  border: 1px solid #cfe6d8; border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
 }
-.hero__grain {
-  position: absolute; inset: 0; pointer-events: none; opacity: .5;
-  background-image: radial-gradient(rgba(15, 58, 46, .085) 1px, transparent 1px);
-  background-size: 22px 22px;
-  -webkit-mask-image: radial-gradient(70% 60% at 50% 40%, #000, transparent);
-  mask-image: radial-gradient(70% 60% at 50% 40%, #000, transparent);
+.leadstrip:hover { transform: translateY(-2px); border-color: var(--teal); box-shadow: var(--shadow); }
+.leadstrip__ava {
+  display: grid; place-items: center; width: 54px; height: 54px; border-radius: 16px;
+  background: var(--pine); color: #eaf5ef; font-size: .95rem; font-weight: 700;
 }
-.hero--warm .hero__grid { position: relative; }
-.hero__kicker {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 15px; border-radius: 999px;
-  background: rgba(255, 255, 255, .86); border: 1px solid var(--line);
-  color: var(--pine); font-size: .82rem; font-weight: 600;
-  box-shadow: var(--shadow-sm); backdrop-filter: blur(6px);
+.leadstrip__txt { min-width: 0; display: grid; gap: 2px; }
+.leadstrip__k { font-size: .74rem; font-weight: 700; color: var(--teal); }
+.leadstrip__txt b { font-size: 1rem; color: var(--ink); }
+.leadstrip__why { font-size: .83rem; line-height: 1.85; color: var(--ink-soft); }
+.leadstrip__go {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  font-size: .8rem; font-weight: 700; color: var(--pine);
+  border-block-end: 1px solid rgba(43, 141, 110, .5); padding-block-end: 2px;
 }
-.hero__kicker svg { width: 16px; height: 16px; color: var(--pulse); }
+.leadstrip__go svg { width: 15px; height: 15px; }
 
-.hero--warm h1 {
-  font-size: clamp(2.05rem, 4.3vw, 3.4rem);
-  line-height: 1.3; letter-spacing: -.014em;
-  margin-block: 20px 0;
-}
-.hero--warm h1 em {
-  font-style: normal; color: var(--pulse);
-  position: relative; white-space: nowrap;
-}
-.hero--warm h1 em::after {
-  content: ""; position: absolute; inset-inline: -.06em; inset-block-end: .06em;
-  height: .3em; border-radius: 3px; background: rgba(210, 74, 47, .16);
-  z-index: -1;
-}
-
-/* عکس هیرو */
-.hero__visual { position: relative; }
-.hero__shot {
-  position: relative; margin: 0; z-index: 1;
-  border-radius: 28px 28px 28px 8px;
-  overflow: hidden; border: 1px solid var(--line);
-  background: var(--card);
-  box-shadow: 0 34px 70px -44px rgba(14, 42, 35, .62), 0 2px 8px rgba(14, 42, 35, .06);
-}
-.hero__shot img {
-  display: block; width: 100%; height: 100%;
-  aspect-ratio: 4 / 3.35; object-fit: cover;
-}
-.hero__shot figcaption {
-  position: absolute; inset-block-start: 12px; inset-inline-start: 12px;
-  padding: 5px 10px; border-radius: 999px;
-  font-size: .72rem; color: #f2f6f4;
-  background: rgba(9, 32, 26, .55); backdrop-filter: blur(4px);
-  max-width: calc(100% - 24px); line-height: 1.7;
-}
-.hero__badge {
-  position: absolute; z-index: 2; inset-inline-start: -10px; inset-block-end: -24px;
-  display: flex; align-items: center; gap: 11px;
-  padding: 12px 16px; border-radius: 18px;
-  background: var(--card); border: 1px solid var(--line);
-  box-shadow: var(--shadow-lg);
-  max-width: 290px;
-}
-.hero__badge i {
-  display: grid; place-items: center; flex: none;
-  width: 36px; height: 36px; border-radius: 12px;
-  background: var(--pulse-soft); color: var(--pulse); font-style: normal;
-}
-.hero__badge i svg { width: 18px; height: 18px; }
-.hero__badge b { display: block; font-size: .92rem; color: var(--ink); }
-.hero__badge small { display: block; font-size: .72rem; color: var(--muted); line-height: 1.55; margin-block-start: 2px; }
-.hero__tick {
-  position: absolute; z-index: 2; inset-inline-end: -8px; inset-block-start: 20px;
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 9px 13px; border-radius: 12px;
-  background: var(--pine); color: #eaf5ef;
-  font-size: .76rem; font-weight: 500; line-height: 1.6;
-  box-shadow: var(--shadow);
-  max-width: 240px;
-}
-.hero__tick svg { width: 16px; height: 16px; flex: none; color: #8fe0bc; }
-
-@media (max-width: 960px) {
-  .hero__shot img { aspect-ratio: 16 / 9; }
-  .hero__badge { inset-inline-start: 0; inset-block-end: -18px; }
-  .hero__tick { display: none; }
-}
-@media (max-width: 620px) {
-  .hero__shot { border-radius: 20px 20px 20px 6px; }
-  .hero__badge { position: static; margin-block-start: 12px; max-width: none; box-shadow: var(--shadow-sm); }
-  .hero--warm h1 { font-size: clamp(1.85rem, 7.4vw, 2.4rem); }
-}
-
-/* ---------- کارت مدیر پروژه (صفحهٔ دربارهٔ ما) ---------- */
-.leadcard {
-  display: grid; grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
-  gap: clamp(16px, 2.6vw, 32px); align-items: start;
-  margin-block-start: clamp(22px, 3.4vw, 34px);
-  padding: clamp(18px, 2.6vw, 28px);
-  background: linear-gradient(160deg, var(--card), #fbfaf4);
-  border: 1px solid var(--line); border-radius: var(--r-lg);
-  box-shadow: var(--shadow);
-}
-.leadcard__id {
-  display: flex; gap: 14px; align-items: flex-start;
-  padding-block-end: 16px; border-block-end: 1px dashed var(--line);
-}
-@media (min-width: 821px) {
-  .leadcard__id { border-block-end: 0; padding-block-end: 0; }
-}
-.leadcard__avatar {
-  width: 62px; height: 62px; flex: none; font-size: 1rem;
-  background: var(--pine); color: #eaf5ef;
-}
-.leadcard__role { display: block; font-size: .76rem; font-weight: 700; color: var(--teal); }
-.leadcard__id h3 { margin: 4px 0 0; font-size: clamp(1.05rem, 1.7vw, 1.24rem); color: var(--ink); }
-.leadcard__link {
-  display: inline-flex; align-items: center; gap: 5px; margin-block-start: 7px;
-  font-size: .8rem; font-weight: 600; color: var(--pine);
-  border-block-end: 1px solid rgba(43, 141, 110, .45); padding-block-end: 1px;
-}
-.leadcard__link svg { width: 14px; height: 14px; }
-.leadcard__link:hover { color: var(--teal); }
-.leadcard__body { min-width: 0; }
-.leadcard__body > p { font-size: .88rem; line-height: 2; color: var(--ink-soft); }
-.leadcard__why {
-  display: flex; gap: 9px; align-items: flex-start;
-  margin-block-start: 14px; padding: 12px 14px; border-radius: 12px;
-  background: var(--mint); color: #205c45 !important; font-size: .84rem !important;
-}
-.leadcard__why svg { width: 16px; height: 16px; flex: none; color: var(--pine); margin-block-start: 4px; }
-.leadcard__focus { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 7px; }
-.leadcard__focus li { display: flex; gap: 8px; align-items: flex-start; font-size: .84rem; color: var(--ink-soft); line-height: 1.9; }
-.leadcard__focus svg { width: 15px; height: 15px; flex: none; color: var(--teal); margin-block-start: 5px; }
-.leadcard__note { margin-block-start: 12px; font-size: .76rem !important; color: var(--muted) !important; }
-
-@media (max-width: 820px) {
-  .leadcard { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 760px) {
+  .leadstrip { grid-template-columns: auto minmax(0, 1fr); }
+  .leadstrip__go { grid-column: 1 / -1; justify-self: start; }
 }

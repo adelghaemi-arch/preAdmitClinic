@@ -411,12 +411,34 @@ function pageIndex(D) {
     </div>
   </section>
 
+  ${leadStrip(D.lead)}
+
   ${ctaBlock(S, {
     title: "یک درمانگاه، یک فرم، سی روز.<br>بعد تصمیم بگیرید.",
     lead: "پایلوت نفس را با یک فرم واقعی و پنجاه دعوت شروع می‌کنیم؛ در پایان ماه عدد دارید، نه وعده.",
     secondary: { label: "دیدن مدل همکاری", href: "partners.html" },
   })}
 `;
+}
+
+/* ==========================================================================
+   مدیر پروژه — یک نوار کوتاه در صفحهٔ اصلی، کارت کامل در «دربارهٔ ما»
+   ========================================================================== */
+function leadStrip(L) {
+  if (!L) return "";
+  return `<section class="section section--tight" id="lead">
+    <div class="wrap">
+      <a class="leadstrip reveal" href="about.html">
+        <span class="leadstrip__ava">${esc(L.initials || "م‌ف")}</span>
+        <span class="leadstrip__txt">
+          <span class="leadstrip__k">${esc(L.role)}</span>
+          <b>${esc(L.name)}</b>
+          <span class="leadstrip__why">${esc(L.strip || L.why)}</span>
+        </span>
+        <span class="leadstrip__go">دربارهٔ ایشان و تیم ${icon("arrow")}</span>
+      </a>
+    </div>
+  </section>`;
 }
 
 /* ==========================================================================
@@ -1268,6 +1290,7 @@ function processSection(D) {
   const P = D.process;
   if (!P || !Array.isArray(P.stages) || !P.stages.length) return "";
   const img = (key) => (key && D.images?.[key] ? D.images[key] : null);
+  const fa = (n) => String(n).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[+d]);
 
   const rail = P.stages
     .map(
@@ -1284,46 +1307,47 @@ function processSection(D) {
   const blocks = P.stages
     .map((st, i) => {
       const im = img(st.image);
-      return `<article class="px-step reveal" data-step="${esc(st.key)}" id="px-${esc(st.key)}">
-        <div class="px-step__aside" aria-hidden="true">
-          <span class="px-step__num">${esc(st.num)}</span>
-          <span class="px-step__ico">${icon(st.icon)}</span>
-          <span class="px-step__line"></span>
-        </div>
-        <div class="px-step__main">
-          <header class="px-step__head">
-            <span class="px-step__tag">ایستگاه ${esc(st.num)} از ${esc(P.stages.length.toLocaleString("fa-IR"))}</span>
+      return `<article class="px-card reveal" data-step="${esc(st.key)}" id="px-${esc(st.key)}">
+        <header class="px-card__head">
+          <span class="px-card__n">${esc(st.num)}</span>
+          <div class="px-card__ttl">
+            <span class="px-card__role">ایستگاه ${esc(st.num)} از ${fa(P.stages.length)}</span>
             <h3>${esc(st.title)}</h3>
-            <p class="px-step__lead">${esc(st.lead)}</p>
-          </header>
-          <div class="px-step__grid${im ? "" : " px-step__grid--text"}">
-            <div class="px-step__body">
-              <ul class="px-step__list">
-                ${st.points.map((pt) => `<li>${icon("check")}<span>${esc(pt)}</span></li>`).join("")}
-              </ul>
-              <dl class="px-step__meta">
-                <div><dt>${icon("pin")} جایش</dt><dd>${esc(st.where)}</dd></div>
-                <div><dt>${icon("users")} مسئولش</dt><dd>${esc(st.who)}</dd></div>
-                <div><dt>${icon("clock")} زمانش</dt><dd>${esc(st.minutes)}</dd></div>
-              </dl>
-            </div>
-            ${
-              im
-                ? `<figure class="px-step__fig">
-                    <img src="${esc(im.src)}" alt="${esc(im.alt)}" loading="lazy" decoding="async">
-                    <figcaption>${esc(im.credit)}</figcaption>
-                  </figure>`
-                : `<div class="px-step__stamp">
-                    <div class="px-stamp">
-                      <span class="px-stamp__k">${icon(st.icon)}</span>
-                      <b>${esc(st.title.split("—")[0].trim())}</b>
-                      <p>${esc(st.handoff)}</p>
-                    </div>
-                  </div>`
-            }
           </div>
-          <p class="px-step__handoff">${icon("arrow")} <span>تحویل به ایستگاه بعد: <b>${esc(st.handoff)}</b></span></p>
+        </header>
+
+        <div class="px-card__body">
+          <div class="px-card__txt">
+            <p class="px-card__lead">${esc(st.lead)}</p>
+            <ul class="px-card__list">
+              ${st.points.map((pt) => `<li>${icon("check")}<span>${esc(pt)}</span></li>`).join("")}
+            </ul>
+          </div>
+          ${
+            im
+              ? `<figure class="px-card__fig">
+                  <img src="${esc(im.src)}" alt="${esc(im.alt)}" loading="lazy" decoding="async">
+                  <figcaption>${esc(im.credit)}</figcaption>
+                </figure>`
+              : `<aside class="px-card__panel">
+                  <span class="px-card__panelK">${icon(st.icon)}</span>
+                  <b>${esc(st.title.split("—")[0].trim())}</b>
+                  <p>${esc(st.handoff)}</p>
+                  <span class="px-card__panelTime">${icon("clock")} ${esc(st.minutes)}</span>
+                </aside>`
+          }
         </div>
+
+        <footer class="px-card__foot">
+          <div class="px-card__facts">
+            <span class="px-fact">${icon("clock")}<b>${esc(st.minutes)}</b></span>
+            <span class="px-fact">${icon("users")}<b>${esc(st.who)}</b></span>
+          </div>
+          <span class="px-card__next">${icon("arrow")}
+            <span>${i < P.stages.length - 1 ? "تحویل به ایستگاه بعد" : "تحویل نهایی"}
+              <b>${esc(st.handoff)}</b></span>
+          </span>
+        </footer>
       </article>`;
     })
     .join("");
