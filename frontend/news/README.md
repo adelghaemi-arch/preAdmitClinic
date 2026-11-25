@@ -49,6 +49,31 @@ node serve.mjs          # http://localhost:4321
 | `content/faq.json` | چهار دسته: `general`، `hospital`، `patient`، `partner` | تماس، بیماران، مشارکت |
 | `content/about.json` | چهار اصل، نقشهٔ راه، تیم | درباره |
 | `content/contact.json` | موضوع‌های فرم تماس | تماس |
+| `content/intake.json` | **ساختار پروندهٔ پیش‌پذیرش** — فرم‌ها، بخش‌ها، تعداد سوال و پکیج‌های چکاپ (ساختهٔ `tools/build-intake.mjs`) | خانه، بیمارستان، بیماران |
+
+### ساختار پروندهٔ پیش‌پذیرش — `intake.js` + `content/intake.json`
+
+بلوک «پروندهٔ پیش‌پذیرش، دقیقاً مثل فرم اصلی» در **خانه، بیمارستان و کلینیک، و برای بیماران** نمایش داده می‌شود.
+عددهایش دستی نوشته نشده‌اند؛ از کاتالوگ واقعی فرم ساخته می‌شوند:
+
+```bash
+node tools/build-intake.mjs     # از form-catalog.seed.json → content/intake.json
+```
+
+| منبع | چه چیزی می‌دهد |
+|------|----------------|
+| `frontend/my/src/lib/form-catalog.seed.json` | عنوان بخش‌ها، متن سوال‌ها، `visibilityRules`، `inputType`، `required` |
+| `backend/src/Nabz.Application/Identity/CorporatePathwayStationCatalog.cs` | چهار مسیر چکاپ سازمانی و ترتیب ایستگاه‌ها |
+
+**قاعدهٔ مهم:** عدد «تعداد سوال» برای هر پکیج با فیلتر کردن سوال‌های نامرتبط حساب می‌شود.
+مثلاً غربالگری پروستات و رودهٔ بزرگ شرط `age >= 50` دارند، پس در «چکاپ آقایان ۴۰+» (بازهٔ ۴۰ تا ۴۹)
+دیده نمی‌شوند. اگر برای یک بیمار هیچ سوالی در بخشی نماند، آن بخش از استپر حذف می‌شود — همان قاعدهٔ `form-engine.ts`.
+
+`node check.mjs` این بلوک را با کاتالوگ مقایسه می‌کند: اگر تعداد سوال یا بخش با `form-catalog.seed.json`
+نخواند، **خطا** می‌دهد. پس عدد بی‌پشتوانه منتشر نمی‌شود.
+
+**افزودن پکیج چکاپ جدید:** یک شیء در آرایهٔ `pathways` داخل `tools/build-intake.mjs` اضافه کنید
+(کد، عنوان، جنسیت، بازهٔ سنی، فرم مرتبط، ایستگاه‌ها) و بعد `node tools/build-intake.mjs` را اجرا کنید.
 
 **افزودن خبر:** یک شیء در `content/news.json` اضافه کنید؛ فهرست، فیلتر (`category`)، جست‌وجو و `article.html?id=…` خودکار به‌روز می‌شوند. `id` باید یکتا باشد و `image` یکی از `reception` / `doctor` / `patient`.
 
@@ -74,7 +99,9 @@ printf '#!/bin/sh\nnode frontend/news/check.mjs || exit 1\n' > .git/hooks/pre-co
 frontend/news/
 ├── index.html … contact.html   # ۹ پوستهٔ سبک؛ محتوا با JS رندر می‌شود
 ├── app.js                      # رندر صفحه‌ها + آیکون‌های SVG + تعامل‌ها
-├── content/                    # ۹ فایل محتوای موضوعی (منبع یگانهٔ متن)
+├── content/                    # ۱۰ فایل محتوای موضوعی (منبع یگانهٔ متن)
+├── intake.js                   # بلوک ساختار پرونده (پکیج‌های چکاپ + استپر بخش‌ها)
+├── tools/build-intake.mjs      # ساخت content/intake.json از کاتالوگ واقعی فرم
 ├── styles.css                  # توکن‌ها، کامپوننت‌ها، RTL و ریسپانسیو
 ├── serve.mjs                   # سرور پیش‌نمایش/توسعه بدون وابستگی
 ├── check.mjs                   # بازبینی محتوا پیش از کامیت

@@ -108,6 +108,45 @@ if (!/[\u06F0-\u06F9]/.test(strings)) warnings.push("در محتوا رقم فا
 if (/TODO|FIXME|XXX/.test(strings)) warnings.push("نشانهٔ TODO/FIXME در محتوا مانده است");
 
 /* ---------- گزارش ---------- */
+/* ---------- بلوک ساختار پرونده (content/intake.json) ---------- */
+/* عددهای این بلوک از کاتالوگ واقعی فرم ساخته می‌شوند؛ اگر با آن ناهم‌خوان شوند،
+   سایت عددی را نشان می‌دهد که در محصول نیست. پس این‌جا با کاتالوگ مقایسه می‌شود. */
+const intake = D.intake;
+if (!intake) {
+  errors.push("intake: content/intake.json بارگذاری نشد (tools/build-intake.mjs را اجرا کنید)");
+} else {
+  if (!Array.isArray(intake.forms) || intake.forms.length < 2) errors.push("intake.forms: حداقل دو فرم لازم است");
+  if (!Array.isArray(intake.pathways) || intake.pathways.length !== 4) errors.push("intake.pathways: چهار پکیج چکاپ لازم است");
+
+  for (const p of intake.pathways || []) {
+    const sum = (p.sectionQuestions || []).reduce((a, b) => a + b, 0);
+    if (sum !== p.questionCount)
+      errors.push(`intake «${p.code}»: جمع بخش‌ها ${sum} با تعداد کل ${p.questionCount} نمی‌خواند`);
+    if (!p.ageLabel) errors.push(`intake «${p.code}»: برچسب سنی ندارد`);
+    if (!p.stations?.length) errors.push(`intake «${p.code}»: ایستگاه ندارد`);
+    if (!intake.forms.some((f) => f.code === p.form))
+      errors.push(`intake «${p.code}»: فرم «${p.form}» در forms نیست`);
+  }
+
+  /* تطبیق با کاتالوگ واقعی فرم */
+  try {
+    const catalog = JSON.parse(await readFile(resolve(ROOT, "../../frontend/my/src/lib/form-catalog.seed.json"), "utf8"));
+    for (const cf of catalog.forms) {
+      const mine = (intake.forms || []).find((f) => f.code === cf.code);
+      if (!mine) {
+        errors.push(`intake: فرم «${cf.code}» در intake نیست`);
+        continue;
+      }
+      if (mine.questionCount !== cf.items.length)
+        errors.push(`intake «${cf.code}»: ${mine.questionCount} سوال، کاتالوگ ${cf.items.length} سوال`);
+      if (mine.sectionCount !== cf.sections.length)
+        errors.push(`intake «${cf.code}»: ${mine.sectionCount} بخش، کاتالوگ ${cf.sections.length} بخش`);
+    }
+  } catch (err) {
+    warnings.push(`مقایسهٔ intake با کاتالوگ انجام نشد: ${err.message.split("\n")[0]}`);
+  }
+}
+
 console.log(`\nnews check — ${files.length} فایل محتوا، ${htmls.length} صفحه، ${assets.size} تصویر\n`);
 if (warnings.length) {
   console.log("هشدارها:");

@@ -1178,3 +1178,172 @@ details.qa p { font-size: .88rem; color: var(--ink-soft); padding-block-end: 18p
   .footer__bottom, .footer .fine { font-size: .8rem; }
   .stat__l, .stat__sub { font-size: .82rem; }
 }
+
+/* ==========================================================================
+   بلوک «ساختار پروندهٔ پیش‌پذیرش» (intake.js)
+   داده از content/intake.json می‌آید — ساختهٔ tools/build-intake.mjs از کاتالوگ واقعی.
+   ========================================================================== */
+.ip {
+  margin-block-start: clamp(26px, 4vw, 44px);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: clamp(18px, 3vw, 34px);
+  box-shadow: var(--shadow);
+}
+.ip__head { max-width: 62ch; }
+.ip__kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: .76rem; font-weight: 700; color: var(--teal);
+  letter-spacing: .02em;
+}
+.ip__kicker::before { content: ""; width: 18px; height: 2px; border-radius: 99px; background: var(--teal); }
+.ip__title {
+  font-family: var(--ff-display); font-weight: 400;
+  font-size: clamp(1.3rem, 2.4vw, 1.8rem); line-height: 1.5;
+  margin-block: 8px 0; color: var(--pine);
+}
+.ip__lead { margin-block-start: 8px; font-size: .92rem; line-height: 1.95; color: var(--ink-soft); }
+
+/* ── کارت‌های پکیج ── */
+.ip-pkgs {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin-block: clamp(16px, 2.4vw, 26px) clamp(16px, 2.4vw, 24px);
+}
+.ip-pkg {
+  text-align: start; cursor: pointer;
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 14px 14px 13px;
+  background: #fdfcf7; border: 1px solid var(--line);
+  border-radius: var(--r); transition: .18s var(--ease);
+  font: inherit; color: inherit;
+}
+.ip-pkg:hover { border-color: var(--line-strong); background: #fff; transform: translateY(-2px); }
+.ip-pkg.is-on {
+  border-color: var(--pine); background: var(--pine); color: #eef6f1;
+  box-shadow: var(--shadow);
+}
+.ip-pkg__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ip-pkg__g {
+  font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px;
+  background: var(--mint); color: var(--pine);
+}
+.ip-pkg.is-on .ip-pkg__g { background: rgba(255,255,255,.16); color: #d8ece1; }
+.ip-pkg__age { font-size: .74rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ip-pkg.is-on .ip-pkg__age { color: rgba(255,255,255,.6); }
+.ip-pkg__t { font-size: .9rem; font-weight: 700; line-height: 1.5; color: var(--pine); }
+.ip-pkg.is-on .ip-pkg__t { color: #fff; }
+.ip-pkg__n { font-size: .82rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.ip-pkg__n b { font-size: 1.16rem; font-weight: 800; color: var(--pine); }
+.ip-pkg.is-on .ip-pkg__n { color: rgba(255,255,255,.82); }
+.ip-pkg.is-on .ip-pkg__n b { color: var(--mint); }
+.ip-pkg__m { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; color: var(--muted); }
+.ip-pkg.is-on .ip-pkg__m { color: rgba(255,255,255,.6); }
+.ip-ic { width: 14px; height: 14px; flex: none; }
+.ip-pkg__m .ip-ic { width: 12px; height: 12px; }
+
+/* ── دو ستون ── */
+.ip__grid { display: grid; grid-template-columns: 1.35fr .65fr; gap: clamp(16px, 2.4vw, 28px); align-items: start; }
+.ip__colhead {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding-block-end: 10px; margin-block-end: 12px; border-block-end: 1px solid var(--line);
+  font-size: .86rem; color: var(--pine);
+}
+.ip__badge {
+  font-size: .74rem; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+  background: var(--mint); color: var(--pine); font-variant-numeric: tabular-nums;
+}
+.ip__live { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; color: var(--pulse); }
+.ip__live i { width: 6px; height: 6px; border-radius: 50%; background: var(--pulse); display: block; }
+
+/* ── استپر بخش‌ها ── */
+.ip-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; counter-reset: ip; }
+.ip-step {
+  display: flex; gap: 11px; align-items: flex-start;
+  padding: 10px 12px; border-radius: 12px; background: #fdfcf7;
+  border: 1px solid transparent; transition: .16s var(--ease);
+}
+.ip-step:hover { border-color: var(--line); background: #fff; }
+.ip-step__n {
+  flex: none; width: 26px; height: 26px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--mint); color: var(--pine);
+  font-size: .74rem; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.ip-step--total { background: var(--pine); border-color: var(--pine); }
+.ip-step--total .ip-step__n { background: rgba(255,255,255,.15); color: #fff; }
+.ip-step--total .ip-step__t { color: #fff; }
+.ip-step--total .ip-step__meta { color: rgba(255,255,255,.7); }
+.ip-step--total .ip-step__meta b { color: var(--mint); }
+.ip-step__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ip-step__t { font-size: .87rem; font-weight: 700; color: var(--ink); line-height: 1.6; }
+.ip-step__hint { font-size: .7rem; color: var(--muted); }
+.ip-step__meta { font-size: .76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ip-step__meta b { color: var(--teal); font-weight: 800; }
+.ip-step__cond { color: var(--pulse); font-weight: 600; }
+.ip-step.is-skip { opacity: .55; }
+.ip__foot {
+  display: flex; gap: 7px; align-items: flex-start;
+  margin-block-start: 12px; font-size: .76rem; line-height: 1.8; color: var(--muted);
+}
+.ip__foot .ip-ic { width: 13px; height: 13px; color: var(--teal); margin-block-start: 2px; }
+
+/* ── ستون شواهد پرونده ── */
+.ip-ev { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.ip-ev__r {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 13px; background: #fdfcf7; font-size: .8rem;
+}
+.ip-ev__r > span { color: var(--muted); }
+.ip-ev__r b { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .79rem; }
+.ip-ev__r b.is-ok { color: var(--teal); }
+.ip-ev__r b.is-warn { color: #a86b1f; }
+.ip-ev__r b .ip-ic { width: 13px; height: 13px; }
+
+.ip__stations { margin-block-start: 16px; }
+.ip__stations > b { font-size: .82rem; color: var(--pine); display: block; margin-block-end: 8px; }
+.ip__stations ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; counter-reset: st; }
+.ip__stations li {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .8rem; color: var(--ink-soft);
+  padding: 6px 10px; border-radius: 9px;
+  background: #fdfcf7; border: 1px solid var(--line);
+  counter-increment: st;
+}
+.ip__stations li::before {
+  content: counter(st);
+  flex: none; width: 18px; height: 18px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--mint); color: var(--pine);
+  font-size: .66rem; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.ip__stations li em {
+  font-style: normal; margin-inline-start: auto;
+  font-size: .66rem; font-weight: 700; color: #a86b1f;
+  background: #fdf3e0; border-radius: 5px; padding: 1px 6px;
+}
+.ip__warn {
+  display: flex; gap: 7px; align-items: flex-start;
+  margin-block-start: 14px; padding: 10px 12px;
+  font-size: .74rem; line-height: 1.8; color: #8a4f3c;
+  background: var(--pulse-soft); border-radius: 11px;
+}
+.ip__warn .ip-ic { width: 13px; height: 13px; margin-block-start: 2px; flex: none; }
+
+@media (max-width: 980px) {
+  .ip-pkgs { grid-template-columns: 1fr 1fr; }
+  .ip__grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .ip { padding: 16px 14px; border-radius: 18px; }
+  .ip-pkgs { grid-template-columns: 1fr; gap: 8px; }
+  .ip-pkg { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 12px; }
+  .ip-pkg__top { flex: none; }
+  .ip-pkg__t { flex: 1 1 100%; order: 3; }
+  .ip-pkg__n { order: 2; margin-inline-start: auto; }
+  .ip-pkg__m { order: 4; flex: 1 1 100%; }
+  .ip-step { padding: 9px 10px; }
+  .ip-step__t { font-size: .84rem; }
+  .ip-ev__r { padding: 9px 11px; font-size: .77rem; }
+  .ip__stations li { font-size: .77rem; }
+}

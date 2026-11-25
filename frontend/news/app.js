@@ -4,6 +4,9 @@
    محتوا از content.json خوانده می‌شود؛ فارسی و اعداد فارسی.
    ========================================================================== */
 
+/* بلوک «ساختار پروندهٔ پیش‌پذیرش» — از ماژول جدا تا تکرارشدنی باشد */
+import { intakeMarkup, bindIntake } from "./intake.js";
+
 /* محتوا به فایل‌های موضوعی تقسیم شده تا هر تغییر، سطح اثر کوچکی داشته باشد.
    ترتیب مهم نیست؛ کلیدها در loadContent ادغام می‌شوند. */
 const DATA_PATHS = [
@@ -16,6 +19,7 @@ const DATA_PATHS = [
   "content/faq.json",
   "content/about.json",
   "content/contact.json",
+  "content/intake.json",
 ];
 /* حالت توسعه: با ?dev=1 (یا serve.mjs) تغییر فایل‌های محتوا بدون رفرش دستی اعمال می‌شود */
 const DEV = new URLSearchParams(location.search).has("dev");
@@ -329,6 +333,8 @@ function pageIndex(D) {
     </div>
   </div>
 
+  ${intakeSection(D, { pathway: "CORP_MEN_GE40", variant: "home" })}
+
   <section class="section" id="what">
     <div class="wrap">
       ${secHead({
@@ -500,6 +506,8 @@ function pageHospitals(D) {
       </div>
     </div>
   </section>
+
+  ${intakeSection(D, { pathway: "CORP_MEN_GE40" })}
 
   <section class="section section--paper">
     <div class="wrap">
@@ -695,6 +703,8 @@ function pagePatients(D) {
       <div style="margin-block-start:22px">${trustline()}</div>
     </div>
   </section>
+
+  ${intakeSection(D, { pathway: "CORP_WOMEN_GE40", variant: "patient" })}
 
   ${ctaBlock(S, {
     title: "می‌خواهید مرکز درمانی‌تان هم از نفس استفاده کند؟",
@@ -1226,6 +1236,17 @@ function pageContact(D) {
 /* ==========================================================================
    راه‌اندازی
    ========================================================================== */
+
+/* ==========================================================================
+   بلوک ساختار پروندهٔ پیش‌پذیرش — خوانده‌شده از content/intake.json
+   ========================================================================== */
+function intakeSection(D, opts) {
+  if (!D.intake || !Array.isArray(D.intake.pathways) || !D.intake.pathways.length) return "";
+  return `<section class="section section--paper"><div class="wrap">
+    ${intakeMarkup(D.intake, opts)}
+  </div></section>`;
+}
+
 const PAGE_RENDERERS = {
   index: pageIndex,
   hospitals: pageHospitals,
@@ -1567,6 +1588,7 @@ function renderAll(D, page) {
   initFaqTabs();
   initForms();
   initCalculator();
+  if (D.intake) bindIntake(root, D.intake);
   // در ری‌لود زندهٔ محتوا، جای اسکرول کاربر حفظ می‌شود
   if (keepScroll > 0) {
     try {

@@ -1,0 +1,1888 @@
+{
+  "intake": {
+    "generatedFrom": [
+      "frontend/my/src/lib/form-catalog.seed.json",
+      "backend/src/Nabz.Application/Identity/CorporatePathwayStationCatalog.cs"
+    ],
+    "note": "این فایل ساختهٔ tools/build-intake.mjs است؛ دستی ویرایش نکنید.",
+    "sourceVersion": 2,
+    "forms": [
+      {
+        "code": "cancer_screening_male_v02",
+        "title": "آگاهی و رفتار سلامت",
+        "gender": "مرد",
+        "ageMin": 18,
+        "ageMax": null,
+        "warning": "اگر هر یک از علائم هشدار (خونریزی، توده جدید، کاهش وزن بی‌دلیل، تب یا تعریق شبانه پایدار، درد شدید یا پیشرونده) را دارید، ارزیابی پزشکی را به تعویق نیندازید. این پرسشنامه برای غربالگری و پشتیبانی تصمیم پزشک است و جایگزین معاینه یا تشخیص نیست.",
+        "sectionCount": 11,
+        "questionCount": 88,
+        "questionCountAt40": 82,
+        "questionCountAt50": 88,
+        "sections": [
+          {
+            "title": "اطلاعات پایه",
+            "hint": "",
+            "guide": "این بخش برای تفسیر درست خطر و انتخاب روش غربالگری لازم است.",
+            "questions": 11,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "نام و نام خانوادگی",
+                "type": "text",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "کدملی",
+                "type": "text",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تاریخ تولد",
+                "type": "date",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تاریخ تکمیل پرسشنامه",
+                "type": "date",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "قد (سانتی‌متر)",
+                "type": "number",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "وزن (کیلوگرم)",
+                "type": "number",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "دور کمر (سانتی‌متر)",
+                "type": "number",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "شماره تماس",
+                "type": "text",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "شهر محل سکونت",
+                "type": "province_city",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آدرس محل سکونت (نقشه، پلاک، واحد، کد پستی)",
+                "type": "residence_address",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "وضعیت تاهل",
+                "type": "select",
+                "required": true,
+                "prefilled": true,
+                "options": [
+                  "مجرد",
+                  "متأهل",
+                  "ازدواج‌کرده",
+                  "سایر"
+                ],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "سابقه پزشکی فردی و عوامل خطر پزشکی",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 10,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "آیا تاکنون به هر نوع سرطان مبتلا شده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا سابقه ضایعات یا بیماری‌های پیش‌سرطانی گوارش داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا سابقه پرتودرمانی (Radiotherapy)  داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا سابقه شیمی‌درمانی یا درمان‌های سرکوب‌کننده ایمنی داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا پیوند عضو داشته‌اید یا داروهای سرکوب‌کننده ایمنی مصرف می‌کنید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا دیابت نوع ۲ دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا بیماری التهابی روده (کولیت اولسراتیو یا کرون) دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا سابقه زخم یا عفونت هلیکوباکتر پیلوری معده (H. pylori) داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا سابقه هپاتیت (B/C) یا بیماری مزمن کبدی دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا سابقه(HIV) یا ضعف ایمنی شناخته‌شده دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "سابقه خانوادگی و ژنتیک (خویشاوندان درجه یک: پدر/مادر/خواهر/برادر/فرزند)",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 9,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "آیا در خویشاوندان درجه یک شما سابقه ابتلا به سرطان وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا در خانواده شما سابقه سرطان پروستات وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا در خانواده شما سابقه سرطان روده بزرگ یا پولیپ‌های متعدد وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا در خانواده شما سابقه سرطان پستان/تخمدان/پانکراس (در زنان یا مردان) وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا در خانواده شما سابقه سرطان معده یا مری وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا در خانواده شما سابقه سرطان ریه وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا سرطان در بستگان شما در سن کمتر از ۵۰ سال رخ داده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا در خانواده شما بیش از یک نفر به سرطان مبتلا شده‌اند؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا کسی در خانواده تست ژنتیک مثبت  سرطان (BRCA/LYNCH) داشته است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "سبک زندگی و مواجهات محیطی/شغلی",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 13,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "آیا در حال حاضر سیگار می‌کشید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا سابقه مصرف سیگار دارید  (حتی اگر ترک کرده‌اید)؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "مجموع مصرف سیگار شما بیش از ۲۰ پاکت درسال بوده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا در معرض دود سیگار دیگران  (در منزل/محیط کار) به طور منظم هستید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا قلیان یا محصولات دخانی دیگر مصرف می‌کنید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا الکل مصرف می‌کنید؟  (مصرف منظم یا زیاد)",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا فعالیت بدنی منظم شما کمتر از ۱۵۰ دقیقه در هفته است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا اضافه وزن یا چاقی دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا مصرف میوه و سبزی در رژیم غذایی شما کم است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا مصرف گوشت قرمز/فرآوری‌شده (سوسیس، کالباس و...) در رژیم شما زیاد است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا در شغل/زندگی با مواد سرطان‌زا مواجهه داشته‌اید؟  (آزبست، سیلیس، دود دیزل، بنزن، رنگ‌ها، حلال‌ها)",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا تماس طولانی‌مدت با آفت‌کش‌ها یا مواد شیمیایی کشاورزی داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا سابقه مواجهه با اشعه یونیزان (کاری/درمانی) دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "علائم عمومی (در ۳ ماه اخیر)",
+            "hint": "۳ ماه اخیر",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "کاهش وزن ناخواسته (مثلاً بیش از ۵ کیلو در ۳ ماه) داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "بی‌اشتهایی پایدار داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "خستگی شدید یا کاهش توان غیرقابل توجیه داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تعریق شبانه شدید و تکرارشونده داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تب‌های طولانی‌مدت بدون علت مشخص داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "دردهای مداوم یا پیشرونده بدون علت مشخص داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "توده یا برآمدگی جدید (گردن، زیر بغل، کشاله ران، بیضه، پستان) احساس کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "زخم یا ضایعه پوستی/دهانی که بیش از ۳ هفته خوب نشود داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "علائم ادراری و پروستات (در ۳ ماه اخیر)",
+            "hint": "۳ ماه اخیر",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 9,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "تکرر ادرار یا فوریت ادرار پیدا کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "شب‌ها بیش از حد معمول برای ادرار از خواب بیدار می‌شوید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سوزش یا درد هنگام ادرار دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "شروع ادرار برایتان سخت شده یا قطع و وصل می‌شود؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "جریان ادرار ضعیف شده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "احساس تخلیه ناقص مثانه دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "خون در ادرار مشاهده کرده‌اید؟ (حتی یک بار)",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "خون در مایع منی مشاهده کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "درد مداوم در لگن، کشاله ران یا پایین کمر دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "علائم گوارشی و روده بزرگ (در ۳ ماه اخیر)",
+            "hint": "۳ ماه اخیر",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "تغییر واضح و مداوم در الگوی اجابت مزاج داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "یبوست یا اسهال مزمن (بیش از ۴ هفته) داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "وجود خون روشن در مدفوع مشاهده کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "مدفوع سیاه قیری (ملنا يا خون تيره) داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "درد شکمی مداوم یا عودکننده دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "نفخ/احساس پری یا سیری زودرس پایدار دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تهوع یا استفراغ مکرر یا دشواری بلع دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "کم‌خونی بدون علت مشخص یا سابقه فقر آهن داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "علائم تنفسی (در ۳ ماه اخیر)",
+            "hint": "۳ ماه اخیر",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 6,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "سرفه‌ای که بیش از ۳ هفته طول کشیده باشد داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تغییر واضح در الگوی سرفه  (شدت/ نوع) داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تنگی نفس غیرمعمول یا بدترشونده دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "درد مداوم قفسه سینه دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "خون در خلط مشاهده کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "گرفتگی صدا که بیش از ۳ هفته طول بکشد داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "بیضه و پوست",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 4,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "توده، سفتی یا تغییر اندازه بیضه‌ها را احساس کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "درد یا احساس سنگینی بیضه/کیسه بیضه به طور پایدار دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "خال یا ضایعه پوستی که اندازه/رنگ/شکل آن تغییر کرده یا خونریزی کند دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه آفتاب‌سوختگی شدید و مکرر یا سولاریوم داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "سوابق غربالگری و پیگیری‌های قبلی",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 6,
+            "conditional": 5,
+            "fields": [
+              {
+                "label": "آیا تاکنون آزمایش خون جهت بررسي پروستات (PSA) انجام داده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "آیا تاکنون معاینه انگشتی پروستات انجام داده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "آیا تاکنون کولونوسکوپی انجام داده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "آیا آزمایش خون مخفی در مدفوع انجام داده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "آیا سی‌تی اسکن دوز پایین ریه برای غربالگری انجام داده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "آیا نتیجه غیرطبیعی در هر کدام از غربالگری‌ها داشته‌اید که نیاز به پیگیری داشته باشد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "آگاهی و رفتار سلامت",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 4,
+            "conditional": 1,
+            "fields": [
+              {
+                "label": "آیا درباره غربالگری سرطان روده بزرگ آگاهی کافی دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا درباره مزایا و محدودیت‌های غربالگری سرطان پروستات آگاهی دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "آیا در صورت مشاهده علائم غیرطبیعی، مراجعه به پزشک را به تعویق می‌اندازید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا تاکنون به دلیل ترس/شرم/هزینه از پیگیری آزمایش یا مراجعه منصرف شده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "cancer_screening_female_v02",
+        "title": "سابقه غربالگری و واکسیناسیون",
+        "gender": "زن",
+        "ageMin": 18,
+        "ageMax": null,
+        "warning": "اگر هر یک از علائم هشدار (خونریزی، توده جدید، کاهش وزن بی‌دلیل، تب یا تعریق شبانه پایدار، درد شدید یا پیشرونده) را دارید، ارزیابی پزشکی را به تعویق نیندازید. این پرسشنامه برای غربالگری و پشتیبانی تصمیم پزشک است و جایگزین معاینه یا تشخیص نیست.",
+        "sectionCount": 9,
+        "questionCount": 75,
+        "questionCountAt40": 71,
+        "questionCountAt50": 75,
+        "sections": [
+          {
+            "title": "اطلاعات پایه",
+            "hint": "",
+            "guide": "این بخش برای تفسیر درست خطر و انتخاب روش غربالگری لازم است.",
+            "questions": 11,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "نام و نام خانوادگی",
+                "type": "text",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "کدملی",
+                "type": "text",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تاریخ تولد",
+                "type": "date",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تاریخ تکمیل پرسشنامه",
+                "type": "date",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "قد (سانتی‌متر)",
+                "type": "number",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "وزن (کیلوگرم)",
+                "type": "number",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "دور کمر (سانتی‌متر)",
+                "type": "number",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "شماره تماس",
+                "type": "text",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "شهر محل سکونت",
+                "type": "province_city",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آدرس محل سکونت (نقشه، پلاک، واحد، کد پستی)",
+                "type": "residence_address",
+                "required": true,
+                "prefilled": true,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "وضعیت تاهل",
+                "type": "select",
+                "required": true,
+                "prefilled": true,
+                "options": [
+                  "مجرد",
+                  "متأهل",
+                  "ازدواج‌کرده",
+                  "سایر"
+                ],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "سابقه خانوادگی و عوامل ژنتیک",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "سابقه هر نوع سرطان در بستگان درجه یک (مادر، خواهر، دختر) وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه سرطان پستان در خانواده وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه سرطان تخمدان/لوله فالوپ/صفاق در خانواده وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه سرطان کولون/رکتوم، رحم، معده یا مجاری ادراری در خانواده وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "ابتلای یکی از بستگان به سرطان در سن کمتر از ۵۰ سال رخ داده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "بیش از یک نفر از بستگان نزدیک به سرطان مبتلا شده‌اند؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه سرطان پستان در مردان خانواده وجود دارد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آیا در خانواده تست ژنتیک مثبت  مثلLynch (سرطان‌های ارثی روده/رحم) یا BRCA (سرطان ارثی پستان/تخمدان/پانکراس ..) گزارش شده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "سابقه پزشکی فردی و درمان‌های قبلی",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 1,
+            "fields": [
+              {
+                "label": "خودتان سابقه ابتلا به سرطان یا ضایعات پیش‌سرطانی داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه بیوپسی پستان/تخمدان/دهانه رحم/رحم داشته‌اید؟ (حتی اگر خوش‌خیم بوده)",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه پرتودرمانی به ناحیه قفسه سینه قبل از ۳۰ سالگی داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه بیماری‌های التهابی مزمن روده (مثل کولیت اولسراتیو/کرون/ IBD )دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه هپاتیت (B/C) یا بیماری مزمن کبدی دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه نقص ایمنی/مصرف طولانی کورتون یا داروهای تضعیف ایمنی دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه عفونت (HPV) یا درمان زگیل تناسلی/ضایعات دهانه رحم داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه دیابت، فشار خون، یا چربی خون دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "سابقه باروری، قاعدگی و هورمون",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 5,
+            "fields": [
+              {
+                "label": "سن اولین قاعدگی کمتر از ۱۲ سال بوده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سن یائسگی ۵۵ سال یا بیشتر بوده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "تا کنون بارداری کامل نداشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "اولین بارداری کامل بعد از ۳۰ سالگی بوده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه ناباروری یا درمان‌های ناباروری داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه شیردهی کمتر از ۶ ماه یا عدم شیردهی (در صورت داشتن زایمان)؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه مصرف طولانی‌مدت هورمون (قرص جلوگیری/هورمون درمانی یائسگی) بیش از ۵ سال دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سابقه سندرم تخمدان پلی‌کیستیک (PCOS) یا قاعدگی‌های بسیار نامنظم طولانی‌مدت دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "علائم پستان و زیربغل (3 ماه اخیر)",
+            "hint": "۳ ماه اخیر",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "توده یا سفتی جدید در پستان احساس کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "توده/ورم در ناحیه زیر بغل یا بالای ترقوه احساس کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تغییر واضح در اندازه یا شکل پستان ایجاد شده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "فرورفتگی/چروک شدن پوست پستان (مثل پوست پرتقالی) دیده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "قرمزی، گرمی یا ضخیم شدن پوست پستان که بیش از ۲ هفته طول کشیده باشد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "ترشح خونی یا شفاف یک‌طرفه از نوک پستان داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تغییر نوک پستان (فرورفتگی جدید، انحراف، زخم/اگزمای مقاوم) دیده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "درد موضعی پایدار در پستان که با سیکل قاعدگی مرتبط نباشد؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "علائم زنانگی (دهانه رحم/رحم/تخمدان)",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 3,
+            "fields": [
+              {
+                "label": "خونریزی بین قاعدگی‌ها یا بعد از رابطه جنسی داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "خونریزی بعد از یائسگی داشته‌اید؟ (حتی یک‌بار)",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "قاعدگی‌ها بسیار شدید یا طولانی‌تر از معمول شده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "درد لگنی مداوم یا فشار لگنی در ۳ ماه اخیر دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "ترشحات غیرطبیعی واژینال (بدبو، خونی، چرکی) بیش از ۲ هفته دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "درد هنگام رابطه جنسی به‌صورت جدید یا پیشرونده دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "نفخ مداوم، احساس پری زودرس یا بزرگ شدن شکم بیش از ۲-۳ هفته دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تکرر ادرار/فوریت ادرار جدید همراه با نفخ یا درد لگن دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "علائم عمومی و گوارشی",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "کاهش وزن بی‌دلیل (بیش از ۵٪ وزن طی ۶ ماه) داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "خستگی مداوم یا بی‌حالی غیرقابل توجیه دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "کم‌خونی یا فقر آهن بدون علت مشخص گزارش شده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "تغییر پایدار در عادات دفع (یبوست/اسهال/تغییر قطر مدفوع) بیش از ۴ هفته دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "خون در مدفوع یا مدفوع سیاه (قیری) مشاهده کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "درد شکمی مداوم یا عودکننده همراه با کاهش اشتها دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سوزش/ریفلاکس شدید یا مشکل بلع بیش از ۳ هفته دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "سرفه مزمن، تنگی نفس یا خلط خونی (بیش از ۳ هفته))دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "سبک زندگی و مواجهات",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 0,
+            "fields": [
+              {
+                "label": "سیگار مصرف می‌کنید یا سابقه مصرف داشته‌اید؟(یکساله)",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "قلیان مصرف می‌کنید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "الکل مصرف می‌کنید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "فعالیت بدنی شما کمتر از ۱۵۰ دقیقه در هفته است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "رژیم غذایی شما پر از غذاهای فراوری‌شده/گوشت قرمز زیاد است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "مصرف میوه و سبزی در رژیم غذایی شما کم است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "شاخص توده بدنی بالا/چاقی شکمی دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "مواجهه شغلی/محیطی با مواد سرطان‌زا (مثل آزبست، دود، حلال‌ها) دارید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          },
+          {
+            "title": "سابقه غربالگری و واکسیناسیون",
+            "hint": "",
+            "guide": "اگر پاسخ بله است، در توضیحات مدت/تاریخ/شدت را بنویسید.",
+            "questions": 8,
+            "conditional": 4,
+            "fields": [
+              {
+                "label": "آخرین پاپ اسمیر / HPV تست شما در ۵ سال اخیر انجام شده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "نتیجه غیرطبیعی پاپ اسمیر / HPV در گذشته داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "واکسن (HPV) دریافت کرده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "آخرین ماموگرافی برای سن توصیه‌شده یا پرخطر( در ۲ سال اخیر انجام شده است؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "سونوگرافی یا (MRI) پستان به دلیل ریسک بالا/توصیه پزشک داشته‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "کولونوسکوپی یا تست خون مخفی مدفوع بر اساس سن/ریسک انجام داده‌اید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": 50
+              },
+              {
+                "label": "آیا به‌طور منظم خودآزمایی/آگاهی از تغییرات پستان را انجام می‌دهید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              },
+              {
+                "label": "در صورت مشاهده علائم غیرطبیعی، طی ۱-۲ هفته به پزشک مراجعه می‌کنید؟",
+                "type": "yn_unk",
+                "required": true,
+                "prefilled": false,
+                "options": [],
+                "ageMin": null
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "pathways": [
+      {
+        "code": "CORP_MEN_LT40",
+        "title": "چکاپ آقایان زیر ۴۰ سال",
+        "gender": "مرد",
+        "minAge": null,
+        "maxAge": 39,
+        "minutes": 90,
+        "form": "cancer_screening_male_v02",
+        "description": "آزمایش، سونو، پذیرایی، نوار قلب، سپس پایش غیرحضوری پس از جواب آزمایش",
+        "stations": [
+          {
+            "code": "LAB",
+            "title": "آزمایشگاه",
+            "step": 1,
+            "optional": false
+          },
+          {
+            "code": "US_ABD",
+            "title": "سونوگرافی شکم و لگن",
+            "step": 2,
+            "optional": false
+          },
+          {
+            "code": "HOSP_MEAL",
+            "title": "پذیرایی / صبحانه",
+            "step": 3,
+            "optional": true
+          },
+          {
+            "code": "ECG",
+            "title": "نوار قلب",
+            "step": 4,
+            "optional": false
+          },
+          {
+            "code": "REMOTE_REVIEW",
+            "title": "ویزیت غیرحضوری و بررسی پرونده",
+            "step": 5,
+            "optional": false
+          }
+        ],
+        "ageLabel": "زیر ۴۰",
+        "ageRefLabel": "۳۵",
+        "questionCount": 82,
+        "questionCountAt50": 88,
+        "sectionQuestions": [
+          11,
+          10,
+          9,
+          13,
+          8,
+          9,
+          8,
+          6,
+          4,
+          1,
+          3
+        ],
+        "sectionQuestionsAt50": [
+          11,
+          10,
+          9,
+          13,
+          8,
+          9,
+          8,
+          6,
+          4,
+          6,
+          4
+        ],
+        "ageRef": 35,
+        "sectionCount": 11,
+        "stationCount": 5
+      },
+      {
+        "code": "CORP_MEN_GE40",
+        "title": "چکاپ آقایان ۴۰ سال به بالا",
+        "gender": "مرد",
+        "minAge": 40,
+        "maxAge": null,
+        "minutes": 120,
+        "form": "cancer_screening_male_v02",
+        "description": "آزمایش، سونو، پذیرایی، نوار قلب، ویزیت قلب و اکو؛ تست ورزش در صورت صلاح‌دید",
+        "stations": [
+          {
+            "code": "LAB",
+            "title": "آزمایشگاه",
+            "step": 1,
+            "optional": false
+          },
+          {
+            "code": "US_ABD",
+            "title": "سونوگرافی شکم و لگن",
+            "step": 2,
+            "optional": false
+          },
+          {
+            "code": "HOSP_MEAL",
+            "title": "پذیرایی / صبحانه",
+            "step": 3,
+            "optional": true
+          },
+          {
+            "code": "ECG",
+            "title": "نوار قلب",
+            "step": 4,
+            "optional": false
+          },
+          {
+            "code": "CARDIO",
+            "title": "ویزیت قلب و اکو",
+            "step": 5,
+            "optional": false
+          },
+          {
+            "code": "STRESS",
+            "title": "تست ورزش",
+            "step": 6,
+            "optional": true
+          },
+          {
+            "code": "REMOTE_REVIEW",
+            "title": "ویزیت غیرحضوری و بررسی پرونده",
+            "step": 7,
+            "optional": false
+          }
+        ],
+        "ageLabel": "۴۰+",
+        "ageRefLabel": "۴۰",
+        "questionCount": 82,
+        "questionCountAt50": 88,
+        "sectionQuestions": [
+          11,
+          10,
+          9,
+          13,
+          8,
+          9,
+          8,
+          6,
+          4,
+          1,
+          3
+        ],
+        "sectionQuestionsAt50": [
+          11,
+          10,
+          9,
+          13,
+          8,
+          9,
+          8,
+          6,
+          4,
+          6,
+          4
+        ],
+        "ageRef": 40,
+        "sectionCount": 11,
+        "stationCount": 7
+      },
+      {
+        "code": "CORP_WOMEN_LT40",
+        "title": "چکاپ بانوان زیر ۴۰ سال",
+        "gender": "زن",
+        "minAge": null,
+        "maxAge": 39,
+        "minutes": 120,
+        "form": "cancer_screening_female_v02",
+        "description": "آزمایش، سونو شکم/لگن و برست، پذیرایی، نوار قلب، ویزیت زنان؛ پاپ در صورت نیاز",
+        "stations": [
+          {
+            "code": "LAB",
+            "title": "آزمایشگاه",
+            "step": 1,
+            "optional": false
+          },
+          {
+            "code": "US_ABD",
+            "title": "سونوگرافی شکم و لگن",
+            "step": 2,
+            "optional": false
+          },
+          {
+            "code": "US_BREAST",
+            "title": "سونوگرافی پستان",
+            "step": 3,
+            "optional": false
+          },
+          {
+            "code": "HOSP_MEAL",
+            "title": "پذیرایی / صبحانه",
+            "step": 4,
+            "optional": true
+          },
+          {
+            "code": "ECG",
+            "title": "نوار قلب",
+            "step": 5,
+            "optional": false
+          },
+          {
+            "code": "GYN",
+            "title": "ویزیت متخصص زنان",
+            "step": 6,
+            "optional": false
+          },
+          {
+            "code": "PAP",
+            "title": "پاپ اسمیر",
+            "step": 7,
+            "optional": true
+          },
+          {
+            "code": "REMOTE_REVIEW",
+            "title": "ویزیت غیرحضوری و بررسی پرونده",
+            "step": 8,
+            "optional": false
+          }
+        ],
+        "ageLabel": "زیر ۴۰",
+        "ageRefLabel": "۳۵",
+        "questionCount": 71,
+        "questionCountAt50": 75,
+        "sectionQuestions": [
+          11,
+          8,
+          8,
+          7,
+          8,
+          7,
+          8,
+          8,
+          6
+        ],
+        "sectionQuestionsAt50": [
+          11,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8
+        ],
+        "ageRef": 35,
+        "sectionCount": 9,
+        "stationCount": 8
+      },
+      {
+        "code": "CORP_WOMEN_GE40",
+        "title": "چکاپ بانوان ۴۰ سال به بالا",
+        "gender": "زن",
+        "minAge": 40,
+        "maxAge": null,
+        "minutes": 160,
+        "form": "cancer_screening_female_v02",
+        "description": "مسیر کامل بانوان ۴۰+ شامل برست، پذیرایی، قلب/اکو و زنان؛ تست ورزش و پاپ اختیاری",
+        "stations": [
+          {
+            "code": "LAB",
+            "title": "آزمایشگاه",
+            "step": 1,
+            "optional": false
+          },
+          {
+            "code": "US_ABD",
+            "title": "سونوگرافی شکم و لگن",
+            "step": 2,
+            "optional": false
+          },
+          {
+            "code": "US_BREAST",
+            "title": "سونوگرافی پستان",
+            "step": 3,
+            "optional": false
+          },
+          {
+            "code": "HOSP_MEAL",
+            "title": "پذیرایی / صبحانه",
+            "step": 4,
+            "optional": true
+          },
+          {
+            "code": "ECG",
+            "title": "نوار قلب",
+            "step": 5,
+            "optional": false
+          },
+          {
+            "code": "CARDIO",
+            "title": "ویزیت قلب و اکو",
+            "step": 6,
+            "optional": false
+          },
+          {
+            "code": "GYN",
+            "title": "ویزیت متخصص زنان",
+            "step": 7,
+            "optional": false
+          },
+          {
+            "code": "STRESS",
+            "title": "تست ورزش",
+            "step": 8,
+            "optional": true
+          },
+          {
+            "code": "PAP",
+            "title": "پاپ اسمیر",
+            "step": 9,
+            "optional": true
+          },
+          {
+            "code": "REMOTE_REVIEW",
+            "title": "ویزیت غیرحضوری و بررسی پرونده",
+            "step": 10,
+            "optional": false
+          }
+        ],
+        "ageLabel": "۴۰+",
+        "ageRefLabel": "۴۰",
+        "questionCount": 71,
+        "questionCountAt50": 75,
+        "sectionQuestions": [
+          11,
+          8,
+          8,
+          7,
+          8,
+          7,
+          8,
+          8,
+          6
+        ],
+        "sectionQuestionsAt50": [
+          11,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8
+        ],
+        "ageRef": 40,
+        "sectionCount": 9,
+        "stationCount": 10
+      }
+    ]
+  }
+}
