@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/ClinicDashboard.tsx
+ File: frontend/my/src/components/ClinicDashboard.tsx
  Description: داشبورد کلینیک؛ برای ادمین KPI قرارداد/مراجعه/پیش‌پذیرش امروز
  Parent Dependencies: clinic-admin-dashboard, AppInput, clinic types
  */

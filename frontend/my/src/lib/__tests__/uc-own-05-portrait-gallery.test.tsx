@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-own-05-portrait-gallery.test.tsx
+ File: frontend/my/src/lib/__tests__/uc-own-05-portrait-gallery.test.tsx
  Description: UC-OWN-05 — گالری بدون capture + pan پیکسلی قبل/بعد زوم
  Parent Dependencies: portrait-gallery, PatientPhotoCapture
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/FormResponseSummary.tsx
+ File: frontend/my/src/components/FormResponseSummary.tsx
  Description: خلاصه پاسخ پرسشنامه — مود اولویت بالینی (مثبت/توضیح/هشدار) و پرسشنامه کامل
  Parent Dependencies: form-engine, types/clinic
  */

@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/CorporateContractsHub.tsx
+ File: frontend/my/src/components/CorporateContractsHub.tsx
  Description: هاب قرارداد سازمانی — رستر افراد، مسیر سلامتی، نوبت‌دهی، قیف؛ PDF پرسشنامه تکمیل‌شده
  Parent Dependencies: types/clinic.ts, mock-contracts.ts, intake-pdf.ts, PrintableIntakeQuestionnaire
  */

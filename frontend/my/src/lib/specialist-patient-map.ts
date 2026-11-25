@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/specialist-patient-map.ts
+ File: frontend/my/src/lib/specialist-patient-map.ts
  Description: نگاشت Patient/Chart API پزشک به PatientFullDto و ردیف فهرست
  Parent Dependencies: api/patients, api/roles, types/clinic
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/HoldToConfirmButton.tsx
+ File: frontend/my/src/components/HoldToConfirmButton.tsx
  Description: دکمه نگه‌داشتن ~۳ثانیه برای تأیید خوداظهاری ایستگاه مسیر
  Parent Dependencies: —
  */

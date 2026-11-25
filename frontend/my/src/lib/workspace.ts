@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/workspace.ts
+ File: frontend/my/src/lib/workspace.ts
  Description: ناوبری نقش‌ها، صفحات workspace و برچسب‌ها (شامل clinic-users و ادمین کل)
  Parent Dependencies: types/clinic, persian
  */

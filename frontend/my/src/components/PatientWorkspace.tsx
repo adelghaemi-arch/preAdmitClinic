@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/PatientWorkspace.tsx
+ File: frontend/my/src/components/PatientWorkspace.tsx
  Description: پرونده سلامتجو؛ ویرایش پروفایل ادمین + سوابق از→به + موبایل
  Parent Dependencies: AppInput, IranDigitField, api/patients, workspace
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/api/roles.ts
+ File: frontend/my/src/lib/api/roles.ts
  Description: نگاشت نقش API به WorkspaceRole؛ گارد JWT از nabz_api_roles
  Parent Dependencies: types/clinic, api/auth
  */

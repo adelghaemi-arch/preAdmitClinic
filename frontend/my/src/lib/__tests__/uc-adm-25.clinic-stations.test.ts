@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm-25.clinic-stations.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm-25.clinic-stations.test.ts
  Description: UC-ADM-25 — ناوبری rooms + فیلتر ایستگاه فعال + نگاشت DTO
  Parent Dependencies: workspace, clinic-stations
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/contract-pathway-buckets.ts
+ File: frontend/my/src/lib/contract-pathway-buckets.ts
  Description: سطل‌های مسیر سلامتی قرارداد — پیش‌فرض + قوانین به اولویت؛ توزیع = همین لیست
  Parent Dependencies: types/clinic
  */

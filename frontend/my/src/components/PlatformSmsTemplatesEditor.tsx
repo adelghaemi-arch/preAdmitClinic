@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/PlatformSmsTemplatesEditor.tsx
+ File: frontend/my/src/components/PlatformSmsTemplatesEditor.tsx
  Description: ویرایش قالب‌های پیامک گروهی توسط ادمین کل
  Parent Dependencies: api/sms-templates, AppInput
  */

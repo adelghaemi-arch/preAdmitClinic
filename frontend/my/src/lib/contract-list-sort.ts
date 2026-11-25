@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/contract-list-sort.ts
+ File: frontend/my/src/lib/contract-list-sort.ts
  Description: سورت/فیلتر لیست قرارداد برای کمبو — جدیدترین بالا، نمونه پایین، فیلتر غیرفعال
  Parent Dependencies: types/clinic
  */

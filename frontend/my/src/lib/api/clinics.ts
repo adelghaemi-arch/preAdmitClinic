@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/api/clinics.ts
+ File: frontend/my/src/lib/api/clinics.ts
  Description: API کلینیک جاری — لوکیشن، لوگو، پیامک، تست ارسال (UC-ADM-21/23)
  Parent Dependencies: api/http
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/api/clinic-stations.ts
+ File: frontend/my/src/lib/api/clinic-stations.ts
  Description: API کاتالوگ ایستگاه کلینیک جاری (UC-ADM-25)
  Parent Dependencies: api/http
  */

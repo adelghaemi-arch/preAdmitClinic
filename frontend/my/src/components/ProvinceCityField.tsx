@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/ProvinceCityField.tsx
+ File: frontend/my/src/components/ProvinceCityField.tsx
  Description: انتخاب استان/شهر؛ بعد از استان، کمبوی شهر باز و فوکوس می‌شود
  Parent Dependencies: iran-locations, AppInput
  */

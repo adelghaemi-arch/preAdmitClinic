@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/LocationPickerPopup.tsx
+ File: frontend/my/src/components/LocationPickerPopup.tsx
  Description: پاپاپ انتخاب موقعیت روی نقشه OSM؛ bottom-sheet موبایل با بدنه اسکرول و فوتر ثابت
  Parent Dependencies: osm-routing.ts, PermissionRetryPanel, media-permission.ts
  */

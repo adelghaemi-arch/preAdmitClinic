@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/intake-pdf.ts
+ File: frontend/my/src/lib/intake-pdf.ts
  Description: گیت دکمه PDF قیف + اسکلت بیمار + برند دینامیک (نام/لوگوی کلینیک و قرارداد)
  Parent Dependencies: types/clinic, api/contracts
  */

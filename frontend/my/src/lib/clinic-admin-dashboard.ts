@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/clinic-admin-dashboard.ts
+ File: frontend/my/src/lib/clinic-admin-dashboard.ts
  Description: KPI داشبورد ادمین کلینیک — قرارداد، اعضا، پیش‌پذیرش/مراجعه/تکمیل امروز
  Parent Dependencies: types/clinic, date-iso, persian
  */

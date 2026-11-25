@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/owner-gps-watch.ts
+ File: frontend/my/src/lib/owner-gps-watch.ts
  Description: شواهد GPS — نقطهٔ اول از تریگر صریح روی هر دستگاه؛ watch هر ۱۰ دقیقه فقط موبایل اگر ≥۱۰۰ متر
  Parent Dependencies: media-permission, osm-routing haversine
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/auth.ts
+ File: frontend/my/src/lib/auth.ts
  Description: ورود OTP با انتخاب کدملی؛ دمو لاگین فقط در FixedOtp؛ hint پایه+۱ ادمین کل
  Parent Dependencies: api/auth, api/http, api/roles
  */

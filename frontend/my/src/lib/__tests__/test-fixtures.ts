@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/test-fixtures.ts
+ File: frontend/my/src/lib/__tests__/test-fixtures.ts
  Description: دادهٔ حداقلی برای تست‌های lib
  Parent Dependencies: types/clinic
  */

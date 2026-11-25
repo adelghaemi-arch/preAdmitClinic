@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/residence-address.ts
+ File: frontend/my/src/lib/residence-address.ts
  Description: پارس و اعتبارسنجی JSON آدرس سکونت؛ draft بدون پلاک برای UI بعد از نقشه
  Parent Dependencies: none
  */

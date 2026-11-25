@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/person-identity.ts
+ File: frontend/my/src/lib/person-identity.ts
  Description: نام نمایشی، سن از تولد، اعتبارسنجی/نرمال کدملی و موبایل (+98→09)، clamp ورودی
  Parent Dependencies: persian, date-iso
  */

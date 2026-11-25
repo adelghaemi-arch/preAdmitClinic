@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm-21.touba-account.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm-21.touba-account.test.ts
  Description: گیت‌های UI حساب طوبی — merge خطوط ارسال (UC-ADM-21)
  Parent Dependencies: lib/api/clinics
  */

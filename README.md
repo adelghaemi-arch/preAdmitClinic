@@ -53,7 +53,7 @@
 
 ```
 type3/
-├── frontend/          # اپلیکیشن React (Vite) — آرتیفکت دیپلوی: server/my
+├── frontend/          # اپ‌ها: my/ (کلینیک) + news/ (ویترین) — آرتیفکت: server/my و server/news
 ├── backend/           # API ماژولار Nabz.* + EF روی MSSQL (دامنه v1)
 │   └── src/
 │       ├── Nabz.Api

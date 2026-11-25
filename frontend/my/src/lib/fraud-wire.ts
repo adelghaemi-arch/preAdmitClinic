@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/fraud-wire.ts
+ File: frontend/my/src/lib/fraud-wire.ts
  Description: پوشش NBZ1 فریم ضدتقلب روی سیم (هم‌تراز FraudFrameWireCodec بک)
  Parent Dependencies: none
  */

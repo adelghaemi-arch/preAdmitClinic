@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/focus-next-field.ts
+ File: frontend/my/src/lib/focus-next-field.ts
  Description: فوکوس فیلد بعدی در فرم (Enter / کلید Next موبایل)
  Parent Dependencies: none
  */

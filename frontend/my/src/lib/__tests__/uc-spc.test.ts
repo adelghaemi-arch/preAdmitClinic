@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-spc.test.ts
+ File: frontend/my/src/lib/__tests__/uc-spc.test.ts
  Description: تست یونیت use caseهای پزشک (UC-SPC)
  Parent Dependencies: lib/workspace, test-fixtures
  */

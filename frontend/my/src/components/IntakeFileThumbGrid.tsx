@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/IntakeFileThumbGrid.tsx
+ File: frontend/my/src/components/IntakeFileThumbGrid.tsx
  Description: تامنیل مدارک پیش‌پذیرش — PDF/تصویر؛ لود از dataUrl یا storageKey؛ کلیک PDF در تب جدید
  Parent Dependencies: pdfjs-dist, useStorageObjectUrl, types/clinic
  */

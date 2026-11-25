@@ -1,7 +1,7 @@
 /*
  File: docs/my/README.md
  Description: ایندکس مستندات اپ کلینیک (my)
- Parent Dependencies: docs/README.md, frontend/
+ Parent Dependencies: docs/README.md, frontend/my
 */
 
 > **مسیر:** [مستندات — ایندکس](../README.md) › My  
@@ -9,7 +9,7 @@
 
 # My — ایندکس
 
-اپ سرویس کلینیک فعلی در [`frontend/`](../../frontend).  
+اپ سرویس کلینیک فعلی در [`frontend/my/`](../../frontend/my).  
 آرتیفکت دیپلوی: [`server/my`](../../server/my) — راهنما: [`../shared/server-deploy.md`](../shared/server-deploy.md).
 
 فرایندهای v1: [`../processes/README.md`](../processes/README.md).

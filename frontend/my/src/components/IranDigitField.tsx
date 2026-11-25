@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/IranDigitField.tsx
+ File: frontend/my/src/components/IranDigitField.tsx
  Description: ورودی هویت ایران — sanitize هنگام تایپ و paste (فاصله/junk حذف)
  Parent Dependencies: AppInput, person-identity
  */

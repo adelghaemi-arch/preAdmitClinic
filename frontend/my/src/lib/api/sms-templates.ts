@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/api/sms-templates.ts
+ File: frontend/my/src/lib/api/sms-templates.ts
  Description: قالب‌های پیامک گروهی پلتفرم — فهرست برای قیف و upsert ادمین کل
  Parent Dependencies: api/http
  */

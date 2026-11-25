@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/api/auth.ts
+ File: frontend/my/src/lib/api/auth.ts
  Description: OTP، انتخاب هویت چندکدملی، me روی Nabz.Api
  Parent Dependencies: api/http
  */

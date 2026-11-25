@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-plt.test.ts
+ File: frontend/my/src/lib/__tests__/uc-plt.test.ts
  Description: تست یونیت use caseهای ادمین کل پلتفرم (UC-PLT)
  Parent Dependencies: lib/workspace, lib/api/auth
  */

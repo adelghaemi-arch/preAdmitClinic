@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/AdminProfile.tsx
+ File: frontend/my/src/components/AdminProfile.tsx
  Description: پنل ادمین کلینیک — بسته‌ها، کاتالوگ ایستگاه (UC-ADM-25) و فرم‌ساز
  Parent Dependencies: AppInput, clinic-actions, clinic-stations
  */

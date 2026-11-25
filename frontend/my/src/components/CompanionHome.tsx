@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/CompanionHome.tsx
+ File: frontend/my/src/components/CompanionHome.tsx
  Description: خانه مینیمال Owner — فاصله بالای مسیر؛ ورود نشست‌محور به پیش‌پذیرش
  Parent Dependencies: ClinicReachCard, owner-gps-watch, health-roadmap
  */

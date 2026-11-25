@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/owner-intake-gate.ts
+ File: frontend/my/src/lib/owner-intake-gate.ts
  Description: گیت Owner — خانه با مسیر مجاز؛ پروفایل/عکس اجباری در پیش‌پذیرش
  Parent Dependencies: types/clinic, workspace
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm-24.contract-status.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm-24.contract-status.test.ts
  Description: UC-ADM-24 — فعال/غیرفعال قرارداد (mock) + فیلتر لیست کمبو
  Parent Dependencies: contract-actions, contract-list-sort, mock-store
  */

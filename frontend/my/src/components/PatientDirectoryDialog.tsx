@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/PatientDirectoryDialog.tsx
+ File: frontend/my/src/components/PatientDirectoryDialog.tsx
  Description: جستجو و فهرست سلامتجویان با نمایش ارقام فارسی برای کدملی/موبایل
  Parent Dependencies: lib/persian.ts, lib/workspace.ts, lib/client-db.ts
  */

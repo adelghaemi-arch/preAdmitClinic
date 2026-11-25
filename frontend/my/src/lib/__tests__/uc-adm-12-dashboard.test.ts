@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm-12-dashboard.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm-12-dashboard.test.ts
  Description: UC-ADM-12 — KPI داشبورد ادمین و اولویت ناوبری dashboard
  Parent Dependencies: clinic-admin-dashboard, workspace
  */

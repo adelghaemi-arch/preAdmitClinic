@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/PatientPhotoCapture.tsx
+ File: frontend/my/src/components/PatientPhotoCapture.tsx
  Description: عکس پرونده (دوربین/گالری؛ پینچ Pointer+wheel) + فریم ضدتقلب؛ ensure-stream بدون ریست adjust/preview
  Parent Dependencies: portrait-face.ts, portrait-gallery.ts, PermissionRetryPanel, media-permission.ts
  */

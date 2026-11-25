@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/health-roadmap.ts
+ File: frontend/my/src/lib/health-roadmap.ts
  Description: نقشه راه ۶مرحله‌ای؛ desc پیش‌پذیرش وابسته به وجود پرتره
  Parent Dependencies: types/clinic, pathway-stations, persian
  */

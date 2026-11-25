@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/app-input-digits.test.tsx
+ File: frontend/my/src/lib/__tests__/app-input-digits.test.tsx
  Description: AppInput — placeholder و value با digits=fa فارسی می‌شوند
  Parent Dependencies: components/AppInput.tsx
  */

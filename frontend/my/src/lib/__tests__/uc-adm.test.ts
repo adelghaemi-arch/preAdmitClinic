@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm.test.ts
  Description: تست یونیت use caseهای ادمین کلینیک (UC-ADM)
  Parent Dependencies: lib/workspace
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/viewer.ts
+ File: frontend/my/src/lib/viewer.ts
  Description: حل نشست و نقش فعال از API auth/me (بدون mock-store)
  Parent Dependencies: auth, api/roles, workspace
  */

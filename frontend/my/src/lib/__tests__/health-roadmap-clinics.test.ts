@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/health-roadmap-clinics.test.ts
+ File: frontend/my/src/lib/__tests__/health-roadmap-clinics.test.ts
  Description: نام کلینیک‌های مرحله مراجعه از مسیر سلامتی همان سلامتجو
  Parent Dependencies: health-roadmap
  */

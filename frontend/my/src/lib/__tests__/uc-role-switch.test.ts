@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-role-switch.test.ts
+ File: frontend/my/src/lib/__tests__/uc-role-switch.test.ts
  Description: سوئیچ نقش — فقط ادمین کل؛ بقیه نقش‌ها قفل روی حساب خود
  Parent Dependencies: lib/viewer, types/clinic
  */

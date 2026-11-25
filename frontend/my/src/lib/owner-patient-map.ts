@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/owner-patient-map.ts
+ File: frontend/my/src/lib/owner-patient-map.ts
  Description: نگاشت OwnerIntakeSnapshot API به PatientFullDto برای hydrate
  Parent Dependencies: api/patients, api/roles, types/clinic, person-identity
  */

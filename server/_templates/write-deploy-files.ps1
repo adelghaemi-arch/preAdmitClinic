@@ -81,7 +81,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
 "@
         $envExample = @"
-# فرانت کلینیک (my) — بیلد از frontend/؛ runtime nginx فقط dist را سرو می‌کند
+# فرانت کلینیک (my) — بیلد از frontend/my/؛ runtime nginx فقط dist را سرو می‌کند
 # publish.bat / sync-deploy.bat قبل از npm build این مقدار را به‌عنوان VITE_API_BASE_URL تزریق می‌کنند (بدون /api)
 VITE_API_BASE_URL=$apiUrl
 
@@ -169,7 +169,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
 "@
         $envExample = @"
-# ویترین عمومی (news) — فعلاً اسکلت؛ منبع آینده: frontend/news
+# ویترین عمومی (news) — ایستای بدون بیلد؛ منبع: frontend/news/
 # مقدار بیلد از server/sync.config.bat (API_PUBLIC_URL) تزریق می‌شود.
 VITE_API_URL=$apiUrl
 

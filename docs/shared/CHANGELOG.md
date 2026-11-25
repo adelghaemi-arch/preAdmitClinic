@@ -9,6 +9,16 @@
 
 # Changelog نگارش اسناد
 
+## ۱۴۰۵/۰۹/۰۷ — هم‌ترازی ارجاع‌ها با ساختار `frontend/my` + `frontend/news`
+
+پس از انتقال اپ کلینیک به `frontend/my`، ارجاع‌های کهنه به `frontend/` یک‌جا اصلاح شد:
+
+- **دیپلوی:** `server/sync-deploy.bat` اکنون از `frontend\my` بیلد و به `server/my/dist` منتقل می‌کند؛ انتشار news هم مسیر ایستای `frontend/news` را mirror می‌کند (با `/XF` برای `serve.mjs`، `check.mjs`، `README.md`) و `mirror_dir` آرگومان سوم استثنا را می‌پذیرد. توضیح منبع env در [`write-deploy-files.ps1`](../../server/_templates/write-deploy-files.ps1) و [`_run-frontend-tests.ps1`](../../server/_run-frontend-tests.ps1) هم به‌روز شد.
+- **راهنمای پوشه‌ها:** [`frontend/README.md`](../../frontend/README.md) بازنویسی شد (جدول اپ → آرتیفکت دیپلوی)؛ درخت [`README.md`](../../README.md) ریشه و ردیف منابع [`docs/README.md`](../README.md) اصلاح شد.
+- **سند نقش/تست:** ۶۸ مسیر تست در [`unit-test-scenarios.md`](unit-test-scenarios.md) به `frontend/my/src/...` منتقل و یک نام فایل تست نادرست (`uc-sup-01.auth-otp.test.ts`) به فایل واقعی (`uc-sup.test.ts`) اصلاح شد.
+- **هدر فایل‌ها:** خط `File:` در ۱۲۷ فایل `frontend/my` به مسیر جدید به‌روز شد (فقط هدر؛ کد تغییر نکرد).
+- **تأیید:** `npm ci` + `npm run build` + `npm run test:run` روی `frontend/my` موفق (۲۰۹ تست، ۳۷ فایل) و بازبینی news سالم.
+
 ## ۱۴۰۵/۰۹/۰۶ — آماده‌سازی news برای تغییرات بعدی
 
 - محتوای `frontend/news` از یک `content.json` به نه فایل موضوعی در `content/` تفکیک شد (site، home، hospitals، partners، news، voices، faq، about، contact) تا هر ویرایش دامنهٔ اثر کوچکی داشته باشد.

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm-26.intake-pdf.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm-26.intake-pdf.test.ts
  Description: UC-ADM-26 — گیت PDF قیف، برند دینامیک، HTML پیش‌نمایش بدون همکار سازمانی
  Parent Dependencies: intake-pdf, intake-pdf-render, api/contracts
  */

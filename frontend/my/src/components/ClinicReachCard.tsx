@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/ClinicReachCard.tsx
+ File: frontend/my/src/components/ClinicReachCard.tsx
  Description: کارت بیمارستان — آمار فاصله در یک ردیف فشرده موبایل؛ GPS برای شواهد
  Parent Dependencies: osm-routing, media-permission, PermissionRetryPanel
  */

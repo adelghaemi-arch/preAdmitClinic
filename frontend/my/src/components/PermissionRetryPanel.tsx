@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/PermissionRetryPanel.tsx
+ File: frontend/my/src/components/PermissionRetryPanel.tsx
  Description: پنل راهنما + تلاش مجدد وقتی کاربر مجوز دوربین یا GPS را بلاک کرده
  Parent Dependencies: media-permission.ts
  */

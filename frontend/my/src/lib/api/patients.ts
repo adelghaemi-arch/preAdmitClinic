@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/api/patients.ts
+ File: frontend/my/src/lib/api/patients.ts
  Description: API بیمار — جستجو/chart پزشک، آدرس منزل، پروفایل Owner/Admin، سوابق، snapshot پیش‌پذیرش
  Parent Dependencies: api/http.ts
  */

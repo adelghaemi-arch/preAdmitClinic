@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/api/pathways.ts
+ File: frontend/my/src/lib/api/pathways.ts
  Description: کلاینت API مسیرهای سلامتی واحد (کتابخانه + ایستگاه‌ها)
  Parent Dependencies: api/http, pathway-stations, types/clinic
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-own-14.pathway-itinerary.test.ts
+ File: frontend/my/src/lib/__tests__/uc-own-14.pathway-itinerary.test.ts
  Description: UC-OWN-14 — نگاشت itinerary و عنوان مسیر سازمانی
  Parent Dependencies: owner-patient-map, health-pathway-titles
  */

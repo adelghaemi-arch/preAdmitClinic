@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/PrintableEmrReport.tsx
+ File: frontend/my/src/components/PrintableEmrReport.tsx
  Description: گزارش قابل چاپ پرونده الکترونیک با برند نفس
  Parent Dependencies: ResultAttachment
  */

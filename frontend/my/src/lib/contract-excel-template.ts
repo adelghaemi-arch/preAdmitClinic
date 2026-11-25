@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/contract-excel-template.ts
+ File: frontend/my/src/lib/contract-excel-template.ts
  Description: تمپلیت اکسل ورود اعضا — اجباری/اختیاری، نمونه مرد/زن، مقادیر انتخابی
  Parent Dependencies: contract-member-import, marital-status, xlsx
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/vite.config.ts
+ File: frontend/my/vite.config.ts
  Description: Vite/React/Tailwind؛ exclude پکیج پچ‌شدهٔ jalali از prebundle
  Parent Dependencies: @vitejs/plugin-react, @tailwindcss/vite, patch-package
  */

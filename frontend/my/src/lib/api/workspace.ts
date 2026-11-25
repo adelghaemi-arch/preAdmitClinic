@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/api/workspace.ts
+ File: frontend/my/src/lib/api/workspace.ts
  Description: bootstrap workspace از API؛ متادیتای fraud بدون دانلود فایل؛ GPS سبک
  Parent Dependencies: api/http, api/evidence, mock-platform defaults
  */

@@ -78,10 +78,10 @@ call :write_deploy my
 if errorlevel 1 exit /b 1
 REM اپ کلینیک VITE_API_BASE_URL می‌خواند؛ بدون /api چون مسیرهای کلاینت خودشان /api/... دارند
 set "VITE_API_BASE_URL=%API_PUBLIC_URL%"
-echo Building my ^(frontend^) with VITE_API_BASE_URL=%VITE_API_BASE_URL%
-call :npm_build "%REPO_ROOT%\frontend"
+echo Building my ^(frontend\my^) with VITE_API_BASE_URL=%VITE_API_BASE_URL%
+call :npm_build "%REPO_ROOT%\frontend\my"
 if errorlevel 1 exit /b 1
-call :mirror_dir "%REPO_ROOT%\frontend\dist" "%SERVER_ROOT%\my\dist"
+call :mirror_dir "%REPO_ROOT%\frontend\my\dist" "%SERVER_ROOT%\my\dist"
 if errorlevel 1 exit /b 1
 set "DID_MY=1"
 echo [OK] my -^> server\my\dist
@@ -96,13 +96,19 @@ goto :after_news
 echo --- sync news ---
 call :write_deploy news
 if errorlevel 1 exit /b 1
-REM ویترین عمومی هنوز در frontend/news نیست؛ اسکلت + placeholder تا compose بالا بیاید
+REM ویترین عمومی (frontend\news) ایستا و بدون بیلد است؛ خودِ پوشه mirror می‌شود.
+REM فقط اگر package.json/اسکریپت بیلد در آینده اضافه شد، مسیر بیلد دنبال می‌شود.
 if exist "%REPO_ROOT%\frontend\news\package.json" (
   set "VITE_API_URL=%API_PUBLIC_URL%"
   echo Building news with VITE_API_URL=%VITE_API_URL%
   call :npm_build "%REPO_ROOT%\frontend\news"
   if errorlevel 1 exit /b 1
   call :mirror_dir "%REPO_ROOT%\frontend\news\dist" "%SERVER_ROOT%\news\dist"
+  if errorlevel 1 exit /b 1
+) else if exist "%REPO_ROOT%\frontend\news\index.html" (
+  echo [INFO] static news detected - mirroring frontend\news (no build)
+  REM serve.mjs/check.mjs/README ابزار توسعه‌اند و نباید روی nginx عمومی بروند
+  call :mirror_dir "%REPO_ROOT%\frontend\news" "%SERVER_ROOT%\news\dist" "/XF serve.mjs check.mjs README.md"
   if errorlevel 1 exit /b 1
 ) else (
   echo [INFO] frontend\news not present - writing placeholder dist for nginx
@@ -229,12 +235,14 @@ exit /b 0
 REM فقط منبع تازه‌تر از مقصد overwrite می‌شود (/XO)؛ مقصد جدیدتر و فایل‌های اضافی dest دست نخورده
 set "SRC=%~1"
 set "DST=%~2"
+REM آرگومان سوم اختیاری: استثناهای robocopy (مثلاً /XF فایل‌های مخصوص توسعه)
+set "EXTRA=%~3"
 if not exist "%SRC%\" (
   echo [ERROR] build output missing: %SRC%
   exit /b 1
 )
 if not exist "%DST%" mkdir "%DST%" >nul 2>&1
-robocopy "%SRC%" "%DST%" /E /XO /NFL /NDL /NJH /NJS /nc /ns /np >nul
+robocopy "%SRC%" "%DST%" /E /XO /NFL /NDL /NJH /NJS /nc /ns /np %EXTRA% >nul
 set "RC=!errorlevel!"
 if !RC! GEQ 8 (
   echo [ERROR] robocopy failed %SRC% -^> %DST% ^(code !RC!^)

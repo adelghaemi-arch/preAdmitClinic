@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/CorporateSupervisorPanel.tsx
+ File: frontend/my/src/components/CorporateSupervisorPanel.tsx
  Description: پنل ناظر سازمان — رستر و یادآوری SMS قالبی از طریق SEND_CONTRACT_BULK_SMS
  Parent Dependencies: types/clinic.ts, ClinicOrchestratorApp.tsx, api/contracts.ts
  */

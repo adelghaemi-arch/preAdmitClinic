@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/ReceptionProfile.tsx
+ File: frontend/my/src/components/ReceptionProfile.tsx
  Description: میز پذیرش — lookup، پذیرش، صف اتاق‌ها، اعلان با نمایش ارقام فارسی
  Parent Dependencies: lib/persian.ts, lib/client-db.ts, components/IranDigitField.tsx
  */

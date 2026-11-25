@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm-05.pathway-buckets.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm-05.pathway-buckets.test.ts
  Description: UC-ADM-05 — سطل‌های مسیر سلامتی؛ اولویت لیست؛ پیش‌فرض؛ شمارش اعضا؛ reorder
  Parent Dependencies: contract-pathway-buckets.ts
  */

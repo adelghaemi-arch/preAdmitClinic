@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/AppInput.tsx
+ File: frontend/my/src/components/AppInput.tsx
  Description: ورودی متن با نرمال‌سازی حروف فارسی و نمایش ارقام فارسی (state لاتین)
  Parent Dependencies: lib/persian.ts
  */

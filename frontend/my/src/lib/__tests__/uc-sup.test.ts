@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-sup.test.ts
+ File: frontend/my/src/lib/__tests__/uc-sup.test.ts
  Description: تست یونیت use caseهای ناظر سازمان (UC-SUP)
  Parent Dependencies: lib/workspace
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/residence-address.test.ts
+ File: frontend/my/src/lib/__tests__/residence-address.test.ts
  Description: پارس draft/کامل آدرس سکونت و حفظ مختصات بعد از نقشه→پلاک
  Parent Dependencies: residence-address.ts
  */

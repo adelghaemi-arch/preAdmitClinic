@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/mock-platform.ts
+ File: frontend/my/src/lib/mock-platform.ts
  Description: seed دمو پلتفرم شامل کاربر ادمین کل برای تست فیلتر کلینیک
  Parent Dependencies: types/clinic, evidence-packages
  */

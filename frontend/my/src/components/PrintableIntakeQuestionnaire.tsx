@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/PrintableIntakeQuestionnaire.tsx
+ File: frontend/my/src/components/PrintableIntakeQuestionnaire.tsx
  Description: پیش‌نمایش حرفه‌ای + دانلود PDF با برند کلینیک/قرارداد
  Parent Dependencies: intake-pdf-render, intake-pdf, types/clinic
  */

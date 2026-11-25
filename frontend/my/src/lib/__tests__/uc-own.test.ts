@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-own.test.ts
+ File: frontend/my/src/lib/__tests__/uc-own.test.ts
  Description: تست یونیت use caseهای نقش سلامتجو (UC-OWN)
  Parent Dependencies: lib/auth, owner-intake-gate, intake-documents, role-context
  */

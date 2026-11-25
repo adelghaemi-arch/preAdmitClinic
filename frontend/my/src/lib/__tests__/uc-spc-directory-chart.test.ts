@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-spc-directory-chart.test.ts
+ File: frontend/my/src/lib/__tests__/uc-spc-directory-chart.test.ts
  Description: UC-SPC — نگاشت فهرست/chart پزشک و اولویت بالینی
  Parent Dependencies: specialist-patient-map, form-engine, test-fixtures
  */

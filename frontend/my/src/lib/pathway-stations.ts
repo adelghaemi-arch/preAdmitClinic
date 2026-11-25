@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/pathway-stations.ts
+ File: frontend/my/src/lib/pathway-stations.ts
  Description: نگاشت ایستگاه‌های مسیر سلامتی بین UI، mock و API
  Parent Dependencies: types/clinic
  */

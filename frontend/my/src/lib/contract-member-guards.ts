@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/contract-member-guards.ts
+ File: frontend/my/src/lib/contract-member-guards.ts
  Description: گاردهای دامنه عضو قرارداد — حذف فقط قبل از پیش‌پذیرش (UC-ADM-04b)
  Parent Dependencies: types/clinic.ts
  */

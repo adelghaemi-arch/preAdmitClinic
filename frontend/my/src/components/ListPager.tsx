@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/ListPager.tsx
+ File: frontend/my/src/components/ListPager.tsx
  Description: پیجر استاندارد لیست — سایز ۱۰/۲۰/۵۰/۱۰۰، RTL، موبایل+وب
  Parent Dependencies: lib/persian toFaDigits
  */

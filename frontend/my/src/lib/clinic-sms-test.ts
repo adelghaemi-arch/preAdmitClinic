@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/clinic-sms-test.ts
+ File: frontend/my/src/lib/clinic-sms-test.ts
  Description: گیت حالت‌های تست پیامک نسبت به درگاه تست انتخاب‌شده (UC-ADM-23)
  Parent Dependencies: api/clinics
  */

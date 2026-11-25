@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/platform-actions.ts
+ File: frontend/my/src/lib/platform-actions.ts
  Description: اکشن‌های پلتفرم/کاربران دمو؛ گارد ادمین کلینیک برای مخفی‌کردن نقش Platform
  Parent Dependencies: mock-store, auth-sessions
  */

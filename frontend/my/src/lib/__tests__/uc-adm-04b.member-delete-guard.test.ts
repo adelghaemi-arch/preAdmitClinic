@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm-04b.member-delete-guard.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm-04b.member-delete-guard.test.ts
  Description: UC-ADM-04b — گارد حذف عضو قبل از پیش‌پذیرش
  Parent Dependencies: contract-member-guards.ts
  */

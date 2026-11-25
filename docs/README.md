@@ -15,7 +15,7 @@
 | منبع | نقش |
 |------|-----|
 | [`.cursorrules`](../.cursorrules) | معماری لایه‌بندی، هدر فایل، docs، دیپلوی `server/` |
-| [`frontend/`](../frontend) | اپ کلینیک (Vite) — آرتیفکت دیپلوی: `server/my` |
+| [`frontend/`](../frontend) | اپ‌ها: [`my/`](../frontend/my) (کلینیک، Vite) و [`news/`](../frontend/news) (ویترین ایستا) |
 | [`backend/`](../backend) | API ماژولار Nabz.* — آرتیفکت دیپلوی: `server/api` |
 | [`server/`](../server) | آرتیفکت دیپلوی api/my/news + `persist/` — راهنما: [`shared/server-deploy.md`](shared/server-deploy.md) |
 

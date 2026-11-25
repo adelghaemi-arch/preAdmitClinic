@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/contract-member-import.ts
+ File: frontend/my/src/lib/contract-member-import.ts
  Description: پارسر اکسل/CSV اعضا — تشخیص هدر بدون ترتیب ثابت، مپ دستی، skip هدر تکراری/وقفه
  Parent Dependencies: person-identity, marital-status, persian, xlsx
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/mock-store.ts
+ File: frontend/my/src/lib/mock-store.ts
  Description: فروشگاه mock/hydrate اسنپ‌شات کلینیک؛ کتابخانه مسیر فقط از API یا seed صریح
  Parent Dependencies: mock-dataset.ts, mock-contracts.ts, clinic.ts
  */

@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/ClinicOrchestratorApp.tsx
+ File: frontend/my/src/components/ClinicOrchestratorApp.tsx
  Description: ارکستراتور کلینیک — نشست پیش‌پذیرش Owner، آواتار پرترهٔ بیضی در تاپ‌بار
  Parent Dependencies: lib/api/*, CorporateContractsHub, workspace, owner-intake-gate, usePatientPortraitUrl
  */

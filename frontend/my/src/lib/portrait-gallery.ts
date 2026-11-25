@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/portrait-gallery.ts
+ File: frontend/my/src/lib/portrait-gallery.ts
  Description: کراپ/زوم/جابجایی پیکسلی گالری پرتره ۳×۴ با حفظ کانون هنگام زوم
  Parent Dependencies: —
  */

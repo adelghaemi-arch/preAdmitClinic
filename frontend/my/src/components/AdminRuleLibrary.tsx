@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/AdminRuleLibrary.tsx
+ File: frontend/my/src/components/AdminRuleLibrary.tsx
  Description: مدیریت کامل کتابخانه مرکزی قوانین — CRUD، جستجو و آمار استفاده
  Parent Dependencies: types/clinic, persian, pathway-stations, PathwayStationEditor
  */

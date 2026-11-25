@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-own-09-fraud-wire.test.ts
+ File: frontend/my/src/lib/__tests__/uc-own-09-fraud-wire.test.ts
  Description: UC-OWN-09 — پوشش سیم فریم ضدتقلب و نمایش وقت ایران بدون تبدیل مرورگر
  Parent Dependencies: fraud-wire, persian
  */

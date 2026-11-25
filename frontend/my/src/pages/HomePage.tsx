@@ -1,5 +1,5 @@
 /*
- File: frontend/src/pages/HomePage.tsx
+ File: frontend/my/src/pages/HomePage.tsx
  Description: bootstrap از API؛ Owner پس از رفرش به خانه مسیر برمی‌گردد
  Parent Dependencies: viewer, api/workspace, ClinicOrchestratorApp
  */

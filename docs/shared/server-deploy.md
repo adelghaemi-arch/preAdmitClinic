@@ -78,8 +78,8 @@ server/
 
 | سرویس | منبع | خروجی sync | پورت هاست | کانتینر |
 |--------|------|------------|-----------|---------|
-| news | `frontend/news` (فعلاً اسکلت) | `server/news/dist` + nginx؛ volume `../persist/news-data` | **5436** | `adel-maryam-nabz-clinic-news` |
-| my | `frontend/` | `server/my/dist` + `nginx.conf` (SPA `try_files` → `index.html`) | **5437** | `adel-maryam-nabz-clinic-my` |
+| news | `frontend/news/` (نمونهٔ طراحی ایستا — بدون بیلد) | `server/news/dist` + nginx؛ volume `../persist/news-data` | **5436** | `adel-maryam-nabz-clinic-news` |
+| my | `frontend/my/` | `server/my/dist` + `nginx.conf` (SPA `try_files` → `index.html`) | **5437** | `adel-maryam-nabz-clinic-my` |
 | api | `backend` | `server/api/publish` + Dockerfile (+ `install-playwright-chromium.sh` → `/ms-playwright`)؛ volumes `../persist/uploads` و `../persist/news-data` | **5438→8080** | `adel-maryam-nabz-clinic-api` |
 
 ### Volumeهای پایدار (هاست → کانتینر)
@@ -129,6 +129,7 @@ flowchart LR
 - **SPA fallback:** `my` و `news` هر دو `nginx.conf` با `try_files $uri $uri/ /index.html` دارند تا مسیرهای کلاینت (مثل `/login`) با رفرش مستقیم 404 ندهند.
 - **MIME برای `.mjs`:** هر دو `nginx.conf` برای `*.mjs` صریحاً `Content-Type: application/javascript` می‌گذارند (مثلاً worker `pdf.js`)؛ وگرنه `mime.types` قدیمی فایل را `octet-stream` می‌دهد و مرورگر ماژول را رد می‌کند. بعد از به‌روز کردن فایل روی سرور: `sudo docker compose up -d` در `server/my` (و در صورت نیاز purge کش ابرآروان برای همان asset).
 - **`.env` و `docker-compose.yml` زنده** در مسیر publish ساخته/ارسال نمی‌شوند. کلید یا پورت جدید را از `*.example` دستی به فایل زنده **همان هاست** merge کنید.
+- `frontend/news` ایستا و بدون بیلد است: اگر `package.json` نداشته باشد ولی `index.html` داشته باشد، خود پوشه mirror می‌شود و فایل‌های مخصوص توسعه (`serve.mjs`، `check.mjs`، `README.md`) با `/XF` کنار گذاشته می‌شوند.
 - اگر `frontend/news` نباشد، sync برای news فقط **placeholder** می‌نویسد تا nginx بالا بیاید.
 - **کپی فقط‌تازه‌تر:** `sync-deploy.bat` برای `my/dist` و `news/dist` از `robocopy /E /XO` بدون wipe مقصد استفاده می‌کند؛ `api/publish` هم قبل از `dotnet publish` پاک نمی‌شود. فقط منبع تازه‌تر از مقصد overwrite می‌شود؛ فایل‌های اضافی/قدیمی dest می‌مانند.
 

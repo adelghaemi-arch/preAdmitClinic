@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/CompanionLinks.tsx
+ File: frontend/my/src/components/CompanionLinks.tsx
  Description: اتصال پرونده سلامتجو با QR و کدملی (حداکثر ۱۰ رقم)
  Parent Dependencies: AppInput, person-identity, workspace
  */

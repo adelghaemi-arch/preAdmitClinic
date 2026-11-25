@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/owner-gps-watch.test.ts
+ File: frontend/my/src/lib/__tests__/owner-gps-watch.test.ts
  Description: تست واحد ردیابی GPS شواهد — نقطهٔ اول با seed روی دسکتاپ؛ watch فقط موبایل؛ آستانه ۱۰۰م
  Parent Dependencies: owner-gps-watch, vitest
  */

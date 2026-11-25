@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/JourneyIntroPage.tsx
+ File: frontend/my/src/components/JourneyIntroPage.tsx
  Description: مقدمهٔ نقشه راه ۶ مرحله‌ای + کارت بیمارستان/فاصله OSM و شروع شواهد GPS
  Parent Dependencies: ClinicReachCard, health-roadmap, owner-gps-watch
  */

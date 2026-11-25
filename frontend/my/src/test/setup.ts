@@ -1,5 +1,5 @@
 /*
- File: frontend/src/test/setup.ts
+ File: frontend/my/src/test/setup.ts
  Description: پیکربندی سراسری Vitest و jest-dom
  Parent Dependencies: @testing-library/jest-dom/vitest
  */

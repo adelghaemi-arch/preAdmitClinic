@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/media-permission.ts
+ File: frontend/my/src/lib/media-permission.ts
  Description: تشخیص نوع خطای دوربین/GPS و راهنمای رفع بلاک برای دسکتاپ و موبایل
  Parent Dependencies: none
  */

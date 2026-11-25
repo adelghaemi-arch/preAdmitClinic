@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/ClinicSettingsPanel.tsx
+ File: frontend/my/src/components/ClinicSettingsPanel.tsx
  Description: تنظیمات بیمارستان — لوکیشن، پشتیبانی، طوبی SOAP (UserInfo/خط) و تست پیامک (UC-ADM-21/23)
  Parent Dependencies: LocationPickerPopup, AppInput, clinic-sms-test, api/clinics, api/sms-templates
  */

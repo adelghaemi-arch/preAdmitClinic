@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/LoginForm.tsx
+ File: frontend/my/src/components/LoginForm.tsx
  Description: فرم ورود OTP؛ دمو سریع فقط وقتی FixedOtp فعال است؛ hint پایه+۱ ادمین کل
  Parent Dependencies: lib/auth.ts, lib/persian.ts, lib/viewer.ts
  */

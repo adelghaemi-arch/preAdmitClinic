@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/SpecialistProfile.tsx
+ File: frontend/my/src/components/SpecialistProfile.tsx
  Description: فهرست همهٔ بیماران کلینیک + پروندهٔ اولویت‌دار (مثبت/توضیح) و مدارک برای پزشک
  Parent Dependencies: FormResponseSummary, specialist-patient-map, ClinicOrchestratorApp
  */

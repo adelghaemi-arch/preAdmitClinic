@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/api/http.ts
+ File: frontend/my/src/lib/api/http.ts
  Description: کلاینت HTTP با Bearer برای Nabz.Api؛ بدون وابستگی به mock
  Parent Dependencies: session-token
  */

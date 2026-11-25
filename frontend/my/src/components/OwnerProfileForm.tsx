@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/OwnerProfileForm.tsx
+ File: frontend/my/src/components/OwnerProfileForm.tsx
  Description: ویرایش پروفایل سلامتجو؛ پرتره بلافاصله روی سرور + لود بعد از رفرش
  Parent Dependencies: ResidenceAddressField, PatientPhotoCapture, PersianDateField, usePatientPortraitUrl
  */

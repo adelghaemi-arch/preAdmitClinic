@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-own-05-photo-gate-hydrate.test.tsx
+ File: frontend/my/src/lib/__tests__/uc-own-05-photo-gate-hydrate.test.tsx
  Description: UC-OWN-05 — تا settle شدن mine، photo gate/گالری mount نشود
  Parent Dependencies: PreAdmitFormRenderer, api/forms, test-fixtures
  */

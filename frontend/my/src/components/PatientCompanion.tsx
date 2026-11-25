@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/PatientCompanion.tsx
+ File: frontend/my/src/components/PatientCompanion.tsx
  Description: نمای همراه سلامتجو با برند نفس و آیکن محصول
  Parent Dependencies: PatientMobileProfile, JourneyIntroPage, client-db
  */

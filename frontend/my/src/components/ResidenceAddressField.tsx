@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/ResidenceAddressField.tsx
+ File: frontend/my/src/components/ResidenceAddressField.tsx
  Description: فیلد آدرس سکونت دموگرافیک — نقشه/GPS + پلاک؛ draft بدون پلاک مختصات را نگه می‌دارد
  Parent Dependencies: LocationPickerPopup, residence-address.ts, AppInput, owner-gps-watch
  */

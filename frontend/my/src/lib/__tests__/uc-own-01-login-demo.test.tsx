@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-own-01-login-demo.test.tsx
+ File: frontend/my/src/lib/__tests__/uc-own-01-login-demo.test.tsx
  Description: UC-OWN-01 — مخفی بودن دمو لاگین و پیامک نمایشی وقتی FixedOtp خاموش است
  Parent Dependencies: LoginForm, lib/auth
  */

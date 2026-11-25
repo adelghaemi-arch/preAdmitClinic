@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/persian-digits.test.ts
+ File: frontend/my/src/lib/__tests__/persian-digits.test.ts
  Description: واحد تبدیل ارقام فارسی↔لاتین و نرمال‌سازی ورودی
  Parent Dependencies: lib/persian.ts
  */

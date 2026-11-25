@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/PlatformAdminPanel.tsx
+ File: frontend/my/src/components/PlatformAdminPanel.tsx
  Description: پنل ادمین کل و مدیریت کاربران؛ تب خزانه فایل با تامنیل (Platform-only)
  Parent Dependencies: types/clinic, VaultFileThumbGrid, api/evidence vault, platform-actions via onAction
  */

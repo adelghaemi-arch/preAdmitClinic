@@ -1,5 +1,5 @@
 ﻿/*
- File: frontend/src/components/PatientMobileProfile.tsx
+ File: frontend/my/src/components/PatientMobileProfile.tsx
  Description: پروفایل موبایل سلامتجو؛ بنر تاریخ مراجعه قابل بستن
  Parent Dependencies: ResultAttachment, IntakeFileThumbGrid, PreAdmitFormRenderer
  */

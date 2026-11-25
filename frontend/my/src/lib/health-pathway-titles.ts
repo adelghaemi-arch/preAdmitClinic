@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/health-pathway-titles.ts
+ File: frontend/my/src/lib/health-pathway-titles.ts
  Description: نگاشت کد مسیر سازمانی به عنوان فارسی — هم‌تراز HealthPathwayTitles بک‌اند
  Parent Dependencies: —
  */

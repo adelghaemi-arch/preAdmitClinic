@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/VaultFileThumbGrid.tsx
+ File: frontend/my/src/components/VaultFileThumbGrid.tsx
  Description: تامنیل و lightbox خزانه فایل با object URL احراز‌شده از API
  Parent Dependencies: hooks/useStorageObjectUrl, ApiVaultFileDto
  */

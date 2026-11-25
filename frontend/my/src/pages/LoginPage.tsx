@@ -1,5 +1,5 @@
 /*
- File: frontend/src/pages/LoginPage.tsx
+ File: frontend/my/src/pages/LoginPage.tsx
  Description: صفحه ورود — برند نفس و آیکن محصول
  Parent Dependencies: LoginForm
  */

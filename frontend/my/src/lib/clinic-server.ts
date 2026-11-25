@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/clinic-server.ts
+ File: frontend/my/src/lib/clinic-server.ts
  Description: snapshot mock برای QR/kiosk؛ مسیرهای سلامتی به DTO واحد
  Parent Dependencies: mock-store, mock-contracts
  */

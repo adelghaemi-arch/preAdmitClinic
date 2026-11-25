@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/PreAdmitFormRenderer.tsx
+ File: frontend/my/src/components/PreAdmitFormRenderer.tsx
  Description: پرسشنامه پیش‌پذیرش؛ Enter/Next به فیلد بعدی؛ بدون formDate سیستمی
  Parent Dependencies: form-engine, focus-next-field, api/forms, clinic types
  */

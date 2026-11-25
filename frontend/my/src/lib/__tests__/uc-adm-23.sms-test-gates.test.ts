@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm-23.sms-test-gates.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm-23.sms-test-gates.test.ts
  Description: UC-ADM-23 — گیت حالت تست پیامک و تست قبل از فعال‌سازی
  Parent Dependencies: clinic-sms-test.ts
  */

@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/PathwayStationEditor.tsx
+ File: frontend/my/src/components/PathwayStationEditor.tsx
  Description: ویرایشگر ترتیب ایستگاه‌های مسیر سلامتی در فرم ساخت/ویرایش
  Parent Dependencies: pathway-stations, types/clinic
  */

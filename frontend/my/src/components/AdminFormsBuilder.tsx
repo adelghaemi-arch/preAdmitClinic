@@ -1,5 +1,5 @@
 /*
- File: frontend/src/components/AdminFormsBuilder.tsx
+ File: frontend/my/src/components/AdminFormsBuilder.tsx
  Description: سازنده فرم پیش‌پذیرش ادمین + export/import بسته JSON/Excel
  Parent Dependencies: lib/api/forms, types/clinic, form-engine
  */

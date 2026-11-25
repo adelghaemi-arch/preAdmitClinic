@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/marital-status.ts
+ File: frontend/my/src/lib/marital-status.ts
  Description: گزینه‌های کانونیکال وضعیت تأهل + نرمال‌سازی اکسل/legacy
  Parent Dependencies: persian.ts, form-catalog selectOptions
  */

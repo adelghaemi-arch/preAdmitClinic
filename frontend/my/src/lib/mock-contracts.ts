@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/mock-contracts.ts
+ File: frontend/my/src/lib/mock-contracts.ts
  Description: دادهٔ نمایشی قراردادها؛ خروجی گزارش xlsx واقعی
  Parent Dependencies: clinic types, xlsx, person-identity, persian
  */

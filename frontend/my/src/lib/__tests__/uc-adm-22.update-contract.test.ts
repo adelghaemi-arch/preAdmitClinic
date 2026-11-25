@@ -1,5 +1,5 @@
 /*
- File: frontend/src/lib/__tests__/uc-adm-22.update-contract.test.ts
+ File: frontend/my/src/lib/__tests__/uc-adm-22.update-contract.test.ts
  Description: UC-ADM-22 — ویرایش مشخصات پایه قرارداد (mock action)
  Parent Dependencies: contract-actions.ts, mock-store.ts
  */
