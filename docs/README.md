@@ -28,7 +28,7 @@
 | [`shared/`](shared/README.md) | فرایند مشترک، changelog، دیپلوی سرور |
 | [`backend/`](backend/README.md) | وضعیت و قرارداد API |
 | [`my/`](my/README.md) | اپ سرویس کلینیک (فرانت فعلی) |
-| [`news/`](news/README.md) | ویترین عمومی (رزرو / اسکلت دیپلوی) |
+| [`news/`](news/README.md) | ویترین عمومی — نمونهٔ طراحی سایت معرفی و اتاق خبر (`frontend/news`) |
 | [`exports/`](exports/README.md) | خروجی Word/PDF در صورت نیاز |
 | [`processes/`](processes/README.md) | یوزکیس و دیاگرام نسخهٔ ۱ (+ future) |
 
