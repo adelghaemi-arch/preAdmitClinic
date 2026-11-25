@@ -1,0 +1,686 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نفس — پیش‌پذیرش سلامت | طرح ۰۶ هم‌هویت با محصول</title>
+<meta name="description" content="طرح پیشنهادی ۰۶: سایت اطلاع‌رسانی نفس با همان هویت بصری محصول — آیکن جیب پرونده، سبز ۱d5545، عکس واقعی از خود اپ.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Regular.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Medium.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-SemiBold.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Bold.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:Vazirmatn;src:url(../assets/fonts/Vazirmatn-Black.woff2) format("woff2");font-weight:800;font-display:swap}
+
+/* ═══════════════════════════════════════════════════════════════
+   طرح ۰۶ — «هم‌هویت»
+   توکن‌ها مستقیماً از خود محصول (frontend/my/src/index.css) گرفته شده‌اند:
+   #1d5545 (پنل تیرهٔ ورود) · #287957 (دکمهٔ اصلی) · #09786A (theme-color)
+   #a7d5b3 (تیک سبز روشن) · #f4f8f5 (پس‌زمینهٔ اپ) · #e2eae4 (خط) · #3d5748 (متن)
+   پس این طرح «طرح» نیست؛ ادامهٔ همان سیستم طراحی است.
+   ═══════════════════════════════════════════════════════════════ */
+*{box-sizing:border-box}
+:root{
+  /* رنگ — از محصول */
+  --brand:#1d5545;        /* پنل سبز تیرهٔ محصول */
+  --brand-2:#17453a;
+  --primary:#287957;      /* دکمهٔ اصلی محصول */
+  --primary-hi:#1e6548;
+  --theme:#09786A;        /* theme-color */
+  --mint:#a7d5b3;         /* تیک‌های روشن */
+  --mint-soft:#edf7f1;
+  --app-bg:#f4f8f5;       /* پس‌زمینهٔ اپ */
+  --card:#ffffff;
+  --line:#e2eae4;
+  --line-2:#d3e0d8;
+  --ink:#2f4a3d;
+  --ink-strong:#1b3b2d;
+  --soft:#5d7568;
+  --muted:#849a8d;
+  --amber:#ceac62; --amber-bg:#fff8e9;
+  --blue:#769ed5;  --blue-bg:#edf3fb;
+  --violet:#a08ac6;--violet-bg:#f4f0fb;
+  --teal-c:#5c9e7d;--teal-bg:#edf7f1;
+
+  --r:14px; --r-lg:20px; --r-xl:26px;
+  --pad:clamp(16px,4vw,40px); --max:1200px;
+  --sh:0 1px 2px #1a43300a, 0 10px 24px -18px #1a43303d;
+  --sh-lg:0 2px 4px #1a43300d, 0 22px 48px -30px #1a433066;
+}
+body{margin:0;background:var(--app-bg);color:var(--ink);font-family:Vazirmatn,Tahoma,sans-serif;line-height:1.8;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,h4,p,figure{margin:0}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%;height:auto}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid #5caa82;outline-offset:3px;border-radius:8px}
+.wrap{max-width:var(--max);margin-inline:auto;padding-inline:var(--pad)}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ── دکمه‌ها: عیناً از .primary-button محصول ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 18px;border-radius:10px;font-size:.9rem;font-weight:600;transition:background .2s,border-color .2s,box-shadow .2s,transform .2s;white-space:nowrap;border:1px solid transparent}
+.btn svg{width:16px;height:16px;flex:none}
+.btn--p{background:var(--primary);border-color:#227354;color:#fff;box-shadow:0 3px 6px #1a624514}
+.btn--p:hover{background:var(--primary-hi);box-shadow:0 4px 12px #1a62452b;transform:translateY(-1px)}
+.btn--s{background:#fff;border-color:var(--line);color:var(--soft)}
+.btn--s:hover{border-color:#bfd9c8;background:#f6faf7;color:#2d7352}
+.btn--w{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);color:#fff}
+.btn--w:hover{background:rgba(255,255,255,.17);border-color:rgba(255,255,255,.4)}
+.btn--mint{background:var(--mint);color:#123c2c;border-color:#8fc9a0}
+.btn--mint:hover{background:#b7e0c2}
+
+/* ── هدر ── */
+.hdr{position:sticky;inset-block-start:0;z-index:50;background:rgba(244,248,245,.94);backdrop-filter:blur(14px);border-block-end:1px solid var(--line)}
+.hdr__in{display:flex;align-items:center;gap:18px;min-height:66px}
+/* برند: آیکن واقعی محصول (همان فایل frontend/my/public) */
+.brand{display:flex;align-items:center;gap:10px;flex:none}
+.brand__ic{width:40px;height:40px;border-radius:11px;overflow:hidden;flex:none;box-shadow:0 2px 8px #0d3b2f2e}
+.brand__ic img{width:100%;height:100%;object-fit:cover}
+.brand__tx b{display:block;font-size:1.24rem;font-weight:800;line-height:1.1;color:var(--ink-strong)}
+.brand__tx span{display:block;font-size:.66rem;font-weight:500;color:var(--muted);margin-block-start:2px;letter-spacing:.02em}
+.nav{display:flex;gap:2px;margin-inline-start:12px}
+.nav a{padding:8px 11px;border-radius:8px;font-size:.87rem;font-weight:500;color:var(--soft);transition:.15s}
+.nav a:hover{background:#e9f2ec;color:var(--ink-strong)}
+.nav a[aria-current]{background:#e3efe8;color:var(--brand);font-weight:700}
+.hdr__act{margin-inline-start:auto;display:flex;align-items:center;gap:9px}
+.hdr__tel{font-size:.85rem;font-weight:600;color:var(--soft);font-variant-numeric:tabular-nums}
+.hdr__burger{display:none;width:42px;height:42px;border-radius:10px;border:1px solid var(--line-2);place-items:center;color:var(--ink)}
+.hdr__mnav{display:none}
+
+/* ── هیرو: همان کارت دوستونی صفحهٔ ورود محصول، بزرگ‌شده ── */
+.hero{padding-block:clamp(20px,3vw,34px) 0}
+.hero__card{position:relative;display:grid;grid-template-columns:1.06fr .94fr;overflow:hidden;border-radius:var(--r-xl);border:1px solid var(--line);background:#fff;box-shadow:var(--sh-lg)}
+.hero__txt{padding:clamp(22px,3.4vw,44px);display:flex;flex-direction:column}
+.hero__pill{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:var(--mint-soft);border:1px solid #cfe7d8;color:var(--brand);border-radius:999px;padding:5px 13px;font-size:.76rem;font-weight:600}
+.hero__pill i{width:6px;height:6px;border-radius:50%;background:var(--primary);display:block}
+.hero h1{margin-block:16px 0;font-size:clamp(1.85rem,3.9vw,3rem);line-height:1.35;font-weight:800;letter-spacing:-.02em;color:var(--ink-strong);text-wrap:balance}
+.hero h1 em{font-style:normal;color:var(--primary);position:relative;white-space:nowrap}
+.hero h1 em::after{content:"";position:absolute;inset-inline:0;inset-block-end:.02em;height:.16em;background:linear-gradient(to left,#bfe6cc,#e8f6ed);border-radius:99px;z-index:-1}
+.hero__lead{margin-block-start:14px;font-size:.98rem;line-height:1.95;color:var(--soft);max-width:34em}
+.hero__act{display:flex;flex-wrap:wrap;gap:10px;margin-block-start:24px}
+.hero__micro{display:flex;flex-wrap:wrap;gap:7px 18px;list-style:none;padding:0;margin:18px 0 0;font-size:.8rem;color:var(--muted)}
+.hero__micro li{display:flex;align-items:center;gap:6px}
+.hero__micro svg{width:13px;height:13px;color:var(--teal-c);flex:none}
+/* نوار اطمینان ته ستون متن — فضای خالی هیرو را پر می‌کند و عدد واقعی می‌دهد */
+.hero__strip{margin-block-start:auto;padding-block-start:clamp(14px,2vw,22px);display:grid;grid-template-columns:repeat(3,1fr);gap:12px;border-block-start:1px solid var(--line)}
+.hero__strip>div{display:flex;flex-direction:column;gap:1px}
+.hero__strip b{font-size:1.28rem;font-weight:800;color:var(--brand);line-height:1.2;letter-spacing:-.02em}
+.hero__strip span{font-size:.72rem;color:var(--muted);line-height:1.6}
+
+/* نیمهٔ تیره: دقیقاً زبان صفحهٔ ورود محصول */
+.hero__panel{position:relative;background:var(--brand);color:#fff;padding:clamp(18px,2.2vw,26px);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;overflow:hidden}
+.hero__panel .panel__head{align-self:stretch}
+.hero__panel .panel__cap{align-self:stretch;justify-content:center}
+.hero__panel .panel__ck{align-self:stretch}
+.hero__panel::before{content:"";position:absolute;inset-block-end:-140px;inset-inline-start:-140px;width:380px;height:380px;border-radius:50%;border:48px solid rgba(255,255,255,.045)}
+.hero__panel::after{content:"";position:absolute;inset-block-start:-90px;inset-inline-end:-70px;width:230px;height:230px;border-radius:50%;background:radial-gradient(circle,rgba(167,213,179,.18),transparent 70%)}
+.panel__head span span{display:block;font-size:.66rem;color:rgba(255,255,255,.5);font-weight:500}
+.panel__head{position:relative;z-index:2;display:flex;align-items:center;gap:9px}
+.panel__head b{font-size:1.05rem;font-weight:800}
+.panel__head span{font-size:.68rem;color:rgba(255,255,255,.45)}
+/* نمای واقعی اپ: کارت ورود محصول، کمی چرخیده تا «صفحه» حس شود */
+.panel__shot{position:relative;z-index:2;margin:0 auto;width:min(100%,232px);border-radius:12px;overflow:hidden;background:#fff;
+  box-shadow:0 22px 44px -20px rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.15)}
+/* بدون برش: نسبت طبیعی کارت حفظ می‌شود تا دکمهٔ «ارسال کد» نصفه نماند */
+.panel__shot img{width:100%;height:auto;display:block}
+
+.panel__cap{position:relative;z-index:2;font-size:.76rem;color:rgba(255,255,255,.62);display:flex;align-items:center;gap:6px}
+.panel__cap i{width:5px;height:5px;border-radius:50%;background:var(--mint);display:block;flex:none}
+.panel__ck{position:relative;z-index:2;list-style:none;padding:0;margin:0;display:grid;gap:7px;font-size:.8rem;color:rgba(255,255,255,.82)}
+.panel__ck li{display:flex;align-items:center;gap:8px}
+.panel__ck svg{width:14px;height:14px;color:var(--mint);flex:none}
+
+/* ── سه مخاطب: کارت‌های آماری محصول با آیکن رنگی ── */
+.aud{padding-block:clamp(18px,2.6vw,30px)}
+.aud__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.acard{display:flex;flex-direction:column;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;box-shadow:var(--sh);transition:transform .22s,box-shadow .22s,border-color .22s}
+.acard:hover{transform:translateY(-3px);box-shadow:var(--sh-lg);border-color:#c9e2d4}
+.acard__ico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;margin-block-end:2px}
+.acard__ico svg{width:19px;height:19px}
+.ico-teal{background:var(--teal-bg);color:var(--teal-c)}
+.ico-blue{background:var(--blue-bg);color:var(--blue)}
+.ico-amber{background:var(--amber-bg);color:var(--amber)}
+.ico-violet{background:var(--violet-bg);color:var(--violet)}
+.acard h3{font-size:1.04rem;font-weight:800;color:var(--ink-strong)}
+.acard p{font-size:.86rem;color:var(--soft);line-height:1.9}
+.acard__go{margin-block-start:auto;padding-block-start:10px;font-size:.82rem;font-weight:700;color:var(--primary);display:inline-flex;align-items:center;gap:5px}
+.acard__go svg{width:14px;height:14px;transition:transform .2s}
+.acard:hover .acard__go svg{transform:translateX(-3px)}
+
+/* ── بخش‌های عمومی ── */
+.sec{padding-block:clamp(26px,3.6vw,52px)}
+.sec__head{max-width:42em;margin-block-end:clamp(18px,2.4vw,30px)}
+.kick{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;font-weight:700;color:var(--primary)}
+.kick::before{content:"";width:18px;height:2px;border-radius:99px;background:var(--mint);flex:none}
+.sec h2{margin-block-start:10px;font-size:clamp(1.45rem,2.6vw,2.05rem);line-height:1.45;font-weight:800;letter-spacing:-.02em;color:var(--ink-strong);text-wrap:balance}
+.sec__lead{margin-block-start:10px;font-size:.95rem;color:var(--soft);line-height:1.95}
+
+/* ── گام‌ها ── */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.step{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--sh);position:relative}
+.step__n{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--mint-soft);color:var(--brand);font-weight:800;font-size:.82rem;margin-block-end:11px;font-variant-numeric:tabular-nums;border:1px solid #d5ebdd}
+.step h4{font-size:.98rem;font-weight:800;color:var(--ink-strong);margin-block-end:5px}
+.step p{font-size:.83rem;color:var(--soft);line-height:1.85}
+.step__who{display:inline-block;margin-block-start:10px;font-size:.7rem;font-weight:600;color:var(--soft);background:var(--app-bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+
+/* ── دو ستون تصویری با عکس واقعی اپ ── */
+.duo{display:grid;gap:clamp(20px,3vw,34px)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3.4vw,44px);align-items:center}
+.row--flip .row__media{order:2}
+.row__media{position:relative;background:var(--brand);border-radius:var(--r-xl);padding:clamp(14px,2vw,26px);box-shadow:var(--sh-lg);overflow:hidden}
+.row__media::before{content:"";position:absolute;inset-block-end:-120px;inset-inline-start:-90px;width:300px;height:300px;border-radius:50%;border:40px solid rgba(255,255,255,.05)}
+.row__media img{position:relative;z-index:2;width:100%;border-radius:14px;box-shadow:0 16px 40px -20px rgba(0,0,0,.5)}
+.row__tag{position:absolute;z-index:3;inset-block-start:14px;inset-inline-end:14px;background:rgba(255,255,255,.96);color:var(--ink-strong);border-radius:999px;padding:4px 12px;font-size:.72rem;font-weight:700}
+.row h3{font-size:clamp(1.25rem,2vw,1.65rem);font-weight:800;line-height:1.5;letter-spacing:-.02em;color:var(--ink-strong);text-wrap:balance}
+.row__lead{margin-block-start:10px;font-size:.92rem;color:var(--soft);line-height:1.95}
+.ck{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:10px}
+.ck li{display:flex;gap:9px;font-size:.86rem;color:var(--ink);line-height:1.8}
+.ck svg{width:17px;height:17px;flex:none;color:var(--teal-c);margin-block-start:3px}
+.ck b{font-weight:700;color:var(--ink-strong)}
+
+/* ── نوار آمار: کارت‌های متریک محصول، روی پس‌زمینهٔ سبز ── */
+.stats{background:var(--brand);border-radius:var(--r-xl);padding:clamp(22px,3.2vw,38px);position:relative;overflow:hidden;isolation:isolate}
+.stats::before{content:"";position:absolute;inset-block-start:-160px;inset-inline-start:-60px;width:360px;height:360px;border-radius:50%;border:46px solid rgba(255,255,255,.04)}
+.stats__grid{position:relative;z-index:2;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.mcard{background:#fff;border-radius:var(--r);padding:16px;box-shadow:0 2px 3px #1a433002}
+.mcard__v{display:flex;align-items:baseline;gap:5px;font-variant-numeric:tabular-nums;color:var(--ink-strong)}
+.mcard__v b{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:800;line-height:1.1;letter-spacing:-.02em}
+.mcard__v span{font-size:.8rem;font-weight:600;color:var(--soft)}
+.mcard__l{margin-block-start:8px;font-size:.78rem;color:var(--soft);line-height:1.7}
+.mcard__tag{display:inline-block;margin-block-start:8px;font-size:.66rem;font-weight:600;color:#9a8244;background:var(--amber-bg);border-radius:5px;padding:1px 7px}
+
+/* ── دیوار شیشه‌ای ── */
+.glass{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.gcard{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;box-shadow:var(--sh)}
+.gcard h4{display:flex;align-items:center;gap:8px;font-size:.98rem;font-weight:800;color:var(--ink-strong);margin-block-end:10px}
+.gcard h4 svg{width:17px;height:17px;flex:none}
+.gcard ul{list-style:none;margin:0;padding:0;display:grid;gap:8px;font-size:.84rem;color:var(--soft)}
+.gcard li{display:flex;gap:7px;line-height:1.75}
+.gcard li::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--mint);flex:none;margin-block-start:8px}
+.gnote{margin-block-start:14px;font-size:.8rem;color:var(--muted);background:#fff;border:1px dashed var(--line-2);border-radius:12px;padding:11px 15px;line-height:1.85}
+
+/* ── FAQ ── */
+.faq{max-width:880px}
+.faq details{background:#fff;border:1px solid var(--line);border-radius:var(--r);margin-block-end:8px;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.faq details[open]{border-color:#c9e2d4;box-shadow:var(--sh)}
+.faq summary{display:flex;align-items:center;gap:12px;padding:14px 18px;font-size:.94rem;font-weight:700;color:var(--ink-strong);cursor:pointer;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"";margin-inline-start:auto;width:8px;height:8px;border-inline-end:2px solid var(--muted);border-block-end:2px solid var(--muted);transform:rotate(45deg);transition:transform .22s;flex:none}
+.faq details[open] summary::after{transform:rotate(-135deg);border-color:var(--primary)}
+.faq .a{padding:0 18px 16px;font-size:.87rem;color:var(--soft);line-height:1.95}
+
+/* ── CTA ── */
+.cta{position:relative;background:var(--brand);color:#fff;border-radius:var(--r-xl);padding:clamp(24px,3.6vw,42px);overflow:hidden;isolation:isolate}
+.cta::before{content:"";position:absolute;inset-block-end:-130px;inset-inline-start:-80px;width:340px;height:340px;border-radius:50%;border:46px solid rgba(255,255,255,.05)}
+.cta__in{position:relative;z-index:2;display:grid;grid-template-columns:1.35fr .65fr;gap:22px;align-items:center}
+.cta h2{font-size:clamp(1.35rem,2.6vw,1.9rem);font-weight:800;line-height:1.45;letter-spacing:-.02em;text-wrap:balance}
+.cta p{margin-block-start:10px;font-size:.92rem;color:rgba(255,255,255,.72);line-height:1.9}
+.cta__act{display:flex;flex-direction:column;gap:9px}
+.cta__act .btn{width:100%}
+.cta__tel{display:flex;align-items:center;justify-content:center;gap:7px;font-size:.87rem;font-weight:600;color:rgba(255,255,255,.78);font-variant-numeric:tabular-nums;padding-block:4px}
+.cta__tel svg{width:15px;height:15px}
+
+/* ── فوتر ── */
+.ftr{padding-block:clamp(26px,3.6vw,46px) 22px;border-block-start:1px solid var(--line);margin-block-start:clamp(16px,2.4vw,28px)}
+.ftr__grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1.1fr;gap:24px}
+.ftr h5{font-size:.78rem;font-weight:800;color:var(--ink-strong);margin-block-end:10px}
+.ftr ul{list-style:none;margin:0;padding:0;display:grid;gap:7px;font-size:.84rem;color:var(--soft)}
+.ftr a:hover{color:var(--primary)}
+.ftr__brand p{margin-block-start:10px;font-size:.84rem;color:var(--soft);max-width:24em;line-height:1.9}
+.ftr__bottom{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-block-start:22px;padding-block-start:14px;border-block-start:1px solid var(--line);font-size:.76rem;color:var(--muted)}
+.ftr__bottom .dots{display:flex;gap:13px;flex-wrap:wrap}
+
+/* ── ورود نرم (پیش‌رونده: بدون JS همه چیز دیده می‌شود) ── */
+html.js .rv{opacity:0;transform:translateY(14px);transition:opacity .6s cubic-bezier(.2,.7,.3,1),transform .6s cubic-bezier(.2,.7,.3,1)}
+html.js .rv.in{opacity:1;transform:none}
+
+/* ── موبایل ── */
+.mbar{display:none}
+@media (max-width:1000px){
+  .nav{display:none}
+  .hdr__burger{display:grid}
+  .hero__card{grid-template-columns:1fr}
+  .aud__grid{grid-template-columns:1fr 1fr}
+  .steps{grid-template-columns:1fr 1fr}
+  .stats__grid{grid-template-columns:1fr 1fr}
+  .glass{grid-template-columns:1fr}
+  .cta__in{grid-template-columns:1fr}
+  .ftr__grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:760px){
+  .hdr__in{min-height:60px;gap:10px}
+  .hdr__tel{display:none}
+  .hdr__act .btn{display:none}
+  .brand__ic{width:36px;height:36px;border-radius:10px}
+  .brand__tx b{font-size:1.1rem}
+  .brand__tx span{font-size:.62rem}
+  .brand__tx span:last-child{letter-spacing:.06em}
+  .hero{padding-block:10px 0}
+  .hero__card{border-radius:20px}
+  .hero__txt{padding:20px 18px 24px}
+  .hero h1{font-size:clamp(1.6rem,7.2vw,2.1rem);line-height:1.42}
+  .hero__lead{font-size:.92rem}
+  .hero__act{flex-direction:column;align-items:stretch;margin-block-start:20px}
+  .hero__act .btn{width:100%;min-height:46px}
+  .hero__micro{font-size:.76rem;gap:6px 12px}
+  .hero__panel{padding:18px}
+  .panel__head b{font-size:.98rem}
+  .panel__shot{border-radius:12px}
+  .panel__ck{font-size:.78rem}
+  .aud{padding-block:14px 0}
+  .aud__grid{grid-template-columns:1fr;gap:10px}
+  .acard{padding:16px}
+  .sec{padding-block:24px}
+  .steps{grid-template-columns:1fr;gap:9px}
+  .step{padding:15px}
+  .row{grid-template-columns:1fr;gap:16px}
+  .row--flip .row__media{order:0}
+  .row__media{padding:12px;border-radius:20px}
+  .stats{border-radius:20px;padding:18px}
+  .stats__grid{grid-template-columns:1fr 1fr;gap:9px}
+  .mcard{padding:13px}
+  .mcard__v b{font-size:1.45rem}
+  .mcard__l{font-size:.74rem}
+  .glass{gap:10px}
+  .gcard{padding:16px}
+  .faq summary{font-size:.9rem;padding:13px 15px}
+  .faq .a{padding:0 15px 14px;font-size:.85rem}
+  .cta{border-radius:20px;padding:22px 18px}
+  .cta__act .btn{min-height:46px}
+  .ftr__grid{grid-template-columns:1fr;gap:18px}
+  body{padding-block-end:72px}
+  .mbar{display:flex;position:fixed;inset-inline:0;inset-block-end:0;z-index:60;gap:8px;padding:8px 12px;background:rgba(244,248,245,.97);backdrop-filter:blur(12px);border-block-start:1px solid var(--line)}
+  .mbar .btn{flex:1;min-height:46px;font-size:.87rem}
+  .mbar__tel{flex:none;width:46px;display:grid;place-items:center;border-radius:10px;background:#fff;border:1px solid var(--line-2);color:var(--brand)}
+  .mbar__tel svg{width:18px;height:18px}
+  /* منوی موبایل */
+  .hdr__mnav{display:none;position:absolute;inset-block-start:100%;inset-inline:0;background:#fff;border-block-end:1px solid var(--line);box-shadow:0 16px 28px -22px #0d3b2f5c;padding:8px}
+  .hdr__mnav.open{display:block}
+  .hdr__mnav a{display:block;padding:12px 14px;border-radius:9px;font-size:.94rem;font-weight:600;color:var(--ink)}
+  .hdr__mnav a:hover{background:var(--app-bg)}
+  .hdr__mnav hr{border:0;border-block-start:1px solid var(--line);margin:6px 4px}
+}
+@media (max-width:390px){
+  .stats__grid{grid-template-columns:1fr}
+  .hero h1{font-size:1.55rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html.js .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="wrap hdr__in">
+    <a class="brand" href="../index.html" aria-label="نفس — پیش‌پذیرش سلامت">
+      <span class="brand__ic"><img src="../assets/img/app-icon.png" alt="" width="40" height="40" aria-hidden="true"></span>
+      <span class="brand__tx"><b>نفس</b><span>پیش‌پذیرش سلامت</span></span>
+    </a>
+    <nav class="nav" aria-label="ناوبری اصلی">
+      <a href="../hospitals.html">بیمارستان و کلینیک</a>
+      <a href="../patients.html">برای بیماران</a>
+      <a href="../partners.html">مشارکت</a>
+      <a href="../news.html">اخبار</a>
+      <a href="../voices.html">روایت‌ها</a>
+      <a href="../about.html">دربارهٔ نفس</a>
+    </nav>
+    <div class="hdr__act">
+      <a class="hdr__tel tnum" href="tel:+982191002400">۰۲۱–۹۱۰۰ ۲۴۰۰</a>
+      <a class="btn btn--p" href="../contact.html">رزرو دمو</a>
+      <button class="hdr__burger" id="burger" type="button" aria-label="منو" aria-expanded="false" aria-controls="mnav">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="hdr__mnav" id="mnav" aria-label="منوی موبایل">
+    <a href="../hospitals.html">بیمارستان و کلینیک</a>
+    <a href="../patients.html">برای بیماران</a>
+    <a href="../partners.html">مشارکت و شرکا</a>
+    <a href="../news.html">اخبار</a>
+    <a href="../voices.html">روایت‌ها</a>
+    <a href="../about.html">دربارهٔ نفس</a>
+    <hr>
+    <a href="../contact.html" style="color:var(--primary)">رزرو دموی ۱۵ دقیقه‌ای ←</a>
+  </nav>
+</header>
+
+<main>
+
+<!-- ═══ هیرو: همان ساختار کارت ورود محصول ═══ -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero__card">
+      <div class="hero__txt">
+        <span class="hero__pill"><i aria-hidden="true"></i> نسخهٔ ۱٫۲ — فرم‌ساز شرطی منتشر شد</span>
+        <h1>پذیرش، <em>پیش از رسیدن</em> بیمار.</h1>
+        <p class="hero__lead">
+          نفس اطلاعات، مدارک و شواهد حضور بیمار را پیش از روز مراجعه جمع می‌کند و به‌شکل یک پروندهٔ خوانا
+          در اختیار پذیرش و پزشک می‌گذارد — بدون اینکه HIS شما عوض شود.
+        </p>
+        <div class="hero__act">
+          <a class="btn btn--p" href="../contact.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+            رزرو دموی ۱۵ دقیقه‌ای
+          </a>
+          <a class="btn btn--s" href="#how">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l6 3.5-6 3.5z"/></svg>
+            ببینید چطور کار می‌کند
+          </a>
+        </div>
+        <ul class="hero__micro">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg> بدون نصب روی سیستم شما</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg> پایلوت در ۳ تا ۷ روز کاری</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg> مالکیت داده با مرکز شما</li>
+        </ul>
+
+        <div class="hero__strip">
+          <div><b class="tnum">۳</b><span>الگوی اتصال به HIS</span></div>
+          <div><b class="tnum">۰</b><span>هزینهٔ راه‌اندازی پایلوت</span></div>
+          <div><b class="tnum">۱۵</b><span>دقیقه برای دیدن دمو</span></div>
+        </div>
+      </div>
+
+      <div class="hero__panel">
+        <div class="panel__head">
+          <span class="brand__ic" style="width:30px;height:30px;border-radius:8px;box-shadow:none;flex:none"><img src="../assets/img/app-icon-64.png" alt="" width="30" height="30" aria-hidden="true"></span>
+          <span><b>نفس</b><span>پیش‌پذیرش سلامت</span></span>
+        </div>
+        <figure class="panel__shot">
+          <img src="../assets/img/app-login-card.png" alt="کارت ورود واقعی اپ نفس — ورود با کد تأیید پیامکی (OTP)" width="560" height="644" loading="eager">
+
+        </figure>
+        <p class="panel__cap"><i aria-hidden="true"></i> تصویر واقعی از خود اپ — بدون ماکت</p>
+        <ul class="panel__ck">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg> ورود با کد تأیید پیامکی (OTP پنج‌رقمی)</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg> پروندهٔ مشترک در تمام مراحل درمان</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg> پایداری داده روی سرور و فایل‌های آپلود</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ سه مخاطب ═══ -->
+<section class="aud">
+  <div class="wrap">
+    <div class="aud__grid">
+      <a class="acard rv" href="../hospitals.html">
+        <span class="acard__ico ico-teal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M12 10v5M9.5 12.5h5"/></svg></span>
+        <h3>بیمارستان و کلینیک</h3>
+        <p>صف کوتاه‌تر، پروندهٔ کامل‌تر، بدون دست‌زدن به HIS. قیف دعوت تا پذیرش را می‌بینید و می‌دانید کجا یادآوری بفرستید.</p>
+        <span class="acard__go">برای مراکز درمانی <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l-6 6 6 6"/></svg></span>
+      </a>
+      <a class="acard rv" href="../patients.html">
+        <span class="acard__ico ico-blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg></span>
+        <h3>بیمار</h3>
+        <p>فرم را در خانه و روی گوشی پر کنید؛ در مرکز فقط وارد می‌شوید. نصب اپلیکیشن لازم نیست و هیچ‌چیز پنهانی نیست.</p>
+        <span class="acard__go">برای بیماران <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l-6 6 6 6"/></svg></span>
+      </a>
+      <a class="acard rv" href="../partners.html">
+        <span class="acard__ico ico-amber" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12l3 3 5-6"/><circle cx="12" cy="12" r="9"/></svg></span>
+        <h3>شریک و سرمایه‌گذار</h3>
+        <p>مدل درآمد شفاف، مستندات API، نقشهٔ راه منتشرشده و هزینهٔ واقعی هر پیش‌پذیرش — همه در یک صفحه.</p>
+        <span class="acard__go">مشارکت و شرکا <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l-6 6 6 6"/></svg></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ چرا نفس ═══ -->
+<section class="sec">
+  <div class="wrap">
+    <div class="sec__head rv">
+      <span class="kick">چرا نفس</span>
+      <h2>یک لایهٔ ورودی، میان بیمار و پروندهٔ بالینی</h2>
+      <p class="sec__lead">نفس جای HIS را نمی‌گیرد؛ کاری را که HIS برایش ساخته نشده انجام می‌دهد: جمع‌آوری ساختاریافتهٔ اطلاعات پیش از ورود بیمار.</p>
+    </div>
+    <div class="aud__grid">
+      <div class="acard rv">
+        <span class="acard__ico ico-teal" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></span>
+        <h3>پرسش‌نامهٔ شرطی</h3>
+        <p>فرم بر اساس سن، جنسیت و سابقه شاخه می‌خورد؛ سؤال نامرتبط حذف می‌شود و خطای ثبت به حداقل می‌رسد.</p>
+        <span class="acard__go">برای پذیرش</span>
+      </div>
+      <div class="acard rv">
+        <span class="acard__ico ico-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 4v10l-7 4-7-4V7z"/><path d="M12 12l7-4M12 12v9M12 12L5 8"/></svg></span>
+        <h3>پروندهٔ آماده</h3>
+        <p>پزشک پیش از ویزیت پاسخ‌ها، مدارک و تصویر پرونده را می‌بیند؛ چهار دقیقهٔ اول به درمان می‌رسد نه به پرسیدن.</p>
+        <span class="acard__go">برای پزشک</span>
+      </div>
+      <div class="acard rv">
+        <span class="acard__ico ico-blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg></span>
+        <h3>دسترسی حداقلی</h3>
+        <p>هر نقش فقط آنچه لازم دارد می‌بیند؛ هر مشاهده و تغییر پرونده در لاگ ممیزی با نقش، زمان و دستگاه ثبت می‌شود.</p>
+        <span class="acard__go">برای حریم خصوصی</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ گام‌ها ═══ -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="sec__head rv">
+      <span class="kick">مسیر یک بیمار</span>
+      <h2>از یک پیامک تا پذیرش، چهار گام</h2>
+      <p class="sec__lead">هر گام یک مسئول مشخص دارد. نه فرمی گم می‌شود، نه کسی منتظر می‌ماند.</p>
+    </div>
+    <div class="steps">
+      <div class="step rv"><div class="step__n">۰۱</div><h4>دعوت</h4><p>پذیرش پیامک دعوت با قالب مرکز خودش می‌فرستد؛ لینک یک‌بارمصرف است.</p><span class="step__who">پذیرش / منابع انسانی</span></div>
+      <div class="step rv"><div class="step__n">۰۲</div><h4>پیش‌پذیرش</h4><p>بیمار در خانه فرم را کامل می‌کند، مدارک را عکس می‌گیرد و نشست احراز حضور را تأیید می‌کند.</p><span class="step__who">بیمار</span></div>
+      <div class="step rv"><div class="step__n">۰۳</div><h4>مرور پزشک</h4><p>پرونده در فهرست انتظار پزشک می‌نشیند؛ نکات پرخطر و مدارک ناقص همان‌جا علامت می‌خورد.</p><span class="step__who">پزشک</span></div>
+      <div class="step rv"><div class="step__n">۰۴</div><h4>پذیرش</h4><p>روز مراجعه فقط هویت و نوبت کنترل می‌شود؛ پرونده از قبل در سیستم نشسته است.</p><span class="step__who">پذیرش / صف</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ دو ستون: عکس واقعی اپ + محتوا ═══ -->
+<section class="sec">
+  <div class="wrap duo">
+
+    <div class="row rv">
+      <div class="row__media">
+        <span class="row__tag">از خود اپ</span>
+        <img src="../assets/img/app-login-card.png" alt="کارت ورود واقعی اپ نفس — ورود با کد تأیید پیامکی" width="560" height="644" loading="lazy" style="max-width:340px;margin-inline:auto">
+      </div>
+      <div>
+        <span class="kick">ورود بدون گذرواژه</span>
+        <h3>بیمار هیچ اپلیکیشنی نصب نمی‌کند</h3>
+        <p class="row__lead">لینکی که پیامک می‌شود در مرورگر گوشی باز می‌شود. ورود با کد پنج‌رقمی انجام می‌شود — نه نام کاربری، نه رمز، نه نصب.</p>
+        <ul class="ck">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>ورود با OTP:</b> شماره همان کسی است که دعوت شده.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>پروندهٔ مشترک:</b> یک پرونده در تمام مراحل درمان.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>پایداری داده:</b> روی سرور مرکز و فایل‌های آپلودشده.</span></li>
+        </ul>
+        <a class="btn btn--s" style="margin-block-start:18px" href="../patients.html">بیمار چه چیزی می‌بیند؟</a>
+      </div>
+    </div>
+
+    <div class="row row--flip rv">
+      <div class="row__media">
+        <span class="row__tag">برای پزشک</span>
+        <img src="../assets/img/doctor-tablet.jpg" alt="پزشک در راهروی کلینیک با تبلت پروندهٔ پیش‌پذیرش را می‌خواند" width="1200" height="900" loading="lazy">
+      </div>
+      <div>
+        <span class="kick">پیش از اتاق ویزیت</span>
+        <h3>چهار دقیقهٔ اولِ ویزیت، درمان باشد نه پرسیدن</h3>
+        <p class="row__lead">پزشک پاسخ‌ها، مدارک و تصویر پرونده را پیش از ورود بیمار می‌بیند؛ سؤال‌های تکراری حذف می‌شود.</p>
+        <ul class="ck">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>پروندهٔ خوانا:</b> پاسخ، مدرک و تصویر در یک صفحه.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>هشدار زودهنگام:</b> نکات پرخطر و مدارک ناقص علامت می‌خورند.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg><span><b>کنار HIS، نه روی آن:</b> API، فایل استاندارد یا لینک امن.</span></li>
+        </ul>
+        <a class="btn btn--s" style="margin-block-start:18px" href="../hospitals.html">جزئیات برای مراکز درمانی</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ آمار ═══ -->
+<section class="sec" style="padding-block-start:0">
+  <div class="wrap">
+    <div class="stats rv">
+      <div class="stats__grid tnum">
+        <div class="mcard"><div class="mcard__v"><b>۴٫۲</b><span>دقیقه</span></div><div class="mcard__l">میانگین زمان پذیرش با پروندهٔ آماده</div><span class="mcard__tag">نمونه</span></div>
+        <div class="mcard"><div class="mcard__v"><b>۸۱</b><span>٪</span></div><div class="mcard__l">پیش‌پذیرش‌های تکمیل‌شده پیش از روز مراجعه</div><span class="mcard__tag">نمونه</span></div>
+        <div class="mcard"><div class="mcard__v"><b>۶</b><span>دقیقه</span></div><div class="mcard__l">میانگین زمان تکمیل فرم توسط بیمار</div><span class="mcard__tag">نمونه</span></div>
+        <div class="mcard"><div class="mcard__v"><b>۰</b><span>بار</span></div><div class="mcard__l">نیاز به بازنویسی دستی اطلاعات در پذیرش</div><span class="mcard__tag">هدف طراحی</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ دیوار شیشه‌ای ═══ -->
+<section class="sec" style="padding-block-start:0">
+  <div class="wrap">
+    <div class="sec__head rv">
+      <span class="kick">دیوار شیشه‌ای</span>
+      <h2>هرچه هست را همان اول می‌گوییم</h2>
+      <p class="sec__lead">شفافیت اینجا یک شعار بازاریابی نیست؛ سه سند است که می‌توانید قبل از امضا بخوانید.</p>
+    </div>
+    <div class="glass">
+      <div class="gcard rv">
+        <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--teal-c)"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg> چه چیزی هستیم</h4>
+        <ul><li>لایهٔ ورودی پیش از پذیرش</li><li>جمع‌آوری ساختاریافتهٔ مدارک و شواهد</li><li>کنار HIS، با API و فایل استاندارد</li></ul>
+      </div>
+      <div class="gcard rv">
+        <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--amber)"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8M16 8l-8 8"/></svg> چه چیزی نیستیم</h4>
+        <ul><li>جایگزین HIS یا پروندهٔ الکترونیک</li><li>تولید پروندهٔ بالینی رسمی</li><li>فروشندهٔ دادهٔ بیمار</li></ul>
+      </div>
+      <div class="gcard rv">
+        <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--blue)"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg> قیمت و خروج داده</h4>
+        <ul><li>اشتراک مرکز، به‌ازای پیش‌پذیرش، یا ترکیبی</li><li>پایلوت اول بدون هزینهٔ راه‌اندازی</li><li>خروجی کامل داده، هر زمان</li></ul>
+      </div>
+    </div>
+    <p class="gnote rv">«دیوار شیشه‌ای» یک تعهد عملی است، نه وعدهٔ حقوقی: اسناد و اعداد قابل بازبینی‌اند، اما تعهد نهایی در قرارداد نوشته می‌شود.</p>
+  </div>
+</section>
+
+<!-- ═══ FAQ ═══ -->
+<section class="sec" style="padding-block-start:0">
+  <div class="wrap">
+    <div class="sec__head rv">
+      <span class="kick">پرسش‌های متداول</span>
+      <h2>چیزهایی که مدیران قبل از دمو می‌پرسند</h2>
+    </div>
+    <div class="faq rv">
+      <details><summary>باید HIS را عوض کنیم؟</summary><div class="a">نه. سه الگوی اتصال داریم: لینک امن، فایل استاندارد، و API. هیچ‌کدام نیازمند تغییر HIS نیست.</div></details>
+      <details><summary>آیا دادهٔ بیمار جایگزین پروندهٔ رسمی می‌شود؟</summary><div class="a">نه. نفس پروندهٔ بالینی رسمی تولید نمی‌کند؛ ورودی‌های پیش‌پذیرش را ساختاریافته تحویل می‌دهد و نگهداری رسمی طبق مقررات مرکز درمانی انجام می‌شود.</div></details>
+      <details><summary>داده کجا نگهداری می‌شود؟</summary><div class="a">بسته به مدل استقرار: ابر اختصاصی، سرور خود بیمارستان، یا هیبرید. در هر سه حالت، مالکیت داده با مرکز درمانی است و خروجی کامل قابل دریافت است.</div></details>
+      <details><summary>اگر بیمار فرم را نیمه‌کاره رها کند؟</summary><div class="a">وضعیت در قیف مشخص می‌شود و می‌توانید یک یادآوری پیامکی بفرستید. پروندهٔ ناقص هم در فهرست پذیرش با نشان «ناقص» می‌آید تا پذیرش بداند چه چیزی کم است.</div></details>
+      <details><summary>برای شروع چقدر زمان لازم است؟</summary><div class="a">پایلوت در یک درمانگاه معمولاً بین ۳ تا ۷ روز کاری راه می‌افتد. استقرار کامل با اتصال HIS بین ۳ تا ۶ هفته.</div></details>
+      <details><summary>چطور از ما پول می‌گیرید؟</summary><div class="a">اشتراک مرکز، به‌ازای هر پیش‌پذیرش، یا ترکیبی. برای پایلوت اول هزینهٔ راه‌اندازی نداریم.</div></details>
+    </div>
+    <p style="margin-block-start:14px;font-size:.85rem;color:var(--soft)" class="rv">پاسخ کامل‌تر: <a href="../hospitals.html" style="color:var(--primary);font-weight:700;border-block-end:1px solid currentColor">پرسش‌های مدیران مراکز درمانی</a> یا <a href="../patients.html" style="color:var(--primary);font-weight:700;border-block-end:1px solid currentColor">پرسش‌های بیماران</a>.</p>
+  </div>
+</section>
+
+<!-- ═══ CTA ═══ -->
+<section class="sec" style="padding-block-start:0">
+  <div class="wrap">
+    <div class="cta rv">
+      <div class="cta__in">
+        <div>
+          <h2>۱۵ دقیقه، روی دادهٔ نمونهٔ خودتان</h2>
+          <p>نصب نمی‌کنیم، تعهد نمی‌گیریم. یک فرم واقعی از پذیرش خودتان را با هم پر می‌کنیم و پروندهٔ خروجی را می‌بینید.</p>
+        </div>
+        <div class="cta__act">
+          <a class="btn btn--mint" href="../contact.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+            رزرو دموی ۱۵ دقیقه‌ای
+          </a>
+          <a class="cta__tel" href="tel:+982191002400">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.2a2 2 0 012.1-.5c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z"/></svg>
+            یا تماس: ۰۲۱–۹۱۰۰ ۲۴۰۰
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="ftr">
+  <div class="wrap">
+    <div class="ftr__grid">
+      <div class="ftr__brand">
+        <a class="brand" href="../index.html">
+          <span class="brand__ic"><img src="../assets/img/app-icon.png" alt="" width="40" height="40" aria-hidden="true"></span>
+          <span class="brand__tx"><b>نفس</b><span>پیش‌پذیرش سلامت</span></span>
+        </a>
+        <p>لایهٔ پیش‌پذیرش میان بیمار و پذیرش. پرونده آماده می‌شود تا صف کوتاه شود.</p>
+      </div>
+      <div>
+        <h5>مخاطبان</h5>
+        <ul>
+          <li><a href="../hospitals.html">بیمارستان و کلینیک</a></li>
+          <li><a href="../patients.html">برای بیماران</a></li>
+          <li><a href="../partners.html">مشارکت و شرکا</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>اطلاع‌رسانی</h5>
+        <ul>
+          <li><a href="../news.html">اخبار</a></li>
+          <li><a href="../voices.html">روایت‌ها</a></li>
+          <li><a href="../about.html">دربارهٔ نفس</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>تماس</h5>
+        <ul>
+          <li><a href="tel:+982191002400" class="tnum">۰۲۱–۹۱۰۰ ۲۴۰۰</a></li>
+          <li><a href="mailto:hello@nabz.health">hello@nabz.health</a></li>
+          <li>تهران، ولی‌عصر، برج نگین، ط ۹</li>
+          <li>شنبه تا چهارشنبه، ۹ تا ۱۸</li>
+        </ul>
+      </div>
+    </div>
+    <div class="ftr__bottom">
+      <span>طرح پیشنهادی ۰۶ «هم‌هویت» — توکن‌های رنگ از خود محصول؛ تصاویر واقعی از اپ.</span>
+      <span class="dots"><a href="../about.html">حریم خصوصی</a><a href="../contact.html">تماس</a><a href="index.html">گالری طرح‌ها</a></span>
+    </div>
+  </div>
+</footer>
+
+<div class="mbar" aria-label="اقدام سریع">
+  <a class="btn btn--p" href="../contact.html">رزرو دموی رایگان</a>
+  <a class="mbar__tel" href="tel:+982191002400" aria-label="تماس تلفنی">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.2a2 2 0 012.1-.5c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z"/></svg>
+  </a>
+</div>
+
+<script>
+document.documentElement.classList.add("js");
+
+/* منوی موبایل */
+const burger = document.getElementById("burger");
+const mnav = document.getElementById("mnav");
+burger?.addEventListener("click", () => {
+  const open = burger.getAttribute("aria-expanded") === "true";
+  burger.setAttribute("aria-expanded", String(!open));
+  mnav.classList.toggle("open", !open);
+});
+mnav?.querySelectorAll("a").forEach(a => a.addEventListener("click", () => {
+  burger.setAttribute("aria-expanded", "false");
+  mnav.classList.remove("open");
+}));
+
+/* ورود نرم */
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (!reduce && "IntersectionObserver" in window) {
+  const io = new IntersectionObserver((es) => {
+    es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { rootMargin: "0px 0px -6% 0px", threshold: .05 });
+  document.querySelectorAll(".rv").forEach(el => io.observe(el));
+} else {
+  document.querySelectorAll(".rv").forEach(el => el.classList.add("in"));
+}
+</script>
+</body>
+</html>
