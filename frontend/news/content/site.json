@@ -1,0 +1,63 @@
+{
+  "site": {
+    "brandFa": "نفس",
+    "brandLatin": "Nabz",
+    "descriptor": "پیش‌پذیرش سلامت",
+    "tagline": "پروندهٔ آماده، پیش از رسیدن بیمار.",
+    "phone": "۰۲۱–۹۱۰۰ ۲۴۰۰",
+    "phoneHref": "+982191002400",
+    "email": "hello@nabz.health",
+    "pressEmail": "press@nabz.health",
+    "address": "تهران، خیابان ولی‌عصر، برج نگین، طبقهٔ ۹ — واحد ۹۰۴",
+    "hours": "شنبه تا چهارشنبه، ۹ تا ۱۸",
+    "demoMinutes": 15,
+    "demoNote": "دموی ۱۵ دقیقه‌ای، بدون نیاز به نصب و بدون تعهد.",
+    "nav": [
+      {
+        "slug": "index",
+        "label": "خانه"
+      },
+      {
+        "slug": "hospitals",
+        "label": "بیمارستان و کلینیک"
+      },
+      {
+        "slug": "patients",
+        "label": "برای بیماران"
+      },
+      {
+        "slug": "partners",
+        "label": "مشارکت و شرکا"
+      },
+      {
+        "slug": "news",
+        "label": "اخبار"
+      },
+      {
+        "slug": "voices",
+        "label": "روایت‌ها"
+      },
+      {
+        "slug": "about",
+        "label": "دربارهٔ نفس"
+      }
+    ]
+  },
+  "images": {
+    "reception": {
+      "src": "assets/img/reception.jpg",
+      "alt": "مسئول پذیرش با تبلت در حال پاسخ به بیمار در پذیرش یک بیمارستان",
+      "credit": "تصویر نمونه"
+    },
+    "doctor": {
+      "src": "assets/img/doctor-tablet.jpg",
+      "alt": "پزشک در راهروی کلینیک با تبلت پروندهٔ پیش‌پذیرش را می‌خواند",
+      "credit": "تصویر نمونه"
+    },
+    "patient": {
+      "src": "assets/img/patient-phone.jpg",
+      "alt": "بیمار در خانه فرم پیش‌پذیرش را روی گوشی پر می‌کند",
+      "credit": "تصویر نمونه"
+    }
+  }
+}

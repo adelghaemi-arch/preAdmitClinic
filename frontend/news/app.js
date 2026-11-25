@@ -4,7 +4,22 @@
    محتوا از content.json خوانده می‌شود؛ فارسی و اعداد فارسی.
    ========================================================================== */
 
-const DATA_URL = "content.json";
+/* محتوا به فایل‌های موضوعی تقسیم شده تا هر تغییر، سطح اثر کوچکی داشته باشد.
+   ترتیب مهم نیست؛ کلیدها در loadContent ادغام می‌شوند. */
+const DATA_PATHS = [
+  "content/site.json",
+  "content/home.json",
+  "content/hospitals.json",
+  "content/partners.json",
+  "content/news.json",
+  "content/voices.json",
+  "content/faq.json",
+  "content/about.json",
+  "content/contact.json",
+];
+/* حالت توسعه: با ?dev=1 (یا serve.mjs) تغییر فایل‌های محتوا بدون رفرش دستی اعمال می‌شود */
+const DEV = new URLSearchParams(location.search).has("dev");
+const DEV_WATCH_MS = 1200;
 const SVG_NS = "http://www.w3.org/2000/svg";
 
 /* ---------- آیکون‌ها (stroke، ۲۴×۲۴) ---------- */
@@ -1461,42 +1476,125 @@ function initCalculator() {
 /* ---------- اجرا ---------- */
 let DATA_CACHE = null;
 
+/* بارگذاری همهٔ فایل‌های محتوا به‌صورت موازی و ادغام در یک شیء */
+async function loadContent() {
+  const parts = await Promise.all(
+    DATA_PATHS.map(async (path) => {
+      const res = await fetch(path, { cache: "no-cache" });
+      if (!res.ok) throw new Error(`${path} (${res.status})`);
+      try {
+        return await res.json();
+      } catch {
+        throw new Error(`${path} — JSON نامعتبر است`);
+      }
+    })
+  );
+  const merged = Object.assign({}, ...parts);
+  const problems = validateContent(merged);
+  if (problems.length) console.warn("[news] هشدار محتوا:\n- " + problems.join("\n- "));
+  return merged;
+}
+
+/* اعتبارسنجی سبک: کلیدهای حیاتی صفحه‌ها را قبل از رندر چک می‌کند تا
+   یک فایل ناقص، کل سایت را با صفحهٔ سفید روبه‌رو نکند. */
+function validateContent(D) {
+  const problems = [];
+  const need = [
+    ["site.nav", () => Array.isArray(D.site?.nav) && D.site.nav.length > 0],
+    ["site.phone/email", () => Boolean(D.site?.phone && D.site?.email)],
+    ["images.reception", () => Boolean(D.images?.reception?.src)],
+    ["stats (۴ مورد)", () => Array.isArray(D.stats) && D.stats.length === 4],
+    ["features", () => Array.isArray(D.features) && D.features.length >= 3],
+    ["news", () => Array.isArray(D.news) && D.news.length > 0],
+    ["voices", () => Array.isArray(D.voices) && D.voices.length > 0],
+    ["faq.general", () => Array.isArray(D.faq?.general) && D.faq.general.length > 0],
+  ];
+  need.forEach(([name, ok]) => {
+    if (!ok()) problems.push(`${name} تعریف نشده یا ناقص است`);
+  });
+  (D.news || []).forEach((n, i) => {
+    if (!n.id || !n.title) problems.push(`news[${i}]: id یا title خالی است`);
+    if (n.image && D.images && !D.images[n.image]) problems.push(`news[${i}]: تصویر «${n.image}» در images نیست`);
+  });
+  return problems;
+}
+
 async function boot() {
   const page = currentPage();
   const root = $("#app");
   try {
-    const res = await fetch(DATA_URL, { cache: "no-cache" });
-    if (!res.ok) throw new Error("content.json");
-    const D = await res.json();
-    DATA_CACHE = D;
-    IMG = D.images || {};
-
-    const pageTitle = PAGE_TITLES[page] || "";
-    document.title = page === "index" ? `${D.site.brandFa} — ${D.site.descriptor}` : `${pageTitle} | ${D.site.brandFa}`;
-
-    root.innerHTML =
-      `<a class="skip" href="#main">رفتن به محتوای اصلی</a>` +
-      headerBlock(D.site, page) +
-      `<main id="main">${PAGE_RENDERERS[page](D)}</main>` +
-      footerBlock(D.site);
-
-    initNav();
-    initHeroSwitch();
-    initReveal();
-    initGlassBars();
-    initNewsFilter();
-    initVoiceFilter();
-    initFaqTabs();
-    initForms();
-    initCalculator();
+    const D = await loadContent();
+    renderAll(D, page);
+    if (DEV) startDevWatch(page);
   } catch (err) {
-    root.innerHTML = `<div class="wrap" style="padding-block:80px;text-align:center">
-      <h1 style="font-size:1.4rem">محتوا بارگذاری نشد</h1>
-      <p style="color:#6d837b;font-size:.9rem;margin-block-start:8px">این نمونه باید از یک سرور محلی باز شود (نه با دوبار کلیک روی فایل).</p>
-      <pre style="margin-block-start:12px;font-size:.78rem;color:#a8503a">${esc(err.message)}</pre>
-    </div>`;
+    renderError(root, err);
     console.error(err);
   }
+}
+
+/* رندر کامل صفحه؛ در حالت dev برای اعمال تغییر بدون از دست رفتن اسکرول استفاده می‌شود */
+function renderAll(D, page) {
+  const root = $("#app");
+  DATA_CACHE = D;
+  IMG = D.images || {};
+  const keepScroll = window.scrollY;
+
+  const pageTitle = PAGE_TITLES[page] || "";
+  document.title = page === "index" ? `${D.site.brandFa} — ${D.site.descriptor}` : `${pageTitle} | ${D.site.brandFa}`;
+
+  root.innerHTML =
+    `<a class="skip" href="#main">رفتن به محتوای اصلی</a>` +
+    headerBlock(D.site, page) +
+    `<main id="main">${PAGE_RENDERERS[page](D)}</main>` +
+    footerBlock(D.site);
+
+  initNav();
+  initHeroSwitch();
+  initReveal();
+  initGlassBars();
+  initNewsFilter();
+  initVoiceFilter();
+  initFaqTabs();
+  initForms();
+  initCalculator();
+  // در ری‌لود زندهٔ محتوا، جای اسکرول کاربر حفظ می‌شود
+  if (keepScroll > 0) {
+    try {
+      window.scrollTo({ top: Math.min(keepScroll, document.body.scrollHeight), behavior: "instant" });
+    } catch {
+      window.scrollTo(0, keepScroll);
+    }
+  }
+}
+
+function renderError(root, err) {
+  root.innerHTML = `<div class="wrap" style="padding-block:80px;text-align:center">
+    <h1 style="font-size:1.4rem">محتوا بارگذاری نشد</h1>
+    <p style="color:#6d837b;font-size:.9rem;margin-block-start:8px">این نمونه باید از یک سرور محلی باز شود (نه با دوبار کلیک روی فایل).</p>
+    <pre style="margin-block-start:12px;font-size:.78rem;color:#a8503a;white-space:pre-wrap">${esc(err.message)}</pre>
+    <p style="color:#6d837b;font-size:.78rem;margin-block-start:10px">اگر JSON را تازه ویرایش کرده‌اید، احتمالاً یک کاما یا آکولاد جا افتاده است.</p>
+  </div>`;
+}
+
+/* بارگذاری زندهٔ محتوا در حالت dev: با تغییر هر فایل content/*.json صفحه بازسازی می‌شود */
+function startDevWatch(page) {
+  let stamp = "";
+  const tick = async () => {
+    try {
+      const res = await fetch("content/site.json", { cache: "no-store" });
+      const body = await res.text();
+      const next = `${body.length}:${body.slice(-40)}`;
+      if (stamp && next !== stamp) {
+        const D = await loadContent();
+        renderAll(D, page);
+        console.info("[news] محتوا به‌روز شد — بدون رفرش");
+      }
+      stamp = next;
+    } catch {}
+    setTimeout(tick, DEV_WATCH_MS);
+  };
+  setTimeout(tick, DEV_WATCH_MS);
+  console.info("[news] حالت توسعه فعال است: تغییر فایل‌های content/*.json خودکار اعمال می‌شود.");
 }
 
 const PAGE_TITLES = {
