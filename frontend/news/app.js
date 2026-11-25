@@ -98,7 +98,7 @@ function hrefFor(slug) {
    ========================================================================== */
 function brandBlock(B) {
   return `<a class="brand" href="index.html" aria-label="${esc(B.brandFa)} — ${esc(B.descriptor)}">
-    <span class="brand__mark">${icon("pulse")}</span>
+    <span class="brand__mark"><img src="assets/img/tapesh-character.png" alt="" width="40" height="40" loading="eager" decoding="async"></span>
     <span class="brand__text">
       <span class="brand__name">${esc(B.brandFa)}</span>
       <span class="brand__sub">${esc(B.brandLatin.toUpperCase())} · HEALTH INTAKE</span>
