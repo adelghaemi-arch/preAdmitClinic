@@ -128,19 +128,47 @@ if (!intake) {
       errors.push(`intake «${p.code}»: فرم «${p.form}» در forms نیست`);
   }
 
-  /* تطبیق با کاتالوگ واقعی فرم */
+  /* تطبیق با کاتالوگ واقعی فرم.
+     عدد سایت باید «سوالی که بیمار می‌بیند» باشد، نه تعداد خام کاتالوگ؛
+     پس همان سه قاعدهٔ form-engine.ts::isUserFacingFormItem تکرار می‌شود. */
   try {
     const catalog = JSON.parse(await readFile(resolve(ROOT, "../../frontend/my/src/lib/form-catalog.seed.json"), "utf8"));
+    /* عیناً همان سه تابع form-engine.ts */
+    const isFormDate = (i) => i.code.includes("formDate") || Boolean(i.coding?.aiTags?.includes("formDate"));
+    const isIdentity = (i) =>
+      ["fullName", "nationalId", "phone"].includes(i.prefillFromPatient) ||
+      /_BASE_fullName$|_DEMO_fullName$|_BASE_nationalId$|_DEMO_nationalId$|_BASE_phone$|_DEMO_phone$/i.test(i.code) ||
+      Boolean(i.coding?.aiTags?.some((t) => ["fullName", "nationalId", "phone"].includes(t)));
+    const isFacing = (i) => !i.code.includes("_SIG_") && !isFormDate(i) && !isIdentity(i);
+
     for (const cf of catalog.forms) {
       const mine = (intake.forms || []).find((f) => f.code === cf.code);
       if (!mine) {
         errors.push(`intake: فرم «${cf.code}» در intake نیست`);
         continue;
       }
-      if (mine.questionCount !== cf.items.length)
-        errors.push(`intake «${cf.code}»: ${mine.questionCount} سوال، کاتالوگ ${cf.items.length} سوال`);
+      const facing = cf.items.filter(isFacing).length;
+      if (mine.questionCount !== facing)
+        errors.push(`intake «${cf.code}»: ${mine.questionCount} سوال، کاتالوگ ${facing} سوال قابل‌نمایش (خام ${cf.items.length})`);
       if (mine.sectionCount !== cf.sections.length)
         errors.push(`intake «${cf.code}»: ${mine.sectionCount} بخش، کاتالوگ ${cf.sections.length} بخش`);
+
+      /* جمع سوال‌های بخش‌ها هم باید با کل بخواند */
+      const secSum = (mine.sections || []).reduce((a, s) => a + s.questions, 0);
+      if (secSum !== mine.questionCount)
+        errors.push(`intake «${cf.code}»: جمع بخش‌ها ${secSum} ≠ ${mine.questionCount}`);
+
+      /* فیلدهای پیش‌نمایش نباید از سقف بخش بیشتر شوند و نباید خالی باشند */
+      for (const [idx, s] of (mine.sections || []).entries()) {
+        for (const k of ["35", "40", "50"]) {
+          const fields = s.fieldsAt?.[k];
+          if (!Array.isArray(fields)) { errors.push(`intake «${cf.code}» بخش ${idx + 1}: fieldsAt.${k} نیست`); continue; }
+          if (fields.length > s.questions)
+            errors.push(`intake «${cf.code}» بخش ${idx + 1}: ${fields.length} فیلد در سن ${k}، سقف ${s.questions}`);
+        }
+        if (!(s.fieldsAt?.["35"] || []).length && !(s.fieldsAt?.["50"] || []).length)
+          errors.push(`intake «${cf.code}» بخش ${idx + 1}: در هیچ سنی فیلدی ندارد`);
+      }
     }
   } catch (err) {
     warnings.push(`مقایسهٔ intake با کاتالوگ انجام نشد: ${err.message.split("\n")[0]}`);
